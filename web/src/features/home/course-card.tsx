@@ -70,7 +70,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
       <div className="px-5.5 pb-4 empty:p-0">
         {next !== undefined && (
           <Link
-            className={`${TILE} border border-org/45 bg-org-soft text-org-deep hover:bg-org/25`}
+            className={`${TILE} border border-org-fill bg-org-fill text-on-org-fill hover:border-org-fill-hover hover:bg-org-fill-hover`}
             data-tile
             to={paths.prep(course.id, next.id)}
           >

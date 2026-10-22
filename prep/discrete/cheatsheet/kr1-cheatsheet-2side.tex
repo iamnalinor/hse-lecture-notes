@@ -1,0 +1,17 @@
+% Читлист КР-1, дискретная математика: двусторонняя печать (ровно 2 страницы A4).
+% Лицевая сторона — ядро (то же, что в одностороннем варианте), оборот — расширение.
+\documentclass[10pt]{article}
+\input{kr1-preamble}
+\input{kr1-content}
+\begin{document}
+\sheetsize
+\topline{двусторонняя печать · лицевая сторона (ядро)}
+\begin{multicols}{4}
+\KRcore
+\end{multicols}
+\newpage
+\topline{двусторонняя печать · оборот (расширение: образцы, схемы доказательств, корнер-кейсы)}
+\begin{multicols}{4}
+\KRext
+\end{multicols}
+\end{document}
