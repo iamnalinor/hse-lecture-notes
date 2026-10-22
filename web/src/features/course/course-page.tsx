@@ -56,7 +56,7 @@ export const Component = () => {
             <Link
               className={
                 isUpcoming(prep, today)
-                  ? `${BUTTON} border-org bg-org-soft text-org-deep hover:bg-org/25`
+                  ? `${BUTTON} border-org-fill bg-org-fill text-on-org-fill hover:bg-org-fill-hover`
                   : BUTTON
               }
               key={prep.id}
@@ -64,7 +64,7 @@ export const Component = () => {
             >
               Подготовка к {prepName(prep.id)}
               {isUpcoming(prep, today) && (
-                <span className="font-normal text-org-deep/80">· {shortDate(prep.date)}</span>
+                <span className="font-normal">· {shortDate(prep.date)}</span>
               )}
             </Link>
           ))}
