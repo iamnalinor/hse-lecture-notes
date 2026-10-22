@@ -16,7 +16,7 @@ PACKAGES=(
   enumitem booktabs caption float titlesec amsmath amsfonts tools mathtools
   bookmark zref needspace setspace parskip microtype
   # читлисты (prep/<course>/cheatsheet)
-  ragged2e multicol
+  ragged2e
   # сборка
   latexmk dvisvgm standalone luatex85 xetex
 )
