@@ -1,0 +1,240 @@
+/* Typography of the notes text: the HTML fragments from the build land inside `.prose-notes`. */
+.prose-notes {
+  font-size: 18px;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+
+.prose-notes p {
+  margin: 0 0 0.85em;
+  hyphens: auto;
+}
+
+.prose-notes ul,
+.prose-notes ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.3em;
+}
+
+.prose-notes ul {
+  list-style: disc;
+}
+
+.prose-notes ol {
+  list-style: decimal;
+}
+
+.prose-notes li {
+  margin: 0.25em 0;
+}
+
+.prose-notes li > p {
+  margin-bottom: 0.4em;
+}
+
+.prose-notes strong {
+  font-weight: 700;
+}
+
+.prose-notes a:not(.ref) {
+  text-underline-offset: 3px;
+}
+
+.prose-notes hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2em 0;
+}
+
+.prose-notes code {
+  font-size: 0.9em;
+}
+
+.prose-notes dl {
+  margin: 0;
+}
+
+.prose-notes dt {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 1em;
+}
+
+.prose-notes dd {
+  margin: 0.15em 0 0;
+}
+
+.prose-notes details.nb-answers {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.6em 1em;
+}
+
+.prose-notes details.nb-answers > summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prose-notes table {
+  border-collapse: collapse;
+  font-size: 0.87em;
+  min-width: 100%;
+}
+
+.prose-notes th {
+  border-bottom: 1.5px solid var(--ink);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.prose-notes td {
+  border-bottom: 1px solid var(--rule);
+  padding: 7px 12px;
+  vertical-align: top;
+}
+
+.prose-notes img {
+  height: auto;
+  max-width: 100%;
+}
+
+:root[data-theme="dark"] .prose-notes figure img {
+  filter: invert(0.9) hue-rotate(180deg);
+}
+
+.prose-notes .katex {
+  font-size: 1.04em;
+}
+
+.math-display {
+  display: block;
+  margin: 0.9em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+.math-display .katex-display {
+  margin: 0;
+}
+
+/* A long formula scrolls sideways: fade the edge that has more content behind it. */
+@property --fade-start {
+  inherits: false;
+  initial-value: 0px;
+  syntax: "<length>";
+}
+
+@property --fade-end {
+  inherits: false;
+  initial-value: 0px;
+  syntax: "<length>";
+}
+
+@keyframes math-edges {
+  0% {
+    --fade-end: 28px;
+    --fade-start: 0px;
+  }
+
+  6% {
+    --fade-start: 28px;
+  }
+
+  94% {
+    --fade-end: 28px;
+  }
+
+  100% {
+    --fade-end: 0px;
+    --fade-start: 28px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .math-display {
+    animation: math-edges linear both;
+    animation-timeline: scroll(self inline);
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--fade-start),
+      #000 calc(100% - var(--fade-end)),
+      transparent
+    );
+  }
+}
+
+/*
+KaTeX pins the number `(4.1)` to the right edge of the formula's box. The box is only as wide as the
+screen, so a formula that overflows it ends up under the number: let the box grow to the content and
+reserve room for the number (room for «(10.12)»). On wide screens formulas fit, and the room would
+only push them off the centre.
+*/
+.math-display .katex-html:has(> .katex-tag) {
+  box-sizing: border-box;
+  min-width: 100%;
+  width: max-content;
+}
+
+@media (width < 48rem) {
+  .math-display .katex-html:has(> .katex-tag) {
+    padding-inline-end: 4.8em;
+  }
+}
+
+.nb-eq {
+  display: block;
+}
+
+.ref {
+  border-bottom: 1px solid color-mix(in srgb, var(--def) 40%, transparent);
+  color: var(--def);
+  text-decoration: none;
+}
+
+.ref:hover {
+  background: color-mix(in srgb, var(--def) 10%, transparent);
+  border-bottom-color: var(--def);
+}
+
+.prose-notes figure {
+  margin: 30px 0;
+}
+
+.prose-notes figure img {
+  display: block;
+  margin: 0 auto;
+}
+
+.prose-notes figcaption {
+  color: var(--muted);
+  font-size: 0.82em;
+  line-height: 1.45;
+  margin-top: 12px;
+}
+
+.prose-notes .nb-fig-num {
+  color: var(--ink);
+  font-size: 0.9em;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* Hover card of a figure reference: a small picture over the caption. */
+.ref-preview figure {
+  margin: 0 0 8px;
+}
+
+.ref-preview figure img {
+  max-height: 150px;
+  width: auto;
+}
+
+.ref-preview figcaption {
+  margin-top: 8px;
+}

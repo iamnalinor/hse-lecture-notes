@@ -1,0 +1,110 @@
+name: Build notes
+
+on:
+  push:
+    branches: ['**']   # на любой ветке — PDF в artifacts; релиз latest — только из main
+    tags-ignore: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Ruff
+        run: uv run ruff check scripts tests
+
+      - name: Lint notes
+        run: uv run scripts/lint.py
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Cache TinyTeX
+        uses: actions/cache@v6
+        with:
+          path: ~/.TinyTeX
+          key: tinytex-${{ runner.os }}-${{ hashFiles('scripts/setup.sh') }}
+
+      - name: Cache build outputs (TikZ → SVG)
+        uses: actions/cache@v6
+        with:
+          path: .cache
+          key: notes-cache-${{ github.sha }}
+          restore-keys: notes-cache-
+
+      - name: Install TeX and dependencies
+        run: |
+          ./scripts/setup.sh
+          echo "$HOME/.TinyTeX/bin/x86_64-linux" >> "$GITHUB_PATH"
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: Build PDF and HTML
+        run: uv run scripts/build.py --strict
+
+      - name: Collect PDFs
+        run: |
+          mkdir -p dist
+          shopt -s nullglob
+          for f in build/pdf/*/*.pdf; do
+            course=$(basename "$(dirname "$f")")
+            cp "$f" "dist/${course}-$(basename "$f")"
+          done
+          ls -la dist
+
+      - name: Upload PDFs
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdf
+          path: dist/*.pdf
+          if-no-files-found: ignore
+
+      - name: Upload site data
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-data
+          path: build/site-data
+          if-no-files-found: ignore
+
+      - name: Publish rolling release «latest»
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('dist/*.pdf') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -f latest
+          git push -f origin latest
+          gh release view latest >/dev/null 2>&1 || \
+            gh release create latest --prerelease --title "Конспекты (последняя сборка main)" \
+              --notes "PDF всех конспектов и теории курсов, собранные из main."
+          gh release upload latest dist/*.pdf --clobber
+          # --clobber only adds and replaces: drop PDFs that main no longer builds (e.g. the old
+          # <course>-registry.pdf), so a saved link fails instead of serving a frozen copy.
+          for asset in $(gh release view latest --json assets --jq '.assets[].name'); do
+            [[ -f "dist/$asset" ]] || gh release delete-asset latest "$asset" --yes
+          done

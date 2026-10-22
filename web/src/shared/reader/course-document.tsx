@@ -1,0 +1,44 @@
+import { useDocMeta, useFragment } from "#web/api/queries.ts";
+import { readingMinutes } from "#web/domain/text.ts";
+import { DocPage } from "#web/shared/ui/doc-page.tsx";
+import { DocToc } from "#web/shared/ui/doc-toc.tsx";
+
+import { FragmentView } from "./fragment-view.tsx";
+import { useScrollToHash } from "./use-scroll-to-hash.ts";
+
+type Props = {
+  readonly course: string;
+  readonly courseName: string;
+  /** `theory`, `kr1`… — the document directory and the PDF name. */
+  readonly docId: string;
+  readonly note: string;
+  /** Crumb, title and TOC caption: «Теория», «Подготовка к КР-1». */
+  readonly pageName: string;
+  readonly variant: "prep" | "theory";
+};
+
+/** A course-wide document (theory, test preparation): TOC on the side, the fragment, the PDF button. */
+export const CourseDocument = ({ course, courseName, docId, note, pageName, variant }: Props) => {
+  const meta = useDocMeta(course, docId);
+  const html = useFragment(course, docId);
+  useScrollToHash();
+
+  return (
+    <DocPage
+      aside={<DocToc caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />}
+      course={course}
+      courseName={courseName}
+      note={note}
+      pageName={pageName}
+      pdfDoc={docId}
+    >
+      <FragmentView
+        course={course}
+        docId={docId}
+        html={html}
+        lecture={undefined}
+        variant={variant}
+      />
+    </DocPage>
+  );
+};
