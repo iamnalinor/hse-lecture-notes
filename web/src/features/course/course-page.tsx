@@ -56,7 +56,7 @@ export const Component = () => {
             <Link
               className={
                 isUpcoming(prep, today)
-                  ? `${BUTTON} border-org-fill bg-org-fill text-on-org-fill hover:bg-org-fill-hover`
+                  ? `${BUTTON} border-org-fill bg-org-fill text-on-org-fill hover:border-org-fill-hover hover:bg-org-fill-hover`
                   : BUTTON
               }
               key={prep.id}
