@@ -16,6 +16,7 @@ title: "Теория: дискретная математика"
 - НОД и НОК — натуральные числа, определённые через делимость: $\gcd(0, 0) = 0$, $\operatorname{lcm}(0, a) = 0$; в формулах $\gcd$, $\operatorname{lcm}$, в тексте НОД, НОК (замечание [-@rem:lec07:gcd-natural]).
 - $\varphi(m)$ считает взаимно простые с $m$ числа среди $0, 1, \dots, m - 1$; $a^{-1}$ и $a^{-k} = (a^{-1})^k$ по модулю $m$ — числа из $\{0, \dots, m - 1\}$ и их степени, а не дроби (определения [-@def:lec07:inverse], [-@def:lec07:neg-power]).
 - Решение сравнения $ax \equiv c \pmod m$ — число из $\{0, \dots, m - 1\}$, решение системы — кортеж чисел из $\{0, \dots, \mu - 1\}$, $\mu$ — НОК модулей; поэтому «число решений» всегда считается по модулю (НОК) исходных модулей (замечание [-@rem:lec08:solution-convention], определение [-@def:lec08:system]).
+- Композиция отношений читается справа налево: в $Q \circ P$ первым действует $P$, как в $g(f(x))$; в курсе алгебры подстановки, наоборот, умножаются слева направо (замечание [-@rem:lec09:order]).
 
 # Лекция 1 — Истинность, ложность и высказывания
 
@@ -567,6 +568,68 @@ $c_1, \dots, c_n$ попарно взаимно просты, если $\gcd(c_i
 
 ::: {.theorem ref="thm:lec08:crt" status="доказано в лекции 8"}
 Китайская теорема об остатках: если $m_1, \dots, m_n > 1$ попарно взаимно просты, то для любых $a_1, \dots, a_n$ система $x \equiv a_i \pmod{m_i}$ имеет единственное решение $x$ с $0 \le x < m_1 \cdots m_n$. *Идея:* единственность — НОК модулей равен произведению; существование — индукция по $n$: первые $n$ сравнений сворачиваются в $x \equiv x_0 \pmod \mu$, и при $\mu u + mv = 1$ число $x_1 = a\mu u + x_0 mv$ решает пару $x \equiv x_0 \pmod \mu$, $x \equiv a \pmod m$.
+:::
+
+# Лекция 9 — Бинарные отношения
+
+::: {.definition ref="def:lec09:relation"}
+Бинарное отношение между $A$ и $B$ — любое $R \subseteq A \times B$; при $A = B$ — отношение на $A$. Запись $xRy$ означает $(x, y) \in R$.
+:::
+
+::: {.definition ref="def:lec09:dom-rng"}
+$\operatorname{dom} R = \{a \mid \exists b\, (a, b) \in R\}$, $\operatorname{rng} R = \{b \mid \exists a\, (a, b) \in R\}$, поле — $\operatorname{dom} R \cup \operatorname{rng} R$.
+:::
+
+::: {.definition ref="def:lec09:identity"}
+$\mathrm{id}_A = \{(x, x) \mid x \in A\}$.
+:::
+
+::: {.definition ref="def:lec09:converse"}
+$R^{-1} = \{(b, a) \mid (a, b) \in R\}$; $(b, a) \in R^{-1} \iff (a, b) \in R$, $\operatorname{dom} R^{-1} = \operatorname{rng} R$, $\operatorname{rng} R^{-1} = \operatorname{dom} R$.
+:::
+
+::: {.definition ref="def:lec09:complement"}
+Для $R \subseteq A \times B$: $\overline{R} = (A \times B) \setminus R$ (зависит от выбора $A$ и $B$).
+:::
+
+::: {.lemma ref="lem:lec09:converse-props" status="доказано в лекции 9"}
+$(P^{-1})^{-1} = P$; $(P \cup Q)^{-1} = P^{-1} \cup Q^{-1}$; $(P \cap Q)^{-1} = P^{-1} \cap Q^{-1}$; для $P \subseteq A \times B$: $(\overline{P})^{-1} = \overline{P^{-1}}$ (дополнения до $A \times B$ и $B \times A$). *Идея:* цепочка равносильностей для произвольной пары.
+:::
+
+::: {.corollary ref="cor:lec09:converse-mono" status="доказано в лекции 9"}
+Если $P \subseteq Q$, то $P^{-1} \subseteq Q^{-1}$. *Идея:* $Q = P \cup Q$ и обращение объединения.
+:::
+
+::: {.proposition ref="prop:lec09:converse-ne-complement" status="доказано в лекции 9"}
+Если $R \subseteq A \times B$, $A \ne \varnothing$, $B \ne \varnothing$, то $R^{-1} \ne \overline{R}$. *Идея:* $R = \varnothing$ не подходит; из $(a, b) \in R$ получаем $b \in A \cap B$, и для пары $(b, b)$ выходит $(b, b) \in R \iff (b, b) \notin R$.
+:::
+
+::: {.definition ref="def:lec09:composition"}
+$Q \circ P = \{(a, c) \mid \exists b\, (aPb \wedge bQc)\}$ — сначала $P$, потом $Q$.
+:::
+
+::: {.proposition ref="prop:lec09:identity-unit" status="доказано в лекции 9"}
+Если $R \subseteq A \times B$, то $R \circ \mathrm{id}_A = R = \mathrm{id}_B \circ R$.
+:::
+
+::: {.theorem ref="thm:lec09:assoc" status="доказано в лекции 9"}
+$R \circ (Q \circ P) = (R \circ Q) \circ P$. *Идея:* обе части — «путь $P$, $Q$, $R$»; переставить $\exists b\, \exists c$ и вносить/выносить конъюнкт, не зависящий от переменной квантора.
+:::
+
+::: {.theorem ref="thm:lec09:converse-comp" status="доказано в лекции 9"}
+$(Q \circ P)^{-1} = P^{-1} \circ Q^{-1}$. *Идея:* $(c, a) \in Q \circ P \iff \exists b\, (cPb \wedge bQa) \iff \exists b\, (aQ^{-1}b \wedge bP^{-1}c)$.
+:::
+
+::: {.lemma ref="lem:lec09:distrib" status="доказано в лекции 9"}
+$(P \cup Q) \circ R = (P \circ R) \cup (Q \circ R)$; $(P \cap Q) \circ R \subseteq (P \circ R) \cap (Q \circ R)$, и включение бывает строгим. Так же слева: $R \circ (P \cup Q) = (R \circ P) \cup (R \circ Q)$. *Идея:* $\exists$ проходит сквозь $\vee$, но из $\exists (A \wedge B)$ следует лишь $\exists A \wedge \exists B$; левая версия — обращением.
+:::
+
+::: {.definition ref="def:lec09:image"}
+Образ $R[X] = \{b \mid \exists a \in X\ aRb\}$, прообраз $R^{-1}[X] = \{a \mid \exists b \in X\ aRb\}$.
+:::
+
+::: {.proposition ref="prop:lec09:image-props" status="доказано в лекции 9"}
+$R[X \cup Y] = R[X] \cup R[Y]$; $X \subseteq Y \Rightarrow R[X] \subseteq R[Y]$; $R[\varnothing] = \varnothing$; $R[X \cap Y] \subseteq R[X] \cap R[Y]$ (бывает строго); $(R \circ Q)[X] = R[Q[X]]$. *Идея:* те же законы о кванторах, что и для композиции; включение для $\cap$ — из монотонности.
 :::
 
 # Глоссарий курса

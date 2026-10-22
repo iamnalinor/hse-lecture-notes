@@ -1,0 +1,233 @@
+% Контент читлиста КР-1 по дискретной математике (общий для обоих вариантов).
+% \KRcore — ядро (односторонний вариант и лицевая сторона двустороннего).
+% \KRext  — расширение (оборот двустороннего варианта).
+% Порядок разделов — порядок тем билета (prep/discrete/kr1.md).
+
+% ======================================================================
+\newcommand{\KRcore}{%
+\sect{0. Соглашения курса}
+$0\in\N=\{0,1,2,\dots\}$, $\N_+=\N\setminus\{0\}$. Предметная область квантора \textbf{непуста}. С гл.~6 «число» — целое. Остаток: $a=bq+r$, $0\le r<|b|$. Сравнения только при $m>1$. $\gcd,\lcm\in\N$: $\gcd(0,b)=|b|$, $\gcd(0,0)=0$, $\lcm(0,a)=0$. Простое: $p>1$, делители только $\pm1,\pm p$ ($0$, $1$, отрицательные — ни простые, ни составные). Решение сравнения $ax\equiv c\pmod m$ — число из $\{0,\dots,m-1\}$; решение системы — из $\{0,\dots,\mu-1\}$, $\mu=\lcm$ \emph{исходных} модулей. $a^{-1}$ по модулю $m$ — число из $\{0,\dots,m-1\}$, не дробь.
+
+\sect{1. Тавтологии и корректные рассуждения}
+{\centering\setlength{\tabcolsep}{1.6pt}\begin{tabular}{cc|ccccc}
+$A$&$B$&$\neg A$&$A\wedge B$&$A\vee B$&$A\to B$&$A\leftrightarrow B$\\\hline
+0&0&1&0&0&1&1\\
+0&1&1&0&1&1&0\\
+1&0&0&0&1&\textbf{0}&0\\
+1&1&0&1&1&1&1
+\end{tabular}\par}
+$[A\wedge B]=\min=[A][B]$, $[A\vee B]=\max$, $[\neg A]=1-[A]$; $[A\to B]=1\iff[A]\le[B]$; $[A\leftrightarrow B]=1\iff[A]=[B]$.
+
+\sub{Скобки.} $\neg$ сильнее $\wedge,\vee$, они сильнее $\to$; $X\wedge Y\wedge Z=(X\wedge Y)\wedge Z$. \trap $\wedge$ против $\vee$, $A\to B\to C$, $\leftrightarrow$ — скобки обязательны (приоритета нет).
+
+\sub{Перевод.} «$A$, если $B$» $=B\to A$; «$A$, только если $B$» $=A\to B$; «$A$ достаточно для $B$» $=A\to B$; «$A$ необходимо для $B$» $=B\to A$. «Или» неисключающее; «ровно одно»: $(A\vee B)\wedge\neg(A\wedge B)$.
+
+\sub{Законы.} $A\to B\equiv\neg A\vee B$;\quad $\neg(A\to B)\equiv A\wedge\neg B$;\quad $A\to B\equiv\neg B\to\neg A$ (контрапозиция; \trap обратная $B\to A$ \emph{не} равносильна);\quad $\neg(A\wedge B)\equiv\neg A\vee\neg B$, $\neg(A\vee B)\equiv\neg A\wedge\neg B$;\quad $A\leftrightarrow B\equiv(A\to B)\wedge(B\to A)$; $\neg\neg A\equiv A$; коммут., ассоц. $\wedge,\vee$. Проверяются по случаям: $A\wedge(B\vee C)\equiv(A\wedge B)\vee(A\wedge C)$, $A\vee(B\wedge C)\equiv(A\vee B)\wedge(A\vee C)$;\ $A\to(B\to C)\equiv A\wedge B\to C$;\ $(A\to B)\wedge(A\to C)\equiv A\to B\wedge C$;\ $(A\to C)\wedge(B\to C)\equiv A\vee B\to C$;\ $(A\to C)\vee(B\to C)\equiv A\wedge B\to C$;\ $\neg(A\leftrightarrow B)\equiv A\leftrightarrow\neg B$.
+
+\sub{Определения.} $F\equiv G$: $[F]=[G]$ при всех значениях атомов. Тавтология: $[F]=1$ всегда; выполнима: $[F]=1$ хоть при одном наборе. $F$ тавтология $\iff\neg F$ невыполнима; $F\equiv G\iff F\leftrightarrow G$ — тавтология. Рассуждение «$A_1,\dots,A_n$; след.\ $C$» \textbf{корректно}, если не бывает истинных посылок при ложном выводе. Если $(A_1\wedge\ldots\wedge A_n)\to C$ — тавтология, то корректно (обратное неверно: набор может не реализоваться, атомы связаны по смыслу).
+
+\sub{Метод «пусть $[F]=0$».} 1) Расставить скобки, найти главную связку. 2) Вынужденные значения: $[X\to Y]=0\Ra[X]=1,[Y]=0$; $[X\vee Y]=0\Ra$ обе $0$; $[X\wedge Y]=1\Ra$ обе $1$; $[X\leftrightarrow Y]$ — равны/различны. 3) Развилка при $[X\vee Y]=1$, $[X\wedge Y]=0$, $[X\to Y]=1$ — разобрать \emph{все} случаи. 4) Противоречие во всех ветках $\Ra$ тавтология; ветка без противоречия — контрнабор.
+\trap Одна ветка с противоречием ничего не доказывает.\ \trap Контрнабор подставить в исходную формулу.\ \trap Некорректность: описать ситуацию словами (атомы назвать).
+
+\sect{2. Индукция по построению}
+\sub{Строки.} $S(A)$: $\nil\in S(A)$; $x\in A$, $s\in S(A)\Ra x:s\in S(A)$; других нет. $[x_1,\dots,x_n]=x_1:(x_2:(\dots(x_n:\nil)\dots))$.
+(A1) $\nil\ne x:s$;\ (A2) $x:s=y:t\iff x=y\wedge s=t$.\\
+(ПИ) $P(\nil)\wedge\forall s\,\forall x\,(P(s)\to P(x:s))\to\forall s\,P(s)$.\\
+$\lh(\nil)=0$, $\lh(x:s)=1+\lh(s)$;\ $\app(\nil,t)=t$, $\app(x:s,t)=x:\app(s,t)$;\ $\rev(\nil)=\nil$, $\rev(x:s)=\app(\rev(s),[x])$.\\
+Факты: $\app(s,\nil)=s$; $\app(s,\app(t,r))=\app(\app(s,t),r)$; $\lh(\app(s,t))=\lh(s)+\lh(t)$; $\rev(\app(s,t))=\app(\rev(t),\rev(s))$; $\rev(\rev(s))=s$; $\app(s,t)=\app(s,r)\Ra t=r$; $\app(s,t)=\nil\Ra s=t=\nil$; $y:s\ne s$; $x:a=\app([x],a)$; $\rev([x])=[x]$.\\
+\textbf{Схема:} $P(s)$ явно; база $P(\nil)$; переход: дано $P(s)$, доказать $P(x:s)$ цепочкой равенств, у каждого — причина (опр.\ $\app$, ПИ, \dots). Индукция — по \textbf{первому} аргументу $\app$. Застряло — усилить: $\forall a\,(\dots)$ (накопитель).
+
+\sub{Формулы.} Сильная индукция по числу $k$ связок, $\varphi(k)$: «для \emph{всех} формул с $k$ связками \dots». База $k=0$: $F=A_i$. Переход $k>0$: $F=\neg G$ или $F=G\ast H$ ($\ast$ — главная), в $G,H$ связок $<k$ — к ним ПИ; каждую разрешённую связку отдельно. «Не всегда» — одна малая формула-контрпример ($A_1\wedge A_2$, $A_1\leftrightarrow A_2$).
+\trap ПИ — для всех формул с \emph{меньшим} числом связок, не «$k-1$».
+Типовые факты: только $\wedge,\vee$: все атомы $0\Ra[F]=0$, все $1\Ra[F]=1$ (не тавтология, выполнима). Только $\to,\leftrightarrow$: все $1\Ra[F]=1$. Только $\vee,\to$: $\exists i$: $[A_i]=1\Ra[F]=1$ ($i$ из правой части $H$). Без $\neg$, бинарные: вхождений атомов $=$ связок $+1$.
+
+\sect{3. Рыцари и лжецы}
+$K_X$ — «$X$ рыцарь»; $X$ сказал $S_X$ $\Ra$ $[K_X]=[S_X]$, т.\,е.\ выполнима $\bigwedge_X(K_X\leftrightarrow S_X)$. «$X$: $Y$ лжец» $\iff$ $X$, $Y$ разного типа. «$X$: я лжец» не может сказать никто. Импликация с ложной посылкой истинна.
+1) Записать условия. 2) Начать с высказывания о себе / «среди нас», или с несовместных (истинно $\le1$). 3) Разбор «рыцарь/лжец» ключевого. 4) \textbf{Проверка}: каждое высказывание рыцаря истинно, лжеца — ложно.
+\trap «Иначе противоречие $\Ra$ рыцарь» не доказывает, что решение есть — нужна проверка.\ «Верно ровно одно»: перебирать, \emph{какое} истинно, или классы $x$ (чёт/нечет).
+
+\sect{4. Предикаты и кванторы}
+$\neg\forall x\,A\equiv\exists x\,\neg A$, $\neg\exists x\,A\equiv\forall x\,\neg A$. $\forall x\in A\ \varphi\equiv\forall x\,(x\in A\to\varphi)$, $\exists x\in A\ \varphi\equiv\exists x\,(x\in A\wedge\varphi)$; $\neg\forall x\in A\,\varphi\equiv\exists x\in A\,\neg\varphi$. Квантор связывает сильнее бинарной связки: $\forall x\,A(x)\to B=(\forall x\,A(x))\to B$.\\
+«Все $P$ — $Q$»: $\forall x\,(P\to Q)$; «некоторые $P$ — $Q$»: $\exists x\,(P\wedge Q)$; «ни один $P$ не $Q$»: $\forall x\,(P\to\neg Q)$; «только $P$ — $Q$»: $\forall x\,(Q\to P)$. Единственный: $\exists x\,(A(x)\wedge\forall y\,(A(y)\to y=x))$. Имена — константы.\\
+$\forall(A\wedge B)\equiv\forall A\wedge\forall B$; $\exists(A\vee B)\equiv\exists A\vee\exists B$; \trap $\exists(A\wedge B)\Ra\exists A\wedge\exists B$ и $\forall A\vee\forall B\Ra\forall(A\vee B)$ — только в одну сторону. $\exists y\,\forall x\,A\Ra\forall x\,\exists y\,A$, обратное неверно ($\forall x\,\exists y\,y>x$ в $\N$).\\
+\textbf{Корректность:} пусть посылки истинны; $\exists$-посылка $\to$ объект с \textbf{новым} именем; $\forall$-посылка $\to$ подставить; $\forall$-вывод $\to$ произвольный $x'$; $\exists$-вывод $\to$ предъявить свидетеля. \textbf{Некорректность:} опровергающая модель — непустая область из 1–3 объектов, таблица предикатов; проверить \emph{каждую} посылку на \emph{каждом} объекте и ложность вывода.
+\trap $\exists x\,(\text{Ст}(x)\to\text{Пр}(x))$ — не «некоторые студенты прилежны».\ \trap Пустая истина: $\forall x\,(A\to B)$ верно, если $A$ ложно всюду.\ \trap Переименование не должно захватывать свободную переменную.
+
+\sect{5. Множества}
+$A\subseteq B\iff\forall x\,(x\in A\Ra x\in B)$; $A=B\iff A\subseteq B\wedge B\subseteq A$. $X\in\Pw(A)\iff X\subseteq A$. $x\in\bigcup A\iff\exists\alpha\,(x\in\alpha\wedge\alpha\in A)$. $A\cap B=\{x\in A\mid x\in B\}$, $A\setminus B=\{x\in A\mid x\notin B\}$, $\bar A=U\setminus A$, $A\setminus B=A\cap\bar B$. $A\subseteq B\iff A\cap B=A\iff A\cup B=B$. $\varnothing\subseteq B$ всегда.\\
+\textbf{Тождества} ($A,B,C\subseteq U$): коммут., ассоц. $\cap,\cup$; $A\cap A=A\cup A=A$; поглощение $A\cap(A\cup B)=A$, $A\cup(A\cap B)=A$; $\bar{\bar A}=A$; $A\cap(B\cup C)=(A\cap B)\cup(A\cap C)$, $A\cup(B\cap C)=(A\cup B)\cap(A\cup C)$; $\overline{A\cap B}=\bar A\cup\bar B$, $\overline{A\cup B}=\bar A\cap\bar B$; $A\cap\varnothing=\varnothing$, $A\cup\varnothing=A$, $A\cap U=A$, $A\cup U=U$; $A\cap\bar A=\varnothing$, $A\cup\bar A=U$. Ещё: $A\setminus(B\cup C)=(A\setminus B)\cap(A\setminus C)$, $A\setminus(B\cap C)=(A\setminus B)\cup(A\setminus C)$. \trap Разность не ассоциативна.\\
+$A\sd B=(A\setminus B)\cup(B\setminus A)$: $x\in A\sd B\iff$ ровно одно из $x\in A$, $x\in B$.\\
+\textbf{«Всегда ли».} Таблица принадлежности ($2^k$ строк «$x$ в $A$/$B$/$C$», $0/1$), сравнить столбцы частей. Строка расхождения $\Ra$ контрпример: $A,B,C\subseteq\{1\}$ по этой строке, вычислить обе части. Верно $\Ra$ два включения через произвольный $x$ (или вся таблица). Неверно $\Ra$ проверить каждое включение. $n$ множеств: $x\in\bigcup A_i$ — «для некоторого $i$», $x\notin\bigcup B_j$ — «для всех $j$».
+\trap Диаграмма — не доказательство.\ \trap $\varnothing\in\Pw(B)$ всегда, $\varnothing\in B$ — не всегда; $A\in\Pw(A)$ всегда, $A\subseteq\Pw(A)$ — нет; $\Pw(\varnothing)=\{\varnothing\}$.\\
+$a\notin a$, $a\ne\{a\}$ (нет цепочек $x_0\ni x_1\ni\dots$). Пара $(a,b)=\{\{a\},\{a,b\}\}$, $(a,a)=\{\{a\}\}$; $(a,b)=(c,d)\iff a=c\wedge b=d$. $A\times\varnothing=\varnothing$; $A^0=\{\varnothing\}$, $A^1=A$, $A^{n+1}=A^n\times A$ ($n\ge1$); кортеж $(a_1,\dots,a_n)=((\dots(a_1,a_2)\dots),a_n)$.
+
+\sect{6. Индукция на \texorpdfstring{$\N$}{N}}
+ПМИ: $\varphi(0)\wedge\forall n\,(\varphi(n)\to\varphi(n+1))\to\forall n\,\varphi(n)$. С базой $n_0$: $\varphi(n_0)$ и $\varphi(n)\to\varphi(n+1)$ при $n\ge n_0$ $\Ra$ $\varphi(n)$ при $n\ge n_0$. ПСИ: если $\forall n$ из $\varphi(0),\dots,\varphi(n-1)$ следует $\varphi(n)$, то $\forall n\,\varphi(n)$.\\
+\textbf{Схема:} 1) $\varphi(n)$ и принцип явно. 2) База вычислением («все натуральные» $\Ra n=0$). 3) Переход: что дано, что доказать, где применено ПИ. Делимость: $x_{n+1}=c\,x_n+(\text{кратное }d)$. Сумма: $S_{n+1}=S_n+$последнее слагаемое. Неравенство: ПИ, затем отдельная оценка, указать где $n\ge n_0$ ($2^n>n^2$ при $n=0,1$ и $n\ge5$, ложно при $2,3,4$). Не проходит — усилить утверждение. Сильная индукция: проверить отдельно $n$, где переход опирается на несуществующие (напр. $n=0,1$).
+\trap База должна совпадать с началом области перехода.\ \trap Не начинать с $\varphi(n+1)$ «до верного равенства».\ \trap Переход проверить при самом малом $n$ («лошади»).\ Пустая сумма $0$, пустое произведение $1$.
+
+\sect{7. Принципы индукции как формулы}
+$\Prog(X)$: $\forall n\,(\forall m<n\ (m\in X)\to n\in X)$; $\Prog(X)\Ra0\in X$ (пустая истина).\\
+ПСИ: $\forall n\,\bigl(\forall m\,(m<n\to P(m))\to P(n)\bigr)\to\forall n\,P(n)$;\\
+ПНЧ: $\exists n\,P(n)\to\exists n\,\bigl(P(n)\wedge\forall m\,(m<n\to\neg P(m))\bigr)$;\\
+ПМИ: $P(0)\wedge\forall n\,(P(n)\to P(n+1))\to\forall n\,P(n)$. ПСИ $\LRa$ ПНЧ $\LRa$ ПМИ (на $\N$).\\
+\textbf{Новая область/порядок:} выписать формулу, назвать область и $<$. \emph{Опровергнуть}: $P$ с истинной посылкой и ложным $\forall x\,P(x)$; для ПСИ — прогрессивное не всюду ($P(x)$: «$x\ne x$», если у каждого $x$ есть $y<x$; или «$x=$ наименьший»), для ПНЧ — непустое без наименьшего. \emph{Доказать}: ПНЧ сведением к $\N$, затем ПСИ: если $P$ прогрессивно и не всюду, $x_0=\min\{x\mid\neg P(x)\}$, все $y<x_0$ дают $P(y)$ $\Ra P(x_0)$ — противоречие.
+\trap Наименьший элемент области — мало: нужен у \emph{каждого} непустого подмножества ($\{x\in\Q\mid x\ge0\}$: ПСИ ложен).
+
+\sect{8. Делимость, остатки, НОД}
+$a\mid b\iff\exists k\in\Z\ b=ak$. $a\mid0$, $0\mid0$, $1\mid a$; $0\mid a\Ra a=0$; $a\mid1\Ra a=\pm1$; $a\mid b\mid c\Ra a\mid c$; $a\mid b\wedge b\mid a\Ra a=\pm b$; $a\mid b,c\Ra a\mid bx+cy$; $a\mid b$, $a\mid b+c\Ra a\mid c$.\\
+\textbf{Деление с остатком} ($b\ne0$): $\exists!\,(q,r)$, $a=bq+r$, $0\le r<|b|$. $-50=7\cdot(-8)+6$; $50=(-7)(-7)+1$; $-5=3\cdot(-2)+1$. \trap $r\ge0$ всегда; при $a<0$ — ближайшее кратное $|b|$ \emph{слева}.\\
+$a\equiv b\pmod m\iff m\mid a-b\iff$ остатки равны. Сравнения по одному $m$ можно $\pm$, $\times$, возводить в одну степень $n\in\N$, заменять слагаемое/множитель/\textbf{основание} сравнимым.
+\trap Сокращать — только на $c$ с $\gcd(c,m)=1$ ($2\cdot3\equiv2\cdot8\pmod{10}$, $3\not\equiv8$).\ \trap Показатель на сравнимый по $m$ менять нельзя ($2^{10}\equiv2$, $2^3\equiv1\pmod7$).\\
+Признаки: $n\equiv$ сумма цифр $\pmod9$ (и $\pmod 3$); $n\equiv d_0-d_1+d_2-\dots\pmod{11}$.\\
+\begin{tabular}{@{}l|l|l@{}}
+$m$&квадраты $\bmod m$&кубы $\bmod m$\\\hline
+3&0,1&0,1,2\\
+4&0,1&0,1,3\\
+5&0,1,4&все\\
+7&0,1,2,4&0,1,6\\
+8&0,1,4&0,1,3,5,7\\
+9&0,1,4,7&0,1,8
+\end{tabular}\\
+«Для всех $n$» (делимость на малое $m$) — перебор остатков $n$ по $m$.\\
+\textbf{ОТА:} $n\ge1$ — произведение простых, единственно (порядок, нулевые степени). $\deg(p,n)$ ($n\ne0$); $\deg(p,ab)=\deg(p,a)+\deg(p,b)$; $a\mid b\iff\deg(p,a)\le\deg(p,b)\ \forall p$ ($a,b\ne0$). Простых бесконечно много. $p\mid ab\Ra p\mid a\vee p\mid b$.\\
+\textbf{НОД/НОК:} $\gcd=\prod p^{\min}$, $\lcm=\prod p^{\max}$; $\gcd(a,b)\lcm(a,b)=|ab|$; $\gcd(a,b)=\gcd(a+bq,b)=\gcd(r,b)$. $\gcd(a,b)=1\iff$ нет общего простого. $a\mid bc$, $\gcd(a,b)=1\Ra a\mid c$. Безу: $\exists u,v$: $au+bv=\gcd(a,b)$; $\frac a{\gcd},\frac b{\gcd}$ взаимно просты. $\gcd$ выражений от $n$: вычитать кратные до константы, затем при каких $n$ достигается каждый делитель.
+
+\sect{9. Теоремы Эйлера и Ферма}
+$\varphi(m)$ ($m>1$) — число $k\in\{0,\dots,m-1\}$ с $\gcd(k,m)=1$; $\varphi(p)=p-1$; перебором: убрать из $1,\dots,m-1$ кратные простых делителей $m$.\\
+{\setlength{\tabcolsep}{0.95pt}\begin{tabular}{@{}r|*{14}{r}@{}}
+$m$&2&3&4&5&6&7&8&9&10&11&12&13&14&15\\
+$\varphi$&1&2&2&4&2&6&4&6&4&10&4&12&6&8\\\hline
+$m$&16&17&18&19&20&21&22&24&25&26&27&28&30&36\\
+$\varphi$&8&16&6&18&8&12&10&8&20&12&18&12&8&12
+\end{tabular}}\\
+\textbf{Эйлер:} $m>1$, $\gcd(a,m)=1\Ra a^{\varphi(m)}\equiv1\pmod m$. \textbf{МТФ:} $p$ простое, $p\nmid a\Ra a^{p-1}\equiv1\pmod p$; $a^p\equiv a\pmod p$ для \emph{всех} $a$.\\
+\textbf{Показатель:} $\gcd(a,m)=1$, $\varphi(m)\mid x-y\Ra a^x\equiv a^y$ ($x,y\in\Z$; $a^{-k}=(a^{-1})^k$).\\
+\textbf{Обратный:} $\exists a^{-1}\pmod m\iff\gcd(a,m)=1$; из $au+mv=1$: $a^{-1}=$ остаток $u$ по $m$ (или подбор кратных $a$).\\
+\textbf{Остаток $a^e\bmod m$:} 1) основание $\to$ остаток (удобно $-1,-2$). 2) Проверить $\gcd(a,m)=1$, найти $\varphi(m)$. 3) $e\bmod\varphi(m)$ (можно отрицательный). Башня $a^{b^c}$: $b^c\bmod\varphi(m)$ — отдельная задача, нужен $\gcd(b,\varphi(m))=1$, иначе искать период степеней $b$ напрямую. 4) Квадраты $a^2,a^4,a^8,\dots$ с приведением, $e$ — сумма степеней 2. 5) Ответ из $\{0,\dots,m-1\}$, каждая строка цепочки.
+\trap Показатель — по $\varphi(m)$, не по $m$.\ \trap Без $\gcd=1$ приводить нельзя ($2^3\equiv0\not\equiv2^1\pmod4$).\ \trap Обращение МТФ ложно: $2^{340}\equiv1\pmod{341}$, $341=11\cdot31$. Период может быть меньше $\varphi(m)$.
+
+\sect{10. Линейные уравнения и сравнения}
+\textbf{Расширенный Евклид} ($a,b>0$). Строка $k$: $r_k$, $q_k$, $u_k$, $v_k$; $q_k$ — частное от деления $r_{k-1}$ на $r_k$. Строка $0$: $(a,-,1,0)$, строка $1$: $(b,q_1,0,1)$; строка $k+2$ $=$ строка $k$ $-\,q_{k+1}\cdot$ строка $k+1$. Стоп при $r=0$; $\gcd=$ последний ненулевой $r_s$, $\gcd=au_s+bv_s$. Контроль: $r_k=au_k+bv_k$ в \emph{каждой} строке.\par
+{\centering\begin{tabular}{@{}c|rrrr@{}}
+$k$&$r_k$&$q_k$&$u_k$&$v_k$\\\hline
+0&45&—&1&0\\
+1&37&1&0&1\\
+2&8&4&1&$-1$\\
+3&5&1&$-4$&5\\
+4&3&1&5&$-6$\\
+5&2&1&$-9$&11\\
+6&1&2&14&$-17$\\
+7&0&&&
+\end{tabular}\par}
+$45\cdot14+37\cdot(-17)=1$; $45^{-1}\equiv14\pmod{37}$, $37^{-1}\equiv-17\equiv28\pmod{45}$. Отрицательные $a,b$: считать для $|a|,|b|$, затем сменить знак коэффициента при отрицательном числе.\\
+\textbf{$ax+by=c$} ($a,b\ne0$, $d=\gcd(a,b)$): разрешимо $\iff d\mid c$. Все решения $(x_0-b't,\ y_0+a't)$, $t\in\Z$, $a'=\frac ad$, $b'=\frac bd$. Шаги: $d$; сократить на $d$; Евклид для $a',b'$: $a'u+b'v=1$; $x_0=uc'$, $y_0=vc'$; общее решение; \textbf{проверка подстановкой}; для $x,y\ge0$ — неравенства на $t$.
+\trap Шаг — $b',a'$, не $b,a$.\ \trap Для $ax-by=c$ коэффициент при $y$ равен $-b$.\\
+\textbf{$ax\equiv c\pmod m$} ($a\ne0$, $d=\gcd(a,m)$): разрешимо $\iff d\mid c$; ровно $d$ решений $x_0,x_0+m',\dots,x_0+(d-1)m'$, $m'=\frac md$, $x_0\equiv(a')^{-1}c'\pmod{m'}$. $m\mid a$: все $x$ при $m\mid c$, иначе нет. Пример: $12x\equiv-15\pmod9$: $d=3$, $4x\equiv-5\pmod3\iff x\equiv1$; ответ $1,4,7$.
+\trap Сокращая на $d$, делить и модуль.\\
+\textbf{КТО:} $m_1,\dots,m_n>1$ попарно взаимно просты $\Ra$ $x\equiv a_i\pmod{m_i}$ имеет ровно одно решение в $[0,m_1\cdots m_n)$. \textbf{Подстановка:} $x=a_1+m_1t$ во второе $\to$ линейное сравнение на $t$ $\to$ $x\bmod m_1m_2$, далее так же. Формула: $\mu u+mv=1\Ra x=a\mu u+x_0mv$ решает $x\equiv x_0\ (\mu)$, $x\equiv a\ (m)$.
+\textbf{Два сравнения:} совместны $\iff\gcd(m_1,m_2)\mid a_1-a_2$; тогда одно решение по $\lcm(m_1,m_2)$.
+\textbf{Не взаимно простые модули:} разложить каждый модуль на степени разных простых, собрать сравнения по одному простому, проверить согласованность, склеить по КТО. Каждое сравнение сначала к виду $x\equiv\dots$ (или совокупность «или»). Полиномиальное — перебор остатков ($x^p\equiv x\pmod p$ понижает степень).
+\trap Число решений системы — по модулю $\mu=\lcm$ \emph{исходных} модулей: $s$ решений по $M$ дают $s\cdot\frac\mu M$.\ \trap $18=2\cdot9$, не $3\cdot6$.\ \trap «Попарно взаимно просты» $\ne$ «НОД всех $=1$» ($6,10,15$).
+}
+
+% ======================================================================
+\newcommand{\KRext}{%
+\sect{1. Тавтологии: мини-примеры}
+\textbf{Тавтология.} $(\neg A\wedge(B\to C\vee D))\to((\neg D\to A)\vee(\neg C\to\neg B))$. Пусть $0$: заключение $0\Ra[\neg D\to A]=0$: $D=0,A=0$; $[\neg C\to\neg B]=0$: $C=0,B=1$. Посылка: $[B\to C\vee D]=[1\to0]=0$ — посылка ложна, противоречие. Все шаги вынужденные $\Ra$ тавтология.\\
+\textbf{Не тавтология (развилка).} $((A\to B)\wedge(B\to C))\to((A\vee C)\to(B\wedge C))$: $[A\vee C]=1$, $[B\wedge C]=0$. $A=1\Ra B=1\Ra C=1$ — противоречие; $A=0\Ra C=1$, $B=0$ — без противоречия. Проверка $A=B=0$, $C=1$: $[1\to(1\to0)]=0$.\\
+\textbf{Эквивалентность} — сравнить случаи ложности; опровергнуть — один набор с $[F]\ne[G]$. $(A\to C)\vee(B\to C)\not\equiv A\vee B\to C$: $A=1,B=C=0$.\\
+\textbf{Рассуждение.} Атомы $S,M,E,G$: $(S\to M\vee E)\wedge(E\to G)\wedge\neg G\to\neg S$. Пусть $0$: $S=1$, $G=0\Ra E=0\Ra M=1$; без противоречия $\Ra$ некорректно: «сдал, получил автомат, не пошёл, не готовился».\\
+\trap Корректность $\ne$ истинность вывода: корректное бывает с ложным выводом, некорректное — с истинным.\ \trap Корректность при не-тавтологии: «Сегодня четверг $\Ra$ не пятница» (атомы связаны).\\
+$A\leftrightarrow B\equiv(A\wedge B)\vee(\neg A\wedge\neg B)$; $\neg(A\wedge B)\equiv A\to\neg B$; $A\vee B\equiv\neg A\to B$; $A\to B\wedge\neg B\equiv\neg A$. Тавтологии: $A\vee\neg A$, $(A\wedge(A\to B))\to B$, $((A\to B)\wedge(B\to C))\to(A\to C)$, $(A\to B)\wedge(\neg A\to B)\to B$.
+
+\textbf{Цепочка эквивалентностей:} замена подформулы на эквивалентную и подстановка формул вместо атомов в законы сохраняют $\equiv$. Пример: $\neg(A\to\neg B)\equiv A\wedge\neg\neg B\equiv A\wedge B$.\\
+\sect{2. Индукция по построению: образцы}
+\textbf{$\lh(\app(s,t))=\lh(s)+\lh(t)$}, индукция по $s$. База: $\lh(\app(\nil,t))=\lh(t)=0+\lh(t)$. Переход: $\lh(\app(x:s,t))\overset{\app}{=}\lh(x:\app(s,t))\overset{\lh}{=}1+\lh(\app(s,t))\overset{\text{ПИ}}{=}1+\lh(s)+\lh(t)\overset{\lh}{=}\lh(x:s)+\lh(t)$.\\
+\textbf{Ассоциативность $\app$} — индукция по $s$: $\app(x:s,\app(t,r))=x:\app(s,\app(t,r))=x:\app(\app(s,t),r)=\app(x:\app(s,t),r)=\app(\app(x:s,t),r)$. По $t$ или $r$ — застревает.\\
+\textbf{$\rev(\app(s,t))=\app(\rev(t),\rev(s))$:} база — $\app(s,\nil)=s$; переход — ассоциативность. \textbf{$\rev(\rev(s))=s$:} $\rev(\rev(x:s))=\rev(\app(\rev(s),[x]))=\app([x],\rev(\rev(s)))=x:s$.\\
+\textbf{Накопитель:} $\rev'(\nil,a)=a$, $\rev'(x:s,a)=\rev'(s,x:a)$. Доказывать $Q(s)$: $\forall a\ \rev'(s,a)=\app(\rev(s),a)$; ПИ применяется к накопителю $x:a$; затем $a:=\nil$.\\
+\textbf{$y:s\ne s$} — индукция по $s$ с предикатом $\forall y\,(y:s\ne s)$; база (A1), переход (A2).\\
+\textbf{Формула: вхождений атомов на 1 больше связок} (без $\neg$): $F=G\ast H$, $k_G+k_H+1=k$, вхождений $(k_G+1)+(k_H+1)=k+1$. С $\neg$ ломается: $\neg A$.\\
+\textbf{$\vee,\to$:} в переходе берём $i$ для $H$: $[H]=1\Ra[G\vee H]=[G\to H]=1$; у $\leftrightarrow$ нет: $[G\leftrightarrow1]=[G]$.\\
+\textbf{$\neg,\leftrightarrow$:} смена одного атома меняет $[F]$ всегда или никогда ($[\neg G]$ как $[G]$; $[G\leftrightarrow H]$ меняется $\iff$ меняется ровно одно из $[G],[H]$). Для $\wedge$ неверно: $A_1\wedge A_2$.
+
+\sect{3. Рыцари и лжецы: образцы}
+\textbf{«Ровно $k$ лжецов»} (5 человек, $k=1..5$): высказывания попарно несовместны $\Ra$ рыцарей $\le1$; пятеро лжецов — тогда 5-й прав, противоречие; итог: 4-й рыцарь.\\
+\textbf{$A$: «$B$ лжец»; $B$: «если $A$ рыцарь, то $C$ лжец»; $C$: «$A$ и $B$ одного типа».} $A,B$ разного типа $\Ra$ $C$ лжёт $\Ra K_C=0$ $\Ra$ импликация $B$ истинна $\Ra B$ рыцарь, $A$ лжец. Проверка всех трёх.
+
+\textbf{«Верно ровно одно»} (а) $x\mid20$, $x<20$; б) $x\in\{5,9\}$; в) $x$ нечётно $\to$ простое; г) $x$ чётно $\to x=10$; д) $x\le4$; е) $x>6$): при чётном $x$ истинно в), при нечётном — г). Нечётное: д), е) ложны $\Ra x=5$, но тогда и б) — два. Чётное: $5\le x\le6$, $x\ne10$ $\Ra x=6$; проверка всех шести.\\
+\sect{4. Предикаты: образцы}
+\textbf{Корректно:} «Когда голоден — домой или в ресторан; иногда голоден и не домой $\Ra$ иногда в ресторан»: $x_0$ из $\exists$, подставить в $\forall$.\ «Каждый любит себя $\Ra$ кто-то кем-то любим» — корректно только благодаря непустоте области.\\
+\textbf{Некорректно:} «Все кошки — млек., все собаки — млек. $\Ra$ все кошки — собаки»: область $\{\text{Мурка},\text{Шарик}\}$.\ «Каждый студент дружит с каким-то старостой; старосты — студенты; староста есть $\Ra$ какой-то староста дружит с собой»: два старосты $h_1,h_2$, $h_1$ дружит с $h_2$, $h_2$ с $h_1$, никто с собой.\\
+Отрицание: проносить $\neg$ по одному квантору; в конце $\neg(P\to Q)\equiv P\wedge\neg Q$, $\neg(P\wedge Q)\equiv P\to\neg Q$. $\neg\exists!x\,A\equiv\forall x\,(A(x)\to\exists y\,(A(y)\wedge y\ne x))$.\\
+\trap Два объекта из двух $\exists$-посылок — \emph{разные} имена (единорог белый и единорог ручной).
+
+\textbf{Отрицание:} $\forall x\,(\text{Ст}(x)\to\exists y\,(\text{Зад}(y)\wedge\forall z\,(\text{Др}(z,x)\to\text{Реш}(z,y))))$ $\leadsto$ $\exists x\,(\text{Ст}(x)\wedge\forall y\,(\text{Зад}(y)\to\exists z\,(\text{Др}(z,x)\wedge\neg\text{Реш}(z,y))))$ — каждый квантор меняется ровно раз.\\
+\textbf{Области:} $\forall x\,\exists y\,(y<x)$: на $\N$ ложна, на $\Z,\Q$ истинна; $\exists x\,\forall y\,(x\le y)$ — наоборот; $\forall x\,\forall y\,(x<y\to\exists z\,(x<z\wedge z<y))$: на $\N,\Z$ ложна ($0,1$), на $\Q$ истинна ($z=\frac{x+y}2$). Константа («2-й проспект») — без квантора.\\
+\sect{5. Множества: образцы и корнер-кейсы}
+\textbf{Таблица принадлежности} для $(A\cup B)\sd(A\cup C)$ vs $A\cup(B\sd C)$: строка $A=B=1$, $C=0$: слева $0$, справа $1$ $\Ra$ $A=B=\{1\}$, $C=\varnothing$: $\varnothing\ne\{1\}$. Включение «$\subseteq$» верно: элемент левой части $\notin A$ и лежит ровно в одном из $B,C$.\\
+$\sd$: коммут., ассоц., $A\sd\varnothing=A$, $A\sd A=\varnothing$, $A\sd B=(A\cup B)\setminus(A\cap B)$, $A\cap(B\sd C)=(A\cap B)\sd(A\cap C)$; \trap $A\cup(B\sd C)\ne(A\cup B)\sd(A\cup C)$.\\
+\textbf{Произведения:} $(A\times B)\cap(C\times D)=(A\cap C)\times(B\cap D)$; $(A\cup B)\times C=(A\times C)\cup(B\times C)$; \trap $(A\times B)\cup(C\times D)\subseteq(A\cup C)\times(B\cup D)$ — только включение ($A=B=\{1\}$, $C=D=\{2\}$: $(1,2)$). $(x,y)\in A\times B\iff x\in A\wedge y\in B$. $A\times C\subseteq B\times C\Ra A\subseteq B$ \emph{только} при $C\ne\varnothing$. $A\times B\ne B\times A$ вообще. $A^0\times A\ne A^1$ (при $A\ne\varnothing$); $\varnothing^0=\{\varnothing\}$, $\varnothing^n=\varnothing$ ($n\ge1$). $(a_1,\dots,a_n)=(b_1,\dots,b_n)\iff\forall i\,a_i=b_i$.\\
+$\Pw(X)=\Pw(Y)\iff X=Y$; $\Pw(\{\varnothing\})=\{\varnothing,\{\varnothing\}\}$. $A=\{\{\varnothing\}\}$: $A\not\subseteq\Pw(A)$.\\
+\textbf{Схемы:} $a\notin a$ — иначе цепочка $a\ni a\ni\dots$. Рассел: нет $R$ с $\forall x\,(x\in R\iff x\notin x)$ — подставить $x:=R$; $\{x\in A\mid x\notin x\}\notin A$ $\Ra$ нет множества всех множеств. Пустое единственно: два пустых — подмножества друг друга. Пара: из $\{a\}\in(c,d)$ получить $a=c$, затем разобрать $\{a,b\}=\{c\}$ / $\{c,d\}$.\\
+«Может ли быть» с $\in$: пример из $\varnothing,\{\varnothing\},\{\{\varnothing\}\}$ или вывести $a\in a$ / бесконечную цепочку $\ni$.
+
+\textbf{Прототипы.} $A\setminus(B\cap C)=(A\setminus B)\cup(A\setminus C)$ — верно. $(A\cup B)\setminus C$ vs $A\cup(B\setminus C)$: $A=C=\{1\}$, $B=\varnothing$ — $\varnothing\ne\{1\}$; верно «$\subseteq$». $A\in B$ и $A\subseteq B$: $A=\varnothing$, $B=\{\varnothing\}$. $\Pw(A)\subseteq A$ — нельзя ($A\in\Pw(A)\Ra A\in A$). $A\in B\in A$ — нельзя (цепочка $A\ni B\ni A\ni\dots$). $A\times(B\setminus C)=(A\times B)\setminus(A\times C)$ — верно. $A\times B=B\times A$, $A\ne B$ — только если одно пусто. $\Pw(A\setminus B)\not\subseteq\Pw(A)\setminus\Pw(B)$ никогда: $\varnothing$ слева есть, справа нет.\\
+\sect{6. Индукция на \texorpdfstring{$\N$}{N}: образцы}
+\textbf{$2^n>n^2$, $n\ge5$:} база $32>25$; переход $2^{n+1}>2n^2\ge n^2+5n>n^2+2n+1=(n+1)^2$ (при $n\ge5$: $n^2\ge5n$, $3n>1$).\\
+\textbf{Усиление:} $\sum_{k=1}^n\frac1{k^2}<2$ — доказывать $\le2-\frac1n$: $2-\frac1n+\frac1{(n+1)^2}\le2-\frac1n+\frac1{n(n+1)}=2-\frac1{n+1}$.\\
+\textbf{Делимость:} $x_{n+1}$ через $x_n$, напр.\ $7^{n+1}-1=7(7^n-1)+6$ $\Ra$ $6\mid7^n-1$.\\
+\textbf{Сильная:} $a+\frac1a\in\Z\Ra a^n+\frac1{a^n}\in\Z$: $a^n+a^{-n}=(a+a^{-1})(a^{n-1}+a^{1-n})-(a^{n-2}+a^{2-n})$; базы $n=0,1$.\\
+\textbf{Минимальный контрпример (ПНЧ):} наименьшее «плохое» $n$, все меньшие хорошие $\Ra$ противоречие (или меньший контрпример — спуск: $8a^4+4b^4+2c^4=d^4$ только нули).\\
+\trap Без базы: $n=n+1$ «переходит». Без перехода: $n<5$. Проверки малых $n$ — не доказательство ($n^2+n+41$).
+
+\textbf{Прототипы.} $16\mid5^n-4n-1$: $x_{n+1}=5x_n+16n$. $\sum_{k=1}^nk(k+1)=\frac{n(n+1)(n+2)}3$: база $n=0$ (пустая сумма), вынести $(n+1)(n+2)$. $\frac1{n+1}+\dots+\frac1{3n+1}>1$: $S_1=\frac{13}{12}$, $S_{n+1}-S_n=\frac1{3n+2}+\frac1{3n+3}+\frac1{3n+4}-\frac1{n+1}>0$. $\frac12\cdot\frac34\cdots\frac{2n-1}{2n}<\frac1{\sqrt{3n}}$: доказывать $\le\frac1{\sqrt{3n+1}}$. $a_0=2$, $a_1=3$, $a_n=3a_{n-1}-2a_{n-2}\Ra a_n=2^n+1$: ПСИ, $n=0,1$ отдельно.\\
+\sect{7. Принципы: схемы доказательств}
+\textbf{ПСИ$\Ra$ПНЧ:} у $X$ нет минимума $\Ra\overline X=\N\setminus X$ прогрессивно $\Ra\overline X=\N$, $X=\varnothing$.\\
+\textbf{ПНЧ$\Ra$ПМИ:} $n=\min\overline X\ne0$, $n=m+1$, $m\in X\Ra n\in X$ — противоречие.\\
+\textbf{ПМИ$\Ra$ПСИ:} ПМИ для $Y=\{n\mid\forall m<n\ (m\in X)\}$: $0\in Y$ (пусто), $n\in Y\Ra n\in X\Ra n+1\in Y$.\\
+\textbf{Примеры областей:} $\Z$ с $x\prec y$: $|x|<|y|$ или ($|x|=|y|$, $x<y$) — порядок $0,-1,1,-2,2,\dots$; ПНЧ верен (наименьший $|x|=k$ по ПНЧ в $\N$, затем $-k$, если он есть, иначе $k$) $\Rightarrow$ ПСИ верен. $\Z$, $\{x\in\Q\mid x>0\}$ с обычным $<$: ПНЧ ложен. $[0,+\infty)$: $X=\{0\}$ прогрессивно, ПСИ ложен.
+
+\textbf{Прототипы.} $M_1=\{\frac1{n+1}\mid n\in\N\}$: ПСИ ложен (нет наименьшего). $M_2=\{-\frac1{n+1}\}\cup\{0\}$: ПСИ истинен (ПНЧ: в непустом $X\subseteq M_2$ наименьший — $-\frac1{n+1}$ с наименьшим $n$, если такие есть, иначе $0$). $\Z$ с $<$: ПНЧ ложен ($X=\Z$).\\
+\sect{8. Делимость: схемы и приёмы}
+\textbf{Деление с остатком:} $q+1=\min\{s\in\N\mid a<bs\}$ (ПНЧ); единственность: $r-r'=b(q'-q)$, $|r-r'|<b$. Для $a<0$, $b>0$: $|a|=bq'+r'$, при $r'>0$ берём $-q'-1$ и $b-r'$.\\
+\textbf{ОТА:} существование и единственность — минимальный контрпример. \textbf{Простых бесконечно:} простой делитель $p_1\cdots p_n+1$ — не $p_i$ (\trap само число не обязано быть простым).\\
+\textbf{Безу:} $d=\min\{as+bt>0\}$ (ПНЧ); остаток от деления $a$ на $d$ того же вида и $<d$ $\Ra0$; $d$ — общий делитель.\\
+\textbf{$\gcd(a+bq,b)=\gcd(a,b)$:} одни и те же общие делители.\\
+\textbf{Приёмы:} «$d\mid A\Ra d\mid B$»: подобрать $k$, $B\equiv kA\pmod d$, выписать $B=kA+d(\dots)$. Не квадрат/куб — остатки по $4,8,9,7$; по $9$ — сумма цифр. $\gcd(2n+3,n+1)=\gcd(1,n+1)=1$. $\gcd(n^2+1,n+1)=\gcd(2,n+1)$ — $2$ при нечётном $n$. Лемма Евклида и «$a\mid bc$, $\gcd(a,b)=1$»: умножить $au+bv=1$ на $c$.\\
+$123456789$: сумма цифр $45\Ra\equiv0\pmod9$; знакочеред.\ $9-8+\dots+1=5\Ra\equiv5\pmod{11}$.\\
+\trap $a\mid b+c$ не влечёт $a\mid b$ или $a\mid c$; $a\mid bc$ без $\gcd(a,b)=1$ не даёт $a\mid c$ ($4\mid2\cdot2$).
+
+\textbf{Прототипы.} $-50=7\cdot(-8)+6$, $50=(-7)(-7)+1$. $m=11q+7=13q+1\Ra q=3$, $m=40$. $13\mid3a+5b\Ra13\mid7a+3b$: $7a+3b=11(3a+5b)-13(2a+4b)$. $a-b\mid a^n-b^n$: $a\equiv b\pmod{|a-b|}$ (при $|a-b|>1$; $|a-b|\le1$ отдельно). $\gcd(n^2+3,n+2)=\gcd(7,n+2)\in\{1,7\}$; $7$ при $n\equiv5\pmod7$. Сумма цифр куба $\ne2027$: $2027\equiv2\pmod9$, кубы $\equiv0,1,8$. $2730=2\cdot3\cdot5\cdot7\cdot13\mid n^{13}-n$: для этих $p$ $p-1\mid12$, $n^{13}\equiv n\pmod p$.\\
+\textbf{Простые $<200$:} 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 101 103 107 109 113 127 131 137 139 149 151 157 163 167 173 179 181 191 193 197 199. Проверять делители до $\sqrt n$.\\
+\sect{9. Эйлер и Ферма: образцы}
+\textbf{Схема Эйлера:} $q_1,\dots,q_s$ — взаимно простые с $m$ остатки; остатки $aq_i$ — те же $q_i$ в другом порядке; $a^s\prod q_i\equiv\prod q_i$, сократить.\\
+Последние две цифры $=$ остаток по $100$. \textbf{Последняя цифра $1234567^N$:} $\bmod10$, $\varphi(10)=4$, нужен $N\bmod4$.\ $3^{2026}\bmod100$: $\varphi(100)=40$, $2026\equiv26\pmod{40}$, $3^{2026}\equiv3^{26}\equiv29$.\\
+\textbf{$\varphi$ перебором:} $\varphi(100)$: нечётных в $1..99$ — $50$, из них кратных $5$ — $10$; $\varphi=40$. $\varphi(58)$: нечётные кроме $29$ — $28$.\\
+\textbf{Отрицательный показатель:} $17^{98}\bmod101$: $98\equiv-2\pmod{100}$, $17^{-1}=6$ ($102\equiv1$), $6^2=36$.\\
+\textbf{Квадраты:} $3^{13}\bmod29$: $3^2=9$, $3^4\equiv-6$, $3^8\equiv7$; $13=8+4+1$: $7\cdot(-6)\cdot3\equiv19$.\\
+\textbf{Башня без $\gcd$:} $7^{9^{12}}\bmod13$: показатель $\bmod12$, $\gcd(9,12)=3$ — Эйлер по $12$ нельзя; $9^k\equiv9\pmod{12}$ при $k\ge1$ $\Ra7^9\equiv8$. (Ложное «$9^{12}\equiv1$» даёт $7$.)\\
+$2^{3^{100}}\bmod19$: $\bmod18$, $3^k\equiv9\pmod{18}$ при $k\ge2$, $2^9=512=27\cdot19-1\equiv18$.\\
+\textbf{Двойная башня:} $123^{71^{428}}\bmod59$: $123\equiv5$, показатель $\bmod58$; $71\equiv13\pmod{58}$, $\varphi(58)=28$, $428\equiv8\pmod{28}$ — показатель $428$ приводят по $28$, не по $58$.\\
+МТФ доказывает составность: $2^{14}\equiv4\not\equiv1\pmod{15}$. Период: $2^3\equiv1\pmod7$, $\varphi(7)=6$.
+
+\textbf{Прототипы.} $(-23)^{2027}\bmod29$: $-23\equiv6$, $2027\equiv11\pmod{28}$; $6^2\equiv7$, $6^4\equiv-9$, $6^8\equiv-6$; $6^{11}\equiv(-6)\cdot7\cdot6=-252\equiv9$. $17^{2026}\bmod100$: $\equiv17^{26}$; $17^2\equiv-11$, $17^4\equiv21$, $17^8\equiv41$, $17^{16}\equiv81$; $81\cdot41\cdot(-11)\equiv69$.\\
+\textbf{Обратные} ($a\colon a^{-1}$, пары симметричны): $\bmod7$: 1:1 2:4 3:5 6:6. $\bmod11$: 1:1 2:6 3:4 5:9 7:8 10:10. $\bmod13$: 1:1 2:7 3:9 4:10 5:8 6:11 12:12. $\bmod17$: 2:9 3:6 4:13 5:7 6:3 8:15 10:12 11:14 16:16 (и $-a\colon -a^{-1}$).\\
+\sect{10. Сравнения и системы: образцы}
+\textbf{Евклид $(26,34)$:} $r$: $26,34,26,8,2,0$; $q$: $-,0,1,3,4$; $u$: $1,0,1,-1,4$; $v$: $0,1,0,1,-3$; $26\cdot4-34\cdot3=2$. \trap В $u_{k+2}=u_k-u_{k+1}q_{k+1}$ брать частное, полученное \emph{вместе} с $r_{k+2}$.\\
+\textbf{$4x+6y=10$:} $d=2$, $2x+3y=5$, $(1,1)$; все $(1-3t,1+2t)$. $4x+6y=9$ — нет ($2\nmid9$).\\
+\textbf{Подстановка:} $x\equiv12\ (15)$, $x\equiv8\ (17)$, $x\equiv3\ (8)$: $x=12+15t$, $15t\equiv-4$, $-2t\equiv-4\ (17)\Ra t\equiv2$, $x=42+255s$; $2-s\equiv3\ (8)$, $s\equiv7$; $x=1827\pmod{2040}$.\\
+\textbf{Совокупность:} $2x\equiv10\ (22)\iff x\equiv5\vee x\equiv16\ (22)$; с $x\equiv8\ (31)$: $225,566\pmod{682}$.\\
+\textbf{Сокращение:} $4x\equiv6\pmod{10}\iff2x\equiv3\pmod5\iff x\equiv4\pmod5$; с $x\equiv5\pmod9$: $x\equiv14\pmod{45}$; ответ по $\lcm(10,9)=90$: $\{14,59\}$.\\
+\textbf{Несовместно:} $x\equiv5\ (12)$, $x\equiv3\ (8)$: $\gcd=4\nmid2$; $x\equiv4\ (6)$, $x\equiv1\ (8)$ (чётн./нечётн.).\\
+\textbf{Полиномы:} модуль $\to$ простые множители; по модулю $7$: $x^9\equiv x^3$ ($x^7\equiv x$), $x^3\equiv1\iff x\in\{1,2,4\}$.\\
+\textbf{Переливания:} сосуды $a,b\in\N_+$: можно отмерить $c\iff\gcd(a,b)\mid c$ и $0\le c\le\max(a,b)$.\\
+\textbf{Схема $ax+by=c$:} $a'(x_0-x)=b'(y-y_0)$, $\gcd(a',b')=1\Ra b'\mid x_0-x$. \textbf{КТО:} единственность — $\lcm=$ произведение; существование — индукция по $n$ + формула Безу.\\
+\textbf{Евклид:} $\gcd(r_k,r_{k+1})=\gcd(r_{k+1},r_{k+2})$; остатки убывают — останов по ПНЧ; $r_k=au_k+bv_k$ — сильная индукция по $k$.
+\textbf{Прототипы.} $129x-93y=15$: $d=3$, $43x-31y=5$, $(3,4)$; все $(3+31t,\,4+43t)$. $7x+12y=220$ в $\N$: $7x\equiv4\pmod{12}$, $x\equiv4$; $(4,16),(16,9),(28,2)$. $18x\equiv30\pmod{42}$: $d=6$, $3x\equiv5\pmod7$, $x\equiv4$; $4,11,18,25,32,39$; $18x\equiv31$ — нет ($6\nmid31$). $21x\equiv35\ (70)$, $x^2\equiv4\ (13)$: $x\equiv5\ (10)$, $x\equiv\pm2\ (13)$ — $2$ решения по $130$, по $\lcm=910$ их $2\cdot7=14$. $x\equiv5\ (12)$, $x\equiv11\ (18)$, $x\equiv3\ (7)$: $\to x\equiv1\ (4)$, $x\equiv2\ (9)$, $x\equiv3\ (7)$: $101\pmod{252}$; $x\equiv5\ (12)$, $x\equiv8\ (18)$ — нет (чётность).
+\\
+\textbf{Не взаимно простые (пример):} $5x^3-x^2+18\equiv0\ (14)$, $x^9+7x-8\equiv0\ (21)$, $4x\equiv10\ (18)$. Простые $2,3,7$. По $2$: условий нет. По $9$: $4x\equiv10\Ra x\equiv7\cdot10\equiv7$ ($4^{-1}=7$); по $3$ второе тогда выполнено. По $7$: $x^9\equiv x^3\equiv1\Ra x\in\{1,2,4\}$; первое $\equiv2-x^2$ $\Ra x=4$. Склейка $x\equiv7\ (9)$, $x\equiv4\ (7)$: $25\pmod{63}$; по $\lcm(14,21,18)=126$: $25$ и $88$.
+\\
+\textbf{Проверки ответа:} $ax+by=c$ — подставить частное решение; сравнение — $m\mid ax_0-c$; система — каждое сравнение для каждого ответа; остаток степени — пересчитать другим разбиением показателя; число решений — модуль $\mu$ назван явно.
+}
