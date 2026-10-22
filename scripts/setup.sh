@@ -38,6 +38,9 @@ for p in "${PACKAGES[@]}"; do
 done
 if (( ${#missing[@]} )); then
   tlmgr update --self
+  # fmtutil живёт в texlive-scripts, а не в texlive.infra: без этого свежий tlmgr
+  # зовёт старый fmtutil с несовместимыми флагами («multiple commands found»).
+  tlmgr update texlive-scripts
   echo ">> tlmgr install ${missing[*]}"
   tlmgr install "${missing[@]}"
 fi
