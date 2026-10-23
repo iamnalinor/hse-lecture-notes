@@ -24,5 +24,20 @@ export const isUpcoming = (prep: PrepEntry, today: string): boolean => {
   return dayAfter >= today;
 };
 
+const CHEATSHEET_LABELS: Readonly<Record<string, string>> = {
+  "1side": "Шпаргалка, 1 сторона",
+  "2side": "Шпаргалка, 2 стороны",
+};
+
+/** A downloadable PDF next to a document: `docId` names the file (`pdf/<course>-<docId>.pdf`). */
+export type PdfDoc = { readonly docId: string; readonly label: string };
+
+/** Cheatsheet PDFs of a test (`prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex`), one per print variant. */
+export const cheatsheetDocs = (prep: PrepEntry): readonly PdfDoc[] =>
+  prep.cheatsheets.map((variant) => ({
+    docId: `${prep.id}-cheatsheet-${variant}`,
+    label: CHEATSHEET_LABELS[variant] ?? `Шпаргалка (${variant})`,
+  }));
+
 export const upcomingPreps = (preps: readonly PrepEntry[], today: string): readonly PrepEntry[] =>
   preps.filter((prep) => isUpcoming(prep, today));

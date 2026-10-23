@@ -8,6 +8,8 @@
 Результат в build/:
     build/index.json                    глобальный индекс меток и глоссариев
     build/pdf/<course>/<week_id>.pdf    PDF конспектов, build/pdf/<course>/theory.pdf
+    build/pdf/<course>/krN-cheatsheet-<variant>.pdf
+                                        читлисты из prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex
     build/site-data/                    данные для будущего сайта + preview-страницы
         index.json, courses.json, katex-macros.json, search.json
         <course>/glossary.json
@@ -278,6 +280,93 @@ def build_pdf(doc: Doc) -> list[str]:
     return warnings
 
 
+# ----------------------------------------------------------------------------- читлисты
+
+# вариант печати → ровно столько страниц (context/prompts/cheatsheet.md §2)
+CHEATSHEET_PAGES = {"1side": 1, "2side": 2}
+PAGES_RE = re.compile(r"Output written on .*?\((\d+) pages?")
+
+
+@dataclass
+class Cheatsheet:
+    """prep/<course>/cheatsheet/<prep>-cheatsheet-<variant>.tex — готовый LaTeX, не pandoc."""
+
+    path: Path
+    course: str
+    prep: str  # kr1, kr2…
+    variant: str  # 1side | 2side
+
+    @property
+    def rel(self) -> str:
+        return self.path.relative_to(SRC).as_posix()
+
+    @property
+    def out_name(self) -> str:
+        return f"{self.prep}-cheatsheet-{self.variant}"
+
+
+def find_cheatsheets(course: str, prep: str) -> list[Cheatsheet]:
+    found = []
+    for p in sorted((SRC / "prep" / course / "cheatsheet").glob(f"{prep}-cheatsheet-*.tex")):
+        variant = p.stem.removeprefix(f"{prep}-cheatsheet-")
+        if variant not in CHEATSHEET_PAGES:
+            raise BuildError(f"{p}: вариант читлиста — {' или '.join(CHEATSHEET_PAGES)}, а не {variant!r}")
+        found.append(Cheatsheet(p, course, prep, variant))
+    return found
+
+
+def build_cheatsheet(cs: Cheatsheet) -> list[str]:
+    """xelatex прямо по исходнику (общие \\input-файлы лежат рядом); проверка числа страниц."""
+    src_dir = cs.path.parent
+    tex_dir = TEX_DIR / cs.course / "cheatsheet"
+    pdf_out = PDF_DIR / cs.course / f"{cs.out_name}.pdf"
+    stamp = tex_dir / f"{cs.out_name}.hash"
+    digest = hashlib.sha1(
+        cs.path.name.encode() + b"".join(p.read_bytes() for p in sorted(src_dir.glob("*.tex")))
+    ).hexdigest()
+    if pdf_out.exists() and stamp.exists() and stamp.read_text() == digest:
+        return []
+    tex_dir.mkdir(parents=True, exist_ok=True)
+    env = tex_env()
+    env["TEXINPUTS"] = f"{src_dir}{os.pathsep}{env['TEXINPUTS']}"
+    res = subprocess.run(
+        [
+            "latexmk",
+            "-xelatex",
+            "-interaction=nonstopmode",
+            "-halt-on-error",
+            "-file-line-error",
+            f"-outdir={tex_dir}",
+            str(cs.path),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=src_dir,
+    )
+    log = tex_dir / f"{cs.path.stem}.log"
+    log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+    if res.returncode != 0:
+        errs = [ln for ln in log_text.splitlines() if ln.startswith("!") or ".tex:" in ln]
+        tail = "\n".join(errs[:30]) or res.stdout[-3000:]
+        raise BuildError(f"xelatex упал на {cs.rel}:\n{tail}\n(полный лог: {log})")
+    pages = [int(n) for n in PAGES_RE.findall(log_text)]
+    want = CHEATSHEET_PAGES[cs.variant]
+    if pages[-1:] != [want]:
+        raise BuildError(
+            f"{cs.rel}: {pages[-1] if pages else '?'} стр., а вариант {cs.variant} — ровно {want}"
+        )
+    warnings = []
+    for m in OVERFULL_RE.finditer(log_text):
+        pt = float(m.group(1))
+        if pt > 1.0:
+            warnings.append(f"{cs.rel}: overfull box {pt}pt (строка {m.group(2)})")
+    pdf_out.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(tex_dir / f"{cs.path.stem}.pdf", pdf_out)
+    stamp.write_text(digest)
+    return warnings
+
+
 # ----------------------------------------------------------------------------- HTML
 
 
@@ -480,7 +569,12 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
     for m in sorted(metas, key=lambda m: (m.get("date") or "", m["week_id"])):
         if m.get("kind") == "prep":
             preps.setdefault(m["course"], []).append(
-                {"id": m["week_id"], "title": m.get("title"), "date": m.get("date")}
+                {
+                    "id": m["week_id"],
+                    "title": m.get("title"),
+                    "date": m.get("date"),
+                    "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
+                }
             )
     write_json(
         SITE / "courses.json",
@@ -574,7 +668,10 @@ def main() -> int:
         failures: list[str] = []
 
         if not args.no_pdf:
+            sheets = [c for d in targets if d.kind == "prep" for c in find_cheatsheets(d.course, d.week_id)]
             for doc_warnings in run_parallel("PDF", build_pdf, targets, args.jobs, failures):
+                warnings += doc_warnings
+            for doc_warnings in run_parallel("PDF", build_cheatsheet, sheets, args.jobs, failures):
                 warnings += doc_warnings
         if not args.no_html:
             metas = run_parallel("HTML", build_html, targets, args.jobs, failures)

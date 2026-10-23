@@ -2,7 +2,7 @@ import { useLocation, useParams } from "react-router";
 
 import { notFound, useCourse } from "#web/api/use-course.ts";
 import { shortDate } from "#web/domain/dates.ts";
-import { prepName } from "#web/domain/preps.ts";
+import { cheatsheetDocs, prepName } from "#web/domain/preps.ts";
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
@@ -22,6 +22,7 @@ export const Component = () => {
       course={info.id}
       courseName={info.name}
       docId={prep.id}
+      downloads={cheatsheetDocs(prep)}
       note={`${name} — ${shortDate(prep.date)}. Темы, методы, задачи с ответами`}
       pageName={`Подготовка к ${name}`}
       variant="prep"

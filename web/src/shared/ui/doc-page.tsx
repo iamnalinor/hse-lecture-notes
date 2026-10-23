@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import type { PdfDoc } from "#web/domain/preps.ts";
+
 import { Crumbs } from "./crumbs.tsx";
 import { PdfLink } from "./pdf-link.tsx";
 
@@ -8,6 +10,8 @@ type Props = {
   readonly children: ReactNode;
   readonly course: string;
   readonly courseName: string;
+  /** More PDFs next to the main one (cheatsheets of a test). */
+  readonly downloads?: readonly PdfDoc[] | undefined;
   /** Line under the title: «120 терминов». */
   readonly note?: string;
   /** Last crumb and the title: «Теория». */
@@ -18,12 +22,15 @@ type Props = {
   readonly wide?: boolean;
 };
 
+const NO_DOWNLOADS: readonly PdfDoc[] = [];
+
 /** Frame of a course-wide document page: crumbs, title, optional sticky side column and PDF button. */
 export const DocPage = ({
   aside,
   children,
   course,
   courseName,
+  downloads = NO_DOWNLOADS,
   note,
   pageName,
   pdfDoc,
@@ -44,7 +51,16 @@ export const DocPage = ({
         <div className="flex flex-wrap items-center gap-x-5.5 gap-y-2.5 border-b border-rule pb-6 text-sm text-muted">
           {note !== undefined && <span>{note}</span>}
           {pdfDoc !== undefined && (
-            <span className="ml-auto">
+            <span className="ml-auto flex flex-wrap gap-2.5">
+              {downloads.map((doc) => (
+                <PdfLink
+                  course={course}
+                  docId={doc.docId}
+                  key={doc.docId}
+                  label={doc.label}
+                  variant="button"
+                />
+              ))}
               <PdfLink course={course} docId={pdfDoc} variant="button" />
             </span>
           )}

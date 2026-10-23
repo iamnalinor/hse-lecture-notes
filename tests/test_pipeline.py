@@ -171,7 +171,14 @@ def test_html_blocks_and_refs(demo: Path):
     assert pmeta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к КР-1 · 7 ноября 2026"
     courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
     assert courses["preps"] == {
-        "algebra": [{"id": "kr1", "title": "Подготовка к КР-1: Алгебра", "date": "2026-11-07"}]
+        "algebra": [
+            {
+                "id": "kr1",
+                "title": "Подготовка к КР-1: Алгебра",
+                "date": "2026-11-07",
+                "cheatsheets": ["1side"],
+            }
+        ]
     }
     assert any(e["doc"] == "kr1" for e in search)
     # метки подготовки не попадают в индекс курса
@@ -277,6 +284,28 @@ def test_pdf_builds(demo: Path):
     assert res.returncode == 0, res.stderr + res.stdout
     for name in ("01_sep03_matrices", "02_sep09_gauss", "theory", "kr1"):
         assert (demo / "build" / "pdf" / "algebra" / f"{name}.pdf").stat().st_size > 10_000
+    # читлист prep/algebra/cheatsheet/kr1-cheatsheet-1side.tex — рядом с PDF подготовки
+    assert (demo / "build" / "pdf" / "algebra" / "kr1-cheatsheet-1side.pdf").stat().st_size > 1_000
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_cheatsheet_page_count(demo: Path):
+    sheet = demo / "prep" / "algebra" / "cheatsheet" / "kr1-cheatsheet-1side.tex"
+    sheet.write_text(
+        sheet.read_text(encoding="utf-8").replace(r"\end{document}", "\\newpage x\n\\end{document}"),
+        encoding="utf-8",
+    )
+    res = build(demo, "--no-html", "--only", "prep/algebra/kr1.md")
+    assert res.returncode != 0
+    assert "2 стр., а вариант 1side — ровно 1" in res.stderr
+
+
+def test_cheatsheet_unknown_variant(demo: Path):
+    cheatsheet = demo / "prep" / "algebra" / "cheatsheet"
+    (cheatsheet / "kr1-cheatsheet-1side.tex").rename(cheatsheet / "kr1-cheatsheet-a5.tex")
+    res = build(demo, "--no-pdf")
+    assert res.returncode != 0
+    assert "'a5'" in res.stderr
 
 
 # ----------------------------------------------------------------------------- линтер

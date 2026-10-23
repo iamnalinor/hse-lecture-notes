@@ -19,7 +19,7 @@ bun run build        # dist/ (+ 404.html и копии оболочки по с�
 src/domain    чистая логика и zod-схемы данных сборки (без React, fetch, DOM)
 src/api       загрузка JSON/HTML, запросы TanStack Query
 src/shared    UI-кит, ридер конспекта (HTML-фрагмент → React: блоки, ссылки с превью, KaTeX, спойлеры)
-src/features  страницы: home, course, lecture, theory, prep (подготовка к КР, `/<course>/kr1`), glossary (друг друга не импортируют)
+src/features  страницы: home, course, lecture, theory, prep (подготовка к КР, `/<course>/kr1`; в шапке — PDF читлиста, если он есть), glossary (друг друга не импортируют)
 src/app       роутер, оболочка (скелетоны при переходах)
 sw/           service worker: отдельный бандл, из src берёт только domain/offline.ts
 ```
