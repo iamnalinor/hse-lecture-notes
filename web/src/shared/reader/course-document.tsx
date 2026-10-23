@@ -1,3 +1,5 @@
+import type { PdfDoc } from "#web/domain/preps.ts";
+
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { DocPage } from "#web/shared/ui/doc-page.tsx";
@@ -11,6 +13,8 @@ type Props = {
   readonly courseName: string;
   /** `theory`, `kr1`… — the document directory and the PDF name. */
   readonly docId: string;
+  /** More PDFs next to the document's own (cheatsheets of a test). */
+  readonly downloads?: readonly PdfDoc[];
   readonly note: string;
   /** Crumb, title and TOC caption: «Теория», «Подготовка к КР-1». */
   readonly pageName: string;
@@ -18,7 +22,15 @@ type Props = {
 };
 
 /** A course-wide document (theory, test preparation): TOC on the side, the fragment, the PDF button. */
-export const CourseDocument = ({ course, courseName, docId, note, pageName, variant }: Props) => {
+export const CourseDocument = ({
+  course,
+  courseName,
+  docId,
+  downloads,
+  note,
+  pageName,
+  variant,
+}: Props) => {
   const meta = useDocMeta(course, docId);
   const html = useFragment(course, docId);
   useScrollToHash();
@@ -28,6 +40,7 @@ export const CourseDocument = ({ course, courseName, docId, note, pageName, vari
       aside={<DocToc caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />}
       course={course}
       courseName={courseName}
+      downloads={downloads}
       note={note}
       pageName={pageName}
       pdfDoc={docId}

@@ -27,6 +27,17 @@ describe("build data schemas", () => {
       preps: { calculus: [{ date: "2026-10-22", id: "kr1", title: "Подготовка к КР-1" }] },
     });
     expect(catalog.preps["calculus"]?.[0]?.id).toBe("kr1");
+    expect(catalog.preps["calculus"]?.[0]?.cheatsheets).toStrictEqual([]);
+  });
+
+  it("reads the print variants of a test cheatsheet", () => {
+    const catalog = CatalogSchema.parse({
+      lectures: {},
+      preps: {
+        discrete: [{ cheatsheets: ["1side", "2side"], date: "2026-10-24", id: "kr1", title: "" }],
+      },
+    });
+    expect(catalog.preps["discrete"]?.[0]?.cheatsheets).toStrictEqual(["1side", "2side"]);
   });
 
   it("rejects a lecture without a number", () => {
