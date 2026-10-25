@@ -17,6 +17,7 @@ title: "Теория: дискретная математика"
 - $\varphi(m)$ считает взаимно простые с $m$ числа среди $0, 1, \dots, m - 1$; $a^{-1}$ и $a^{-k} = (a^{-1})^k$ по модулю $m$ — числа из $\{0, \dots, m - 1\}$ и их степени, а не дроби (определения [-@def:lec07:inverse], [-@def:lec07:neg-power]).
 - Решение сравнения $ax \equiv c \pmod m$ — число из $\{0, \dots, m - 1\}$, решение системы — кортеж чисел из $\{0, \dots, \mu - 1\}$, $\mu$ — НОК модулей; поэтому «число решений» всегда считается по модулю (НОК) исходных модулей (замечание [-@rem:lec08:solution-convention], определение [-@def:lec08:system]).
 - Композиция отношений читается справа налево: в $Q \circ P$ первым действует $P$, как в $g(f(x))$; в курсе алгебры подстановки, наоборот, умножаются слева направо (замечание [-@rem:lec09:order]).
+- Функция $f\colon A \to B$ отождествляется со своим графиком $f \subseteq A \times B$; множество $B$ ею не определяется, поэтому сюръективность всегда понимается «для $B$» (замечание [-@rem:lec10:codomain]). Для отношения $R \subseteq A \times B$ «тотально» по умолчанию значит «тотально для $A$», «сюръективно» — «сюръективно для $B$» (определение [-@def:lec10:total-surjective]).
 
 # Лекция 1 — Истинность, ложность и высказывания
 
@@ -630,6 +631,76 @@ $(P \cup Q) \circ R = (P \circ R) \cup (Q \circ R)$; $(P \cap Q) \circ R \subset
 
 ::: {.proposition ref="prop:lec09:image-props" status="доказано в лекции 9"}
 $R[X \cup Y] = R[X] \cup R[Y]$; $X \subseteq Y \Rightarrow R[X] \subseteq R[Y]$; $R[\varnothing] = \varnothing$; $R[X \cap Y] \subseteq R[X] \cap R[Y]$ (бывает строго); $(R \circ Q)[X] = R[Q[X]]$. *Идея:* те же законы о кванторах, что и для композиции; включение для $\cap$ — из монотонности.
+:::
+
+# Лекция 10 — Функции
+
+::: {.definition ref="def:lec10:functional-injective"}
+$R$ функционально, если $(xRy \wedge xRz) \Longrightarrow y = z$; инъективно, если $(yRx \wedge zRx) \Longrightarrow y = z$ (для всех $x$, $y$, $z$).
+:::
+
+::: {.definition ref="def:lec10:total-surjective"}
+$R$ тотально для $Z$, если $\forall x \in Z\ \exists y\ xRy$ (то есть $Z \subseteq \operatorname{dom} R$); сюръективно для $Z$, если $\forall x \in Z\ \exists y\ yRx$ (то есть $Z \subseteq \operatorname{rng} R$). Для $R \subseteq A \times B$ по умолчанию $Z = A$ для тотальности и $Z = B$ для сюръективности.
+:::
+
+::: {.lemma ref="lem:lec10:duality" status="доказано в лекции 10"}
+$R$ функционально $\iff$ $R^{-1}$ инъективно; $R$ инъективно $\iff$ $R^{-1}$ функционально; $R$ тотально для $Z$ $\iff$ $R^{-1}$ сюръективно для $Z$; $R$ сюръективно для $Z$ $\iff$ $R^{-1}$ тотально для $Z$. *Идея:* $xRy \iff yR^{-1}x$ превращает одно определение в другое; вторые половины — применением первых к $R^{-1}$.
+:::
+
+::: {.lemma ref="lem:lec10:composition" status="доказано в лекции 10"}
+Пусть $Q \subseteq A \times B$, $R \subseteq B \times C$. Если $Q$ и $R$ функциональны (инъективны), то $R \circ Q$ функционально (инъективно); если $Q$ тотально для $A$, а $R$ — для $B$, то $R \circ Q$ тотально для $A$; если $Q$ сюръективно для $B$, а $R$ — для $C$, то $R \circ Q$ сюръективно для $C$. *Идея:* функциональность и тотальность — прямо по путям из двух стрелок; инъективность и сюръективность — двойственностью и $(R \circ Q)^{-1} = Q^{-1} \circ R^{-1}$.
+:::
+
+::: {.proposition ref="prop:lec10:cap" status="доказано в лекции 10"}
+Если $R$ инъективно, то $R[X \cap Y] = R[X] \cap R[Y]$; если $R$ функционально, то $R^{-1}[X \cap Y] = R^{-1}[X] \cap R^{-1}[Y]$. *Идея:* две стрелки в общую точку образа выходят из одной точки; для прообраза — применить к инъективному $R^{-1}$.
+:::
+
+::: {.proposition ref="prop:lec10:preimage-image" status="доказано в лекции 10"}
+Если $R \subseteq A \times B$ тотально и $X \subseteq A$, то $X \subseteq R^{-1}[R[X]]$ (равенство не обязательно даже для функций).
+:::
+
+::: {.definition ref="def:lec10:function"}
+$f \subseteq A \times B$ — функция из $A$ в $B$ ($f\colon A \to B$), если $f$ функционально и тотально для $A$. Тогда $\operatorname{dom} f = A$, $\operatorname{rng} f \subseteq B$; множество $B$ функцией не определяется.
+:::
+
+::: {.definition ref="def:lec10:value"}
+Для $f\colon A \to B$ и $x \in A$ значение $f(x)$ — единственный $y$ с $(x, y) \in f$; $f[\{x\}] = \{f(x)\}$.
+:::
+
+::: {.lemma ref="lem:lec10:equality" status="доказано в лекции 10"}
+Для $f\colon A \to B$, $g\colon C \to D$: $f = g \iff A = C \wedge \forall x \in A\ f(x) = g(x)$. *Идея:* $A = \operatorname{dom} f$; при равных значениях каждая пара $f$ лежит в $g$ и наоборот.
+:::
+
+::: {.proposition ref="prop:lec10:comp-values" status="доказано в лекции 10"}
+Если $f\colon A \to B$, $g\colon B \to C$, то $g \circ f\colon A \to C$ и $(g \circ f)(a) = g(f(a))$. *Идея:* лемма о композиции; путь $a \to f(a) \to g(f(a))$.
+:::
+
+::: {.definition ref="def:lec10:functions-set"}
+$B^A = \{f \in \mathcal{P}(A \times B) \mid f\colon A \to B\}$; $B^\varnothing = \{\varnothing\}$, $\varnothing^A = \varnothing$ при $A \ne \varnothing$.
+:::
+
+::: {.definition ref="def:lec10:bijection"}
+Функция $f\colon A \to B$ — инъекция, если инъективна; сюръекция, если сюръективна для $B$; биекция (взаимно однозначное соответствие), если и то и другое.
+:::
+
+::: {.proposition ref="prop:lec10:by-values" status="доказано в лекции 10"}
+$f\colon A \to B$ инъективна тогда и только тогда, когда из $f(x) = f(y)$ при $x, y \in A$ следует $x = y$; сюръективна тогда и только тогда, когда $\forall y \in B\ \exists x \in A\ f(x) = y$.
+:::
+
+::: {.lemma ref="lem:lec10:bijection-converse" status="доказано в лекции 10"}
+$R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1}$ — биекция из $B$ в $A$ (обратная функция $f^{-1}$). *Идея:* двойственность переставляет четыре свойства.
+:::
+
+::: {.corollary ref="cor:lec10:bijection-comp" status="доказано в лекции 10"}
+Если $f\colon A \to B$ и $g\colon B \to C$ — биекции (инъекции, сюръекции), то $g \circ f\colon A \to C$ — биекция (инъекция, сюръекция); для биекций $(g \circ f)^{-1} = f^{-1} \circ g^{-1}$.
+:::
+
+::: {.lemma ref="lem:lec10:criteria" status="доказано в лекции 10"}
+Для $R \subseteq A \times B$: функционально $\iff$ $R \circ R^{-1} \subseteq \mathrm{id}_B$; инъективно $\iff$ $R^{-1} \circ R \subseteq \mathrm{id}_A$; сюръективно $\iff$ $\mathrm{id}_B \subseteq R \circ R^{-1}$; тотально $\iff$ $\mathrm{id}_A \subseteq R^{-1} \circ R$. *Идея:* $(x, y) \in R \circ R^{-1} \iff \exists z\, (zRx \wedge zRy)$; пункты 2 и 4 — применить 1 и 3 к $R^{-1}$.
+:::
+
+::: {.corollary ref="cor:lec10:bijection-inverse" status="доказано в лекции 10"}
+$R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1} \circ R = \mathrm{id}_A$ и $R \circ R^{-1} = \mathrm{id}_B$.
 :::
 
 # Глоссарий курса
