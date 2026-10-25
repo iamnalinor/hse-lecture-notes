@@ -12,6 +12,7 @@ title: "Теория: математический анализ"
 - «Возрастающая» последовательность — строго ($a_n < a_{n+1}$), нестрогая — «неубывающая» [-@rem:lec02:increasing-convention].
 - Ограниченность последовательности сверху определяется строгим неравенством $a_n < C$ [-@rem:lec02:strict], ограниченность множества — нестрогим $a \le C$ [-@rem:lec05:nonstrict]; на сами понятия это не влияет.
 - Бесконечно большая — это стремление к $\infty$ без знака: $(-1)^n n \to \infty$, но не к $\pm\infty$ [-@rem:lec04:infinity-symbol].
+- Показательная функция, $\ln x$ и степени $x^\alpha$ с вещественным показателем до строгого определения используются со школьными свойствами, а их непрерывность (предел равен значению) принимается на веру [-@rem:lec08:elementary].
 
 # Лекция 1 — Высказывания, предикаты, кванторы. Метод математической индукции. Неравенство Бернулли
 
@@ -408,28 +409,28 @@ $\varlimsup\limits_{n \to \infty} a_n$ — наибольший, $\varliminf\lim
 :::
 
 ::: {.theorem ref="thm:lec07:composite" status="доказано в лекции 8"}
-Если $f(x) \to A$ при $x \to x_0$, $g(y) \to B$ при $y \to A$ и либо $g(A) = B$, либо $f(x) \ne A$ в некоторой $\mathring{U}_{\delta_0}(x_0)$, то $g(f(x)) \to B$. Без условий неверно: $f \equiv 0$, $g(y) = |\operatorname{sign} y|$. *Идея:* цепочка $\varepsilon \to \eta \to \delta$; точки с $f(x) = A$ либо исключены условием 2, либо дают $g(A) = B$ по условию 1.
+Если $f(x) \to A$ при $x \to x_0$, $g(y) \to B$ при $y \to A$ и либо $g(A) = B$, либо $f(x) \ne A$ в некоторой $\mathring{U}_{\delta_0}(x_0)$, то $g(f(x)) \to B$. Без условий неверно: $f \equiv 0$, $g(y) = |\operatorname{sign} y|$. *Идея:* по Гейне $y_n = f(x_n) \to A$; опасны члены $y_n = A$: при $f \ne A$ около $x_0$ их конечное число, при $g(A) = B$ их значения равны $B$ (подпоследовательность, постоянная $B$).
 :::
 
 ::: {.corollary ref="cor:lec07:two-sequences" status="доказано в лекции 7"}
 Если на двух последовательностях Гейне значения $f$ стремятся к разным числам или на одной расходятся, то предела в точке $x_0$ нет.
 :::
 
-# Лекция 8 — Сложная функция и первый замечательный предел. Локальные свойства предела. Односторонние и бесконечные пределы
+# Лекция 8 — Предел сложной функции. Первый и второй замечательные пределы. Пределы на бесконечности и бесконечные пределы
 
 ::: {.lemma ref="lem:lec08:sin-estimate" status="доказано в лекции 8"}
-$\sin x < x < \operatorname{tg} x$ при $0 < x < \frac\pi2$; $|\sin x| \le |x|$ при всех $x$. *Идея:* площади треугольника $OBC$, сектора и треугольника $OAC$ на единичной окружности.
-:::
-
-::: {.proposition ref="prop:lec08:sin-cos" status="доказано в лекции 8"}
-$\lim\limits_{x \to x_0} \sin x = \sin x_0$, $\lim\limits_{x \to x_0} \cos x = \cos x_0$ для любого $x_0$. *Идея:* формулы разности синусов и косинусов и $|\sin t| \le |t|$ дают $|\sin x - \sin x_0| \le |x - x_0|$, то есть $\delta = \varepsilon$.
+$\sin x < x < \operatorname{tg} x$ при $0 < x < \frac\pi2$; $|\sin x| \le |x|$ при всех $x$. *Идея:* площади треугольника $OAB$, сектора $OAB$ и треугольника $OAC$ на единичной окружности ($A = (1, 0)$, $C$ — на касательной в $A$).
 :::
 
 ::: {.theorem ref="thm:lec08:first-remarkable" status="доказано в лекции 8"}
-$\lim\limits_{x \to 0} \dfrac{\sin x}{x} = 1$ (угол в радианах). *Идея:* $\cos x < \frac{\sin x}{x} < 1$ в $\mathring{U}_{\pi/2}(0)$ (лемма, деление на $\sin x$, чётность), $\cos x \to 1$, теорема о двух милиционерах.
+$\lim\limits_{x \to 0} \dfrac{\sin x}{x} = 1$ (угол в радианах). *Идея:* $\cos x < \frac{\sin x}{x} < 1$ в $\mathring{U}_{\pi/2}(0)$ (лемма, чётность), $\cos x \to 1$ (не значение, а предел — отдельно), теорема о двух милиционерах.
 :::
 
-::: {.corollary ref="cor:lec08:consequences" status="доказано в лекции 8"}
+::: {.proposition ref="prop:lec08:sin-cos" status="п. 1 доказан в лекции 8; п. 2 — в конспекте лекции 8 (на лекции не доказывалось)"}
+$\sin x \to 0$, $\cos x \to 1$ при $x \to 0$; более того, $\sin x \to \sin x_0$, $\cos x \to \cos x_0$ при $x \to x_0$. *Идея:* $0 \le 1 - \cos x = 2\sin^2\frac x2 \le \frac{x^2}{2}$ и милиционеры; в общей точке — формулы разности и $|\sin t| \le |t|$, $\delta = \varepsilon$.
+:::
+
+::: {.corollary ref="cor:lec08:consequences" status="п. 1 — в лекции 8 (пример $\frac{\sin 5x}{x}$); пп. 2–3 — в конспекте лекции 8 (на лекции не доказывалось)"}
 $\frac{\sin kx}{x} \to k$, $\frac{\operatorname{tg} x}{x} \to 1$, $\frac{1 - \cos x}{x^2} \to \frac12$ при $x \to 0$. *Идея:* замена $y = kx$ (условие 2 теоремы о сложной функции), $1 - \cos x = 2\sin^2\frac x2$.
 :::
 
@@ -437,43 +438,67 @@ $\frac{\sin kx}{x} \to k$, $\frac{\operatorname{tg} x}{x} \to 1$, $\frac{1 - \co
 $f$ ограничена в окрестности $x_0$: $\exists C > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| < C$. Отделима от нуля в окрестности $x_0$: $\exists c > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > c$.
 :::
 
-::: {.proposition ref="prop:lec08:local" status="доказано в лекции 8"}
+::: {.proposition ref="prop:lec08:local" status="в конспекте лекции 8 (на лекции не доказывалось)"}
 Если $\lim_{x \to x_0} f(x) = A \in \R$, то $|f(x)| < |A| + 1$ около $x_0$; если $A \ne 0$, то $|f(x)| > \frac{|A|}{2}$ около $x_0$. *Идея:* определение Коши с $\varepsilon = 1$ и $\varepsilon = \frac{|A|}{2}$, неравенство треугольника. В пределе частного условие $g \ne 0$ около $x_0$ следует из $B \ne 0$.
 :::
 
-::: {.corollary ref="cor:lec08:sign" status="доказано в лекции 8"}
+::: {.corollary ref="cor:lec08:sign" status="в конспекте лекции 8 (на лекции не доказывалось)"}
 Если $\lim_{x \to x_0} f(x) = A > 0$, то $f(x) > \frac A2 > 0$ в некоторой $\mathring{U}_\delta(x_0)$ (аналогично для $A < 0$).
 :::
 
-::: {.definition ref="def:lec08:one-sided"}
-$\lim\limits_{x \to x_0 - 0} f(x) = A$ ($f(x_0 - 0) = A$): $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in (x_0 - \delta;\ x_0)\colon |f(x) - A| < \varepsilon$. Предел справа $f(x_0 + 0)$ — то же с $x \in (x_0;\ x_0 + \delta)$.
-:::
-
-::: {.theorem ref="thm:lec08:one-sided" status="доказано в лекции 8"}
-Если $f$ определена в $\mathring{U}_r(x_0)$, то $\lim_{x \to x_0} f(x) = A \Leftrightarrow f(x_0 - 0) = f(x_0 + 0) = A$. *Идея:* «$\Leftarrow$» — $\delta = \min(\delta_1, \delta_2)$.
-:::
-
 ::: {.definition ref="def:lec08:infinity-nbhd"}
-$U_M(+\infty) = (M; +\infty)$, $U_M(-\infty) = (-\infty; -M)$, $U_M(\infty) = (-\infty; -M) \cup (M; +\infty)$, $M > 0$.
+$U_C(+\infty) = (C; +\infty)$, $U_C(-\infty) = (-\infty; -C)$, $U_C(\infty) = (-\infty; -C) \cup (C; +\infty)$, $C > 0$.
 :::
 
 ::: {.definition ref="def:lec08:general-limit"}
-$\lim_{x \to a} f(x) = b$ ($a \in \{x_0, x_0 \pm 0, \pm\infty, \infty\}$, $b \in \{A, \pm\infty, \infty\}$): для любой окрестности $b$ найдётся окрестность $a$ (для $x_0$ — проколотая, для $x_0 \pm 0$ — половина), при всех $x$ из которой $f(x)$ лежит в окрестности $b$. Например, $\lim_{x \to +\infty} f(x) = A$: $\forall \varepsilon > 0\ \exists \Delta > 0\ \forall x > \Delta\colon |f(x) - A| < \varepsilon$; $\lim_{x \to x_0} f(x) = \infty$: $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$. Определение Гейне, арифметика конечных пределов, неравенства и теорема о сложной функции переносятся; условия 1–2 теоремы о сложной функции нужны только при конечном $A$ (замена $y = \frac1x$: $\lim_{x \to +\infty} x \sin\frac1x = \lim_{y \to +0} \frac{\sin y}{y} = 1$).
+$\lim_{x \to a} f(x) = b$ ($a \in \{x_0, +\infty, -\infty, \infty\}$, $b \in \{A, +\infty, -\infty, \infty\}$, всего 16 определений): для любой окрестности $b$ найдётся окрестность $a$ (для $x_0$ — проколотая), при всех $x$ из которой $f(x)$ лежит в окрестности $b$. Например, $\lim_{x \to \infty} f(x) = A$: $\forall \varepsilon > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow |f(x) - A| < \varepsilon$; $\lim_{x \to x_0} f(x) = \infty$: $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$. Определение Гейне, арифметика конечных пределов, неравенства и теорема о сложной функции переносятся; условия 1–2 теоремы о сложной функции нужны только при конечном $A$. Предел при $x \to \infty$ есть $\Leftrightarrow$ равны пределы при $x \to +\infty$ и $x \to -\infty$.
 :::
 
 ::: {.definition ref="def:lec08:small-large"}
 $f$ бесконечно малая при $x \to a$, если $\lim_{x \to a} f(x) = 0$; бесконечно большая, если $\lim_{x \to a} f(x) = \infty$.
 :::
 
-::: {.proposition ref="prop:lec08:small-large" status="доказано в лекции 8"}
+::: {.proposition ref="prop:lec08:small-large" status="в конспекте лекции 8 (на лекции не доказывалось)"}
 При $x \to a$: $\frac{1}{\text{б.б.}}$ — б.м.; $\frac{1}{\text{б.м.}}$ — б.б., если $f \ne 0$ около $a$; (ограниченная около $a$)$\cdot$(б.м.) — б.м. *Идея:* по Гейне сводится к утверждениям лекции 4.
 :::
 
-::: {.proposition ref="prop:lec08:roots" status="доказано в лекции 8"}
-$\sqrt x \to \sqrt{x_0}$ при $x \to x_0 > 0$, $\sqrt x \to 0$ при $x \to +0$; $\sqrt[3]{x} \to \sqrt[3]{x_0}$ при любом $x_0$. *Идея:* $|\sqrt x - \sqrt{x_0}| \le \frac{|x - x_0|}{\sqrt{x_0}}$; для кубического корня $a^2 + ab + b^2 \ge \frac34 b^2$.
+::: {.theorem ref="thm:lec08:second-remarkable" status="доказано в лекции 8"}
+$\lim\limits_{x \to \infty} \left(1 + \dfrac1x\right)^x = e$. *Идея:* при $x \to +\infty$, $n = [x]$: $\left(1 + \frac{1}{n + 1}\right)^n < \left(1 + \frac1x\right)^x < \left(1 + \frac1n\right)^{n + 1}$, обе границы $\to e$ по определению $e$, милиционеры (по Гейне); при $x \to -\infty$ замена $x = -y$: $\left(1 - \frac1y\right)^{-y} = \left(1 + \frac{1}{y - 1}\right)^{y - 1}\left(1 + \frac{1}{y - 1}\right)$.
 :::
 
-# Лекция 9 — Асимптоты. О-символика. Эквивалентные функции
+::: {.corollary ref="cor:lec08:e-alpha" status="доказано в лекции 8 (непрерывность $u^\alpha$ принята на веру)"}
+$\left(1 + \frac\alpha x\right)^x \to e^\alpha$ при $x \to \infty$ для любого $\alpha \in \R$. *Идея:* $\left(\left(1 + \frac{1}{x/\alpha}\right)^{x/\alpha}\right)^\alpha$, замена $t = \frac x\alpha$.
+:::
+
+::: {.corollary ref="cor:lec08:e-zero" status="доказано в лекции 8"}
+$(1 + x)^{1/x} \to e$ при $x \to 0$. *Идея:* замена $y = \frac1x \to \infty$.
+:::
+
+::: {.corollary ref="cor:lec08:log" status="доказано в лекции 8 (непрерывность $\ln$ принята на веру)"}
+$\frac{\ln(1 + x)}{x} \to 1$ при $x \to 0$. *Идея:* $= \ln (1 + x)^{1/x} \to \ln e$.
+:::
+
+::: {.corollary ref="cor:lec08:exp" status="доказано в лекции 8 (непрерывность $e^x$ принята на веру)"}
+$\frac{e^x - 1}{x} \to 1$ при $x \to 0$. *Идея:* замена $y = e^x - 1$, $x = \ln(1 + y)$, $y \ne 0$ при $x \ne 0$.
+:::
+
+::: {.corollary ref="cor:lec08:power" status="доказано в лекции 8 (непрерывность $\ln$ и $e^x$ принята на веру)"}
+$\frac{(1 + x)^\alpha - 1}{x} \to \alpha$ при $x \to 0$, $\alpha \in \R$. *Идея:* $(1 + x)^\alpha = e^{\alpha \ln(1 + x)}$; разделить и умножить на $\alpha \ln(1 + x)$ и применить следствия 3 и 4.
+:::
+
+::: {.proposition ref="prop:lec08:roots" status="в конспекте лекции 8 (на лекции не доказывалось)"}
+$\sqrt x \to \sqrt{x_0}$ при $x \to x_0 > 0$; $\sqrt[3]{x} \to \sqrt[3]{x_0}$ при любом $x_0$. *Идея:* $|\sqrt x - \sqrt{x_0}| \le \frac{|x - x_0|}{\sqrt{x_0}}$; для кубического корня $a^2 + ab + b^2 \ge \frac34 b^2$.
+:::
+
+# Лекция 9 — Односторонние пределы и асимптоты. О-символика, эквивалентность
+
+::: {.definition ref="def:lec09:one-sided"}
+$\lim\limits_{x \to x_0 - 0} f(x) = A$ ($f(x_0 - 0) = A$): $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in (x_0 - \delta;\ x_0)\colon |f(x) - A| < \varepsilon$. Предел справа $f(x_0 + 0)$ — то же с $x \in (x_0;\ x_0 + \delta)$. Добавляет к местам $a$ ещё $x_0 \pm 0$.
+:::
+
+::: {.theorem ref="thm:lec09:one-sided" status="доказано в лекции 9"}
+Если $f$ определена в $\mathring{U}_r(x_0)$, то $\lim_{x \to x_0} f(x) = A \Leftrightarrow f(x_0 - 0) = f(x_0 + 0) = A$. *Идея:* «$\Leftarrow$» — $\delta = \min(\delta_1, \delta_2)$.
+:::
 
 ::: {.definition ref="def:lec09:asymptotes"}
 $x = x_0$ — вертикальная асимптота, если хотя бы один из $\lim_{x \to x_0 \pm 0} f(x)$ равен $+\infty$, $-\infty$ или $\infty$. $y = kx + b$ — наклонная асимптота при $x \to +\infty$ (при $x \to -\infty$), если $f(x) - (kx + b) \to 0$; при $k = 0$ — горизонтальная.
@@ -492,7 +517,7 @@ $y = kx + b$ — наклонная асимптота при $x \to +\infty$ $\
 :::
 
 ::: {.proposition ref="prop:lec09:o-rules" status="доказано в лекции 9"}
-$o(g) \pm o(g) = o(g)$, $c \cdot o(g) = o(g)$, $o(g) = O(g)$, $h \cdot o(g) = o(hg)$, $O(g) \cdot o(h) = o(gh)$, $O(g) \cdot O(h) = O(gh)$, $o(O(g)) = O(o(g)) = o(g)$; при $x \to 0$, $m < n$: $o(x^n) = o(x^m)$, $x^m \cdot o(x^n) = o(x^{m+n})$. Равенства читаются слева направо. *Идея:* отношения и арифметика предела, «ограниченная · б.м. = б.м.».
+$o(g) \pm o(g) = o(g)$, $c \cdot o(g) = o(g)$, $o(g) = O(g)$, $h \cdot o(g) = o(hg)$, $O(g) \cdot o(h) = o(gh)$, $O(g) \cdot O(h) = O(gh)$, $o(O(g)) = O(o(g)) = o(g)$; при $x \to 0$ для целых $0 \le m < n$: $o(x^n) = o(x^m)$, $x^m \cdot o(x^n) = o(x^{m+n})$. Равенства читаются слева направо. *Идея:* отношения и арифметика предела, «ограниченная · б.м. = б.м.».
 :::
 
 ::: {.definition ref="def:lec09:equivalent"}
@@ -512,11 +537,11 @@ $f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg
 :::
 
 ::: {.definition ref="def:lec09:main-part"}
-Главная часть $f$ при $x \to 0$ — функция $c x^k$, $c \ne 0$, с $f \sim c x^k$ (при $x \to x_0$ — $c(x - x_0)^k$, при $x \to \infty$ — $c x^k$); она единственна.
+Главная часть $f$ при $x \to 0$ — функция $c x^k$, $c \ne 0$, с $f \sim c x^k$ (при $x \to x_0$ — $c(x - x_0)^k$, при $x \to +\infty$, $x \to -\infty$, $x \to \infty$ — $c x^k$); она единственна.
 :::
 
-::: {.proposition ref="prop:lec09:table" status="доказано в лекции 9"}
-При $x \to 0$: $\sin x \sim x$, $\operatorname{tg} x \sim x$, $1 - \cos x \sim \frac{x^2}{2}$, $\sqrt{1 + x} - 1 \sim \frac x2$, $\sqrt[3]{1 + x} - 1 \sim \frac x3$, $(1 + x)^n - 1 \sim nx$. *Идея:* первый замечательный предел; сопряжённое и неполный квадрат; бином.
+::: {.proposition ref="prop:lec09:table" status="доказано в лекции 9 (непрерывность $\ln$, $e^x$, $u^\alpha$ принята на веру)"}
+При $x \to 0$: $\sin x \sim x$, $\operatorname{tg} x \sim x$, $1 - \cos x \sim \frac{x^2}{2}$, $\ln(1 + x) \sim x$, $e^x - 1 \sim x$, $(1 + x)^\alpha - 1 \sim \alpha x$ ($\alpha \ne 0$; в частности $\sqrt{1 + x} - 1 \sim \frac x2$, $\sqrt[3]{1 + x} - 1 \sim \frac x3$, $(1 + x)^n - 1 \sim nx$). *Идея:* замечательные и классические пределы лекции 8; для корней и $n$ — сопряжённое, неполный квадрат, бином.
 :::
 
 ::: {.proposition ref="prop:lec09:substitution" status="доказано в лекции 9"}
@@ -525,6 +550,90 @@ $f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg
 
 ::: {.theorem ref="thm:lec09:replacement" status="доказано в лекции 9"}
 Если $f \sim f_1$ при $x \to a$, то $\lim f h$ и $\lim f_1 h$, а также $\lim \frac hf$ и $\lim \frac h{f_1}$, существуют (конечные или бесконечные) одновременно и равны. В суммах заменять слагаемые на эквивалентные нельзя. *Идея:* $fh = \frac{f}{f_1} \cdot f_1 h$, $\frac{f}{f_1} \to 1$.
+:::
+
+# Лекция 10 — Непрерывность функции. Функции, непрерывные на отрезке. Обратная функция
+
+::: {.definition ref="def:lec10:continuous"}
+$f$, определённая в окрестности $x_0$, непрерывна в $x_0$, если $\lim_{x \to x_0} f(x) = f(x_0)$: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon$ (окрестность не проколотая).
+:::
+
+::: {.proposition ref="prop:lec10:heine" status="доказано в лекции 10"}
+$f$ непрерывна в $x_0$ $\Leftrightarrow$ $f(x_n) \to f(x_0)$ для любой последовательности $x_n \to x_0$ из окрестности (равенство $x_n = x_0$ разрешено). *Идея:* «$\Rightarrow$» — из определения по $\delta$ находим номер; «$\Leftarrow$» — частный случай: последовательности Гейне и теорема Коши–Гейне.
+:::
+
+::: {.definition ref="def:lec10:one-sided"}
+$f$ непрерывна справа (слева) в $x_0$, если $f(x_0 + 0) = f(x_0)$ (соответственно $f(x_0 - 0) = f(x_0)$).
+:::
+
+Непрерывность в $x_0$ равносильна непрерывности слева и справа — по теореме [-@thm:lec09:one-sided].
+
+::: {.definition ref="def:lec10:on-interval"}
+$f$ непрерывна на $[a;\ b]$, если непрерывна в каждой точке $(a;\ b)$, справа в $a$ и слева в $b$; «$f$ непрерывна» — непрерывна на области определения.
+:::
+
+::: {.theorem ref="thm:lec10:arithmetic" status="доказано в лекции 10"}
+Сумма, разность, произведение непрерывных в $x_0$ функций непрерывны в $x_0$; частное — при $g(x_0) \ne 0$. *Идея:* арифметика предела функции.
+:::
+
+::: {.theorem ref="thm:lec10:composite" status="доказано в лекции 10"}
+Если $f(x) \to A$ при $x \to x_0$ и $g$ непрерывна в $A$, то $g(f(x)) \to g(A)$. Если $f$ непрерывна в $x_0$, $g$ — в $f(x_0)$, то $g \circ f$ непрерывна в $x_0$. Односторонний вариант: если $f(x) \to A$, $f(x) \ge A$ около $x_0$ и $g$ непрерывна справа в $A$, то $g(f(x)) \to g(A)$. *Идея:* теорема о пределе сложной функции при условии $g(A) = B$; в одностороннем случае из окрестности $A$ нужна только правая половина.
+:::
+
+::: {.proposition ref="prop:lec10:elementary" status="доказано в лекции 10"}
+Многочлены, рациональные функции, $\sin$, $\cos$, $\operatorname{tg}$, $\sqrt x$ (в нуле — справа), $\sqrt[3]{x}$, $|x|$ непрерывны на области определения. Составленная из них функция непрерывна в $x_0$, если каждое промежуточное значение лежит внутри области определения применяемой к нему функции; граничные случаи — односторонним вариантом теоремы о композиции. *Идея:* пределы $\sin$, $\cos$ и корней из лекции 8, $\sqrt x$ справа в нуле — лекция 9 ($\delta = \varepsilon^2$); затем две предыдущие теоремы по шагам построения формулы.
+:::
+
+::: {.definition ref="def:lec10:discontinuity"}
+$x_0$ — точка разрыва $f$, если $f$ определена в проколотой окрестности $x_0$ и не непрерывна в $x_0$ (в том числе не определена в ней).
+:::
+
+::: {.definition ref="def:lec10:kinds"}
+Устранимый разрыв: $\lim_{x \to x_0} f(x)$ конечен, но $\ne f(x_0)$ или $f(x_0)$ нет (доопределение по непрерывности). Скачок: $f(x_0 \pm 0)$ конечны и различны. Устранимые и скачки — разрывы первого рода. Второй род: хотя бы один односторонний предел не существует или бесконечен.
+:::
+
+::: {.theorem ref="thm:lec10:bolzano-cauchy" status="доказано в лекции 10"}
+$f$ непрерывна на $[a;\ b]$, $f(a) f(b) < 0$ $\Rightarrow$ $\exists c \in (a;\ b)\colon f(c) = 0$. *Идея:* деление пополам с сохранением разных знаков на концах; концы сходятся к $c$ (Вейерштрасс), по непрерывности $f(c) \le 0$ и $f(c) \ge 0$.
+:::
+
+::: {.corollary ref="cor:lec10:intermediate" status="доказано в лекции 10"}
+Непрерывная на $[a;\ b]$ функция принимает все значения между $f(a)$ и $f(b)$. *Идея:* теорема Больцано–Коши для $f(x) - C$.
+:::
+
+::: {.theorem ref="thm:lec10:weierstrass-bounded" status="доказано в лекции 10"}
+Непрерывная на отрезке функция ограничена на нём. *Идея:* от противного $|f(x_n)| > n$; Больцано–Вейерштрасс даёт $x_{n_k} \to c \in [a;\ b]$, по непрерывности $f(x_{n_k}) \to f(c)$ — сходящаяся, а значит ограниченная последовательность.
+:::
+
+::: {.theorem ref="thm:lec10:weierstrass-max" status="доказано в лекции 10"}
+Непрерывная на отрезке функция достигает наибольшего и наименьшего значений. *Идея:* $M = \sup$ конечен; $M - \frac1n < f(x_n) \le M$, подпоследовательность $x_{n_k} \to q$, $f(q) = M$ по непрерывности и милиционерам.
+:::
+
+::: {.corollary ref="cor:lec10:image" status="доказано в лекции 10"}
+Множество значений непрерывной на $[a;\ b]$ функции — отрезок $[m;\ M]$ (наименьшее и наибольшее значения).
+:::
+
+::: {.definition ref="def:lec10:injection"}
+$f\colon X \to Y$ — инъекция, если $x_1 \ne x_2 \Rightarrow f(x_1) \ne f(x_2)$; сюръекция, если $E_f = Y$; биекция — и то и другое.
+:::
+
+::: {.definition ref="def:lec10:inverse"}
+Для биекции $f\colon X \to Y$ обратная $f^{-1}\colon Y \to X$ сопоставляет $y$ единственное $x$ с $f(x) = y$; $f^{-1}(f(x)) = x$, $f(f^{-1}(y)) = y$. Обычно обратная к инъективной $f$ рассматривается на $E_f$.
+:::
+
+::: {.definition ref="def:lec10:monotone"}
+На $E$: строго возрастает ($x_1 < x_2 \Rightarrow f(x_1) < f(x_2)$), строго убывает ($>$), не убывает ($\le$), не возрастает ($\ge$); строго монотонная — строго возрастающая или строго убывающая.
+:::
+
+::: {.theorem ref="thm:lec10:sufficient" status="доказано в лекции 10"}
+Строго монотонная на $X$ функция обратима ($X \to E_f$), и $f^{-1}$ строго монотонна того же типа. *Идея:* из $x_1 < x_2$ следует $f(x_1) \ne f(x_2)$; для $f^{-1}$ — от противного.
+:::
+
+::: {.theorem ref="thm:lec10:criterion" status="доказано в лекции 10"}
+Непрерывная на $[a;\ b]$ функция инъективна $\Leftrightarrow$ строго монотонна (верно и для любого промежутка). *Идея:* если $f(a) < f(b)$, то значения внутри любого отрезка лежат строго между значениями на концах, иначе по теореме о промежуточном значении некоторое значение принимается дважды.
+:::
+
+::: {.corollary ref="cor:lec10:inverse-domain" status="доказано в лекции 10"}
+Если $f$ непрерывна и строго возрастает на $[a;\ b]$, то $f^{-1}$ определена на $[f(a);\ f(b)]$ и строго возрастает (для убывающей — на $[f(b);\ f(a)]$, убывает).
 :::
 
 # Глоссарий курса
