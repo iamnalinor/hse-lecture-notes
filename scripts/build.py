@@ -568,7 +568,6 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
     preps: dict[str, list] = {}
     for m in sorted(metas, key=lambda m: (m.get("date") or "", m["week_id"])):
         if m.get("kind") == "prep":
-            front = read_front_matter(SRC / "prep" / m["course"] / f"{m['week_id']}.md")
             preps.setdefault(m["course"], []).append(
                 {
                     "id": m["week_id"],
@@ -576,7 +575,7 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     "date": m.get("date"),
                     # последний день, когда КР на сайте активна (плитка на главной, цветная кнопка);
                     # по умолчанию — день КР
-                    "active_until": str(front.get("active_until") or m.get("date")),
+                    "active_until": m.get("active_until") or m.get("date"),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
                 }
             )

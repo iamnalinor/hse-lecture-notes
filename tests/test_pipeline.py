@@ -362,6 +362,16 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
             "active_until='8.11.2026' не в формате",
         ),
         ("date: 2026-11-07", "date: 2026-11-07\nactive_until: 2026-11-06", "раньше даты КР"),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nactive_until: 20261108",
+            "active_until=20261108 не в формате",
+        ),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nactive_until: 2026-11-08 18:00:00",
+            "не в формате YYYY-MM-DD",
+        ),
     ],
 )
 def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
@@ -372,6 +382,23 @@ def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
     res = lint(demo)
     assert res.returncode != 0
     assert expected in res.stdout, res.stdout
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX для TikZ → SVG")
+def test_prep_active_until(demo: Path):
+    """active_until из front matter доходит до courses.json строкой YYYY-MM-DD."""
+    p = demo / "prep" / "algebra" / "kr1.md"
+    p.write_text(
+        p.read_text(encoding="utf-8").replace(
+            "date: 2026-11-07\n", "date: 2026-11-07\nactive_until: 2026-11-08\n", 1
+        ),
+        encoding="utf-8",
+    )
+    assert lint(demo).returncode == 0
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    courses = json.loads((demo / "build" / "site-data" / "courses.json").read_text(encoding="utf-8"))
+    assert courses["preps"]["algebra"][0]["active_until"] == "2026-11-08"
 
 
 @pytest.mark.skipif(not HAS_TEX, reason="нужен шрифт CMU из TeX Live")

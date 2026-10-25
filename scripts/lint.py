@@ -46,6 +46,7 @@ TAGS = {"корнер-кейс", "подводный камень", "часто�
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
 PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):(kr\d+):[a-z0-9][a-z0-9-]*$")
+ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 PREP_FILE_RE = re.compile(r"^kr[1-3]$")  # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 
 PIPELINE_WORDS = re.compile(
@@ -440,9 +441,15 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         value = meta.get(k)
         if value in (None, ""):
             continue
-        try:
-            dates[k] = value if isinstance(value, dt.date) else dt.date.fromisoformat(str(value))
-        except ValueError:
+        # сайт сравнивает даты как строки, поэтому только YYYY-MM-DD: ни 20261023, ни время
+        if type(value) is dt.date:
+            dates[k] = value
+        elif isinstance(value, str) and ISO_DATE_RE.fullmatch(value):
+            try:
+                dates[k] = dt.date.fromisoformat(value)
+            except ValueError:
+                rep.err(rel, f"{k}={value!r}: такой даты нет")
+        else:
             rep.err(rel, f"{k}={value!r} не в формате YYYY-MM-DD")
     if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
         rep.err(rel, f"active_until={dates['active_until']} раньше даты КР {dates['date']}")

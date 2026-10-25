@@ -6,4 +6,7 @@ export const shortDate = (iso: string): string => {
   return match === null ? iso : `${match[2] ?? ""}.${match[1] ?? ""}`;
 };
 
-export const todayIso = (now: Date): string => now.toISOString().slice(0, 10);
+const MOSCOW_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" });
+
+/** Today in Moscow, where lectures and tests take place, wherever the reader is: `2026-10-25`. */
+export const todayIso = (now: Date): string => MOSCOW_DAY.format(now);
