@@ -13,16 +13,12 @@ export const prepName = (id: string): string => {
   return number === undefined ? id : `КР-${number}`;
 };
 
-const DAY_MS = 86_400_000;
-
 /**
-A test is upcoming until the day after its date inclusive: `date` is the first day, and a stream
-often writes it on two consecutive days (calculus: Thursday evening and Friday morning).
+A test is upcoming through its `activeUntil` day inclusive (front matter `active_until`; the test day
+unless set — a stream that writes on two consecutive days sets the second one), then it hides itself:
+no tile on the home page, a plain button on the course page.
 */
-export const isUpcoming = (prep: PrepEntry, today: string): boolean => {
-  const dayAfter = new Date(Date.parse(prep.date) + DAY_MS).toISOString().slice(0, 10);
-  return dayAfter >= today;
-};
+export const isUpcoming = (prep: PrepEntry, today: string): boolean => prep.activeUntil >= today;
 
 const CHEATSHEET_LABELS: Readonly<Record<string, string>> = {
   "1side": "Шпаргалка, 1 сторона",

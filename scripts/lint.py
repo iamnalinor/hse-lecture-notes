@@ -435,12 +435,17 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         return
     if not PREP_FILE_RE.match(exam):
         rep.err(rel, "имя файла подготовки — kr1.md, kr2.md или kr3.md (маршруты сайта)")
-    date = meta.get("date")
-    if date not in (None, "") and not isinstance(date, dt.date):
+    dates: dict[str, dt.date] = {}
+    for k in ("date", "active_until"):
+        value = meta.get(k)
+        if value in (None, ""):
+            continue
         try:
-            dt.date.fromisoformat(str(date))
+            dates[k] = value if isinstance(value, dt.date) else dt.date.fromisoformat(str(value))
         except ValueError:
-            rep.err(rel, f"date={date!r} не в формате YYYY-MM-DD")
+            rep.err(rel, f"{k}={value!r} не в формате YYYY-MM-DD")
+    if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
+        rep.err(rel, f"active_until={dates['active_until']} раньше даты КР {dates['date']}")
     blocks = ast_of(path)["blocks"]
     own: set[str] = set()
 

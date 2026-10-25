@@ -28,6 +28,18 @@ describe("build data schemas", () => {
     });
     expect(catalog.preps["calculus"]?.[0]?.id).toBe("kr1");
     expect(catalog.preps["calculus"]?.[0]?.cheatsheets).toStrictEqual([]);
+    // without `active_until` the test stays active through its own day
+    expect(catalog.preps["calculus"]?.[0]?.activeUntil).toBe("2026-10-22");
+  });
+
+  it("reads the last active day of a test", () => {
+    const catalog = CatalogSchema.parse({
+      lectures: {},
+      preps: {
+        calculus: [{ active_until: "2026-10-23", date: "2026-10-22", id: "kr1", title: "" }],
+      },
+    });
+    expect(catalog.preps["calculus"]?.[0]?.activeUntil).toBe("2026-10-23");
   });
 
   it("reads the print variants of a test cheatsheet", () => {

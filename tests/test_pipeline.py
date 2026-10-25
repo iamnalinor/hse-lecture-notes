@@ -176,6 +176,7 @@ def test_html_blocks_and_refs(demo: Path):
                 "id": "kr1",
                 "title": "Подготовка к КР-1: Алгебра",
                 "date": "2026-11-07",
+                "active_until": "2026-11-07",
                 "cheatsheets": ["1side"],
             }
         ]
@@ -355,6 +356,12 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
         ("::: {.theorem ref=", "::: {.theorem #thm:kr1:x title=", "без ref="),
         ("course: algebra", "course: calculus", "лежит в prep/algebra/"),
         ("date: 2026-11-07", 'date: "7 ноября"', "не в формате YYYY-MM-DD"),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nactive_until: 8.11.2026",
+            "active_until='8.11.2026' не в формате",
+        ),
+        ("date: 2026-11-07", "date: 2026-11-07\nactive_until: 2026-11-06", "раньше даты КР"),
     ],
 )
 def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
