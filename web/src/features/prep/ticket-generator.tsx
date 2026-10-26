@@ -79,7 +79,7 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
 
   return (
     <div
-      aria-label="Генератор билетов"
+      aria-label="Генератор вопросов"
       className="mt-5 rounded-lg border border-rule bg-card px-4 py-5 sm:px-6"
       id="ticket-generator"
       role="region"

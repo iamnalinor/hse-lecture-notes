@@ -15,7 +15,7 @@
         <course>/glossary.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
         <course>/theory/..., <course>/program/...
-        <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
+        <course>/<prep>/bank.json       банк генератора вопросов (prep/<course>/<prep>-bank.yaml)
 """
 
 from __future__ import annotations
