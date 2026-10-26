@@ -108,3 +108,124 @@ jobs:
           for asset in $(gh release view latest --json assets --jq '.assets[].name'); do
             [[ -f "dist/$asset" ]] || gh release delete-asset latest "$asset" --yes
           done
+
+  # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска,
+  # на Cloudflare Pages по адресу pr-<N>.<проект>.pages.dev. Ссылка — комментарием в PR,
+  # обновляется на каждый пуш. PR из форков не деплоятся: им не положены секреты.
+  preview:
+    name: Site preview
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      PROJECT: hse-lecture-notes
+      BRANCH: pr-${{ github.event.pull_request.number }}
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - name: Skip without Cloudflare secrets
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID не заданы — превью пропущено"
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/checkout@v7
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: ./.github/actions/setup-web
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: site-data
+          path: web/public/data
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: pdf
+          path: web/public/pdf
+
+      - name: Build the site like Pages does
+        if: env.HAS_TOKEN == 'true'
+        working-directory: web
+        env:
+          BASE_PATH: /
+        run: |
+          find public/data -name index.html -delete
+          shopt -s nullglob
+          for f in public/pdf/*-theory.pdf; do cp "$f" "${f%-theory.pdf}-registry.pdf"; done
+          bun run build
+          # Превью не должно попадать в поиск
+          printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+
+      - name: Create the Cloudflare Pages project if missing
+        if: env.HAS_TOKEN == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT")
+          if [ "$code" = 404 ]; then
+            curl --fail-with-body -s -X POST \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
+              --data "{\"name\":\"$PROJECT\",\"production_branch\":\"main\"}" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
+          elif [ "$code" != 200 ]; then
+            echo "::error::Cloudflare API ответил $code — проверьте токен (Cloudflare Pages: Edit) и account id"
+            exit 1
+          fi
+
+      - name: Deploy
+        if: env.HAS_TOKEN == 'true'
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy web/dist --project-name=${{ env.PROJECT }} --branch=${{ env.BRANCH }}
+            --commit-hash=${{ github.event.pull_request.head.sha }} --commit-dirty=true
+
+      - name: Smoke test
+        if: env.HAS_TOKEN == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+        run: |
+          URL="${URL%/}/"
+          for i in 1 2 3 4 5 6; do
+            curl --fail --silent "${URL}data/courses.json" >/dev/null && break
+            sleep 10
+          done
+          curl --fail --silent "${URL}" | grep -q '<div id="root">'
+          curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория'
+
+      - name: Comment the preview link on the PR
+        if: env.HAS_TOKEN == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALIAS: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+          DEPLOY: ${{ steps.deploy.outputs.deployment-url }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          MARKER='<!-- site-preview -->'
+          BODY="$MARKER
+          **Превью сайта:** ${ALIAS:-$DEPLOY}
+
+          Сборка этого коммита: $DEPLOY (коммит \`${SHA:0:7}\`). Ссылка выше всегда ведёт на последний пуш."
+          ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n1)
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -f body="$BODY" >/dev/null
+          else
+            gh pr comment "$PR" --repo "${{ github.repository }}" --body "$BODY"
+          fi
