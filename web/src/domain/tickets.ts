@@ -12,6 +12,8 @@ type Random = () => number;
 export type TicketPart = {
   readonly kind: string;
   readonly points: string;
+  /** Answers show the proofs of the referenced statements. */
+  readonly proofs: boolean;
   readonly questions: readonly TicketQuestion[];
   readonly title: string;
 };
@@ -53,7 +55,8 @@ const drawParts = (draw: Draw, entries: TicketBank["ticket"]): readonly TicketPa
     return [];
   }
   const questions = drawKind(draw, first.kind, first.count);
-  const part = { kind: first.kind, points: first.points, questions, title: first.title };
+  const { kind, points, proofs, title } = first;
+  const part = { kind, points, proofs, questions, title };
   return [part, ...drawParts({ ...draw, taken: [...draw.taken, ...questions] }, rest)];
 };
 

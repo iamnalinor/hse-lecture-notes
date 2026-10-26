@@ -4,17 +4,20 @@
 
 - `load` — чтение YAML (двойные кавычки с `\\` запрещены: YAML съедает обратную косую черту);
 - `check_schema` — структура, уникальность, виды вопросов, темы, метки ответов, хватает ли вопросов;
-- `snippets_markdown` — тексты вопросов и ответов одним Markdown-документом (линтер проверяет формулы
-  и ссылки в его AST, сборка рендерит его в HTML);
-- `export` — `bank.json` для сайта: тексты в HTML, ссылки разрешены, у каждой метки ответа — документ,
-  где лежит блок (`week_id` лекции или id страницы подготовки).
+- `snippets_markdown` / `check_snippets` — тексты вопросов и ответов одним Markdown-документом: линтер
+  проверяет его AST (структуру, формулы, ссылки);
+- `snippets_marked` / `split_rendered` — те же тексты между метками `<!--BANK …-->`: сборка дописывает их
+  в конец страницы и рендерит тем же pandoc + filters/notes.lua, что и саму страницу (ссылки, тире,
+  неразрывные пробелы — как на странице), и вырезает обратно;
+- `missing_proofs` — у вопросов видов с `proofs: true` должно найтись доказательство;
+- `export` — `bank.json` для сайта: тексты в HTML, у каждой метки ответа — документ, где лежит блок
+  (`week_id` лекции или id страницы подготовки).
 
 В PDF банк не попадает: на бумаге генератора нет.
 """
 
 from __future__ import annotations
 
-import html
 import json
 import re
 from dataclasses import dataclass
@@ -26,11 +29,14 @@ import yaml
 BANK_SUFFIX = "-bank.yaml"
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 TOP_KEYS = {"ticket", "questions"}
-TICKET_KEYS = {"kind", "title", "count", "points"}
+TICKET_KEYS = {"kind", "title", "count", "points", "proofs"}
+# значения, которые обрезает неэкранированный « #» (YAML считает его комментарием)
+TEXT_KEYS = {"text", "answer", "title"}
 QUESTION_KEYS = {"id", "kind", "topic", "text", "refs", "answer"}
 # ответом может быть блок, формула или рисунок; раздел целиком — слишком много для карточки вопроса
 NOT_AN_ANSWER = {"section"}
-MARK_RE = re.compile(r"^<!--BANK (\S+)-->$")
+MARK_RE = re.compile(r"<!--BANK (\S+)-->")
+END_MARK = "<!--BANK-END-->"
 
 
 class BankError(Exception):
@@ -63,10 +69,36 @@ def _scalars(node) -> list:
     return []
 
 
+def _truncated_by_comment(text: str) -> list[str]:
+    """`text: a # b` — YAML читает «a», а « # b» молча считает комментарием."""
+    bad = []
+
+    def walk(node) -> None:
+        if isinstance(node, yaml.SequenceNode):
+            for x in node.value:
+                walk(x)
+        elif isinstance(node, yaml.MappingNode):
+            for k, v in node.value:
+                if (
+                    isinstance(k, yaml.ScalarNode)
+                    and k.value in TEXT_KEYS
+                    and isinstance(v, yaml.ScalarNode)
+                    and v.style is None
+                ):
+                    rest = text[v.end_mark.index :].split("\n", 1)[0]
+                    if rest.lstrip().startswith("#"):
+                        bad.append(f"строка {v.end_mark.line + 1}")
+                walk(v)
+
+    walk(yaml.compose(text))
+    return bad
+
+
 def load(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     try:
         bad = _double_quoted_backslashes(text)
+        cut = _truncated_by_comment(text)
         data = yaml.safe_load(text)
     except yaml.YAMLError as e:
         hint = (
@@ -79,6 +111,11 @@ def load(path: Path) -> dict:
         raise BankError(
             "обратная косая черта в строке в двойных кавычках (" + ", ".join(bad) + "): YAML превращает "
             "\\n, \\v, \\t в управляющие символы — пиши без кавычек, в '…' или блоком >-"
+        )
+    if cut:
+        raise BankError(
+            "« #» в строке без кавычек (" + ", ".join(cut) + "): YAML считает остаток строки комментарием "
+            "и обрезает текст — возьми строку в '…' или пиши блоком >-"
         )
     if not isinstance(data, dict):
         raise BankError("в банке должен быть словарь с ключами ticket и questions")
@@ -131,6 +168,8 @@ def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list
             errors.append(f"{where}: нет title — так пункт называется в билете")
         if "points" in entry and not isinstance(entry["points"], str):
             errors.append(f"{where}: points — строка («2 балла»), а не {entry['points']!r}")
+        if "proofs" in entry and not isinstance(entry["proofs"], bool):
+            errors.append(f"{where}: proofs — true или false, а не {entry['proofs']!r}")
 
     seen: set[str] = set()
     per_kind: dict[str, list[dict]] = {k: [] for k in kinds}
@@ -207,78 +246,63 @@ def snippet_ast(markdown: str, fmt: str) -> dict:
     return json.loads(pypandoc.convert_text(markdown, "json", format=fmt, extra_args=["--quiet"]))
 
 
-def ref_text(entry: dict, mode: str, same_doc: bool) -> str:
-    """Текст ссылки — как у notes.lua (ref_text): «6.1 (лекция 6)», «Теорема 6.1», «(4.4)», «Название»."""
-    if entry["type"] == "section":
-        text = f"«{entry['title']}»"
-    elif entry["type"] == "equation":
-        text = f"({entry['number']})"
-    elif mode == "SuppressAuthor":
-        text = entry["number"]
-    else:
-        text = f"{entry['name']} {entry['number']}"
-    if not same_doc and entry.get("lecture"):
-        text += f" (лекция {entry['lecture']})"
-    return text
-
-
-def _resolve_cites(node, lookup) -> None:
-    """Cite → RawInline с `<a class="ref" data-ref>` (разметка как у фрагментов, сайт сделает из неё RefLink)."""
-    if isinstance(node, list):
-        for i, x in enumerate(node):
-            if isinstance(x, dict) and x.get("t") == "Cite":
-                links = []
-                for c in x["c"][0]:
-                    entry, same, href = lookup(c["citationId"])
-                    text = html.escape(ref_text(entry, c["citationMode"]["t"], same))
-                    links.append(
-                        f'<a href="{html.escape(href)}" class="ref" data-ref="{html.escape(entry["id"])}">'
-                        f"{text}</a>"
-                    )
-                node[i] = {"t": "RawInline", "c": ["html", ", ".join(links)]}
-            else:
-                _resolve_cites(x, lookup)
-    elif isinstance(node, dict):
-        for v in node.values():
-            if isinstance(v, (list, dict)):
-                _resolve_cites(v, lookup)
-
-
-def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], fmt: str) -> dict:
-    """bank.json: `own` — метки страницы из её meta.json (`id, name, number, title, type`)."""
-    own_by_id = {e["id"]: e for e in own}
-
-    def lookup(ref: str) -> tuple[dict, bool, str]:
-        if ref in own_by_id:
-            return own_by_id[ref], True, f"#{ref}"
-        entry = notes[ref]
-        return {**entry, "id": ref}, False, f"../{entry['week_id']}/#{ref}"
-
-    ast = snippet_ast(snippets_markdown(bank), fmt)
-    blocks = []
+def check_snippets(ast: dict) -> list[str]:
+    """Каждый текст — ровно один div `#<id>--<поле>`; лишнее `:::` внутри текста ломает разбор."""
+    errors = []
     for b in ast["blocks"]:
         ident = b["c"][0][0] if b["t"] == "Div" else ""
-        if not ident:
-            raise BankError("текст вопроса не разобрался в отдельный блок (лишнее ::: внутри?)")
-        blocks.append({"t": "RawBlock", "c": ["html", f"<!--BANK {ident}-->"]})
-        blocks.extend(b["c"][1])
-    ast["blocks"] = blocks
-    _resolve_cites(ast, lookup)
-    out = pypandoc.convert_text(
-        json.dumps(ast), "html5", format="json", extra_args=["--katex", "--wrap=none", "--quiet"]
-    )
-    rendered: dict[str, list[str]] = {}
-    current: list[str] | None = None
-    for line in out.splitlines():
-        m = MARK_RE.match(line.strip())
-        if m:
-            current = rendered.setdefault(m.group(1), [])
-        elif current is not None:
-            current.append(line)
+        if "--" not in ident:
+            errors.append(
+                "текст вопроса не разобрался в отдельный блок: лишняя строка ::: в text или answer?"
+            )
+    return errors
 
-    def html_of(qid: str, field: str) -> str:
-        return "\n".join(rendered.get(f"{qid}--{field}", [])).strip()
 
+def snippets_marked(bank: dict) -> str:
+    """Тексты между `<!--BANK <id>:<поле>-->` и `<!--BANK-END-->`, для рендера в конце страницы."""
+    parts = []
+    for q in bank["questions"]:
+        for field in ("text", "answer"):
+            if isinstance(q.get(field), str):
+                parts.append(f"<!--BANK {q['id']}:{field}-->\n\n{q[field].strip()}\n\n{END_MARK}\n")
+    return "\n".join(parts)
+
+
+def split_rendered(page_html: str) -> dict[str, str]:
+    """HTML страницы с дописанными текстами → `<id>:<поле> → HTML` (по меткам из `snippets_marked`)."""
+    out = {}
+    for m in MARK_RE.finditer(page_html):
+        end = page_html.find(END_MARK, m.end())
+        if end < 0:
+            raise BankError(f"текст {m.group(1)} не закрылся: лишнее ::: или незакрытая формула?")
+        out[m.group(1)] = page_html[m.end() : end].strip()
+    return out
+
+
+def missing_proofs(bank: dict, exam: str, has_proof) -> list[str]:
+    """Вопросы видов с `proofs: true` без доказательства в ответе.
+
+    Доказательство есть, если есть свой `answer`, ход доказательства `rem:<exam>:proof-…`, задача (с
+    решением) или блок конспекта, за которым идёт `::: proof` (`has_proof(метка)`; сайт покажет его).
+    """
+    kinds = {t["kind"] for t in bank["ticket"] if t.get("proofs")}
+    errors = []
+    for q in bank["questions"]:
+        if q["kind"] not in kinds or q.get("answer"):
+            continue
+        refs = q.get("refs") or []
+        if any(r.startswith((f"rem:{exam}:proof-", "prob:")) or has_proof(r) for r in refs):
+            continue
+        errors.append(
+            f"вопрос {q['id']}: в ответе нет доказательства — дай блок с ::: proof сразу после него, "
+            f"rem:{exam}:proof-… или свой answer"
+        )
+    return errors
+
+
+def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rendered: dict[str, str]) -> dict:
+    """bank.json: `own` — метки страницы из её meta.json, `rendered` — из `split_rendered`."""
+    own_ids = {e["id"] for e in own}
     topics = {
         e["id"].removeprefix(f"sec:{exam}:"): e["title"]
         for e in own
@@ -291,10 +315,10 @@ def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], fmt: 
                 "id": q["id"],
                 "kind": q["kind"],
                 "topic": q["topic"],
-                "text": html_of(q["id"], "text"),
-                "answer": html_of(q["id"], "answer"),
+                "text": rendered.get(f"{q['id']}:text", ""),
+                "answer": rendered.get(f"{q['id']}:answer", ""),
                 "refs": [
-                    {"id": r, "doc": exam if r in own_by_id else notes[r]["week_id"]}
+                    {"id": r, "doc": exam if r in own_ids else notes[r]["week_id"]}
                     for r in q.get("refs") or []
                 ],
             }
@@ -302,7 +326,13 @@ def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], fmt: 
     used = {q["topic"] for q in questions}
     return {
         "ticket": [
-            {"kind": t["kind"], "title": t["title"], "count": t["count"], "points": t.get("points", "")}
+            {
+                "kind": t["kind"],
+                "title": t["title"],
+                "count": t["count"],
+                "points": t.get("points", ""),
+                "proofs": bool(t.get("proofs", False)),
+            }
             for t in bank["ticket"]
         ],
         "topics": {k: v for k, v in topics.items() if k in used},

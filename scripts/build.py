@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures as cf
+import dataclasses
 import fnmatch
 import hashlib
 import html
@@ -97,7 +98,8 @@ class Doc:
 
     @property
     def rel(self) -> str:
-        return self.path.relative_to(SRC).as_posix()
+        # временный файл (страница с дописанным банком билетов) может лежать вне SRC
+        return self.path.relative_to(SRC).as_posix() if self.path.is_relative_to(SRC) else self.path.name
 
     @property
     def out_name(self) -> str:
@@ -462,6 +464,7 @@ def build_html(doc: Doc) -> dict:
     write_preview(page_dir, meta)
     if doc.kind == "prep" and ticket_bank.bank_path(doc.path).exists():
         export_bank(doc, meta, page_dir)
+        meta["bank"] = True  # → courses.json: генератор на странице есть, только если bank.json записан
     return meta
 
 
@@ -477,10 +480,35 @@ def export_bank(doc: Doc, meta: dict, page_dir: Path) -> None:
         errors, _ = ticket_bank.check_schema(bank, doc.week_id, labels)
         if errors:
             raise ticket_bank.BankError("; ".join(errors))
-        data = ticket_bank.export(bank, doc.week_id, notes, own, MARKDOWN)
+        ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), MARKDOWN)
+        errors = ticket_bank.check_snippets(ast)
+        if errors:
+            raise ticket_bank.BankError("; ".join(errors))
+        rendered = ticket_bank.split_rendered(render_bank_texts(doc, bank, page_dir))
+        data = ticket_bank.export(bank, doc.week_id, notes, own, rendered)
     except ticket_bank.BankError as e:
         raise BuildError(f"{rel}: {e} (подробнее — uv run scripts/lint.py)") from e
     write_json(page_dir / "bank.json", data)
+
+
+def render_bank_texts(doc: Doc, bank: dict, page_dir: Path) -> str:
+    """Тексты банка дописываются в конец страницы и рендерятся тем же pandoc + notes.lua, что и она:
+    ссылки на свои метки страницы и на конспекты, тире и неразрывные пробелы — ровно как на странице."""
+    tmp = page_dir / f"{doc.week_id}.bank-render.md"
+    out = page_dir / f"{doc.week_id}.bank-render.html"
+    text = doc.path.read_text(encoding="utf-8").rstrip() + "\n\n" + ticket_bank.snippets_marked(bank)
+    tmp.write_text(text, encoding="utf-8")
+    try:
+        run_pandoc(
+            dataclasses.replace(doc, path=tmp),
+            "html5",
+            out,
+            ["--katex", "-M", "notes_mode=render", "-M", f"notes_index={BUILD / 'index.json'}"],
+        )
+        return out.read_text(encoding="utf-8")
+    finally:
+        tmp.unlink(missing_ok=True)
+        out.unlink(missing_ok=True)
 
 
 def katex_macros() -> dict[str, str]:
@@ -615,7 +643,7 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     "active_until": m.get("active_until") or m.get("date"),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
                     # есть банк билетов → на странице генератор (bank.json рядом с fragment.html)
-                    "bank": ticket_bank.bank_path(SRC / "prep" / m["course"] / f"{m['week_id']}.md").exists(),
+                    "bank": bool(m.get("bank")),
                 }
             )
     write_json(
@@ -701,6 +729,11 @@ def main() -> int:
         index = build_index(docs, args.jobs)
         targets = docs
         if args.only:
+            # банк билетов собирается вместе со своей страницей: colloq1-bank.yaml → colloq1.md
+            args.only = [
+                p.removesuffix(ticket_bank.BANK_SUFFIX) + ".md" if p.endswith(ticket_bank.BANK_SUFFIX) else p
+                for p in args.only
+            ]
             targets = [
                 d for d in docs if any(fnmatch.fnmatch(d.rel, pat) or d.rel == pat for pat in args.only)
             ]

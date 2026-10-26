@@ -25,8 +25,8 @@ const BANK: TicketBank = {
     question("d4", "definition", "d"),
   ],
   ticket: [
-    { count: 2, kind: "proof", points: "2 балла", title: "Теорема" },
-    { count: 2, kind: "definition", points: "", title: "Формулировка" },
+    { count: 2, kind: "proof", points: "2 балла", proofs: true, title: "Теорема" },
+    { count: 2, kind: "definition", points: "", proofs: false, title: "Формулировка" },
   ],
   topics: { a: "A", b: "B", c: "C", d: "D" },
 };
@@ -46,9 +46,9 @@ const ids = (bank: TicketBank, random: () => number) =>
 describe("drawTicket", () => {
   it("follows the ticket format: parts in order, count questions of the part's kind", () => {
     const parts = drawTicket(BANK, seeded(1));
-    expect(parts.map((part) => [part.title, part.points])).toStrictEqual([
-      ["Теорема", "2 балла"],
-      ["Формулировка", ""],
+    expect(parts.map((part) => [part.title, part.points, part.proofs])).toStrictEqual([
+      ["Теорема", "2 балла", true],
+      ["Формулировка", "", false],
     ]);
     expect(parts[0]?.questions.map((entry) => entry.kind)).toStrictEqual(["proof", "proof"]);
     expect(parts[1]?.questions.map((entry) => entry.kind)).toStrictEqual([
@@ -70,7 +70,7 @@ describe("drawTicket", () => {
     const narrow: TicketBank = {
       ...BANK,
       questions: [question("p1", "proof", "a"), question("p2", "proof", "a")],
-      ticket: [{ count: 2, kind: "proof", points: "", title: "Теорема" }],
+      ticket: [{ count: 2, kind: "proof", points: "", proofs: true, title: "Теорема" }],
     };
     expect(ids(narrow, seeded(3)).toSorted((a, b) => a.localeCompare(b))).toStrictEqual([
       "p1",

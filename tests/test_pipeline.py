@@ -521,6 +521,7 @@ ticket:
     title: Теорема с доказательством
     points: 2 балла
     count: 1
+    proofs: true
   - kind: definition
     title: Вопрос на формулировку
     count: 2
@@ -530,6 +531,11 @@ questions:
     topic: product
     text: Ассоциативность умножения матриц $(AB)C = A(BC)$; см. [-@thm:lec01:assoc].
     refs: [thm:lec01:assoc, rem:colloq1:order]
+  - id: assoc-proof
+    kind: proof
+    topic: product
+    text: Ассоциативность ещё раз.
+    refs: [thm:lec01:assoc]
   - id: matrix
     kind: definition
     topic: product
@@ -545,8 +551,16 @@ questions:
 """
 
 
+CITE = "Смотри [см. -@thm:lec01:assoc, п. 2] и @rem:colloq1:order --- это важно."
+
+
 def make_bank(demo: Path, text: str = BANK) -> Path:
-    make_colloq(demo)
+    page = make_colloq(demo)
+    # у коллоквиума последний раздел — пробный билет: генератор встаёт под ним
+    page.write_text(
+        page.read_text(encoding="utf-8").replace("# Пробный вариант", "# Пробный билет") + f"\n{CITE}\n",
+        encoding="utf-8",
+    )
     dst = demo / "prep" / "algebra" / "colloq1-bank.yaml"
     dst.write_text(text, encoding="utf-8")
     return dst
@@ -557,6 +571,7 @@ def test_bank_builds(demo: Path):
     make_bank(demo)
     res = lint(demo)
     assert res.returncode == 0, res.stdout
+    assert "последний раздел не" not in res.stdout
     # одна тема на все вопросы — линтер предупреждает, что темы в билете будут повторяться
     assert "темы будут повторяться" in res.stdout
     res = build(demo, "--no-pdf")
@@ -571,14 +586,22 @@ def test_bank_builds(demo: Path):
         {"id": "thm:lec01:assoc", "doc": "01_sep03_matrices"},
         {"id": "rem:colloq1:order", "doc": "colloq1"},
     ]
-    assert '<span class="math inline">(AB)C = A(BC)</span>' in q["assoc"]["text"]
-    assert 'class="ref" data-ref="thm:lec01:assoc"' in q["assoc"]["text"]
+    assert 'class="math inline">(AB)C = A(BC)</span>' in squash_html(q["assoc"]["text"])
+    assert 'data-ref="thm:lec01:assoc"' in q["assoc"]["text"]
     assert 'href="../01_sep03_matrices/#thm:lec01:assoc"' in q["assoc"]["text"]
     assert "1.3 (лекция\u00a01)" in q["assoc"]["text"]
     assert q["assoc"]["answer"] == ""
     # своя метка страницы — якорь на этой же странице, «Замечание N» без номера лекции
     assert 'href="#rem:colloq1:order"' in q["elem"]["answer"]
     assert "Замечание\u00a01<" in q["elem"]["answer"]
+    assert bank["ticket"][0]["proofs"] is True and bank["ticket"][1]["proofs"] is False
+    # временные файлы рендера банка не остаются в site-data
+    assert sorted(p.name for p in (site / "algebra" / "colloq1").iterdir()) == [
+        "bank.json",
+        "fragment.html",
+        "index.html",
+        "meta.json",
+    ]
     courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
     assert {p["id"]: p["bank"] for p in courses["preps"]["algebra"]} == {"kr1": False, "colloq1": True}
     # в PDF и в сам фрагмент страницы банк не попадает
@@ -622,6 +645,17 @@ def test_bank_builds(demo: Path):
             "    text: Что такое матрица?\n    level: 2",
             "неизвестный ключ 'level'",
         ),
+        (
+            "    text: Что такое матрица?",
+            "    text: |-\n      Что такое матрица?\n      :::",
+            "лишняя строка :::",
+        ),
+        ("Что такое матрица?", "Что такое # матрица?", "« #» в строке без кавычек"),
+        (
+            "refs: [thm:lec01:assoc]\n",
+            "refs: [def:lec01:matrix]\n",
+            "вопрос assoc-proof: в ответе нет доказательства",
+        ),
     ],
 )
 def test_lint_bank_catches(demo: Path, old: str, new: str, expected: str):
@@ -636,9 +670,48 @@ def test_lint_bank_catches(demo: Path, old: str, new: str, expected: str):
         and "никуда не ведёт" not in expected
         and "$" not in expected
         and "boxed" not in expected
+        and "нет доказательства" not in expected
     ):
         assert build(demo, "--no-pdf", "--no-html").returncode == 0  # PDF/индекс банк не трогает
         assert build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md").returncode != 0
+
+
+def squash_html(text: str) -> str:
+    """Переносы строк pandoc → пробел; неразрывные пробелы остаются."""
+    import re
+
+    return re.sub(r"[ \t\n]+", " ", text).strip()
+
+
+def test_bank_cites_like_page(demo: Path):
+    """Ссылка с префиксом и суффиксом в тексте банка рендерится ровно как та же фраза на странице."""
+    make_bank(demo, BANK.replace("text: Что такое матрица?", f"text: {CITE}"))
+    assert lint(demo).returncode == 0
+    res = build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data" / "algebra" / "colloq1"
+    frag = (site / "fragment.html").read_text(encoding="utf-8")
+    page_p = squash_html(frag[frag.rindex("<p>Смотри") :].split("</p>")[0] + "</p>")
+    bank = json.loads((site / "bank.json").read_text(encoding="utf-8"))
+    text = squash_html(next(q["text"] for q in bank["questions"] if q["id"] == "matrix"))
+    assert text == page_p
+    assert "см. <a" in text and "п. 2" in text and "\u00a0— это" in text
+
+
+def test_bank_only_by_bank_path(demo: Path):
+    """--only prep/…/colloq1-bank.yaml собирает страницу вместе с банком."""
+    make_bank(demo)
+    res = build(demo, "--no-pdf", "--only", "prep/algebra/colloq1-bank.yaml")
+    assert res.returncode == 0, res.stderr
+    assert (demo / "build" / "site-data" / "algebra" / "colloq1" / "bank.json").exists()
+
+
+def test_lint_bank_placement(demo: Path):
+    """Генератор встаёт под последним разделом: банк у страницы, которая кончается не билетом, — предупреждение."""
+    page = make_bank(demo).with_name("colloq1.md")
+    page.write_text(page.read_text(encoding="utf-8") + "\n# Ещё раздел\n\nТекст.\n", encoding="utf-8")
+    res = lint(demo)
+    assert "последний раздел не «# Пробный билет»" in res.stdout, res.stdout
 
 
 def test_lint_bank_without_page(demo: Path):

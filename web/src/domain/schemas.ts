@@ -137,6 +137,8 @@ const TicketPartSchema = z.object({
   count: z.number(),
   kind: z.string(),
   points: z.string(),
+  /** Answers of this kind show the proofs that follow the referenced statements. */
+  proofs: z.boolean().default(false),
   title: z.string(),
 });
 

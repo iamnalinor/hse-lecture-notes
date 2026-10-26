@@ -536,6 +536,56 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     if need not in h2:
         rep.err(rel, f"нет ни одного подраздела «## {need}»")
     lint_bank(path, course, exam, labels, own, rep)
+    last = "Пробный билет" if colloq else "Пробный вариант"
+    if ticket_bank.bank_path(path).exists() and (not h1 or h1[-1] != last):
+        # генератор встаёт после текста страницы, то есть под последним разделом
+        rep.warn(
+            rel,
+            f"у страницы есть банк билетов, а последний раздел не «# {last}»: генератор окажется под «{h1[-1] if h1 else ''}»",
+        )
+
+
+class NotesProofs:
+    """Идёт ли за блоком конспекта `::: proof` — сайт покажет его в ответе генератора билетов.
+
+    Как `extractBlock` на сайте: после блока пропускаются абзацы, поиск останавливается на следующем
+    нумерованном блоке или заголовке.
+    """
+
+    def __init__(self, course_labels: dict) -> None:
+        self.labels = course_labels
+        self.asts: dict[str, list] = {}
+
+    def has_proof(self, label: str) -> bool:
+        entry = self.labels.get(label)
+        if entry is None:
+            return False
+        file = entry["file"]
+        if file not in self.asts:
+            self.asts[file] = ast_of(build.SRC / file)["blocks"]
+        return bool(proof_after(self.asts[file], label))
+
+
+def proof_after(blocks: list, label: str) -> bool | None:
+    for i, b in enumerate(blocks):
+        if b["t"] != "Div":
+            continue
+        (ident, _, _), content = b["c"]
+        if ident == label:
+            for nxt in blocks[i + 1 :]:
+                if nxt["t"] == "Header":
+                    return False
+                if nxt["t"] == "Div":
+                    classes = nxt["c"][0][1]
+                    if "proof" in classes:
+                        return True
+                    if any(c in PREFIX for c in classes):
+                        return False
+            return False
+        found = proof_after(content, label)
+        if found is not None:
+            return found
+    return None
 
 
 def lint_bank(path: Path, course: str, exam: str, labels: dict, own: set[str], rep: Report) -> None:
@@ -558,7 +608,14 @@ def lint_bank(path: Path, course: str, exam: str, labels: dict, own: set[str], r
         rep.warn(rel, w)
     known = {**course_labels, **dict.fromkeys(own_types, True)}
     ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), build.MARKDOWN)
+    for e in ticket_bank.check_snippets(ast):
+        rep.err(rel, e)
+    if not errors:
+        for e in ticket_bank.missing_proofs(bank, exam, NotesProofs(course_labels).has_proof):
+            rep.err(rel, e)
     for snippet in ast["blocks"]:
+        if snippet["t"] != "Div":
+            continue
         where = f"{rel} ({snippet['c'][0][0].replace('--', ': ')})"
 
         def on_node(n, where=where):

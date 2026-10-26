@@ -2,7 +2,8 @@
 # Формат — context/markup.md §11, «Банк билетов». В PDF банк не попадает.
 #
 # ticket — пункты билета по порядку: вид вопроса, как он называется в билете, баллы, сколько вопросов
-# этого вида в билете. Поменять формат билета — только здесь.
+# этого вида в билете, proofs: true — в ответе нужны доказательства (сайт показывает ::: proof блоков
+# конспекта, линтер требует доказательство у каждого вопроса). Поменять формат билета — только здесь.
 # questions — вопросы: id, kind (из ticket), topic (раздел sec:colloq1:<topic> страницы — «к разделу»
 # и разные темы в одном билете), text (Markdown, формулы $…$), refs (метки блоков-ответов: конспекты
 # или эта страница) и/или answer (свой короткий ответ — только если готового блока нет).
@@ -13,14 +14,17 @@ ticket:
     title: Теорема с доказательством
     points: 2 балла
     count: 2
+    proofs: true
   - kind: claim
     title: Докажите утверждение
     points: 1 балл
     count: 1
+    proofs: true
   - kind: disprove
     title: 'Докажите или опровергните; если неверно — контрпример, исправленная формулировка и её доказательство'
     points: 1 балл
     count: 1
+    proofs: true
   - kind: definition
     title: Вопрос на формулировку
     points: 0,5 балла
@@ -466,7 +470,7 @@ questions:
       Неверно: у $100, 0, 0, \dots$ супремум $100$, а единственный частичный предел $0$. Верно, если
       супремум $M$ не достигается ($a_n \ne M$ при всех $n$): тогда в каждом интервале $(M - \varepsilon; M)$
       бесконечно много членов, $M$ — предельная точка, то есть частичный предел, и $\varlimsup a_n = M$.
-    refs: [rem:colloq1:limsup-not-sup, prob:lec06:unbounded-monotone]
+    refs: [rem:colloq1:limsup-not-sup]
   - id: dis-one-partial
     kind: disprove
     topic: partial
@@ -592,7 +596,10 @@ questions:
     kind: definition
     topic: limit
     text: Предел последовательности; отрицание («$a$ — не предел $(a_n)$»).
-    refs: [def:lec03:limit, eq:lec03:not-limit]
+    answer: >-
+      Отрицание: $\exists \varepsilon > 0$ $\forall N \in \N$ $\exists n > N\colon$ $|a_n - a| \ge
+      \varepsilon$ — есть окрестность $a$, вне которой бесконечно много членов.
+    refs: [def:lec03:limit]
   - id: def-neighborhood-convergent
     kind: definition
     topic: limit
@@ -706,7 +713,10 @@ questions:
     kind: definition
     topic: cauchy
     text: Фундаментальная последовательность; отрицание фундаментальности.
-    refs: [def:lec06:fundamental, eq:lec06:not-fundamental]
+    answer: >-
+      Отрицание: $\exists \varepsilon > 0$ $\forall N$ $\exists m, n > N\colon$ $|a_m - a_n| \ge
+      \varepsilon$.
+    refs: [def:lec06:fundamental]
   - id: def-cauchy
     kind: definition
     topic: cauchy
@@ -726,7 +736,10 @@ questions:
     kind: definition
     topic: function-limit
     text: Предел функции по Коши; его отрицание.
-    refs: [def:lec07:cauchy-limit, eq:lec07:not-cauchy]
+    answer: >-
+      Отрицание: $\exists \varepsilon_0 > 0$ $\forall \delta > 0$ $\exists x$, $0 < |x - x_0| <
+      \delta\colon$ $|f(x) - A| \ge \varepsilon_0$.
+    refs: [def:lec07:cauchy-limit]
   - id: def-heine-limit
     kind: definition
     topic: function-limit
@@ -817,7 +830,7 @@ questions:
     topic: partial
     text: >-
       Найдите множество частичных пределов, верхний и нижний пределы последовательности, $k$-й блок
-      которой ($k = 1, 2, \dots$) — числа $\frac{1}{2^k}, \frac{2}{2^k}, \dots, \frac{2^k}{2^k}, 3 + \frac1k$.
+      которой ($k = 1, 2, \dots$) — числа $\frac{1}{2^k}, \frac{2}{2^k}, \dots, \frac{2^k}{2^k}, 3 + \frac1k$. В ответе это пункт (a) задачи.
     refs: [prob:lec06:blocks]
   - id: prob-sup-set
     kind: problem
@@ -847,7 +860,7 @@ questions:
     topic: sup
     text: >-
       Найдите $\sup$ и $\inf$ множеств и выясните, достигаются ли они: $\left\{\frac{3 + (-1)^n}{n} \mid n \in
-      \N\right\}$ и $\left\{\frac{n}{2n + m} \mid m, n \in \N\right\}$.
+      \N\right\}$ и $\left\{\frac{n}{2n + m} \mid m, n \in \N\right\}$. В ответе это пункты (a) и (b) задачи.
     refs: [prob:lec05:sup-sets]
   - id: prob-recurrent-sqrt
     kind: problem

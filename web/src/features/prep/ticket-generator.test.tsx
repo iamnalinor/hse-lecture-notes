@@ -27,14 +27,20 @@ const BANK: TicketBank = {
       answer: "<p>Свой ответ: транспонирование.</p>",
       id: "transpose",
       kind: "definition",
-      refs: [],
+      refs: [{ doc: LECTURE, id: "thm:lec04:laplace" }],
       text: "<p>Что такое транспонирование?</p>",
       topic: "matrix",
     },
   ],
   ticket: [
-    { count: 1, kind: "proof", points: "2 балла", title: "Теорема с доказательством" },
-    { count: 1, kind: "definition", points: "0,5 балла", title: "Формулировка" },
+    {
+      count: 1,
+      kind: "proof",
+      points: "2 балла",
+      proofs: true,
+      title: "Теорема с доказательством",
+    },
+    { count: 1, kind: "definition", points: "0,5 балла", proofs: false, title: "Формулировка" },
   ],
   topics: { det: "Определитель", matrix: "Матрицы" },
 };
@@ -43,7 +49,9 @@ const LECTURE_FRAGMENT = `<p>до</p>
 <div id="thm:lec04:laplace" class="nb nb-theorem nb-style-theorem" data-type="theorem" data-number="4.3">
   <div class="nb-head"><span class="nb-name">Теорема 4.3 (разложение Лапласа)</span></div>
   <div class="nb-body"><p>Определитель равен сумме по строке.</p></div>
-</div>`;
+</div>
+<p>Перед доказательством — пара слов.</p>
+<div class="nb-proof"><p><em>Доказательство.</em> Индукция по n.</p></div>`;
 
 const PREP_FRAGMENT = `<div id="rem:colloq1:proof-laplace" class="nb nb-remark nb-style-remark" data-type="remark" data-number="7">
   <div class="nb-head"><span class="nb-name">Замечание 7 (ход доказательства)</span></div>
@@ -114,7 +122,7 @@ describe("TicketGenerator", () => {
     }
     expect(within(proof).queryByText("Определитель равен сумме по строке.")).toBeNull();
 
-    await userEvent.click(within(proof).getByRole("button", { name: /Показать ответ/u }));
+    await userEvent.click(within(proof).getByRole("button", { name: "Ответ на вопрос 1" }));
     expect(await within(proof).findByText("Определитель равен сумме по строке.")).toBeVisible();
     expect(await within(proof).findByText("Индукция по порядку.")).toBeVisible();
     expect(within(proof).getByText("Теорема 4.3")).toBeInTheDocument();
@@ -127,6 +135,9 @@ describe("TicketGenerator", () => {
       "/algebra/colloq1#rem:colloq1:proof-laplace",
     );
     expect(document.querySelector('[id="thm:lec04:laplace"]')).toBeNull();
+    // a theorem with proof: the proof that follows the statement comes along
+    expect(within(proof).getByText(/Индукция по n/u)).toBeInTheDocument();
+    expect(within(proof).queryByText(/пара слов/u)).toBeNull();
   });
 
   it("shows an own answer, and a new ticket starts with answers closed", async () => {
@@ -136,11 +147,21 @@ describe("TicketGenerator", () => {
     if (definition === undefined) {
       throw new Error("no question");
     }
-    await userEvent.click(within(definition).getByRole("button", { name: /Показать ответ/u }));
+    await userEvent.click(within(definition).getByRole("button", { name: "Ответ на вопрос 2" }));
     expect(within(definition).getByText("Свой ответ: транспонирование.")).toBeVisible();
+    // a formulation question: the statement only, no proof
+    expect(
+      await within(definition).findByText("Определитель равен сумме по строке."),
+    ).toBeVisible();
+    expect(within(definition).queryByText(/Индукция по n/u)).toBeNull();
 
     await newTicket();
     expect(screen.queryByText("Свой ответ: транспонирование.")).toBeNull();
-    expect(screen.getAllByRole("button", { name: /Показать ответ/u })).toHaveLength(2);
+    const buttons = screen.getAllByRole("button", { name: /^Ответ на вопрос/u });
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) {
+      expect(button).toHaveAttribute("aria-expanded", "false");
+    }
+    expect(screen.getByText("Билет 2: 2 вопроса")).toBeInTheDocument();
   });
 });

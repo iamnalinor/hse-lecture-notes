@@ -15,6 +15,8 @@ type Props = {
   /** The page the generator is on: its own blocks are linked by anchor. */
   readonly prepId: string;
   readonly refs: readonly TicketRef[];
+  /** Show the proofs that follow the referenced statements (ticket parts with `proofs: true`). */
+  readonly withProofs: boolean;
 };
 
 const LINK = "text-sm font-semibold text-def no-underline hover:underline";
@@ -22,11 +24,16 @@ const LINK = "text-sm font-semibold text-def no-underline hover:underline";
 type Ref = { readonly course: string; readonly blockRef: TicketRef };
 
 /** One block of the answer, cut out of its document (a lecture or this page) and drawn in place. */
-const AnswerBlock = ({ blockRef, course, prepId }: Ref & { readonly prepId: string }) => {
+const AnswerBlock = ({
+  blockRef,
+  course,
+  prepId,
+  withProofs,
+}: Pick<Props, "prepId" | "withProofs"> & Ref) => {
   const target = useLabelIndex()[course]?.[blockRef.id];
   const { data: html, isPending } = useQuery({
     ...fragmentQuery(course, blockRef.doc),
-    select: (fragment) => extractBlock(fragment, blockRef.id),
+    select: (fragment) => extractBlock(fragment, blockRef.id, withProofs),
   });
 
   if (isPending) {
@@ -60,13 +67,19 @@ const AnswerBlock = ({ blockRef, course, prepId }: Ref & { readonly prepId: stri
   );
 };
 /** «Показать ответ»: the own answer, then each referenced block with a link to where it lives. */
-export const TicketAnswer = ({ answer, course, prepId, refs }: Props) => (
+export const TicketAnswer = ({ answer, course, prepId, refs, withProofs }: Props) => (
   <div className="mt-2">
     {answer !== "" && (
       <FragmentView course={course} docId={prepId} html={answer} lecture={undefined} />
     )}
     {refs.map((ref) => (
-      <AnswerBlock blockRef={ref} course={course} key={ref.id} prepId={prepId} />
+      <AnswerBlock
+        blockRef={ref}
+        course={course}
+        key={ref.id}
+        prepId={prepId}
+        withProofs={withProofs}
+      />
     ))}
   </div>
 );

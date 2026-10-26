@@ -14,6 +14,12 @@ type Props = { readonly course: string; readonly prepId: string };
 /** A drawn ticket; `serial` remounts the questions, so every new ticket starts with answers closed. */
 type Drawn = { readonly parts: readonly TicketPart[]; readonly serial: number };
 
+/** Read out to screen readers when a new ticket appears: «Билет 2: 9 вопросов». */
+const announce = (drawn: Drawn): string => {
+  const count = drawn.parts.flatMap((part) => part.questions).length;
+  return `Билет ${String(drawn.serial)}: ${String(count)} ${plural(count, ["вопрос", "вопроса", "вопросов"])}`;
+};
+
 const Ticket = ({
   bank,
   course,
@@ -40,6 +46,7 @@ const Ticket = ({
                 key={`${String(drawn.serial)}-${question.id}`}
                 number={first(index) + offset}
                 prepId={prepId}
+                proofs={part.proofs}
                 question={question}
                 topicTitle={bank.topics[question.topic]}
               />
@@ -94,6 +101,9 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
           Новый билет
         </button>
       </div>
+      <p aria-live="polite" className="sr-only">
+        {drawn === undefined ? "" : announce(drawn)}
+      </p>
       {bank !== undefined && drawn !== undefined && (
         <Ticket bank={bank} course={course} drawn={drawn} prepId={prepId} />
       )}
