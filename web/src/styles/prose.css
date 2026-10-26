@@ -97,6 +97,73 @@
   vertical-align: top;
 }
 
+/*
+Program page (`/<course>/program`): a table of three or more columns becomes a stack of cards on a
+phone — one card per row, every value under its column name (`data-label`, set by the reader).
+The first column is the card title.
+*/
+@media (width < 40rem) {
+  .prose-notes .table-cards table,
+  .prose-notes .table-cards tbody,
+  .prose-notes .table-cards tr,
+  .prose-notes .table-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  .prose-notes .table-cards table {
+    font-size: 0.92em;
+  }
+
+  .prose-notes .table-cards colgroup {
+    display: none;
+  }
+
+  .prose-notes .table-cards thead {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .prose-notes .table-cards tr {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+  }
+
+  .prose-notes .table-cards td {
+    border: 0;
+    padding: 3px 0;
+  }
+
+  .prose-notes .table-cards td[data-label]::before {
+    color: var(--muted);
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .prose-notes .table-cards td:first-child {
+    border-bottom: 1px solid var(--rule);
+    font-weight: 700;
+    margin-bottom: 4px;
+    padding-bottom: 7px;
+  }
+
+  .prose-notes .table-cards td:first-child::before {
+    display: inline;
+    margin-right: 0.5em;
+  }
+}
+
 .prose-notes img {
   height: auto;
   max-width: 100%;

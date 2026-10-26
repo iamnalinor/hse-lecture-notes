@@ -15,17 +15,17 @@ type Props = {
   readonly after?: ReactNode;
   readonly course: string;
   readonly courseName: string;
-  /** `theory`, `kr1`, `colloq1`… — the document directory and the PDF name. */
+  /** `theory`, `program`, `kr1`, `colloq1`… — the document directory and the PDF name. */
   readonly docId: string;
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
   readonly note: string;
-  /** Crumb, title and TOC caption: «Теория», «Подготовка к КР-1», «Подготовка к коллоквиуму 1». */
+  /** Crumb, title and TOC caption: «Теория», «Программа и оценивание», «Подготовка к КР-1». */
   readonly pageName: string;
-  readonly variant: "prep" | "theory";
+  readonly variant: "prep" | "program" | "theory";
 };
 
-/** A course-wide document (theory, test preparation): TOC on the side, the fragment, the PDF button. */
+/** A course-wide document (theory, program, test preparation): TOC on the side, the fragment, the PDF button. */
 export const CourseDocument = ({
   after,
   course,

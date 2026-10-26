@@ -14,6 +14,7 @@ import { isRemarkTag, REMARK_TAGS, type RemarkTag } from "#web/domain/remarks.ts
 import { splitBlockName } from "./block-name.ts";
 import { Block } from "./block.tsx";
 import { adjacentElement, childWithClass, hasClass, textOf } from "./dom-utils.ts";
+import { columnLabel, headerLabels } from "./table-labels.ts";
 import { ProblemFooter } from "./problem-footer.tsx";
 import { Proof } from "./proof.tsx";
 import { RefLink } from "./ref-link.tsx";
@@ -23,8 +24,11 @@ export type TransformOptions = {
   /** Where `fig/<hash>.svg` of this document lives. */
   readonly assetBase: string;
   readonly sectionNumbers: ReadonlyMap<string, string>;
-  /** The theory page is a flat list of headings, notes have parts and numbered sections. */
-  readonly variant: "notes" | "prep" | "theory";
+  /**
+  The theory page is a flat list of headings, notes have parts and numbered sections. On the program
+  page wide tables turn into cards on a phone (`table-cards` in `prose.css`).
+  */
+  readonly variant: "notes" | "prep" | "program" | "theory";
 };
 
 type Replace = NonNullable<HTMLReactParserOptions["replace"]>;
@@ -139,11 +143,30 @@ const image: Handler = (node, options) => {
   ) : undefined;
 };
 
-const table: Handler = (node, _options, replace) => (
-  <div className="my-5 overflow-x-auto">
-    <table>{children(node, replace)}</table>
-  </div>
-);
+/** A table of three or more columns does not fit a phone: it is read as a stack of cards. */
+const CARD_COLUMNS = 3;
+
+const table: Handler = (node, options, replace) => {
+  const isCards = options.variant === "program" && headerLabels(node).length >= CARD_COLUMNS;
+  return (
+    <div className={isCards ? "table-cards my-5" : "my-5 overflow-x-auto"}>
+      <table>{children(node, replace)}</table>
+    </div>
+  );
+};
+
+/** On the program page every cell carries its column name: a card shows it above the value. */
+const cell: Handler = (node, options, replace) => {
+  if (options.variant !== "program") {
+    return;
+  }
+  const label = columnLabel(node);
+  return (
+    <td {...attributesToProps(node.attribs)} data-label={label}>
+      {children(node, replace)}
+    </td>
+  );
+};
 
 const section: Handler = (node, options, replace) => {
   const number = options.sectionNumbers.get(node.attribs["id"] ?? "");
@@ -182,6 +205,7 @@ const byTag: Readonly<Record<string, Handler>> = {
   img: image,
   section,
   table,
+  td: cell,
 };
 
 const byClass: readonly (readonly [string, Handler])[] = [

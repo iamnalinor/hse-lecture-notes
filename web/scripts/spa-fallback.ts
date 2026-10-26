@@ -59,6 +59,15 @@ for (const { id: course, name } of COURSES) {
   if (await isPresent(`data/${course}/theory/meta.json`)) {
     pages.set(`${course}/theory`, page(`${name}: теория`, `${name}: определения и теоремы курса`));
   }
+  if (await isPresent(`data/${course}/program/meta.json`)) {
+    pages.set(
+      `${course}/program`,
+      page(
+        `${name}: программа и оценивание`,
+        `${name}: формула оценки, контрольные и экзамены, темы курса`,
+      ),
+    );
+  }
   if (await isPresent(`data/${course}/glossary.json`)) {
     pages.set(
       `${course}/glossary`,

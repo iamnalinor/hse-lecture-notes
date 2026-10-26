@@ -37,6 +37,8 @@ export type PrepEntry = z.infer<typeof PrepEntrySchema>;
 export const CatalogSchema = z.object({
   lectures: z.record(z.string(), z.array(LectureEntrySchema)),
   preps: z.record(z.string(), z.array(PrepEntrySchema)).default({}),
+  /** Courses that have the «Программа и оценивание» page (`program/<course>.md`). */
+  programs: z.array(z.string()).default([]),
 });
 
 const LabelTypeSchema = z.enum([
@@ -79,7 +81,7 @@ export const DocMetaSchema = z
   .object({
     date: z.string().optional(),
     date_ru: z.string(),
-    kind: z.enum(["notes", "prep", "theory"]),
+    kind: z.enum(["notes", "prep", "program", "theory"]),
     lecture: z.number(),
     title: z.string(),
     toc: z.array(TocItemSchema),
@@ -157,7 +159,7 @@ export const MacrosSchema = z.record(z.string(), z.string());
 const OfflineDocSchema = z.object({
   files: z.array(z.string()),
   id: z.string(),
-  kind: z.enum(["glossary", "notes", "prep", "theory"]),
+  kind: z.enum(["glossary", "notes", "prep", "program", "theory"]),
 });
 
 export const OfflineManifestSchema = z.object({

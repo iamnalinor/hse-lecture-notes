@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router";
 
 import { useLabelIndex } from "#web/api/queries.ts";
 import { useCourse } from "#web/api/use-course.ts";
+import { COURSE_DOCS } from "#web/domain/course-docs.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
 import { isUpcoming, prepGoal, prepWhen } from "#web/domain/preps.ts";
@@ -16,7 +17,7 @@ const BUTTON =
 
 export const Component = () => {
   const { course: courseId } = useParams();
-  const { info, lectures, preps } = useCourse(courseId);
+  const { hasProgram, info, lectures, preps } = useCourse(courseId);
   const stats = labelStats(Object.values(useLabelIndex()[info.id] ?? {}));
   const today = useToday();
   const current = latestLecture(lectures, today);
@@ -71,6 +72,11 @@ export const Component = () => {
           <Link className={BUTTON} to={paths.glossary(info.id)}>
             Глоссарий
           </Link>
+          {hasProgram && (
+            <Link className={BUTTON} to={paths.program(info.id)}>
+              {COURSE_DOCS.program}
+            </Link>
+          )}
         </div>
       </section>
       <section className="py-9 pb-20">
