@@ -14,14 +14,21 @@ export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 
 /**
 A page that prepares for a test (`prep/<course>/krN.md`): `id` is `kr1`, `kr2`…, `date` is the test day,
-`cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none.
+`activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
+by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none.
 */
-const PrepEntrySchema = z.object({
-  cheatsheets: z.array(z.string()).default([]),
-  date: z.string(),
-  id: z.string(),
-  title: z.string(),
-});
+const PrepEntrySchema = z
+  .object({
+    active_until: z.string().optional(),
+    cheatsheets: z.array(z.string()).default([]),
+    date: z.string(),
+    id: z.string(),
+    title: z.string(),
+  })
+  .transform(({ active_until: activeUntil, ...rest }) => ({
+    ...rest,
+    activeUntil: activeUntil ?? rest.date,
+  }));
 export type PrepEntry = z.infer<typeof PrepEntrySchema>;
 
 export const CatalogSchema = z.object({

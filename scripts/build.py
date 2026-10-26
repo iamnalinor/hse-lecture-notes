@@ -573,6 +573,9 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     "id": m["week_id"],
                     "title": m.get("title"),
                     "date": m.get("date"),
+                    # последний день, когда КР на сайте активна (плитка на главной, цветная кнопка);
+                    # по умолчанию — день КР
+                    "active_until": m.get("active_until") or m.get("date"),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
                 }
             )
