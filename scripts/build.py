@@ -70,6 +70,19 @@ def tex_env() -> dict[str, str]:
     return env
 
 
+# Подготовка к контрольной (krN) или коллоквиуму (colloqN): имя файла = id страницы на сайте.
+# = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
+PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)")
+PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2")
+PREP_FILES = "kr1.md, kr2.md, kr3.md (контрольные), colloq1.md, colloq2.md (коллоквиумы)"
+
+
+def prep_kind(prep_id: str) -> str:
+    """kr1 → kr, colloq1 → colloq."""
+    m = PREP_ID_RE.fullmatch(prep_id)
+    return m.group("kind") if m else ""
+
+
 @dataclass
 class Doc:
     path: Path
@@ -84,7 +97,7 @@ class Doc:
 
     @property
     def out_name(self) -> str:
-        return "theory" if self.kind == "theory" else self.week_id  # prep: week_id = kr1, kr2…
+        return "theory" if self.kind == "theory" else self.week_id  # prep: week_id = kr1, colloq1…
 
 
 class BuildError(Exception):
@@ -112,8 +125,8 @@ def discover() -> list[Doc]:
         meta = read_front_matter(p)
         docs.append(Doc(p, "theory", p.stem, "theory", meta))
     for p in sorted((SRC / "prep").glob("*/*.md")):
-        if not re.fullmatch(r"kr[1-3]", p.stem):  # = PREP_IDS на сайте; линтер скажет то же
-            raise BuildError(f"{p}: подготовка к КР называется kr1.md, kr2.md или kr3.md")
+        if p.stem not in PREP_IDS:  # линтер скажет то же
+            raise BuildError(f"{p}: подготовка называется {PREP_FILES}")
         meta = read_front_matter(p)
         docs.append(Doc(p, "prep", p.parent.name, p.stem, meta))
     return docs
@@ -573,8 +586,8 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     "id": m["week_id"],
                     "title": m.get("title"),
                     "date": m.get("date"),
-                    # последний день, когда КР на сайте активна (плитка на главной, цветная кнопка);
-                    # по умолчанию — день КР
+                    # последний день, когда КР (коллоквиум) на сайте активна (плитка на главной,
+                    # цветная кнопка); по умолчанию — день date
                     "active_until": m.get("active_until") or m.get("date"),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
                 }

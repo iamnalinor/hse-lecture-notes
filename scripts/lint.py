@@ -45,9 +45,8 @@ AUX_DIVS = {"proof", "solution", "answer", "answers", "course-glossary"}
 TAGS = {"корнер-кейс", "подводный камень", "частое заблуждение", "соглашение курса", "напоминание"}
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
-PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):(kr\d+):[a-z0-9][a-z0-9-]*$")
+PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq)\d+):[a-z0-9][a-z0-9-]*$")
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
-PREP_FILE_RE = re.compile(r"^kr[1-3]$")  # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 
 PIPELINE_WORDS = re.compile(
     r"(рекомендаци|ревью|ревьюер|чек-?лист|промпт|прошлогодн|режим[а-я]* генерац|"
@@ -423,7 +422,10 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
 
 
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
-    """Подготовка к КР (prep/<course>/krN.md): свои метки prob:krN:…, ref= на блоки конспектов."""
+    """Подготовка к КР или коллоквиуму (prep/<course>/krN.md, colloqN.md).
+
+    Свои метки prob:krN:… (prob:colloqN:…), теория — ref= на блоки конспектов.
+    """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem
     for k in ("course", "title", "date"):
@@ -434,8 +436,10 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     if course not in cfg["courses"]:
         rep.err(rel, f"неизвестный курс {course}")
         return
-    if not PREP_FILE_RE.match(exam):
-        rep.err(rel, "имя файла подготовки — kr1.md, kr2.md или kr3.md (маршруты сайта)")
+    if exam not in build.PREP_IDS:
+        rep.err(rel, f"имя файла подготовки — {build.PREP_FILES} (маршруты сайта)")
+    colloq = build.prep_kind(exam) == "colloq"
+    event = "коллоквиума" if colloq else "КР"
     dates: dict[str, dt.date] = {}
     for k in ("date", "active_until"):
         value = meta.get(k)
@@ -452,7 +456,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         else:
             rep.err(rel, f"{k}={value!r} не в формате YYYY-MM-DD")
     if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
-        rep.err(rel, f"active_until={dates['active_until']} раньше даты КР {dates['date']}")
+        rep.err(rel, f"active_until={dates['active_until']} раньше даты {event} {dates['date']}")
     blocks = ast_of(path)["blocks"]
     own: set[str] = set()
 
@@ -520,11 +524,14 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     check_texts(rep, rel, blocks)
     check_practice(rep, rel, blocks)
     h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
-    if not h1 or h1[0] != "О контрольной":
-        rep.err(rel, "первый раздел — «# О контрольной»")
+    first = "О коллоквиуме" if colloq else "О контрольной"
+    if not h1 or h1[0] != first:
+        rep.err(rel, f"первый раздел — «# {first}»")
     h2 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 2]
-    if "Прототипы" not in h2:
-        rep.err(rel, "нет ни одного подраздела «## Прототипы»")
+    # коллоквиум — устная теория: задачи по желанию, обязательны разделы «Что нужно знать»
+    need = "Что нужно знать" if colloq else "Прототипы"
+    if need not in h2:
+        rep.err(rel, f"нет ни одного подраздела «## {need}»")
 
 
 def main() -> int:

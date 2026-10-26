@@ -156,7 +156,7 @@ local function new_counters()
   return { n = 0 }
 end
 
--- Номер «лекция.N» (одинаковая логика в обоих проходах); в подготовке к КР — просто «N»
+-- Номер «лекция.N» (одинаковая логика в обоих проходах); в подготовке к КР и коллоквиуму — просто «N»
 local function next_number(counters)
   counters.n = counters.n + 1
   if S.kind == 'prep' then return tostring(counters.n) end
@@ -664,6 +664,13 @@ end
 -- метаданные для шаблона
 -- ---------------------------------------------------------------------------
 
+-- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1» (как prepGoal на сайте)
+local function prep_goal(id)
+  local n = id:match('%d+') or ''
+  if id:match('^colloq') then return 'Подготовка к коллоквиуму ' .. n end
+  return 'Подготовка к КР-' .. n
+end
+
 local function set_template_meta(doc, config)
   local meta = doc.meta
   local course_cfg = (config.courses or {})[S.course or ''] or {}
@@ -676,8 +683,7 @@ local function set_template_meta(doc, config)
     meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Теория')
   elseif S.kind == 'prep' then
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · %s · %s',
-      config.program or '', course_name, 'Подготовка к КР-' .. ((S.week_id or ''):match('%d+') or ''),
-      date_ru(date)))
+      config.program or '', course_name, prep_goal(S.week_id or ''), date_ru(date)))
   else
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · Лекция %s · %s',
       config.program or '', course_name, tostring(S.lecture), date_ru(date)))
@@ -701,7 +707,7 @@ function Pandoc(doc)
   if S.kind == 'theory' then
     S.lecture = '0'
   else
-    -- подготовка к КР: свои метки (prob:kr1:…), номера без лекции, в индекс курса не идут
+    -- подготовка к КР/коллоквиуму: свои метки (prob:kr1:…, prob:colloq1:…), номера без лекции, в индекс курса не идут
     if S.kind == 'prep' then S.lecture = '0' end
     collect(doc)
   end

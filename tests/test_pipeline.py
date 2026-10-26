@@ -419,3 +419,93 @@ def test_lint_weekday(demo: Path):
     src.unlink()
     res = lint(demo)
     assert "не день лекции курса" in res.stdout
+
+
+# ----------------------------------------------------------------------------- подготовка к коллоквиуму
+
+
+def make_colloq(demo: Path, name: str = "colloq1") -> Path:
+    """prep/algebra/colloq1.md из демо-подготовки к КР: те же блоки, свои метки и первый раздел."""
+    src = (demo / "prep" / "algebra" / "kr1.md").read_text(encoding="utf-8")
+    text = (
+        src.replace(":kr1:", f":{name}:")
+        .replace("# О контрольной", "# О коллоквиуме")
+        .replace("Подготовка к КР-1", "Подготовка к коллоквиуму 1")
+        .replace("date: 2026-11-07", "date: 2026-11-09\nactive_until: 2026-11-20")
+    )
+    dst = demo / "prep" / "algebra" / f"{name}.md"
+    dst.write_text(text, encoding="utf-8")
+    return dst
+
+
+def test_colloq_builds(demo: Path):
+    """colloq1.md: свои метки prob:colloq1:…, своя шапка, своя запись в courses.json и поиске."""
+    make_colloq(demo)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    frag = (site / "algebra" / "colloq1" / "fragment.html").read_text(encoding="utf-8")
+    assert 'id="prob:colloq1:square"' in frag and "Задача 2" in frag
+    assert 'href="#prob:colloq1:square"' in frag
+    assert 'id="reg-thm:lec01:assoc"' in frag
+    meta = json.loads((site / "algebra" / "colloq1" / "meta.json").read_text(encoding="utf-8"))
+    assert meta["kind"] == "prep" and meta["lecture"] == 0
+    assert meta["header_line"] == (
+        "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к коллоквиуму 1 · 9 ноября 2026"
+    )
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert [p["id"] for p in courses["preps"]["algebra"]] == ["kr1", "colloq1"]
+    colloq = courses["preps"]["algebra"][1]
+    assert colloq["date"] == "2026-11-09" and colloq["active_until"] == "2026-11-20"
+    assert colloq["cheatsheets"] == []
+    search = json.loads((site / "search.json").read_text(encoding="utf-8"))
+    assert any(e["doc"] == "colloq1" for e in search)
+    index = json.loads((site / "index.json").read_text(encoding="utf-8"))["algebra"]
+    assert not any(":colloq1:" in k for k in index)
+
+
+def test_colloq_without_problems(demo: Path):
+    """Коллоквиум — теория: «## Прототипы» не обязательны, «## Что нужно знать» — да."""
+    p = make_colloq(demo)
+    text = p.read_text(encoding="utf-8")
+    p.write_text(text.replace("## Прототипы", "## Задачи"), encoding="utf-8")
+    assert lint(demo).returncode == 0
+    p.write_text(text.replace("## Что нужно знать", "## Теория"), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "нет ни одного подраздела «## Что нужно знать»" in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("#prob:colloq1:square", "#prob:kr1:square", "в файле colloq1.md метки вида тип:colloq1:slug"),
+        ("# О коллоквиуме", "# О контрольной", "первый раздел — «# О коллоквиуме»"),
+        ("active_until: 2026-11-20", "active_until: 2026-11-08", "раньше даты коллоквиума"),
+    ],
+)
+def test_lint_colloq_catches(demo: Path, old: str, new: str, expected: str):
+    p = make_colloq(demo)
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize("name", ["colloq3", "kr4", "exam1"])
+def test_prep_unknown_name(demo: Path, name: str):
+    """Имя файла подготовки — только то, под что есть маршрут на сайте."""
+    make_colloq(demo, name)
+    assert build(demo, "--no-pdf", "--no-html").returncode != 0
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_colloq_pdf(demo: Path):
+    make_colloq(demo)
+    res = build(demo, "--no-html", "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    assert (demo / "build" / "pdf" / "algebra" / "colloq1.pdf").stat().st_size > 1_000
