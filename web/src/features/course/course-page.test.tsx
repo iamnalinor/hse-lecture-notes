@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -35,12 +35,9 @@ const calculusOn = (day: string) => {
 };
 
 const navLinks = (name: string) =>
-  screen
-    .getByRole("navigation", { name })
-    .querySelectorAll("a")
-    .values()
-    .map((link) => link.textContent)
-    .toArray();
+  within(screen.getByRole("navigation", { name }))
+    .getAllByRole("link")
+    .map((link) => link.textContent);
 
 const page = (programs: readonly string[]) => {
   renderWithApp(
