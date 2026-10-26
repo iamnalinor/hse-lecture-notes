@@ -730,7 +730,7 @@ local function keep_formula_with_table(blocks)
       -- заголовок раздела прямо над «Формулой» («Первый семестр») — тоже с ними
       local at = #out + 1
       if out[#out] and out[#out].t == 'Header' then at = #out end
-      out:insert(at, pandoc.RawBlock('latex', '\\needspace{20\\baselineskip}'))
+      out:insert(at, pandoc.RawBlock('latex', '\\Needspace*{20\\baselineskip}'))
     end
     out:insert(b)
   end

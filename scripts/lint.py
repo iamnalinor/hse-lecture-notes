@@ -634,12 +634,17 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     if need not in h2:
         rep.err(rel, f"нет ни одного подраздела «## {need}»")
     lint_bank(path, course, exam, labels, own, rep)
-    last = "Пробный билет" if colloq else "Пробный вариант"
-    if ticket_bank.bank_path(path).exists() and (not h1 or h1[-1] != last):
-        # генератор встаёт после текста страницы, то есть под последним разделом
-        rep.warn(
+    # на сайте генератор встаёт в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
+    generator = f"sec:{exam}:{ticket_bank.GENERATOR_SECTION}"
+    has_bank = ticket_bank.bank_path(path).exists()
+    if has_bank and generator not in own:
+        rep.err(
+            rel, f"у страницы есть банк билетов, но нет раздела {{#{generator}}}: генератору негде встать"
+        )
+    elif generator in own and not has_bank:
+        rep.err(
             rel,
-            f"у страницы есть банк билетов, а последний раздел не «# {last}»: генератор окажется под «{h1[-1] if h1 else ''}»",
+            f"раздел {{#{generator}}} без банка {ticket_bank.bank_path(path).name}: на сайте он будет пустым",
         )
 
 

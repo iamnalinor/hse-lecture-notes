@@ -28,10 +28,12 @@ import yaml
 
 BANK_SUFFIX = "-bank.yaml"
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-TOP_KEYS = {"ticket", "questions"}
+TOP_KEYS = {"about", "ticket", "questions"}
+# раздел страницы {#sec:<prep>:generator}: на сайте в нём генератор, в PDF — ссылка на сайт
+GENERATOR_SECTION = "generator"
 TICKET_KEYS = {"kind", "title", "count", "points", "proofs"}
 # значения, которые обрезает неэкранированный « #» (YAML считает его комментарием)
-TEXT_KEYS = {"text", "answer", "title"}
+TEXT_KEYS = {"about", "text", "answer", "title"}
 QUESTION_KEYS = {"id", "kind", "topic", "text", "refs", "answer"}
 # ответом может быть блок, формула или рисунок; раздел целиком — слишком много для карточки вопроса
 NOT_AN_ANSWER = {"section"}
@@ -136,6 +138,8 @@ def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list
     warnings: list[str] = []
     for k in sorted(set(bank) - TOP_KEYS):
         errors.append(f"неизвестный ключ {k!r} (есть ticket и questions)")
+    if "about" in bank and (not isinstance(bank["about"], str) or not bank["about"].strip()):
+        errors.append("about — непустая строка: подпись генератора на сайте")
     ticket = bank.get("ticket")
     questions = bank.get("questions")
     if not isinstance(ticket, list) or not ticket:
@@ -325,6 +329,7 @@ def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rende
         )
     used = {q["topic"] for q in questions}
     return {
+        "about": " ".join(str(bank.get("about") or "").split()),
         "ticket": [
             {
                 "kind": t["kind"],

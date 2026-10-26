@@ -20,6 +20,16 @@ const announce = (drawn: Drawn): string => {
   return `Билет ${String(drawn.serial)}: ${String(count)} ${plural(count, ["вопрос", "вопроса", "вопросов"])}`;
 };
 
+/** The bank's own caption (`about`): what a generated set holds; then how many questions there are. */
+const describe = (bank: TicketBank | undefined): string => {
+  if (bank === undefined) {
+    return "Загрузка вопросов…";
+  }
+  const size = bank.questions.length;
+  const total = `Всего в банке ${String(size)} ${plural(size, ["вопрос", "вопроса", "вопросов"])}.`;
+  return bank.about === "" ? total : `${bank.about} ${total}`;
+};
+
 const Ticket = ({
   bank,
   course,
@@ -66,23 +76,18 @@ in place. Nothing goes into the URL: a ticket lives until the next one.
 export const TicketGenerator = ({ course, prepId }: Props) => {
   const { data: bank, isError } = useQuery(ticketBankQuery(course, prepId));
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
-  const size = bank?.questions.length ?? 0;
 
   return (
-    <section
-      aria-labelledby="ticket-generator-title"
-      className="mt-10 rounded-lg border border-rule bg-card px-4 py-5 sm:px-6"
+    <div
+      aria-label="Генератор билетов"
+      className="mt-5 rounded-lg border border-rule bg-card px-4 py-5 sm:px-6"
       id="ticket-generator"
+      role="region"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 flex-1 basis-64">
-          <h3 className="m-0 text-xl font-bold" id="ticket-generator-title">
-            Генератор билетов
-          </h3>
-          <p className="mt-1 mb-0 text-sm text-muted">
-            {isError
-              ? "Не удалось загрузить банк вопросов."
-              : `Случайный билет в том же формате из ${String(size)} ${plural(size, ["вопроса", "вопросов", "вопросов"])}; вопросы одного билета — из разных тем.`}
+          <p className="m-0 text-base text-muted">
+            {isError ? "Не удалось загрузить банк вопросов." : describe(bank)}
           </p>
         </div>
         <button
@@ -98,7 +103,7 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
           }}
           type="button"
         >
-          Новый билет
+          Сгенерировать
         </button>
       </div>
       <p aria-live="polite" className="sr-only">
@@ -107,6 +112,6 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
       {bank !== undefined && drawn !== undefined && (
         <Ticket bank={bank} course={course} drawn={drawn} prepId={prepId} />
       )}
-    </section>
+    </div>
   );
 };

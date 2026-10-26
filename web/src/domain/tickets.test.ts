@@ -14,6 +14,7 @@ const question = (id: string, kind: string, topic: string): TicketQuestion => ({
 });
 
 const BANK: TicketBank = {
+  about: "",
   questions: [
     question("p1", "proof", "a"),
     question("p2", "proof", "a"),

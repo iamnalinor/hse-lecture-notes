@@ -165,3 +165,34 @@ describe("FragmentView tables", () => {
     expect(document.querySelector(".table-cards")).toBeNull();
   });
 });
+
+describe("FragmentView slots", () => {
+  it("mounts React content at the end of the section with that id", () => {
+    renderWithApp(
+      <FragmentView
+        course="algebra"
+        docId="colloq1"
+        html={
+          '<section id="sec:colloq1:generator"><h1>Генератор билетов</h1></section><section id="other"><p>Дальше.</p></section>'
+        }
+        lecture={undefined}
+        slots={
+          new Map([
+            [
+              "sec:colloq1:generator",
+              <button key="slot" type="button">
+                Сгенерировать
+              </button>,
+            ],
+          ])
+        }
+        variant="prep"
+      />,
+    );
+    const section = document.querySelector('[id="sec:colloq1:generator"]');
+    expect(section).toContainElement(screen.getByRole("button", { name: "Сгенерировать" }));
+    expect(document.querySelector('[id="other"]')).not.toContainElement(
+      screen.getByRole("button", { name: "Сгенерировать" }),
+    );
+  });
+});

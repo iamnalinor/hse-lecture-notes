@@ -1,5 +1,7 @@
 import { Link, useParams } from "react-router";
 
+import type { CourseInfo } from "#web/domain/courses.ts";
+
 import { useLabelIndex } from "#web/api/queries.ts";
 import { useCourse } from "#web/api/use-course.ts";
 import { COURSE_DOCS } from "#web/domain/course-docs.ts";
@@ -39,7 +41,7 @@ export const Component = () => {
         <p className="max-w-160 text-xl/relaxed text-ink/80">{info.summary}</p>
         <div className="mt-5.5 flex flex-wrap gap-x-6.5 gap-y-1 text-sm text-muted">
           <span>
-            Лектор <b className="font-semibold text-ink">{info.lecturer}</b>
+            Лектор <LecturerLink info={info} />
           </span>
           <span>
             Лекции по <b className="font-semibold text-ink">{info.weekdayDative}</b>
@@ -98,3 +100,17 @@ export const Component = () => {
     </div>
   );
 };
+
+/** The lecturer's name, linked to their profile on hse.ru. */
+function LecturerLink({ info }: { readonly info: CourseInfo }) {
+  return (
+    <a
+      className="font-semibold text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink"
+      href={info.lecturerUrl}
+      rel="noreferrer"
+      target="_blank"
+    >
+      {info.lecturer}
+    </a>
+  );
+}

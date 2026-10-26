@@ -153,6 +153,8 @@ const TicketPartSchema = z.object({
 });
 
 export const TicketBankSchema = z.object({
+  /** Caption of the generator: what a generated set of questions holds. */
+  about: z.string().default(""),
   questions: z.array(TicketQuestionSchema),
   ticket: z.array(TicketPartSchema),
   topics: z.record(z.string(), z.string()),

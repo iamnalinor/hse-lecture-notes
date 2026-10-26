@@ -11,6 +11,7 @@ import { TicketGenerator } from "./ticket-generator.tsx";
 const LECTURE = "04_sep23_determinant_properties";
 
 const BANK: TicketBank = {
+  about: "Набор для тренировки: теорема и формулировка.",
   questions: [
     {
       answer: "",
@@ -81,7 +82,7 @@ const view = () =>
   renderWithApp(<TicketGenerator course="algebra" prepId="colloq1" />, "/algebra/colloq1");
 
 const newTicket = async () => {
-  const button = await screen.findByRole("button", { name: "Новый билет" });
+  const button = await screen.findByRole("button", { name: "Сгенерировать" });
   await vi.waitFor(() => {
     expect(button).toBeEnabled();
   });
@@ -89,9 +90,13 @@ const newTicket = async () => {
 };
 
 describe("TicketGenerator", () => {
-  it("draws a ticket only on «Новый билет», in the format of the bank", async () => {
+  it("draws a ticket only on «Сгенерировать», in the format of the bank", async () => {
     view();
-    expect(await screen.findByText(/из 2 вопросов/u)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Набор для тренировки: теорема и формулировка. Всего в банке 2 вопроса.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).toBeNull();
 
     await newTicket();

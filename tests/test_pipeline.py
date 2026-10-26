@@ -554,7 +554,7 @@ def test_program_pdf(demo: Path):
     assert "Программа и оценивание" in tex and "\\begin{longtable}" in tex
     assert "\\AtBeginEnvironment{longtable}{\\small}" in tex  # таблицы программы — мельче
     # «Первый семестр» → «Формула» → формула → таблица весов не разрываются страницей
-    assert "\\needspace{20\\baselineskip}\n\n\\section{Первый" in tex
+    assert "\\Needspace*{20\\baselineskip}\n\n\\section{Первый" in tex
 
 
 # ----------------------------------------------------------------------------- подготовка к коллоквиуму
@@ -660,6 +660,7 @@ def test_colloq_pdf(demo: Path):
 # ----------------------------------------------------------------------------- банк билетов
 
 BANK = r"""
+about: Набор для тренировки.
 ticket:
   - kind: proof
     title: Теорема с доказательством
@@ -698,13 +699,19 @@ questions:
 CITE = "Смотри [см. -@thm:lec01:assoc, п. 2] и @rem:colloq1:order --- это важно."
 
 
+GENERATOR = """
+# Генератор билетов {#sec:colloq1:generator}
+
+```{=latex}
+Генератор~--- на сайте: \\url{https://notes.nalinor.dev/algebra/colloq1}.
+```
+"""
+
+
 def make_bank(demo: Path, text: str = BANK) -> Path:
     page = make_colloq(demo)
-    # у коллоквиума последний раздел — пробный билет: генератор встаёт под ним
-    page.write_text(
-        page.read_text(encoding="utf-8").replace("# Пробный вариант", "# Пробный билет") + f"\n{CITE}\n",
-        encoding="utf-8",
-    )
+    # раздел генератора: на сайте в нём генератор, в PDF — ссылка на сайт
+    page.write_text(page.read_text(encoding="utf-8") + f"\n{CITE}\n{GENERATOR}", encoding="utf-8")
     dst = demo / "prep" / "algebra" / "colloq1-bank.yaml"
     dst.write_text(text, encoding="utf-8")
     return dst
@@ -715,7 +722,6 @@ def test_bank_builds(demo: Path):
     make_bank(demo)
     res = lint(demo)
     assert res.returncode == 0, res.stdout
-    assert "последний раздел не" not in res.stdout
     # одна тема на все вопросы — линтер предупреждает, что темы в билете будут повторяться
     assert "темы будут повторяться" in res.stdout
     res = build(demo, "--no-pdf")
@@ -739,6 +745,7 @@ def test_bank_builds(demo: Path):
     assert 'href="#rem:colloq1:order"' in q["elem"]["answer"]
     assert "Замечание\u00a01<" in q["elem"]["answer"]
     assert bank["ticket"][0]["proofs"] is True and bank["ticket"][1]["proofs"] is False
+    assert bank["about"] == "Набор для тренировки."
     # временные файлы рендера банка не остаются в site-data
     assert sorted(p.name for p in (site / "algebra" / "colloq1").iterdir()) == [
         "bank.json",
@@ -850,12 +857,34 @@ def test_bank_only_by_bank_path(demo: Path):
     assert (demo / "build" / "site-data" / "algebra" / "colloq1" / "bank.json").exists()
 
 
-def test_lint_bank_placement(demo: Path):
-    """Генератор встаёт под последним разделом: банк у страницы, которая кончается не билетом, — предупреждение."""
-    page = make_bank(demo).with_name("colloq1.md")
-    page.write_text(page.read_text(encoding="utf-8") + "\n# Ещё раздел\n\nТекст.\n", encoding="utf-8")
+def test_lint_bank_generator_section(demo: Path):
+    """Банк и раздел {#sec:colloq1:generator} — только вместе: генератор встаёт в этот раздел."""
+    bank = make_bank(demo)
+    page = bank.with_name("colloq1.md")
+    text = page.read_text(encoding="utf-8")
+    page.write_text(text.replace(GENERATOR, ""), encoding="utf-8")
     res = lint(demo)
-    assert "последний раздел не «# Пробный билет»" in res.stdout, res.stdout
+    assert res.returncode != 0
+    assert "нет раздела {#sec:colloq1:generator}" in res.stdout, res.stdout
+    page.write_text(text, encoding="utf-8")
+    bank.unlink()
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "раздел {#sec:colloq1:generator} без банка" in res.stdout, res.stdout
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_generator_link_only_in_pdf(demo: Path):
+    """Ссылка на генератор — сырой LaTeX: в PDF она есть, на сайте раздела хватает самого генератора."""
+    make_bank(demo)
+    res = build(demo, "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    tex = (demo / "build" / "tex" / "algebra" / "colloq1.tex").read_text(encoding="utf-8")
+    assert "\\url{https://notes.nalinor.dev/algebra/colloq1}" in tex
+    frag = (demo / "build" / "site-data" / "algebra" / "colloq1" / "fragment.html").read_text(
+        encoding="utf-8"
+    )
+    assert 'id="sec:colloq1:generator"' in frag and "notes.nalinor.dev" not in frag
 
 
 def test_lint_bank_without_page(demo: Path):

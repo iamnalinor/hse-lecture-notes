@@ -11,8 +11,6 @@ import { FragmentView } from "./fragment-view.tsx";
 import { useScrollToHash } from "./use-scroll-to-hash.ts";
 
 type Props = {
-  /** Shown after the text: the ticket generator under «Пробный билет» of a colloquium page. */
-  readonly after?: ReactNode;
   readonly course: string;
   readonly courseName: string;
   /** `theory`, `program`, `kr1`, `colloq1`… — the document directory and the PDF name. */
@@ -22,18 +20,20 @@ type Props = {
   readonly note: string;
   /** Crumb, title and TOC caption: «Теория», «Программа и оценивание», «Подготовка к КР-1». */
   readonly pageName: string;
+  /** Content mounted at the end of a section, by its id: the ticket generator in `sec:colloq1:generator`. */
+  readonly slots?: ReadonlyMap<string, ReactNode>;
   readonly variant: "prep" | "program" | "theory";
 };
 
 /** A course-wide document (theory, program, test preparation): TOC on the side, the fragment, the PDF button. */
 export const CourseDocument = ({
-  after,
   course,
   courseName,
   docId,
   downloads,
   note,
   pageName,
+  slots,
   variant,
 }: Props) => {
   const meta = useDocMeta(course, docId);
@@ -55,9 +55,9 @@ export const CourseDocument = ({
         docId={docId}
         html={html}
         lecture={undefined}
+        slots={slots}
         variant={variant}
       />
-      {after}
     </DocPage>
   );
 };

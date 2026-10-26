@@ -23,6 +23,8 @@ export type TransformOptions = {
   /** Where `fig/<hash>.svg` of this document lives. */
   readonly assetBase: string;
   readonly sectionNumbers: ReadonlyMap<string, string>;
+  /** React content appended to a section, by its id (the ticket generator of a colloquium page). */
+  readonly slots: ReadonlyMap<string, ReactNode>;
   /**
   The theory page is a flat list of headings, notes have parts and numbered sections. On the program
   page wide tables turn into cards on a phone (`table-cards` in `prose.css`).
@@ -203,6 +205,7 @@ const section: Handler = (node, options, replace) => {
   return (
     <section className="scroll-mt-6" data-section-number={number} id={node.attribs["id"]}>
       {children(node, replace)}
+      {options.slots.get(node.attribs["id"] ?? "")}
     </section>
   );
 };
