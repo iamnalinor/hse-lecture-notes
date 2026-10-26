@@ -310,14 +310,14 @@ $$(\operatorname{arctg} y)' = \cos^2 x = \frac{1}{1 + \operatorname{tg}^2 x} = \
 
 | $f(x)$ | $f'(x)$ | | $f(x)$ | $f'(x)$ |
 | --- | --- | --- | --- | --- |
-| $x^\alpha$ | $\alpha x^{\alpha - 1}$ | | $\operatorname{ctg} x$ | $-\frac{1}{\sin^2 x}$ |
-| $a^x$ | $a^x \ln a$ | | $\arcsin x$ | $\frac{1}{\sqrt{1 - x^2}}$ |
-| $e^x$ | $e^x$ | | $\arccos x$ | $-\frac{1}{\sqrt{1 - x^2}}$ |
-| $\ln \lvert x \rvert$ | $\frac1x$ | | $\operatorname{arctg} x$ | $\frac{1}{1 + x^2}$ |
-| $\log_a x$ | $\frac{1}{x \ln a}$ | | $\operatorname{arcctg} x$ | $-\frac{1}{1 + x^2}$ |
+| $x^\alpha$ | $\alpha x^{\alpha - 1}$ | | $\operatorname{ctg} x$ | $-1 / \sin^2 x$ |
+| $a^x$ | $a^x \ln a$ | | $\arcsin x$ | $1 / \sqrt{1 - x^2}$ |
+| $e^x$ | $e^x$ | | $\arccos x$ | $-1 / \sqrt{1 - x^2}$ |
+| $\ln \lvert x \rvert$ | $1 / x$ | | $\operatorname{arctg} x$ | $1 / (1 + x^2)$ |
+| $\log_a x$ | $1 / (x \ln a)$ | | $\operatorname{arcctg} x$ | $-1 / (1 + x^2)$ |
 | $\sin x$ | $\cos x$ | | $u^v$ | формула [-@eq:lec12:power-rule] |
 | $\cos x$ | $-\sin x$ | | $f \circ g$ | $f'(g(x))\, g'(x)$ |
-| $\operatorname{tg} x$ | $\frac{1}{\cos^2 x}$ | | $f^{-1}$ | $\frac{1}{f'(f^{-1}(y))}$ |
+| $\operatorname{tg} x$ | $1 / \cos^2 x$ | | $f^{-1}$ | $1 / f'(f^{-1}(y))$ |
 
 Правила: $(f \pm g)' = f' \pm g'$, $(cf)' = cf'$, $(fg)' = f'g + fg'$, $\left(\frac fg\right)' = \frac{f'g - fg'}{g^2}$. Каждая строка верна там, где функция дифференцируема: $\ln$ и $\log_a$ — при $x > 0$ (у $\ln|x|$ — при $x \ne 0$), $\arcsin$ и $\arccos$ — при $|x| < 1$, $x^\alpha$ — при $x > 0$ (для натуральных $\alpha$ — всюду). На стыках кусочно заданных функций и в точках, где «звено» недифференцируемо, правила молчат, и нужна проверка по определению (задача [-@prob:lec12:piecewise]).
 
