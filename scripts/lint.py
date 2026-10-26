@@ -425,7 +425,7 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
 
 PROGRAM_META = {"course", "title"}
 PROGRAM_BLOCKS = {"remark", "example"}
-PROGRAM_FIRST, PROGRAM_LAST = "Коротко", "Содержание курса"
+PROGRAM_FIRST, PROGRAM_LAST = "О курсе", "Содержание курса"
 # Страница программы — справочник, а не реферат о ПУД: без пометок источников, комментариев о самой
 # программе и советов «уточнить у лектора» (context/prompts/program.md → «Как писать»)
 PROGRAM_META_WORDS = re.compile(
@@ -502,6 +502,12 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
     h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
     if not h1 or h1[0] != PROGRAM_FIRST:
         rep.err(rel, f"первый раздел — «# {PROGRAM_FIRST}»")
+    else:
+        # «О курсе» — сводная таблица «параметр · значение» (лектор, объём, экзамен, порог, итог)
+        first = next(i for i, b in enumerate(blocks) if b["t"] == "Header" and b["c"][0] == 1)
+        nxt = next((b for b in blocks[first + 1 :] if b["t"] != "Para" or text_of_block(b).strip()), None)
+        if nxt is None or nxt["t"] != "Table":
+            rep.err(rel, f"раздел «# {PROGRAM_FIRST}» — сводная таблица курса сразу под заголовком")
     if not h1 or h1[-1] != PROGRAM_LAST:
         rep.err(rel, f"последний раздел — «# {PROGRAM_LAST}»")
     if not any(b["t"] == "Table" for b in blocks):
