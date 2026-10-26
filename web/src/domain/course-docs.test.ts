@@ -21,12 +21,12 @@ describe("course documents", () => {
 
   it("has a route and a name for each document", () => {
     expect(paths.program("discrete", "автомат")).toBe("/discrete/program#автомат");
-    expect(COURSE_DOCS.program).toBe("Программа и оценивание");
+    expect(COURSE_DOCS.program).toBe("План учебной дисциплины");
   });
 
   it("titles the page and its shell like the smoke test of Pages expects", () => {
     expect(courseDocTitle("Математический анализ", "program")).toBe(
-      "Математический анализ: программа и оценивание",
+      "Математический анализ: план учебной дисциплины",
     );
     expect(courseDocTitle("Алгебра", "theory")).toBe("Алгебра: теория");
     expect(COURSE_DOC_DESCRIPTIONS.program).toContain("формула оценки");

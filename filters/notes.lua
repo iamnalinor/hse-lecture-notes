@@ -18,7 +18,7 @@ notes.lua — фильтр pandoc для конспектов, теории и �
   notes_index  путь build/index.json (render)
   notes_config путь templates/courses.json
   week_id      имя файла без расширения
-  kind         notes | theory | program | prep (program — «Программа и оценивание» курса:
+  kind         notes | theory | program | prep (program — «План учебной дисциплины» курса:
                без своих меток, блоки без номеров, своя шапка)
   site_url     (необязательно) базовый URL сайта для ссылок между лекциями в PDF
 ]]
@@ -685,7 +685,7 @@ local function set_template_meta(doc, config)
   if S.kind == 'theory' then
     meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Теория')
   elseif S.kind == 'program' then
-    meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Программа и оценивание')
+    meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · План учебной дисциплины')
     meta['is_program'] = true  -- notes.latex: таблицы плотнее и мельче
   elseif S.kind == 'prep' then
     -- коллоквиум с окном дат (active_until) — диапазон «2.11–30.12.2026», а не один день

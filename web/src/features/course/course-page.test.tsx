@@ -56,7 +56,7 @@ describe("course page", () => {
 
   it("links the program page of the course next to the theory", () => {
     page(["discrete"]);
-    expect(screen.getByRole("link", { name: "Программа и оценивание" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "План учебной дисциплины" })).toHaveAttribute(
       "href",
       "/discrete/program",
     );
@@ -65,7 +65,7 @@ describe("course page", () => {
 
   it("has no program link when the course has no such page", () => {
     page(["algebra"]);
-    expect(screen.queryByRole("link", { name: "Программа и оценивание" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "План учебной дисциплины" })).toBeNull();
   });
 
   it("puts the latest lecture with its day first, then the course documents", () => {

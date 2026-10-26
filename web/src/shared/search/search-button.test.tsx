@@ -103,7 +103,7 @@ describe("SearchButton", () => {
   it("opens the program page of a course from a hit", async () => {
     const input = await open();
     await userEvent.type(input, "автомат");
-    expect(await screen.findByRole("option")).toHaveTextContent("Дискра · Программа и оценивание");
+    expect(await screen.findByRole("option")).toHaveTextContent("Дискра · План учебной дисциплины");
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent("/discrete/program#автомат");
   });

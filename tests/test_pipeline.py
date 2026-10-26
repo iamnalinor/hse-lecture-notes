@@ -447,7 +447,7 @@ def test_program_builds(demo: Path):
     site = demo / "build" / "site-data"
     meta = json.loads((site / "algebra" / "program" / "meta.json").read_text(encoding="utf-8"))
     assert meta["kind"] == "program" and meta["lecture"] == 0 and not meta["labels"]
-    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Программа и оценивание"
+    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · План учебной дисциплины"
     assert [t["text"] for t in meta["toc"] if t["level"] == 1] == [
         "О курсе",
         "Первый семестр",
@@ -558,7 +558,7 @@ def test_program_pdf(demo: Path):
     assert res.returncode == 0, res.stderr + res.stdout
     assert (demo / "build" / "pdf" / "algebra" / "program.pdf").stat().st_size > 10_000
     tex = (demo / "build" / "tex" / "algebra" / "program.tex").read_text(encoding="utf-8")
-    assert "Программа и оценивание" in tex and "\\begin{longtable}" in tex
+    assert "План учебной дисциплины" in tex and "\\begin{longtable}" in tex
     assert "\\AtBeginEnvironment{longtable}{\\small}" in tex  # таблицы программы — мельче
     # «Первый семестр» → «Формула» → формула → таблица весов не разрываются страницей
     assert "\\Needspace*{20\\baselineskip}\n\n\\section{Первый" in tex

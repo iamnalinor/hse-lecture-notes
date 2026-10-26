@@ -5,7 +5,7 @@ import { type CourseInfo, findCourse } from "#web/domain/courses.ts";
 import { useCatalog } from "./queries.ts";
 
 export type CourseData = {
-  /** The course has the «Программа и оценивание» page (`/<course>/program`). */
+  /** The course has the «План учебной дисциплины» page (`/<course>/program`). */
   readonly hasProgram: boolean;
   readonly info: CourseInfo;
   readonly lectures: readonly LectureEntry[];

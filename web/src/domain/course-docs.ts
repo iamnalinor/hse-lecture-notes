@@ -4,7 +4,7 @@ live at `/<course>/theory` and `/<course>/program`, their data in `data/<course>
 `pdf/<course>-<id>.pdf`. The name is the crumb, the page title and the search label.
 */
 export const COURSE_DOCS = {
-  program: "Программа и оценивание",
+  program: "План учебной дисциплины",
   theory: "Теория",
 } as const;
 
@@ -12,7 +12,7 @@ export type CourseDocId = keyof typeof COURSE_DOCS;
 
 export const isCourseDoc = (doc: string): doc is CourseDocId => Object.hasOwn(COURSE_DOCS, doc);
 
-/** Title of the page and of its shell (`spa-fallback.ts`): «Алгебра: программа и оценивание». */
+/** Title of the page and of its shell (`spa-fallback.ts`): «Алгебра: план учебной дисциплины». */
 export const courseDocTitle = (courseName: string, doc: CourseDocId): string =>
   `${courseName}: ${COURSE_DOCS[doc].toLowerCase()}`;
 

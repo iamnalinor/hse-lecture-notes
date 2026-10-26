@@ -45,7 +45,7 @@ export type PrepEntry = z.infer<typeof PrepEntrySchema>;
 export const CatalogSchema = z.object({
   lectures: z.record(z.string(), z.array(LectureEntrySchema)),
   preps: z.record(z.string(), z.array(PrepEntrySchema)).default({}),
-  /** Courses that have the «Программа и оценивание» page (`program/<course>.md`). */
+  /** Courses that have the «План учебной дисциплины» page (`program/<course>.md`). */
   programs: z.array(z.string()).default([]),
 });
 

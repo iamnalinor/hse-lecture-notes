@@ -436,7 +436,7 @@ PROGRAM_META_WORDS = re.compile(
 
 
 def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
-    """Программа и оценивание курса (program/<course>.md, context/markup.md §12).
+    """План учебной дисциплины курса (program/<course>.md, context/markup.md §12).
 
     Справочная страница из ПУД: заголовки, абзацы, списки, таблицы, формулы, замечания и примеры
     без номеров и меток. Ни определений, ни задач, ни рисунков; ссылки — только на блоки конспектов.

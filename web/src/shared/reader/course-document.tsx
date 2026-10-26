@@ -18,7 +18,7 @@ type Props = {
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
   readonly note: string;
-  /** Crumb, title and TOC caption: «Теория», «Программа и оценивание», «Подготовка к КР-1». */
+  /** Crumb, title and TOC caption: «Теория», «План учебной дисциплины», «Подготовка к КР-1». */
   readonly pageName: string;
   /** Content mounted at the end of a section, by its id: the ticket generator in `sec:colloq1:generator`. */
   readonly slots?: ReadonlyMap<string, ReactNode>;

@@ -137,7 +137,7 @@ def discover() -> list[Doc]:
     for p in sorted((SRC / "theory").glob("*.md")):
         meta = read_front_matter(p)
         docs.append(Doc(p, "theory", p.stem, "theory", meta))
-    # программа и оценивание курса (context/markup.md §12): program/<course>.md → /<course>/program
+    # план учебной дисциплины курса (context/markup.md §12): program/<course>.md → /<course>/program
     for p in sorted((SRC / "program").glob("*.md")):
         meta = read_front_matter(p)
         docs.append(Doc(p, "program", p.stem, "program", meta))
@@ -678,7 +678,7 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
             "config": json.loads(CONFIG.read_text(encoding="utf-8")),
             "lectures": index["lectures"],
             "preps": preps,
-            # курсы со страницей «Программа и оценивание» (program/<course>.md)
+            # курсы со страницей «План учебной дисциплины» (program/<course>.md)
             "programs": sorted(m["course"] for m in metas if m.get("kind") == "program"),
         },
     )
@@ -712,7 +712,7 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
         if (SITE / course / "theory").exists():
             links.append(f'<li><a href="{course}/theory/">Теория</a></li>')
         if (SITE / course / "program").exists():
-            links.append(f'<li><a href="{course}/program/">Программа и оценивание</a></li>')
+            links.append(f'<li><a href="{course}/program/">План учебной дисциплины</a></li>')
         for p in preps.get(course, []):
             links.append(f'<li><a href="{course}/{p["id"]}/">{html.escape(p["title"] or "")}</a></li>')
         links.append("</ul>")
