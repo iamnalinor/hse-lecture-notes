@@ -5,7 +5,7 @@ import { useCourse } from "#web/api/use-course.ts";
 import { shortDate } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import { isUpcoming, prepName } from "#web/domain/preps.ts";
+import { isUpcoming, prepGoal } from "#web/domain/preps.ts";
 import { labelStats } from "#web/domain/stats.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
@@ -62,7 +62,7 @@ export const Component = () => {
               key={prep.id}
               to={paths.prep(info.id, prep.id)}
             >
-              Подготовка к {prepName(prep.id)}
+              {prepGoal(prep.id)}
               {isUpcoming(prep, today) && (
                 <span className="font-normal">· {shortDate(prep.date)}</span>
               )}

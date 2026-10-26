@@ -17,6 +17,7 @@ title: "Теория: алгебра"
 - Номер решения СЛАУ пишется сверху: $x^1, \dots, x^s$, частное решение $x^0$ (не степень) [-@rem:lec08:superscript]; решения из ФСР — $\Phi_1, \dots, \Phi_k$, $k = n - r$ [-@rem:lec09:fsr-notation].
 - Главное значение аргумента $\arg z$ берётся в $(-\pi, \pi]$ (допустимо и $[0, 2\pi)$); множество всех аргументов — $\operatorname{Arg} z$ [-@rem:lec11:arg-convention].
 - Геометрические векторы пишутся со стрелкой, $\vec a$; скалярное произведение — $(\vec a, \vec b)$; матрица Грама — $\Gamma$ [-@rem:lec12:vector-notation].
+- Векторное произведение — $[\vec a, \vec b]$ (допустимо $\vec a \times \vec b$), смешанное — $\langle \vec a, \vec b, \vec c \rangle$ [-@rem:lec13:cross-notation]; направляющий вектор прямой — $\vec s = (s_1, s_2, s_3)$, а не $(l, m, n)$ [-@rem:lec14:line-notation].
 
 # Лекция 1 — Матрицы и операции над ними
 
@@ -732,6 +733,110 @@ $(\vec x, \vec y) = x^T \Gamma y$, где $x, y$ — столбцы коорди
 
 ::: {.corollary ref="cor:lec12:onb" status="доказано в лекции 12"}
 В ОНБ $(\vec x, \vec y) = x_1 y_1 + x_2 y_2 + x_3 y_3$, $|\vec x| = \sqrt{x_1^2 + x_2^2 + x_3^2}$, $x_i = (\vec x, \vec e_i)$.
+:::
+
+# Лекция 13 — Ориентация, векторное и смешанное произведения. Декартова система координат
+
+::: {.definition ref="def:lec13:orientation"}
+Некомпланарная упорядоченная тройка $\vec a, \vec b, \vec c$ правая, если с конца $\vec c$ кратчайший поворот от $\vec a$ к $\vec b$ виден против часовой стрелки, и левая — если по часовой; правый базис — с правой тройкой векторов.
+:::
+
+::: {.definition ref="def:lec13:cross"}
+$[\vec a, \vec b]$ — вектор длины $|\vec a| \, |\vec b| \sin \varphi$, перпендикулярный $\vec a$ и $\vec b$, с правой тройкой $\vec a, \vec b, [\vec a, \vec b]$ (если он ненулевой).
+:::
+
+::: {.proposition ref="prop:lec13:collinear" status="доказано в лекции 13"}
+$[\vec a, \vec b] = \vec 0 \Leftrightarrow \vec a, \vec b$ коллинеарны; $|[\vec a, \vec b]|$ — площадь параллелограмма на $\vec a, \vec b$, половина — площадь треугольника.
+:::
+
+::: {.definition ref="def:lec13:mixed"}
+Смешанное произведение $\langle \vec a, \vec b, \vec c \rangle = ([\vec a, \vec b], \vec c)$.
+:::
+
+::: {.theorem ref="thm:lec13:volume" status="доказано в лекции 13"}
+Для компланарных векторов $\langle \vec a, \vec b, \vec c \rangle = 0$; иначе $\langle \vec a, \vec b, \vec c \rangle = \pm V$ — объём параллелепипеда со знаком «$+$» для правой тройки и «$-$» для левой. *Идея:* $|[\vec a, \vec b]| = S$, $|\operatorname{pr}_{[\vec a, \vec b]} \vec c| = h$, знак проекции — сторона плоскости $\vec a, \vec b$, то есть ориентация.
+:::
+
+::: {.corollary ref="cor:lec13:coplanar" status="доказано в лекции 13"}
+Компланарность $\Leftrightarrow \langle \vec a, \vec b, \vec c \rangle = 0$; правая тройка $\Leftrightarrow \langle \vec a, \vec b, \vec c \rangle > 0$; объём тетраэдра $\frac16 |\langle \vec a, \vec b, \vec c \rangle|$.
+:::
+
+::: {.proposition ref="prop:lec13:mixed-props" status="доказано в лекции 13"}
+Смешанное произведение не меняется при циклической перестановке, меняет знак при перестановке двух векторов и линейно по каждому аргументу. *Идея:* перестановки задают тот же параллелепипед, знак — ориентация; линейность по третьему — из скалярного произведения, по остальным — циклической перестановкой.
+:::
+
+::: {.theorem ref="thm:lec13:cross-props" status="доказано в лекции 13"}
+$[\vec b, \vec a] = -[\vec a, \vec b]$; векторное произведение линейно по каждому аргументу. *Идея:* вектор нулевой, если скалярно ортогонален всем; $([\vec b, \vec a] + [\vec a, \vec b], \vec c)$ и аналогичное выражение для линейности сводятся к свойствам смешанного произведения.
+:::
+
+::: {.theorem ref="thm:lec13:cross-coords" status="доказано в лекции 13"}
+В правом ОНБ $[\vec a, \vec b] = (a_2 b_3 - a_3 b_2, \; a_3 b_1 - a_1 b_3, \; a_1 b_2 - a_2 b_1)$ — формальный определитель с $\vec i, \vec j, \vec k$ в первой строке. *Идея:* $[\vec i, \vec j] = \vec k$, $[\vec j, \vec k] = \vec i$, $[\vec k, \vec i] = \vec j$ и линейность.
+:::
+
+::: {.theorem ref="thm:lec13:mixed-coords" status="доказано в лекции 13"}
+В правом ОНБ $\langle \vec a, \vec b, \vec c \rangle$ — определитель из координат векторов (строками). *Идея:* скалярно умножить формулу векторного произведения на $\vec c$ — разложение по третьей строке.
+:::
+
+::: {.proposition ref="prop:lec13:mixed-any-basis" status="доказано в лекции 13"}
+В произвольном базисе $\langle \vec a, \vec b, \vec c \rangle = \det(a \; b \; c) \cdot \langle \vec e_1, \vec e_2, \vec e_3 \rangle$, где $a, b, c$ — столбцы координат. *Идея:* как функция столбцов координат смешанное произведение полилинейно и кососимметрично, и $f(X) = \det X \cdot f(E)$.
+:::
+
+::: {.definition ref="def:lec13:cartesian"}
+Декартова система координат — точка $O$ и базис; прямоугольная (ПДСК) — если базис ортонормированный. Радиус-вектор $\vec r_M = \overrightarrow{OM}$; координаты точки — координаты радиус-вектора; $\overrightarrow{AB} = \vec r_B - \vec r_A$.
+:::
+
+::: {.definition ref="def:lec13:division"}
+$M$ делит отрезок $M_1 M_2$ в отношении $p : q$ ($p, q > 0$), если $q \, \overrightarrow{M_1 M} = p \, \overrightarrow{M M_2}$.
+:::
+
+::: {.proposition ref="prop:lec13:division" status="доказано в лекции 13"}
+$\vec r_M = \frac{q \vec r_1 + p \vec r_2}{p + q}$; середина — $\frac{\vec r_1 + \vec r_2}{2}$.
+:::
+
+# Лекция 14 — Плоскости и прямые в пространстве
+
+::: {.definition ref="def:lec14:surface"}
+$F(x, y, z) = 0$ — уравнение множества $S$, если ему удовлетворяют координаты точек $S$ и только они; $S$ — геометрический образ уравнения.
+:::
+
+::: {.definition ref="def:lec14:normal"}
+Нормальный вектор плоскости — ненулевой вектор, перпендикулярный всем векторам, параллельным плоскости.
+:::
+
+::: {.theorem ref="thm:lec14:plane-equation" status="доказано в лекции 14"}
+В ПДСК любая плоскость задаётся уравнением $Ax + By + Cz + D = 0$, $A^2 + B^2 + C^2 > 0$, с нормалью $(A, B, C)$, и любое такое уравнение задаёт плоскость. *Идея:* $M \in \pi \Leftrightarrow (\vec n, \overrightarrow{M_0 M}) = 0$; для обратного — найти одну точку $M_0$ и вычесть.
+:::
+
+::: {.proposition ref="prop:lec14:proportional" status="доказано в лекции 14"}
+Два общих уравнения задают одну плоскость тогда и только тогда, когда их коэффициенты пропорциональны.
+:::
+
+::: {.theorem ref="thm:lec14:two-planes" status="доказано в лекции 14"}
+Для плоскостей с матрицами $F$ (коэффициенты при $x, y, z$) и $G$ (с добавленным столбцом $D$): совпадают $\Leftrightarrow \operatorname{Rg} G = 1$; параллельны $\Leftrightarrow \operatorname{Rg} F = 1$, $\operatorname{Rg} G = 2$; пересекаются по прямой $\Leftrightarrow \operatorname{Rg} F = 2$, направляющий вектор $[\vec n_1, \vec n_2]$. *Идея:* общие точки — решения системы; теорема Кронекера–Капелли и структура общего решения.
+:::
+
+::: {.definition ref="def:lec14:angle-planes"}
+Угол между плоскостями: $\cos \varphi = \frac{|(\vec n_1, \vec n_2)|}{|\vec n_1| \, |\vec n_2|}$, $\varphi \in [0, \frac{\pi}{2}]$.
+:::
+
+::: {.definition ref="def:lec14:direction"}
+Направляющий вектор прямой — ненулевой вектор, ей параллельный; прямая через $M_0$ с направляющим $\vec s$: $\vec r = \vec r_0 + t \vec s$; канонически $\frac{x - x_0}{s_1} = \frac{y - y_0}{s_2} = \frac{z - z_0}{s_3}$ (нулевой знаменатель — нулевой числитель).
+:::
+
+::: {.theorem ref="thm:lec14:line-plane" status="доказано в лекции 14"}
+Прямая пересекает плоскость в одной точке $\Leftrightarrow (\vec n, \vec s) \ne 0$; при $(\vec n, \vec s) = 0$ прямая параллельна плоскости или лежит в ней в зависимости от того, лежит ли в ней $M_0$. *Идея:* подстановка параметрической записи даёт линейное уравнение $(\vec n, \vec s) t + (Ax_0 + By_0 + Cz_0 + D) = 0$.
+:::
+
+::: {.definition ref="def:lec14:angle-line-plane"}
+Угол между прямой и плоскостью — угол $\psi \in [0, \frac{\pi}{2}]$ между прямой и её проекцией; $\sin \psi = \frac{|(\vec n, \vec s)|}{|\vec n| \, |\vec s|}$.
+:::
+
+::: {.theorem ref="thm:lec14:two-lines" status="доказано в лекции 14"}
+Прямые лежат в одной плоскости $\Leftrightarrow \langle \overrightarrow{M_1 M_2}, \vec s_1, \vec s_2 \rangle = 0$, иначе скрещиваются; при $[\vec s_1, \vec s_2] = \vec 0$ совпадают или параллельны (по $[\overrightarrow{M_1 M_2}, \vec s_1]$), при $[\vec s_1, \vec s_2] \ne \vec 0$ и нулевом смешанном произведении пересекаются. *Идея:* критерий компланарности.
+:::
+
+::: {.proposition ref="prop:lec14:point-plane" status="доказано в лекции 14"}
+$\rho(M_0, \pi) = \frac{|Ax_0 + By_0 + Cz_0 + D|}{\sqrt{A^2 + B^2 + C^2}}$. *Идея:* модуль проекции $\overrightarrow{M_1 M_0}$ на нормаль.
 :::
 
 # Глоссарий курса

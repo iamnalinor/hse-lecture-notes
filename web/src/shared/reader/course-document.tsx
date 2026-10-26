@@ -11,12 +11,12 @@ import { useScrollToHash } from "./use-scroll-to-hash.ts";
 type Props = {
   readonly course: string;
   readonly courseName: string;
-  /** `theory`, `kr1`… — the document directory and the PDF name. */
+  /** `theory`, `kr1`, `colloq1`… — the document directory and the PDF name. */
   readonly docId: string;
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
   readonly note: string;
-  /** Crumb, title and TOC caption: «Теория», «Подготовка к КР-1». */
+  /** Crumb, title and TOC caption: «Теория», «Подготовка к КР-1», «Подготовка к коллоквиуму 1». */
   readonly pageName: string;
   readonly variant: "prep" | "theory";
 };

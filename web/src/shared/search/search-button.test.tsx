@@ -35,6 +35,14 @@ const INDEX: readonly SearchEntry[] = [
     lecture: 0,
     text: "Как решать систему по Крамеру.",
   },
+  {
+    anchor: "sec:colloq1:cauchy-heine",
+    course: "calculus",
+    doc: "colloq1",
+    heading: "Предел функции по Коши и по Гейне",
+    lecture: 0,
+    text: "Равносильность определений Гейне.",
+  },
 ];
 
 const Location = () => {
@@ -90,6 +98,18 @@ describe("SearchButton", () => {
     expect(await screen.findByRole("option")).toHaveTextContent("Алгебра · Подготовка к КР-1");
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent("/algebra/kr1#sec:kr1:cramer");
+  });
+
+  it("opens a colloquium preparation page from a hit", async () => {
+    const input = await open();
+    await userEvent.type(input, "гейне");
+    expect(await screen.findByRole("option")).toHaveTextContent(
+      "Матан · Подготовка к коллоквиуму 1",
+    );
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/calculus/colloq1#sec:colloq1:cauchy-heine",
+    );
   });
 
   it("stays open under StrictMode's double mount", async () => {

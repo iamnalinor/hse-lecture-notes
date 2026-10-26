@@ -13,7 +13,8 @@ const LectureEntrySchema = z
 export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 
 /**
-A page that prepares for a test (`prep/<course>/krN.md`): `id` is `kr1`, `kr2`…, `date` is the test day,
+A page that prepares for a test or a colloquium (`prep/<course>/krN.md`, `colloqN.md`): `id` is `kr1`,
+`colloq1`…, `date` is the test day (for a colloquium — the first day of its window),
 `activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
 by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none.
 */

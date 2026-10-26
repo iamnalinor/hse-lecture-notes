@@ -7,6 +7,7 @@ deep links (`/algebra/04_sep23_determinant_properties/`) work properly:
   with its own title and description, so links, previews and search engines see a real page.
 */
 import { COURSES } from "../src/domain/courses.ts";
+import { prepDescription } from "../src/domain/preps.ts";
 import { CatalogSchema } from "../src/domain/schemas.ts";
 
 const dist = new URL("../dist/", import.meta.url);
@@ -66,7 +67,7 @@ for (const { id: course, name } of COURSES) {
   }
   const preps = catalog.preps[course] ?? [];
   for (const { id, title } of preps) {
-    pages.set(`${course}/${id}`, page(title, `${name}: темы, методы и задачи к контрольной`));
+    pages.set(`${course}/${id}`, page(title, `${name}: ${prepDescription(id)}`));
   }
   const lectures = catalog.lectures[course] ?? [];
   for (const { lecture, title, weekId } of lectures) {

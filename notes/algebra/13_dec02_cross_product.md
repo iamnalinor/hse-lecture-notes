@@ -252,7 +252,7 @@ $$\langle \vec a, \vec b, \vec c \rangle = \begin{vmatrix} 1 & 2 & 0 \\ 0 & 1 & 
 
 Остаётся обещанное в лекции 12 объяснение определителя из следствия [-@cor:lec12:coplanar-det] в произвольном базисе: как через него выражается смешанное произведение.
 
-::: {.proposition #prop:lec13:mixed-any-basis title="смешанное произведение в произвольном базисе"}
+::: {.proposition #prop:lec13:mixed-any-basis title="смешанное произведение в любом базисе"}
 Пусть $\vec e_1, \vec e_2, \vec e_3$ — произвольный базис, и векторы $\vec a, \vec b, \vec c$ имеют в нём столбцы координат $a$, $b$, $c$. Тогда
 $$\langle \vec a, \vec b, \vec c \rangle = \det(a \;\, b \;\, c) \cdot \langle \vec e_1, \vec e_2, \vec e_3 \rangle.$$ {#eq:lec13:mixed-any}
 :::

@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 
 import { findCourse } from "#web/domain/courses.ts";
-import { isPrepId, prepName } from "#web/domain/preps.ts";
+import { isPrepId, prepGoal } from "#web/domain/preps.ts";
 import { hitPath, type SearchHit, type SnippetPart } from "#web/domain/search.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { TexText } from "#web/shared/reader/tex-text.tsx";
@@ -36,7 +36,7 @@ const placeOf = (hit: SearchHit): string => {
     return `${course} · Теория`;
   }
   return isPrepId(hit.doc)
-    ? `${course} · Подготовка к ${prepName(hit.doc)}`
+    ? `${course} · ${prepGoal(hit.doc)}`
     : `${course} · Лекция ${String(hit.lecture)}`;
 };
 

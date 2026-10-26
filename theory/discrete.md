@@ -19,6 +19,8 @@ title: "Теория: дискретная математика"
 - Композиция отношений читается справа налево: в $Q \circ P$ первым действует $P$, как в $g(f(x))$; в курсе алгебры подстановки, наоборот, умножаются слева направо (замечание [-@rem:lec09:order]).
 - Функция $f\colon A \to B$ отождествляется со своим графиком $f \subseteq A \times B$; множество $B$ ею не определяется, поэтому сюръективность всегда понимается «для $B$» (замечание [-@rem:lec10:codomain]). Для отношения $R \subseteq A \times B$ «тотально» по умолчанию значит «тотально для $A$», «сюръективно» — «сюръективно для $B$» (определение [-@def:lec10:total-surjective]).
 - Жирное $\mathbf{n}$ — множество $\{0, 1, \dots, n - 1\}$, обычное $n$ — число; $\mathbf{2}^X$ — функции из $X$ в $\{0, 1\}$, $X^2$ — декартов квадрат (замечание [-@rem:lec11:bold]). Мощность $|A|$ определена только для конечных множеств; бесконечные сравниваются через $\sim$ и $\lesssim$ (замечание [-@rem:lec12:abs]).
+- Биномиальный коэффициент — $C_n^k$ ($n$ внизу), не $\binom{n}{k}$ (замечание [-@rem:lec13:binom-notation]).
+- Порядок по умолчанию строгий; в парах $(<, \le)$, $(\subsetneq, \subseteq)$ первый символ — строгий порядок (замечание [-@rem:lec14:pair-notation]).
 
 # Лекция 1 — Истинность, ложность и высказывания
 
@@ -878,6 +880,150 @@ $|\mathcal{P}(A)| = 2^{|A|}$.
 
 ::: {.theorem ref="thm:lec12:inj-surj" status="доказано в лекции 12"}
 Если $A$, $B$ конечны и $|A| = |B|$, то $f\colon A \to B$ инъективна $\iff$ сюръективна. *Идея:* инъекция — образ равномощен $A$ и не может быть собственной частью $B$; сюръекция со склейкой — выброшенная точка уменьшает образ.
+:::
+
+# Лекция 13 — Комбинаторика
+
+::: {.definition ref="def:lec13:inj"}
+$\mathrm{Inj}(A, B)$ — множество инъекций из $A$ в $B$.
+:::
+
+::: {.lemma ref="lem:lec13:only-size" status="доказано в лекции 13"}
+Если $A' \sim A$ и $B' \sim B$, то $\mathrm{Inj}(A', B') \sim \mathrm{Inj}(A, B)$. *Идея:* $f \mapsto \psi \circ f \circ \varphi^{-1}$.
+:::
+
+::: {.definition ref="def:lec13:factorial"}
+$0! = 1$, $(n + 1)! = (n + 1) \cdot n!$.
+:::
+
+::: {.lemma ref="lem:lec13:inj-count" status="доказано в лекции 13"}
+$|\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = \frac{n!}{(n - m)!}$ при $m \le n$ и $0$ при $m > n$. *Идея:* индукция по $m$; инъекции из $\mathbf{m + 1}$ делятся на $n$ равных групп по значению в точке $m$.
+:::
+
+::: {.definition ref="def:lec13:arrangement"}
+Размещение длины $m$ — кортеж из попарно различных элементов; $A_n^m = |\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = n(n - 1) \cdots (n - m + 1) = n^{(m)}$.
+:::
+
+::: {.definition ref="def:lec13:permutation"}
+Перестановка множества $A$ — биекция $A \to A$.
+:::
+
+::: {.lemma ref="lem:lec13:perm-count" status="доказано в лекции 13"}
+У $n$-элементного множества $n!$ перестановок. *Идея:* инъекция $\mathbf{n} \to \mathbf{n}$ — биекция.
+:::
+
+::: {.definition ref="def:lec13:binomial"}
+$\mathcal{P}_k(A)$ — $k$-элементные подмножества $A$; $C_n^k = |\mathcal{P}_k(\mathbf{n})|$.
+:::
+
+::: {.lemma ref="lem:lec13:pascal" status="доказано в лекции 13"}
+$C_{n + 1}^{k + 1} = C_n^{k + 1} + C_n^k$. *Идея:* делим подмножества $\mathbf{n + 1}$ по тому, содержат ли они $n$.
+:::
+
+::: {.lemma ref="lem:lec13:binom-formula" status="доказано в лекции 13"}
+$C_n^k = \frac{n!}{k!\,(n - k)!}$ при $k \le n$. *Идея:* индукция по $n$ через тождество Паскаля.
+:::
+
+::: {.lemma ref="lem:lec13:symmetry" status="доказано в лекции 13"}
+$C_n^k = C_n^{n - k}$. *Идея:* биекция $X \mapsto \mathbf{n} \setminus X$.
+:::
+
+::: {.theorem ref="thm:lec13:binomial" status="доказано в лекции 13"}
+$(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$. *Идея:* $(1 + x)^n$ индукцией с тождеством Паскаля, затем вынести $b^n$.
+:::
+
+::: {.theorem ref="thm:lec13:dependent" status="доказано в лекции 13"}
+Правило зависимого произведения: если $P$ конечно, $S \subseteq P \times Q$ и $|S[\{x\}]| = f(x)$, то $|S| = \sum_{x \in P} f(x)$. *Идея:* индукция по $|P|$ и правило суммы.
+:::
+
+::: {.corollary ref="cor:lec13:dependent-const" status="доказано в лекции 13"}
+Если $|S[\{x\}]| = k$ для всех $x \in P$, то $|S| = |P| \cdot k$.
+:::
+
+::: {.definition ref="def:lec13:multinomial"}
+$P(n; a_1, \dots, a_k) = \frac{n!}{a_1! \cdots a_k!}$ — число разбиений $\mathbf{n}$ на пронумерованные части размеров $a_1, \dots, a_k$.
+:::
+
+::: {.lemma ref="lem:lec13:sum-indicator" status="доказано в лекции 13"}
+$|B| = \sum_{x \in U} 1_B(x)$ для конечного $U$ и $B \subseteq U$.
+:::
+
+::: {.theorem ref="thm:lec13:incl-excl" status="доказано в лекции 13"}
+$|A_1 \cup \dots \cup A_n| = \sum_{\varnothing \ne I \subseteq \{1, \dots, n\}} (-1)^{|I| - 1} |A_I|$. *Идея:* сравнить вклад каждой точки через индикаторы; точка из $t \ge 1$ множеств учтена $\sum_{k \ge 1} (-1)^{k - 1} C_t^k = 1$ раз.
+:::
+
+::: {.proposition ref="prop:lec13:totient" status="доказано в лекции 13"}
+$\varphi(m) = m \prod_{i} \bigl(1 - \frac{1}{p_i}\bigr)$ по всем простым делителям $p_i$ числа $m > 1$. *Идея:* включения-исключения по свойствам «$p_i \mid x$» на $\mathbf{m}$.
+:::
+
+# Лекция 14 — Порядки
+
+::: {.definition ref="def:lec14:properties"}
+$R$ рефлексивно для $Z$: $\forall x \in Z\ xRx$; иррефлексивно: $\forall x\ \neg xRx$; симметрично: $xRy \Rightarrow yRx$; антисимметрично: $xRy \wedge yRx \Rightarrow x = y$; транзитивно: $xRy \wedge yRz \Rightarrow xRz$.
+:::
+
+::: {.lemma ref="lem:lec14:algebraic" status="доказано в лекции 14"}
+Для $R \subseteq A^2$: рефлексивно $\iff$ $\mathrm{id}_A \subseteq R$; иррефлексивно $\iff$ $\mathrm{id}_A \cap R = \varnothing$; симметрично $\iff$ $R = R^{-1}$; антисимметрично $\iff$ $R \cap R^{-1} \subseteq \mathrm{id}_A$; транзитивно $\iff$ $R \circ R \subseteq R$.
+:::
+
+::: {.definition ref="def:lec14:strict"}
+Строгий (частичный) порядок — иррефлексивное транзитивное отношение; он асимметричен.
+:::
+
+::: {.definition ref="def:lec14:nonstrict"}
+Нестрогий (частичный) порядок — рефлексивное антисимметричное транзитивное отношение.
+:::
+
+::: {.definition ref="def:lec14:poset"}
+Ч.у.м. $(A, <)$ — множество с порядком; $(A, <, \le)$ — со строгой и нестрогой версиями.
+:::
+
+::: {.theorem ref="thm:lec14:strict-nonstrict" status="доказано в лекции 14"}
+$\varphi(P) = P \cup \mathrm{id}_A$ и $\psi(Q) = Q \setminus \mathrm{id}_A$ — взаимно обратные биекции между строгими и нестрогими порядками на $A$.
+:::
+
+::: {.definition ref="def:lec14:maximal"}
+$x \in B$ максимален в $B$, если $\forall y \in B\ \neg\, x < y$; минимален, если $\forall y \in B\ \neg\, y < x$.
+:::
+
+::: {.definition ref="def:lec14:greatest"}
+$x \in B$ наибольший в $B$, если $\forall y \in B\ y \le x$; наименьший — если $\forall y \in B\ x \le y$.
+:::
+
+::: {.lemma ref="lem:lec14:greatest-unique" status="доказано в лекции 14"}
+Если $x$ — наибольший в $B$, то $\max B = \{x\}$; наибольший элемент единствен.
+:::
+
+::: {.definition ref="def:lec14:bounds"}
+$B^{\triangle}$ — верхние грани $B$ (все $x$ с $y \le x$ при $y \in B$), $B^{\triangledown}$ — нижние.
+:::
+
+::: {.definition ref="def:lec14:sup"}
+$\sup B$ — наименьший элемент $B^{\triangle}$, $\inf B$ — наибольший элемент $B^{\triangledown}$ (если существуют).
+:::
+
+::: {.definition ref="def:lec14:lattice"}
+Решётка — ч.у.м., где у любых двух элементов есть $\sup$ и $\inf$; например $(\mathcal{P}(A), \subsetneq)$ и $(\N, \mid)$.
+:::
+
+::: {.definition ref="def:lec14:linear"}
+Порядок линеен, если $\forall x, y\ (x \le y \vee y \le x)$.
+:::
+
+::: {.definition ref="def:lec14:chain"}
+Цепь — подмножество из попарно сравнимых элементов; антицепь — из попарно несравнимых различных.
+:::
+
+::: {.definition ref="def:lec14:isomorphism"}
+Изоморфизм ч.у.м. — биекция $\alpha$ с $x <_A y \iff \alpha(x) <_B \alpha(y)$; запись $\mathcal{A} \cong \mathcal{B}$.
+:::
+
+::: {.lemma ref="lem:lec14:iso-equiv" status="доказано в лекции 14"}
+$\cong$ рефлексивно, симметрично и транзитивно (через $\mathrm{id}$, $\alpha^{-1}$, $\beta \circ \alpha$).
+:::
+
+::: {.lemma ref="lem:lec14:iso-preserves" status="доказано в лекции 14"}
+Изоморфизм $\alpha$ сохраняет линейность, $\max \alpha[X] = \alpha[\max X]$ и $\sup \alpha[X] = \alpha(\sup X)$; так же для минимумов и инфимумов.
 :::
 
 # Глоссарий курса
