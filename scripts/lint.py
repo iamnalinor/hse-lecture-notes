@@ -26,9 +26,8 @@ except ImportError:  # pragma: no cover
     TTFont = None
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ticket_bank  # noqa: E402
-
 import build  # noqa: E402
+import ticket_bank  # noqa: E402
 
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 FILE_RE = re.compile(r"^(\d{2})_([a-z]{3})(\d{2})_([a-z0-9]+(?:_[a-z0-9]+){0,2})$")
