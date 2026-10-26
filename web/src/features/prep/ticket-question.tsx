@@ -29,7 +29,7 @@ export const TicketQuestion = ({ course, number, prepId, proofs, question, topic
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2.5">
         <Reveal
-          accessibleName={`Ответ на вопрос ${String(number)}`}
+          accessibleName={`Показать ответ на вопрос ${String(number)}`}
           closedLabel="Показать ответ"
           lazy
           openLabel="Ответ"

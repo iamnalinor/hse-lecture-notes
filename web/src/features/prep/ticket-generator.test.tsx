@@ -122,7 +122,9 @@ describe("TicketGenerator", () => {
     }
     expect(within(proof).queryByText("Определитель равен сумме по строке.")).toBeNull();
 
-    await userEvent.click(within(proof).getByRole("button", { name: "Ответ на вопрос 1" }));
+    await userEvent.click(
+      within(proof).getByRole("button", { name: "Показать ответ на вопрос 1" }),
+    );
     expect(await within(proof).findByText("Определитель равен сумме по строке.")).toBeVisible();
     expect(await within(proof).findByText("Индукция по порядку.")).toBeVisible();
     expect(within(proof).getByText("Теорема 4.3")).toBeInTheDocument();
@@ -147,7 +149,9 @@ describe("TicketGenerator", () => {
     if (definition === undefined) {
       throw new Error("no question");
     }
-    await userEvent.click(within(definition).getByRole("button", { name: "Ответ на вопрос 2" }));
+    await userEvent.click(
+      within(definition).getByRole("button", { name: "Показать ответ на вопрос 2" }),
+    );
     expect(within(definition).getByText("Свой ответ: транспонирование.")).toBeVisible();
     // a formulation question: the statement only, no proof
     expect(
@@ -157,7 +161,7 @@ describe("TicketGenerator", () => {
 
     await newTicket();
     expect(screen.queryByText("Свой ответ: транспонирование.")).toBeNull();
-    const buttons = screen.getAllByRole("button", { name: /^Ответ на вопрос/u });
+    const buttons = screen.getAllByRole("button", { name: /^Показать ответ на вопрос/u });
     expect(buttons).toHaveLength(2);
     for (const button of buttons) {
       expect(button).toHaveAttribute("aria-expanded", "false");
