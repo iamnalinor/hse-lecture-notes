@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build  # noqa: E402
+import ticket_bank  # noqa: E402
 
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 FILE_RE = re.compile(r"^(\d{2})_([a-z]{3})(\d{2})_([a-z0-9]+(?:_[a-z0-9]+){0,2})$")
@@ -45,6 +46,7 @@ AUX_DIVS = {"proof", "solution", "answer", "answers", "course-glossary"}
 TAGS = {"корнер-кейс", "подводный камень", "частое заблуждение", "соглашение курса", "напоминание"}
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
+TYPE_OF_PREFIX = {v: k for k, v in PREFIX.items()} | {"fig": "figure", "eq": "equation", "sec": "section"}
 PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq)\d+):[a-z0-9][a-z0-9-]*$")
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
@@ -532,6 +534,45 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     need = "Что нужно знать" if colloq else "Прототипы"
     if need not in h2:
         rep.err(rel, f"нет ни одного подраздела «## {need}»")
+    lint_bank(path, course, exam, labels, own, rep)
+
+
+def lint_bank(path: Path, course: str, exam: str, labels: dict, own: set[str], rep: Report) -> None:
+    """Банк билетов `<prep>-bank.yaml` рядом со страницей (context/markup.md §11): схема, метки, формулы."""
+    bank_file = ticket_bank.bank_path(path)
+    if not bank_file.exists():
+        return
+    rel = bank_file.relative_to(build.SRC).as_posix()
+    try:
+        bank = ticket_bank.load(bank_file)
+    except ticket_bank.BankError as e:
+        rep.err(rel, str(e))
+        return
+    own_types = {i: TYPE_OF_PREFIX[i.split(":")[0]] for i in own if PREP_LABEL_RE.match(i)}
+    course_labels = labels.get(course, {})
+    errors, warnings = ticket_bank.check_schema(bank, exam, ticket_bank.Labels(course_labels, own_types))
+    for e in errors:
+        rep.err(rel, e)
+    for w in warnings:
+        rep.warn(rel, w)
+    known = {**course_labels, **dict.fromkeys(own_types, True)}
+    ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), build.MARKDOWN)
+    for snippet in ast["blocks"]:
+        where = f"{rel} ({snippet['c'][0][0].replace('--', ': ')})"
+
+        def on_node(n, where=where):
+            t = n["t"]
+            if t == "Math":
+                check_math(rep, where, n["c"][1])
+            elif t == "Cite":
+                check_cite(rep, where, n, known)
+            elif t == "Str" and "$" in n["c"]:
+                rep.err(where, f"знак $ в тексте — формула не распознана: «{n['c']}»")
+            elif t in ("Header", "Div", "CodeBlock", "Image", "Table"):
+                rep.err(where, f"{t} в тексте вопроса: здесь только абзацы, списки и формулы")
+
+        walk(snippet["c"][1], on_node)
+        check_texts(rep, where, snippet["c"][1])
 
 
 def main() -> int:
@@ -551,7 +592,13 @@ def main() -> int:
         print(f"ERROR: {e}")
         return 1
     labels = index["labels"]
-    wanted = {p.resolve() for p in args.files}
+    # банк билетов проверяется вместе со своей страницей: colloq1-bank.yaml → colloq1.md
+    wanted = {
+        p.with_name(p.name.removesuffix(ticket_bank.BANK_SUFFIX) + ".md").resolve()
+        if p.name.endswith(ticket_bank.BANK_SUFFIX)
+        else p.resolve()
+        for p in args.files
+    }
     for d in docs:
         if wanted and d.path.resolve() not in wanted:
             continue
@@ -561,6 +608,12 @@ def main() -> int:
             lint_prep(d.path, d.rel, cfg, labels, rep)
         else:
             lint_theory(d.path, d.rel, labels, rep)
+
+    if not wanted:
+        for p in sorted((build.SRC / "prep").glob(f"*/*{ticket_bank.BANK_SUFFIX}")):
+            page = p.with_name(p.name.removesuffix(ticket_bank.BANK_SUFFIX) + ".md")
+            if not page.exists():
+                rep.err(p.relative_to(build.SRC).as_posix(), f"банк билетов без страницы {page.name}")
 
     for line in rep.errors + rep.warnings:
         print(line)

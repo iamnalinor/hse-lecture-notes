@@ -15,6 +15,7 @@
         <course>/glossary.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
         <course>/theory/...
+        <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
 """
 
 from __future__ import annotations
@@ -37,6 +38,9 @@ from pathlib import Path
 
 import pypandoc
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ticket_bank  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "templates"
@@ -456,7 +460,27 @@ def build_html(doc: Doc) -> dict:
             fig.pop("code", None)
         write_json(sidecar, meta)
     write_preview(page_dir, meta)
+    if doc.kind == "prep" and ticket_bank.bank_path(doc.path).exists():
+        export_bank(doc, meta, page_dir)
     return meta
+
+
+def export_bank(doc: Doc, meta: dict, page_dir: Path) -> None:
+    """prep/<course>/<prep>-bank.yaml → bank.json рядом с фрагментом страницы (только сайт, не PDF)."""
+    path = ticket_bank.bank_path(doc.path)
+    rel = path.relative_to(SRC).as_posix()
+    notes = json.loads((BUILD / "index.json").read_text(encoding="utf-8"))["labels"].get(doc.course, {})
+    own = meta.get("labels") or []
+    try:
+        bank = ticket_bank.load(path)
+        labels = ticket_bank.Labels(notes, {e["id"]: e["type"] for e in own})
+        errors, _ = ticket_bank.check_schema(bank, doc.week_id, labels)
+        if errors:
+            raise ticket_bank.BankError("; ".join(errors))
+        data = ticket_bank.export(bank, doc.week_id, notes, own, MARKDOWN)
+    except ticket_bank.BankError as e:
+        raise BuildError(f"{rel}: {e} (подробнее — uv run scripts/lint.py)") from e
+    write_json(page_dir / "bank.json", data)
 
 
 def katex_macros() -> dict[str, str]:
@@ -590,6 +614,8 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     # цветная кнопка); по умолчанию — день date
                     "active_until": m.get("active_until") or m.get("date"),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
+                    # есть банк билетов → на странице генератор (bank.json рядом с fragment.html)
+                    "bank": ticket_bank.bank_path(SRC / "prep" / m["course"] / f"{m['week_id']}.md").exists(),
                 }
             )
     write_json(
