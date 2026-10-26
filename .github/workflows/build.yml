@@ -110,7 +110,7 @@ jobs:
           done
 
   # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска,
-  # на Cloudflare Pages по адресу pr-<N>.<проект>.pages.dev. Ссылка — комментарием в PR,
+  # на Cloudflare Pages по адресу pr-<N>.<проект>.pages.dev (проект создан вручную в Cloudflare). Ссылка — комментарием в PR,
   # обновляется на каждый пуш. PR из форков не деплоятся: им не положены секреты.
   preview:
     name: Site preview
@@ -164,25 +164,6 @@ jobs:
           # Превью не должно попадать в поиск
           printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers
           printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
-
-      - name: Create the Cloudflare Pages project if missing
-        if: env.HAS_TOKEN == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT")
-          if [ "$code" = 404 ]; then
-            curl --fail-with-body -s -X POST \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' \
-              --data "{\"name\":\"$PROJECT\",\"production_branch\":\"main\"}" \
-              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
-          elif [ "$code" != 200 ]; then
-            echo "::error::Cloudflare API ответил $code — проверьте токен (Cloudflare Pages: Edit) и account id"
-            exit 1
-          fi
 
       - name: Deploy
         if: env.HAS_TOKEN == 'true'
