@@ -139,6 +139,7 @@ describe("FragmentView tables", () => {
     expect(document.querySelector(".table-cards")).not.toBeNull();
     const cells = [...document.querySelectorAll("td")].map((td) => td.dataset["label"]);
     expect(cells).toStrictEqual(["Элемент", "Вес", "Что это"]);
+    expect(document.querySelectorAll("td[data-inline]")).toHaveLength(3);
     expect(screen.getByRole("columnheader", { name: "Вес" })).toBeInTheDocument();
   });
 

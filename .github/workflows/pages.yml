@@ -110,6 +110,9 @@ jobs:
           curl --fail --silent --head "${URL}pdf/calculus-kr1.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/colloq1/" | grep -q '<title>Подготовка к коллоквиуму 1'
           curl --fail --silent --head "${URL}pdf/calculus-colloq1.pdf" >/dev/null
+          curl --fail --silent "${URL}calculus/program/" | grep -q '<title>Математический анализ: программа и оценивание'
+          curl --fail --silent --head "${URL}pdf/calculus-program.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete-program.pdf" >/dev/null
           curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-1side.pdf" >/dev/null
           curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-2side.pdf" >/dev/null
           curl --fail --silent "${URL}sw.js" >/dev/null

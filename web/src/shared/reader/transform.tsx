@@ -155,14 +155,23 @@ const table: Handler = (node, options, replace) => {
   );
 };
 
-/** On the program page every cell carries its column name: a card shows it above the value. */
+/** A value this short shares the line with its column name in a card («ВЕС 0,1»). */
+const SHORT_CELL_CHARS = 24;
+
+/**
+On the program page every cell carries its column name: a card shows it next to a short value
+and above a long one.
+*/
 const cell: Handler = (node, options, replace) => {
   if (options.variant !== "program") {
     return;
   }
-  const label = columnLabel(node);
   return (
-    <td {...attributesToProps(node.attribs)} data-label={label}>
+    <td
+      {...attributesToProps(node.attribs)}
+      data-inline={textOf(node).trim().length <= SHORT_CELL_CHARS ? "true" : undefined}
+      data-label={columnLabel(node)}
+    >
       {children(node, replace)}
     </td>
   );

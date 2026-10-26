@@ -99,8 +99,8 @@
 
 /*
 Program page (`/<course>/program`): a table of three or more columns becomes a stack of cards on a
-phone — one card per row, every value under its column name (`data-label`, set by the reader).
-The first column is the card title.
+phone — one card per row, every value next to (short, `data-inline`) or under its column name
+(`data-label`; both set by the reader). The first column is the card title.
 */
 @media (width < 40rem) {
   .prose-notes .table-cards table,
@@ -149,6 +149,11 @@ The first column is the card title.
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .prose-notes .table-cards td[data-inline]::before {
+    display: inline-block;
+    min-width: 7.5rem;
   }
 
   .prose-notes .table-cards td:first-child {

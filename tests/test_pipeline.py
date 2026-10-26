@@ -433,9 +433,13 @@ def test_program_builds(demo: Path):
     assert res.returncode == 0, res.stderr
     site = demo / "build" / "site-data"
     meta = json.loads((site / "algebra" / "program" / "meta.json").read_text(encoding="utf-8"))
-    assert meta["kind"] == "program" and meta["lecture"] == 0 and meta["labels"] == []
+    assert meta["kind"] == "program" and meta["lecture"] == 0 and not meta["labels"]
     assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Программа и оценивание"
-    assert [t["text"] for t in meta["toc"] if t["level"] == 1] == ["Коротко", "Первый семестр", "Содержание курса"]
+    assert [t["text"] for t in meta["toc"] if t["level"] == 1] == [
+        "Коротко",
+        "Первый семестр",
+        "Содержание курса",
+    ]
     frag = (site / "algebra" / "program" / "fragment.html").read_text(encoding="utf-8")
     # замечания и примеры программы — без номеров; ссылка на конспект — как в теории
     assert "Пример (как считается)" in frag and "Замечание (по wiki курса)" in frag
@@ -468,10 +472,22 @@ def test_program_optional(demo: Path):
         ("# Содержание курса", "# Темы", "последний раздел — «# Содержание курса»"),
         ("course: algebra", "course: calculus", "а файл program/algebra.md"),
         ("title: ", "date: 2026-10-26\ntitle: ", "лишнее поле date"),
-        ('::: {.example title="как считается"}', "::: {.definition #def:program:x}", "можно только example, remark"),
-        ('::: {.remark title="по wiki курса"}', "::: {.remark #rem:program:wiki}", "в программе блоки без меток"),
+        (
+            '::: {.example title="как считается"}',
+            "::: {.definition #def:program:x}",
+            "можно только example, remark",
+        ),
+        (
+            '::: {.remark title="по wiki курса"}',
+            "::: {.remark #rem:program:wiki}",
+            "в программе блоки без меток",
+        ),
         ("[-@def:lec01:matrix]", "[-@def:lec01:nope]", "ссылка @def:lec01:nope никуда не ведёт"),
-        ("# Первый семестр", "# Первый семестр {#sec:program:first}", "у заголовка: в программе своих меток нет"),
+        (
+            "# Первый семестр",
+            "# Первый семестр {#sec:program:first}",
+            "у заголовка: в программе своих меток нет",
+        ),
         ("— взвешенная сумма", "— взвешенная сумма (см. Р4)", "служебное слово"),
         ("- **Матрицы.**", "```tikz\n\\draw (0,0) -- (1,1);\n```\n\n- **Матрицы.**", "блок кода или рисунок"),
     ],
@@ -480,7 +496,7 @@ def test_lint_program_catches(demo: Path, old: str, new: str, expected: str):
     p = demo / "program" / "algebra.md"
     text = p.read_text(encoding="utf-8")
     assert old in text
-    p.write_text(text.replace(old, new.replace("\\n", "\n"), 1), encoding="utf-8")
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
     res = lint(demo)
     assert res.returncode != 0
     assert expected in res.stdout, res.stdout

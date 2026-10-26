@@ -1,4 +1,4 @@
-"""Линтер конспектов и теории курсов (разметка — context/markup.md, скелет — context/recommendations.md).
+"""Линтер конспектов, теории и программ курсов, подготовок к КР (разметка — context/markup.md, скелет — context/recommendations.md).
 
     uv run scripts/lint.py                 # все файлы
     uv run scripts/lint.py notes/algebra/04_sep23_determinant_properties.md
@@ -441,7 +441,9 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
         if meta.get(k) in (None, ""):
             rep.err(rel, f"в front matter нет поля {k}")
     for k in sorted(set(meta) - PROGRAM_META):
-        rep.err(rel, f"лишнее поле {k} в front matter: у программы курса только {', '.join(sorted(PROGRAM_META))}")
+        rep.err(
+            rel, f"лишнее поле {k} в front matter: у программы курса только {', '.join(sorted(PROGRAM_META))}"
+        )
     if course not in cfg["courses"]:
         rep.err(rel, f"неизвестный курс {course}: файл называется program/<course>.md")
         return
@@ -461,7 +463,9 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
                     f"{', '.join(sorted(PROGRAM_BLOCKS))}",
                 )
             if ident or dict(kv).get("ref"):
-                rep.err(rel, f"у блока {ident or dict(kv).get('ref')} метка: в программе блоки без меток и ref=")
+                rep.err(
+                    rel, f"у блока {ident or dict(kv).get('ref')} метка: в программе блоки без меток и ref="
+                )
             tag = dict(kv).get("tag")
             if tag is not None and tag not in TAGS:
                 rep.err(rel, f"неизвестная пометка замечания: {tag!r}; допустимо: {', '.join(sorted(TAGS))}")

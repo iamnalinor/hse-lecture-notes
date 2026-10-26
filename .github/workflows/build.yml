@@ -101,7 +101,7 @@ jobs:
           git push -f origin latest
           gh release view latest >/dev/null 2>&1 || \
             gh release create latest --prerelease --title "Конспекты (последняя сборка main)" \
-              --notes "PDF всех конспектов, теории курсов, подготовки к КР и читлистов, собранные из main."
+              --notes "PDF всех конспектов, теории и программ курсов, подготовки к КР и читлистов, собранные из main."
           gh release upload latest dist/*.pdf --clobber
           # --clobber only adds and replaces: drop PDFs that main no longer builds (e.g. the old
           # <course>-registry.pdf), so a saved link fails instead of serving a frozen copy.
