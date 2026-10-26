@@ -12,7 +12,9 @@ title: "Теория: математический анализ"
 - «Возрастающая» последовательность — строго ($a_n < a_{n+1}$), нестрогая — «неубывающая» [-@rem:lec02:increasing-convention].
 - Ограниченность последовательности сверху определяется строгим неравенством $a_n < C$ [-@rem:lec02:strict], ограниченность множества — нестрогим $a \le C$ [-@rem:lec05:nonstrict]; на сами понятия это не влияет.
 - Бесконечно большая — это стремление к $\infty$ без знака: $(-1)^n n \to \infty$, но не к $\pm\infty$ [-@rem:lec04:infinity-symbol].
-- Показательная функция, $\ln x$ и степени $x^\alpha$ с вещественным показателем до строгого определения используются со школьными свойствами, а их непрерывность (предел равен значению) принимается на веру [-@rem:lec08:elementary].
+- Показательная функция, $\ln x$ и степени $x^\alpha$ с вещественным показателем до строгого определения используются со школьными свойствами, а их непрерывность (предел равен значению) принимается на веру [-@rem:lec08:elementary]; в лекции 11 они определены строго ($a^x$ — через супремум рациональных степеней, [-@def:lec11:exp]) и их непрерывность доказана, алгебраические правила $a^{x+y} = a^x a^y$, $(a^x)^y = a^{xy}$ приняты без доказательства.
+- $\arcsin$, $\arccos$, $\operatorname{arctg}$, $\operatorname{arcctg}$ — обратные к $\sin$ на $\left[-\frac\pi2;\ \frac\pi2\right]$, $\cos$ на $[0;\ \pi]$, $\operatorname{tg}$ на $\left(-\frac\pi2;\ \frac\pi2\right)$, $\operatorname{ctg}$ на $(0;\ \pi)$; обозначения $\operatorname{tg}$, $\operatorname{ctg}$, $\operatorname{arctg}$ — русская традиция (в англоязычной литературе $\tan$, $\arctan$) [-@def:lec11:arc].
+- Производная — только конечный предел разностного отношения; «бесконечная производная» производной не считается [-@rem:lec11:infinite].
 
 # Лекция 1 — Высказывания, предикаты, кванторы. Метод математической индукции. Неравенство Бернулли
 
@@ -634,6 +636,102 @@ $f\colon X \to Y$ — инъекция, если $x_1 \ne x_2 \Rightarrow f(x_1)
 
 ::: {.corollary ref="cor:lec10:inverse-domain" status="доказано в лекции 10"}
 Если $f$ непрерывна и строго возрастает на $[a;\ b]$, то $f^{-1}$ определена на $[f(a);\ f(b)]$ и строго возрастает (для убывающей — на $[f(b);\ f(a)]$, убывает).
+:::
+
+# Лекция 11 — Непрерывность обратной функции. Обратные тригонометрические, показательная и логарифмическая функции. Производная
+
+::: {.theorem ref="thm:lec11:inverse-continuous" status="доказано в лекции 11"}
+Если $f$ непрерывна и строго монотонна на $[a;\ b]$, то $f^{-1}$ непрерывна на отрезке $E_f$. *Идея:* по Гейне: если $f^{-1}(y_n) \not\to x_0$, то по Больцано–Вейерштрассу часть прообразов сходится к $c \ne x_0$, по непрерывности $f(c) = y_0 = f(x_0)$ — противоречие с инъективностью. Второй способ: для возрастающей $f$ интервал $(x_0 - \varepsilon;\ x_0 + \varepsilon)$ переходит в интервал вокруг $y_0$, $\delta = \min(y_0 - y_1,\ y_2 - y_0)$.
+:::
+
+::: {.corollary ref="cor:lec11:inverse-interval" status="доказано в лекции 11"}
+Если $f$ непрерывна и строго монотонна на промежутке $I$, то $E_f$ — промежуток, а $f^{-1}\colon E_f \to I$ непрерывна и монотонна того же типа. *Идея:* промежуточные значения — Больцано–Коши; непрерывность — теорема для отрезка $[c;\ d] \subseteq I$ вокруг $x_0$.
+:::
+
+::: {.definition ref="def:lec11:arc"}
+$\arcsin y$ ($y \in [-1;\ 1]$) — единственное $x \in \left[-\frac\pi2;\ \frac\pi2\right]$ с $\sin x = y$; $\arccos y$ — $x \in [0;\ \pi]$ с $\cos x = y$; $\operatorname{arctg} y$ ($y \in \R$) — $x \in \left(-\frac\pi2;\ \frac\pi2\right)$ с $\operatorname{tg} x = y$; $\operatorname{arcctg} y$ — $x \in (0;\ \pi)$ с $\operatorname{ctg} x = y$.
+:::
+
+::: {.proposition ref="prop:lec11:arc" status="доказано в лекции 11"}
+$\arcsin$ возрастает, $\arccos$ убывает (на $[-1;\ 1]$, значения $\left[-\frac\pi2;\ \frac\pi2\right]$ и $[0;\ \pi]$); $\operatorname{arctg}$ возрастает, $\operatorname{arcctg}$ убывает на $\R$, $\operatorname{arctg} y \to \pm\frac\pi2$ при $y \to \pm\infty$; все четыре непрерывны. $\arcsin$, $\operatorname{arctg}$ нечётны, $\arccos(-y) = \pi - \arccos y$; $\arcsin y + \arccos y = \operatorname{arctg} y + \operatorname{arcctg} y = \frac\pi2$. *Идея:* строгая монотонность сужений через формулы разности; затем теорема о непрерывности обратной.
+:::
+
+::: {.corollary ref="cor:lec11:arc-limits" status="доказано в лекции 11"}
+$\arcsin x \sim x$, $\operatorname{arctg} x \sim x$ при $x \to 0$. *Идея:* замена $y = \arcsin x \to 0$, $y \ne 0$, и $\frac{y}{\sin y} \to 1$.
+:::
+
+::: {.definition ref="def:lec11:exp"}
+При $a > 1$: $a^x = \sup\{a^r \mid r \in \Q,\ r \le x\}$; при $0 < a < 1$: $a^x = \left(\frac1a\right)^{-x}$; $1^x = 1$.
+:::
+
+::: {.theorem ref="thm:lec11:exp" status="доказано в лекции 11 (пункт 1 — без доказательства)"}
+При $a > 0$, $a \ne 1$: (1) $a^{x+y} = a^x a^y$, $(a^x)^y = a^{xy}$, $(ab)^x = a^x b^x$; (2) $a^x$ строго возрастает при $a > 1$, убывает при $a < 1$; (3) непрерывна на $\R$; (4) множество значений $(0;\ +\infty)$. *Идея:* монотонность — рациональные $x < r < s < y$; непрерывность в нуле — $a^{-1/n} < a^x < a^{1/n}$ при $|x| < \frac1n$ и $\sqrt[n]{a} \to 1$; в точке $x_0$ — $a^x - a^{x_0} = a^{x_0}(a^{x - x_0} - 1)$.
+:::
+
+::: {.definition ref="def:lec11:log"}
+$\log_a\colon (0;\ +\infty) \to \R$ ($a > 0$, $a \ne 1$) — функция, обратная к $a^x$; $\ln = \log_e$.
+:::
+
+::: {.proposition ref="prop:lec11:log" status="доказано в лекции 11"}
+$\log_a$ непрерывна, монотонна (как $a^x$), множество значений $\R$; $\log_a(uv) = \log_a u + \log_a v$, $\log_a u^t = t\log_a u$; $a^x = e^{x \ln a}$, $\log_a y = \frac{\ln y}{\ln a}$. *Идея:* обратная к непрерывной монотонной на промежутке; тождества — из свойств $a^x$.
+:::
+
+::: {.definition ref="def:lec11:power"}
+$x^\alpha = e^{\alpha \ln x}$ при $x > 0$, $\alpha \in \R$.
+:::
+
+::: {.corollary ref="cor:lec11:power-limit" status="доказано в лекции 11"}
+Если $u \to A > 0$, $v \to B \in \R$, то $u^v \to A^B$. *Идея:* $u^v = e^{v \ln u}$ и непрерывность $\ln$ и $e^x$.
+:::
+
+::: {.definition ref="def:lec11:derivative"}
+$f'(x_0) = \lim\limits_{h \to 0} \frac{f(x_0 + h) - f(x_0)}{h} = \lim\limits_{\Delta x \to 0} \frac{\Delta f}{\Delta x}$ (предел конечен; $f$ определена в окрестности $x_0$).
+:::
+
+::: {.definition ref="def:lec11:one-sided"}
+$f'_\pm(x_0) = \lim\limits_{h \to \pm 0} \frac{f(x_0 + h) - f(x_0)}{h}$. Производная существует $\Leftrightarrow$ $f'_-(x_0) = f'_+(x_0)$ (обе конечны).
+:::
+
+::: {.definition ref="def:lec11:tangent"}
+Касательная в точке $(x_0;\ f(x_0))$: $y = f(x_0) + f'(x_0)(x - x_0)$; при непрерывной $f$ и $f'(x_0) = \pm\infty$ — вертикальная прямая $x = x_0$.
+:::
+
+::: {.proposition ref="prop:lec11:table" status="доказано в лекции 11"}
+$(x^n)' = nx^{n-1}$, $(\sin x)' = \cos x$, $(\cos x)' = -\sin x$, $(\operatorname{tg} x)' = \frac{1}{\cos^2 x}$, $(a^x)' = a^x \ln a$, $(\ln x)' = \frac1x$, $(\log_a x)' = \frac{1}{x \ln a}$, $(x^\alpha)' = \alpha x^{\alpha - 1}$ ($x > 0$). *Идея:* разностное отношение сводится к замечательному пределу: $\frac{\sin(h/2)}{h/2}$, $\frac{e^y - 1}{y}$, $\frac{\ln(1 + t)}{t}$, $\frac{(1 + t)^\alpha - 1}{t}$ с $t = \frac hx$; для $x^n$ — бином.
+:::
+
+# Лекция 12 — Дифференцируемость. Правила дифференцирования. Производная обратной функции
+
+::: {.definition ref="def:lec12:differentiable"}
+$f$ дифференцируема в $x_0$, если $f(x_0 + h) = f(x_0) + Ah + o(h)$ при $h \to 0$ для некоторого $A \in \R$.
+:::
+
+::: {.theorem ref="thm:lec12:criterion" status="доказано в лекции 12"}
+$f$ дифференцируема в $x_0$ $\Leftrightarrow$ существует $f'(x_0)$; при этом $A = f'(x_0)$. *Идея:* разделить равенство на $h$.
+:::
+
+::: {.definition ref="def:lec12:differential"}
+Дифференциал $df(x_0) = f'(x_0)\,dx$, $dx = \Delta x$; $\Delta f = df + o(\Delta x)$.
+:::
+
+::: {.theorem ref="thm:lec12:continuous" status="доказано в лекции 12"}
+Дифференцируемая в $x_0$ функция непрерывна в $x_0$ (односторонняя производная — односторонняя непрерывность). Обратное неверно: $|x|$, $x \sin\frac1x$. *Идея:* $f(x_0 + h) - f(x_0) = \frac{\Delta f}{h} \cdot h \to f'(x_0) \cdot 0$.
+:::
+
+::: {.theorem ref="thm:lec12:arithmetic" status="доказано в лекции 12"}
+$(f \pm g)' = f' \pm g'$, $(cf)' = cf'$, $(fg)' = f'g + fg'$, $\left(\frac fg\right)' = \frac{f'g - fg'}{g^2}$ ($g(x_0) \ne 0$). *Идея:* для произведения прибавить и вычесть $f(x_0) g(x_0 + h)$ и воспользоваться непрерывностью $g$; частное — через $\frac1g$.
+:::
+
+::: {.theorem ref="thm:lec12:chain" status="доказано в лекции 12"}
+Если $g$ дифференцируема в $x_0$, $f$ — в $g(x_0)$, то $(f \circ g)'(x_0) = f'(g(x_0))\, g'(x_0)$. *Идея:* вспомогательная функция $\varphi(y) = \frac{f(y) - f(y_0)}{y - y_0}$, $\varphi(y_0) = f'(y_0)$, непрерывна в $y_0$, и $f(g(x)) - f(y_0) = \varphi(g(x))(g(x) - g(x_0))$ — без деления на $g(x) - g(x_0)$, которое может быть нулём.
+:::
+
+::: {.theorem ref="thm:lec12:inverse" status="доказано в лекции 12"}
+Если $f$ непрерывна и строго монотонна на промежутке, $x_0$ — внутренняя точка, $f'(x_0) \ne 0$, то $(f^{-1})'(f(x_0)) = \frac{1}{f'(x_0)}$. *Идея:* $\frac{f^{-1}(y) - f^{-1}(y_0)}{y - y_0} = \frac{x - x_0}{f(x) - f(x_0)}$, $x = f^{-1}(y) \to x_0$ по непрерывности обратной и $x \ne x_0$.
+:::
+
+::: {.proposition ref="prop:lec12:arc-derivatives" status="доказано в лекции 12"}
+$(\arcsin y)' = \frac{1}{\sqrt{1 - y^2}}$, $(\arccos y)' = -\frac{1}{\sqrt{1 - y^2}}$ ($|y| < 1$); $(\operatorname{arctg} y)' = \frac{1}{1 + y^2}$, $(\operatorname{arcctg} y)' = -\frac{1}{1 + y^2}$. *Идея:* теорема о производной обратной; $\cos x = \sqrt{1 - \sin^2 x}$ при $|x| < \frac\pi2$, $\cos^2 x = \frac{1}{1 + \operatorname{tg}^2 x}$.
 :::
 
 # Глоссарий курса
