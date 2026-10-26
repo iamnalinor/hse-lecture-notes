@@ -34,7 +34,7 @@ tile line up across the cards of a row instead of floating with the title's leng
 export const CourseCard = ({ course, lectures, preps, today }: Props) => {
   const last = latestLecture(lectures, today);
   const next = upcomingPreps(preps, today)[0];
-  const accent = next !== undefined && isHighlighted(next, today);
+  const isAccent = next !== undefined && isHighlighted(next, today);
   return (
     <article className="group relative row-span-3 grid cursor-pointer grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-rule bg-card transition-colors hover:bg-wash/50 has-[[data-tile]:hover]:bg-card has-[h3_a:focus-visible]:ring-2 has-[h3_a:focus-visible]:ring-brand">
       <div className="flex min-h-32.5 flex-col border-b border-rule px-5.5 pt-5.5 pb-4.5">
@@ -77,11 +77,11 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
       <div className="px-5.5 pb-4 empty:p-0">
         {next !== undefined && (
           <Link
-            className={accent ? PREP_TILE.accent : PREP_TILE.neutral}
+            className={isAccent ? PREP_TILE.accent : PREP_TILE.neutral}
             data-tile
             to={paths.prep(course.id, next.id)}
           >
-            <small className={`mb-0.5 block text-xs ${accent ? "" : "text-muted"}`}>
+            <small className={`mb-0.5 block text-xs ${isAccent ? "" : "text-muted"}`}>
               {prepName(next.id)} · {prepWhen(next)}
             </small>
             <span className="text-[16px] leading-snug font-semibold">{prepGoal(next.id)} →</span>

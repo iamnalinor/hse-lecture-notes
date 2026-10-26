@@ -57,8 +57,8 @@ export const Component = () => {
                 className={`${BUTTON} border-ink bg-ink text-paper`}
                 to={paths.lecture(info.id, current.weekId)}
               >
-                Читать лекцию {current.lecture}
-                <span className="font-normal">· {dayMonth(current.date)}</span>
+                Читать лекцию {current.lecture}{" "}
+                <span className="font-normal">· {dayMonth(current.date)}</span>{" "}
                 <span aria-hidden="true">→</span>
               </Link>
             )}

@@ -6,14 +6,9 @@ import { renderWithApp } from "#web/test/render.tsx";
 
 import { Component as CoursePage } from "./course-page.tsx";
 
-const prep = (id: string, date: string, activeUntil: string, highlightFrom: string) => ({
-  activeUntil,
-  cheatsheets: [],
-  date,
-  highlightFrom,
-  id,
-  title: "",
-});
+type Dates = { activeUntil: string; date: string; highlightFrom: string };
+
+const prep = (id: string, dates: Dates) => ({ ...dates, cheatsheets: [], id, title: "" });
 
 const LECTURES = [
   { date: "2026-10-16", lecture: 7, title: "Предел функции", weekId: "07_oct16_limits" },
@@ -22,9 +17,9 @@ const LECTURES = [
 ];
 
 const PREPS = [
-  prep("kr1", "2026-10-22", "2026-10-23", "2026-10-08"),
-  prep("colloq1", "2026-11-02", "2026-12-30", "2026-12-07"),
-  prep("kr2", "2026-12-10", "2026-12-10", "2026-11-26"),
+  prep("kr1", { activeUntil: "2026-10-23", date: "2026-10-22", highlightFrom: "2026-10-08" }),
+  prep("colloq1", { activeUntil: "2026-12-30", date: "2026-11-02", highlightFrom: "2026-12-07" }),
+  prep("kr2", { activeUntil: "2026-12-10", date: "2026-12-10", highlightFrom: "2026-11-26" }),
 ];
 
 /** The calculus page on a given Moscow day. */
@@ -83,7 +78,7 @@ describe("course page", () => {
       "/calculus/08_oct23_continuity",
     );
     expect(navLinks("Материалы курса")).toStrictEqual([
-      "Читать лекцию 8· 23 окт→",
+      "Читать лекцию 8 · 23 окт →",
       "Теория",
       "Глоссарий",
     ]);
