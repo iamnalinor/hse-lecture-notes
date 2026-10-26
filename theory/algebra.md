@@ -835,6 +835,14 @@ $F(x, y, z) = 0$ — уравнение множества $S$, если ему 
 Прямые лежат в одной плоскости $\Leftrightarrow \langle \overrightarrow{M_1 M_2}, \vec s_1, \vec s_2 \rangle = 0$, иначе скрещиваются; при $[\vec s_1, \vec s_2] = \vec 0$ совпадают или параллельны (по $[\overrightarrow{M_1 M_2}, \vec s_1]$), при $[\vec s_1, \vec s_2] \ne \vec 0$ и нулевом смешанном произведении пересекаются. *Идея:* критерий компланарности.
 :::
 
+::: {.definition ref="def:lec14:direction-cosines"}
+Направляющие косинусы ненулевого $\vec a$ в ОНБ: $\cos \alpha = \frac{a_1}{|\vec a|}$, $\cos \beta = \frac{a_2}{|\vec a|}$, $\cos \gamma = \frac{a_3}{|\vec a|}$; сумма их квадратов равна $1$.
+:::
+
+::: {.definition ref="def:lec14:normal-equation"}
+Нормальное уравнение плоскости: $x \cos \alpha + y \cos \beta + z \cos \gamma - p = 0$, $p \ge 0$ — расстояние от $O$; получается делением общего уравнения на $\pm\sqrt{A^2 + B^2 + C^2}$ со знаком, противоположным знаку $D$.
+:::
+
 ::: {.proposition ref="prop:lec14:point-plane" status="доказано в лекции 14"}
 $\rho(M_0, \pi) = \frac{|Ax_0 + By_0 + Cz_0 + D|}{\sqrt{A^2 + B^2 + C^2}}$. *Идея:* модуль проекции $\overrightarrow{M_1 M_0}$ на нормаль.
 :::
