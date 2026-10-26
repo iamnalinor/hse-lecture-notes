@@ -284,7 +284,7 @@ def test_duplicate_label_fails(demo: Path):
 def test_pdf_builds(demo: Path):
     res = build(demo, "--no-html", "--strict")
     assert res.returncode == 0, res.stderr + res.stdout
-    for name in ("01_sep03_matrices", "02_sep09_gauss", "theory", "kr1"):
+    for name in ("01_sep03_matrices", "02_sep09_gauss", "theory", "program", "kr1"):
         assert (demo / "build" / "pdf" / "algebra" / f"{name}.pdf").stat().st_size > 10_000
     # читлист prep/algebra/cheatsheet/kr1-cheatsheet-1side.tex — рядом с PDF подготовки
     assert (demo / "build" / "pdf" / "algebra" / "kr1-cheatsheet-1side.pdf").stat().st_size > 1_000
@@ -420,6 +420,90 @@ def test_lint_weekday(demo: Path):
     src.unlink()
     res = lint(demo)
     assert "не день лекции курса" in res.stdout
+
+
+# ----------------------------------------------------------------------------- программа курса
+
+
+def test_program_builds(demo: Path):
+    """program/algebra.md: своя шапка, блоки без номеров, запись в courses.json и поиске, без меток в индексе."""
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    meta = json.loads((site / "algebra" / "program" / "meta.json").read_text(encoding="utf-8"))
+    assert meta["kind"] == "program" and meta["lecture"] == 0 and meta["labels"] == []
+    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Программа и оценивание"
+    assert [t["text"] for t in meta["toc"] if t["level"] == 1] == ["Коротко", "Первый семестр", "Содержание курса"]
+    frag = (site / "algebra" / "program" / "fragment.html").read_text(encoding="utf-8")
+    # замечания и примеры программы — без номеров; ссылка на конспект — как в теории
+    assert "Пример (как считается)" in frag and "Замечание (по wiki курса)" in frag
+    assert "data-number" not in frag
+    assert 'href="../01_sep03_matrices/#def:lec01:matrix"' in frag
+    assert "<table" in frag and "<th>Вес</th>" in frag.replace(' style="text-align: left;"', "")
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert courses["programs"] == ["algebra"]
+    search = json.loads((site / "search.json").read_text(encoding="utf-8"))
+    assert any(e["doc"] == "program" and "120 минут" in e["text"] for e in search)
+    index = json.loads((site / "index.json").read_text(encoding="utf-8"))["algebra"]
+    assert all(v["week_id"] != "program" for v in index.values())
+    preview = (site / "index.html").read_text(encoding="utf-8")
+    assert 'href="algebra/program/"' in preview
+
+
+def test_program_optional(demo: Path):
+    """Курс без program/<course>.md: страницы нет, в courses.json пустой список."""
+    shutil.rmtree(demo / "program")
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    courses = json.loads((demo / "build" / "site-data" / "courses.json").read_text(encoding="utf-8"))
+    assert courses["programs"] == []
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("# Коротко", "# Кратко", "первый раздел — «# Коротко»"),
+        ("# Содержание курса", "# Темы", "последний раздел — «# Содержание курса»"),
+        ("course: algebra", "course: calculus", "а файл program/algebra.md"),
+        ("title: ", "date: 2026-10-26\ntitle: ", "лишнее поле date"),
+        ('::: {.example title="как считается"}', "::: {.definition #def:program:x}", "можно только example, remark"),
+        ('::: {.remark title="по wiki курса"}', "::: {.remark #rem:program:wiki}", "в программе блоки без меток"),
+        ("[-@def:lec01:matrix]", "[-@def:lec01:nope]", "ссылка @def:lec01:nope никуда не ведёт"),
+        ("# Первый семестр", "# Первый семестр {#sec:program:first}", "у заголовка: в программе своих меток нет"),
+        ("— взвешенная сумма", "— взвешенная сумма (см. Р4)", "служебное слово"),
+        ("- **Матрицы.**", "```tikz\n\\draw (0,0) -- (1,1);\n```\n\n- **Матрицы.**", "блок кода или рисунок"),
+    ],
+)
+def test_lint_program_catches(demo: Path, old: str, new: str, expected: str):
+    p = demo / "program" / "algebra.md"
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new.replace("\\n", "\n"), 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+def test_lint_program_unknown_course(demo: Path):
+    src = demo / "program" / "algebra.md"
+    (demo / "program" / "physics.md").write_text(
+        src.read_text(encoding="utf-8").replace("course: algebra", "course: physics"), encoding="utf-8"
+    )
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "неизвестный курс physics" in res.stdout, res.stdout
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_program_pdf(demo: Path):
+    res = build(demo, "--no-html", "--strict", "--only", "program/algebra.md")
+    assert res.returncode == 0, res.stderr + res.stdout
+    assert (demo / "build" / "pdf" / "algebra" / "program.pdf").stat().st_size > 10_000
+    tex = (demo / "build" / "tex" / "algebra" / "program.tex").read_text(encoding="utf-8")
+    assert "Программа и оценивание" in tex and "\\begin{longtable}" in tex
+    assert "\\AtBeginEnvironment{longtable}{\\small}" in tex  # таблицы программы — мельче
 
 
 # ----------------------------------------------------------------------------- подготовка к коллоквиуму

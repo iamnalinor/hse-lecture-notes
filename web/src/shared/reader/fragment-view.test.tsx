@@ -117,3 +117,44 @@ describe("FragmentView proofs and problems", () => {
     );
   });
 });
+
+const TABLE = `
+<table>
+  <colgroup><col style="width: 30%" /><col style="width: 10%" /><col style="width: 60%" /></colgroup>
+  <thead><tr class="header"><th>Элемент</th><th>Вес</th><th>Что это</th></tr></thead>
+  <tbody><tr class="odd"><td>КР</td><td>0,2</td><td>одна пара</td></tr></tbody>
+</table>`;
+
+describe("FragmentView tables", () => {
+  it("labels every cell of a wide program table for the phone cards", () => {
+    renderWithApp(
+      <FragmentView
+        course="discrete"
+        docId="program"
+        html={TABLE}
+        lecture={undefined}
+        variant="program"
+      />,
+    );
+    expect(document.querySelector(".table-cards")).not.toBeNull();
+    const cells = [...document.querySelectorAll("td")].map((td) => td.dataset["label"]);
+    expect(cells).toStrictEqual(["Элемент", "Вес", "Что это"]);
+    expect(screen.getByRole("columnheader", { name: "Вес" })).toBeInTheDocument();
+  });
+
+  it("keeps a two-column program table and lecture tables as plain scrolling tables", () => {
+    view(TABLE);
+    expect(document.querySelector(".table-cards")).toBeNull();
+    expect(document.querySelector("td[data-label]")).toBeNull();
+    renderWithApp(
+      <FragmentView
+        course="discrete"
+        docId="program"
+        html="<table><thead><tr><th>Когда</th><th>Что</th></tr></thead><tbody><tr><td>24.10</td><td>КР1</td></tr></tbody></table>"
+        lecture={undefined}
+        variant="program"
+      />,
+    );
+    expect(document.querySelector(".table-cards")).toBeNull();
+  });
+});

@@ -19,6 +19,16 @@ describe("build data schemas", () => {
     });
     expect(catalog.lectures["algebra"]?.[0]?.weekId).toBe("01_x");
     expect(catalog.preps).toStrictEqual({});
+    // data of an older build has no program pages
+    expect(catalog.programs).toStrictEqual([]);
+  });
+
+  it("knows which courses have the program page", () => {
+    const catalog = CatalogSchema.parse({ lectures: {}, programs: ["algebra", "discrete"] });
+    expect(catalog.programs).toStrictEqual(["algebra", "discrete"]);
+    expect(
+      DocMetaSchema.parse({ date_ru: "", kind: "program", lecture: 0, title: "П", toc: [] }).kind,
+    ).toBe("program");
   });
 
   it("reads test preparation pages of a course", () => {

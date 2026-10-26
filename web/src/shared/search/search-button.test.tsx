@@ -28,6 +28,14 @@ const INDEX: readonly SearchEntry[] = [
     text: "Минор порядка $k$.",
   },
   {
+    anchor: "автомат",
+    course: "discrete",
+    doc: "program",
+    heading: "Автомат",
+    lecture: 0,
+    text: "Накопленная оценка не меньше 4.",
+  },
+  {
     anchor: "sec:kr1:cramer",
     course: "algebra",
     doc: "kr1",
@@ -90,6 +98,14 @@ describe("SearchButton", () => {
       expect.stringContaining("Алгебра · Теория"),
     ]);
     expect(screen.getByText("Минор", { selector: "mark" })).toBeInTheDocument();
+  });
+
+  it("opens the program page of a course from a hit", async () => {
+    const input = await open();
+    await userEvent.type(input, "автомат");
+    expect(await screen.findByRole("option")).toHaveTextContent("Дискра · Программа и оценивание");
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByTestId("location")).toHaveTextContent("/discrete/program#автомат");
   });
 
   it("opens a test preparation page from a hit", async () => {
