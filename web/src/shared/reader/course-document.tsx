@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { PdfDoc } from "#web/domain/preps.ts";
 
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
@@ -9,6 +11,8 @@ import { FragmentView } from "./fragment-view.tsx";
 import { useScrollToHash } from "./use-scroll-to-hash.ts";
 
 type Props = {
+  /** Shown after the text: the ticket generator under «Пробный билет» of a colloquium page. */
+  readonly after?: ReactNode;
   readonly course: string;
   readonly courseName: string;
   /** `theory`, `kr1`, `colloq1`… — the document directory and the PDF name. */
@@ -23,6 +27,7 @@ type Props = {
 
 /** A course-wide document (theory, test preparation): TOC on the side, the fragment, the PDF button. */
 export const CourseDocument = ({
+  after,
   course,
   courseName,
   docId,
@@ -52,6 +57,7 @@ export const CourseDocument = ({
         lecture={undefined}
         variant={variant}
       />
+      {after}
     </DocPage>
   );
 };

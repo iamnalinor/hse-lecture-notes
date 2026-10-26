@@ -29,3 +29,38 @@ export const extractPreview = (fragment: string, id: string): string | undefined
     .map((child) => child.outerHTML)
     .join("");
 };
+
+/** A problem's answer and solution follow it in the fragment; the problem card draws them inside. */
+const ATTACHED = ["nb-answer", "nb-solution"];
+
+const withoutIds = (element: Element): string => {
+  const copy = element.cloneNode(true);
+  if (!(copy instanceof Element)) {
+    return "";
+  }
+  copy.removeAttribute("id");
+  for (const inner of copy.querySelectorAll("[id]")) {
+    inner.removeAttribute("id");
+  }
+  return copy.outerHTML;
+};
+
+/**
+A whole block (a problem — with its answer and solution) as HTML, to be shown away from its page:
+ids are dropped so that the copy neither duplicates the anchor nor steals a jump to it.
+*/
+export const extractBlock = (fragment: string, id: string): string | undefined => {
+  const element = findById(new DOMParser().parseFromString(fragment, "text/html"), id);
+  if (element === null) {
+    return undefined;
+  }
+  const parts = [element];
+  for (
+    let next = element.nextElementSibling;
+    next !== null && ATTACHED.some((name) => next?.classList.contains(name) === true);
+    next = next.nextElementSibling
+  ) {
+    parts.push(next);
+  }
+  return parts.map((part) => withoutIds(part)).join("");
+};

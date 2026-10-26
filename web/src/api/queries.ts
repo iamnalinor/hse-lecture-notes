@@ -7,6 +7,7 @@ import {
   LabelIndexSchema,
   MacrosSchema,
   SearchIndexSchema,
+  TicketBankSchema,
 } from "#web/domain/schemas.ts";
 
 import { fetchJson, fetchText } from "./data-client.ts";
@@ -58,6 +59,14 @@ export const fragmentQuery = (course: string, docId: string) =>
     ...STATIC,
     queryFn: async () => await fetchText(`${course}/${docId}/fragment.html`),
     queryKey: ["fragment", course, docId],
+  });
+
+/** The ticket generator's bank of a preparation page; loaded when the generator is shown. */
+export const ticketBankQuery = (course: string, prepId: string) =>
+  queryOptions({
+    ...STATIC,
+    queryFn: async () => await fetchJson(`${course}/${prepId}/bank.json`, TicketBankSchema),
+    queryKey: ["bank", course, prepId],
   });
 
 export const useCatalog = () => useSuspenseQuery(catalogQuery).data;

@@ -4,11 +4,19 @@ type Props = {
   readonly children: ReactNode;
   readonly closedLabel: string;
   readonly defaultOpen?: boolean;
+  /** Mount the content only once opened (it loads data: the ticket generator's answers). */
+  readonly lazy?: boolean;
   readonly openLabel: string;
 };
 
 /** A spoiler: the student tries first, then opens the answer or the solution. */
-export const Reveal = ({ children, closedLabel, defaultOpen = false, openLabel }: Props) => {
+export const Reveal = ({
+  children,
+  closedLabel,
+  defaultOpen = false,
+  lazy = false,
+  openLabel,
+}: Props) => {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
   return (
@@ -25,7 +33,7 @@ export const Reveal = ({ children, closedLabel, defaultOpen = false, openLabel }
         {open ? `${openLabel} ▴` : `${closedLabel} ▾`}
       </button>
       <div className="order-last basis-full pt-1 text-lg empty:hidden" hidden={!open} id={panelId}>
-        {children}
+        {(open || !lazy) && children}
       </div>
     </>
   );

@@ -16,11 +16,13 @@ export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 A page that prepares for a test or a colloquium (`prep/<course>/krN.md`, `colloqN.md`): `id` is `kr1`,
 `colloq1`…, `date` is the test day (for a colloquium — the first day of its window),
 `activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
-by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none.
+by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none,
+`bank` — the page has a ticket bank (`bank.json`, see `TicketBankSchema`) and shows the ticket generator.
 */
 const PrepEntrySchema = z
   .object({
     active_until: z.string().optional(),
+    bank: z.boolean().optional(),
     cheatsheets: z.array(z.string()).default([]),
     date: z.string(),
     id: z.string(),
@@ -113,6 +115,32 @@ const SearchEntrySchema = z.object({
 });
 export type SearchEntry = z.infer<typeof SearchEntrySchema>;
 export const SearchIndexSchema = z.array(SearchEntrySchema);
+
+/**
+`<course>/<prep>/bank.json` (from `prep/<course>/<prep>-bank.yaml`): the ticket format, topic titles
+(sections `sec:<prep>:<topic>` of the page) and the questions. `text` and `answer` are HTML fragments
+(formulas as `span.math`, references as `a.ref`); `refs` are the blocks that answer the question and
+the document each lives in (a lecture `week_id` or the prep page itself).
+*/
+export const TicketBankSchema = z.object({
+  questions: z.array(
+    z.object({
+      answer: z.string(),
+      id: z.string(),
+      kind: z.string(),
+      refs: z.array(z.object({ doc: z.string(), id: z.string() })),
+      text: z.string(),
+      topic: z.string(),
+    }),
+  ),
+  ticket: z.array(
+    z.object({ count: z.number(), kind: z.string(), points: z.string(), title: z.string() }),
+  ),
+  topics: z.record(z.string(), z.string()),
+});
+export type TicketBank = z.infer<typeof TicketBankSchema>;
+export type TicketQuestion = TicketBank["questions"][number];
+export type TicketRef = TicketQuestion["refs"][number];
 
 export const MacrosSchema = z.record(z.string(), z.string());
 
