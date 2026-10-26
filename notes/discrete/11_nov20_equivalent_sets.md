@@ -651,7 +651,7 @@ $A \lnsim B$
 :   множество $\mathcal{P}(\N)$; континуальное множество — равномощное ему (например, $\R$); [-@rem:lec11:continuum].
 
 Континуум-гипотеза
-:   утверждение, что из $\N \lesssim X \lesssim \mathcal{P}(\N)$ следует $X \sim \N$ или $X \sim \mathcal{P}(\N)$; не доказуемо и не опровержимо из общепринятых аксиом; [-@rem:lec11:continuum].
+:   утверждение, что из $\N \lesssim X \lesssim \mathcal{P}(\N)$ следует $X \sim \N$ или $X \sim \mathcal{P}(\N)$; не доказуемо и не опровержимо из общепринятых аксиом (если они непротиворечивы); [-@rem:lec11:continuum].
 
 Проекции $\pi_1$, $\pi_2$
 :   функции $(a, b) \mapsto a$ и $(a, b) \mapsto b$ на $A \times B$; [-@thm:lec11:arithmetic].
