@@ -925,7 +925,7 @@ $C_n^k = \frac{n!}{k!\,(n - k)!}$ при $k \le n$. *Идея:* индукция
 :::
 
 ::: {.lemma ref="lem:lec13:symmetry" status="доказано в лекции 13"}
-$C_n^k = C_n^{n - k}$. *Идея:* биекция $X \mapsto \mathbf{n} \setminus X$.
+$C_n^k = C_n^{n - k}$ при $0 \le k \le n$. *Идея:* биекция $X \mapsto \mathbf{n} \setminus X$.
 :::
 
 ::: {.theorem ref="thm:lec13:binomial" status="доказано в лекции 13"}
