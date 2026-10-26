@@ -55,6 +55,15 @@ no tile on the home page, a plain button on the course page.
 */
 export const isUpcoming = (prep: PrepEntry, today: string): boolean => prep.activeUntil >= today;
 
+/**
+A prep is drawn in the accent colour (home tile, course page button) only near the event: from
+`highlightFrom` (front matter `highlight_from`, two weeks before `date` unless set) through `activeUntil`.
+Before that it is shown, but neutral — a colloquium whose window opens in November and ends with the
+December session should not shout from the page for two months.
+*/
+export const isHighlighted = (prep: PrepEntry, today: string): boolean =>
+  prep.highlightFrom <= today && isUpcoming(prep, today);
+
 const CHEATSHEET_LABELS: Readonly<Record<string, string>> = {
   "1side": "Шпаргалка, 1 сторона",
   "2side": "Шпаргалка, 2 стороны",

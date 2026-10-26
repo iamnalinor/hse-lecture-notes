@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { addDays } from "./dates.ts";
+
 /** The build (`scripts/build.py`) writes snake_case JSON; the schemas expose camelCase. */
 
 const LectureEntrySchema = z
@@ -16,21 +18,27 @@ export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 A page that prepares for a test or a colloquium (`prep/<course>/krN.md`, `colloqN.md`): `id` is `kr1`,
 `colloq1`…, `date` is the test day (for a colloquium — the first day of its window),
 `activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
-by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none,
+by default), `highlightFrom` — the first day the prep is drawn in the accent colour, through `activeUntil`
+(front matter `highlight_from`, two weeks before `date` by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none,
 `bank` — the page has a ticket bank (`bank.json`, see `TicketBankSchema`) and shows the ticket generator.
 */
+/** Default accent lead before the event day; the build uses the same (`HIGHLIGHT_DAYS` in `scripts/build.py`). */
+const HIGHLIGHT_DAYS = 14;
+
 const PrepEntrySchema = z
   .object({
     active_until: z.string().optional(),
     bank: z.boolean().optional(),
     cheatsheets: z.array(z.string()).default([]),
     date: z.string(),
+    highlight_from: z.string().nullish(),
     id: z.string(),
     title: z.string(),
   })
-  .transform(({ active_until: activeUntil, ...rest }) => ({
+  .transform(({ active_until: activeUntil, highlight_from: highlightFrom, ...rest }) => ({
     ...rest,
     activeUntil: activeUntil ?? rest.date,
+    highlightFrom: highlightFrom ?? addDays(rest.date, -HIGHLIGHT_DAYS),
   }));
 export type PrepEntry = z.infer<typeof PrepEntrySchema>;
 

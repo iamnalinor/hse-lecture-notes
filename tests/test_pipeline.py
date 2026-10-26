@@ -177,6 +177,7 @@ def test_html_blocks_and_refs(demo: Path):
                 "title": "Подготовка к КР-1: Алгебра",
                 "date": "2026-11-07",
                 "active_until": "2026-11-07",
+                "highlight_from": "2026-10-24",
                 "cheatsheets": ["1side"],
                 "bank": False,
             }
@@ -373,6 +374,16 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
             "date: 2026-11-07\nactive_until: 2026-11-08 18:00:00",
             "не в формате YYYY-MM-DD",
         ),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nhighlight_from: 1.11.2026",
+            "highlight_from='1.11.2026' не в формате",
+        ),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nhighlight_from: 2026-11-08",
+            "позже последнего дня КР 2026-11-07",
+        ),
     ],
 )
 def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
@@ -400,6 +411,8 @@ def test_prep_active_until(demo: Path):
     assert res.returncode == 0, res.stderr
     courses = json.loads((demo / "build" / "site-data" / "courses.json").read_text(encoding="utf-8"))
     assert courses["preps"]["algebra"][0]["active_until"] == "2026-11-08"
+    # без highlight_from подготовка выделена цветом за две недели до date
+    assert courses["preps"]["algebra"][0]["highlight_from"] == "2026-10-24"
 
 
 @pytest.mark.skipif(not HAS_TEX, reason="нужен шрифт CMU из TeX Live")
@@ -534,7 +547,10 @@ def make_colloq(demo: Path, name: str = "colloq1") -> Path:
         src.replace(":kr1:", f":{name}:")
         .replace("# О контрольной", "# О коллоквиуме")
         .replace("Подготовка к КР-1", "Подготовка к коллоквиуму 1")
-        .replace("date: 2026-11-07", "date: 2026-11-09\nactive_until: 2026-11-20")
+        .replace(
+            "date: 2026-11-07",
+            "date: 2026-11-09\nactive_until: 2026-11-20\nhighlight_from: 2026-11-16",
+        )
     )
     dst = demo / "prep" / "algebra" / f"{name}.md"
     dst.write_text(text, encoding="utf-8")
@@ -563,6 +579,7 @@ def test_colloq_builds(demo: Path):
     assert [p["id"] for p in courses["preps"]["algebra"]] == ["kr1", "colloq1"]
     colloq = courses["preps"]["algebra"][1]
     assert colloq["date"] == "2026-11-09" and colloq["active_until"] == "2026-11-20"
+    assert colloq["highlight_from"] == "2026-11-16"
     assert colloq["cheatsheets"] == []
     search = json.loads((site / "search.json").read_text(encoding="utf-8"))
     assert any(e["doc"] == "colloq1" for e in search)
@@ -588,6 +605,11 @@ def test_colloq_without_problems(demo: Path):
         ("#prob:colloq1:square", "#prob:kr1:square", "в файле colloq1.md метки вида тип:colloq1:slug"),
         ("# О коллоквиуме", "# О контрольной", "первый раздел — «# О коллоквиуме»"),
         ("active_until: 2026-11-20", "active_until: 2026-11-08", "раньше даты коллоквиума"),
+        (
+            "highlight_from: 2026-11-16",
+            "highlight_from: 2026-11-21",
+            "highlight_from=2026-11-21 позже последнего дня коллоквиума 2026-11-20",
+        ),
     ],
 )
 def test_lint_colloq_catches(demo: Path, old: str, new: str, expected: str):

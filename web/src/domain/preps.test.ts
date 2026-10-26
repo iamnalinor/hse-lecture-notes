@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   cheatsheetDocs,
+  isHighlighted,
   isPrepId,
   isUpcoming,
   PREP_IDS,
@@ -46,14 +47,14 @@ describe("test preparation pages", () => {
 
   it("shows a test inside a colloquium's window first once the window has opened", () => {
     const colloq = {
-      activeUntil: "2026-12-30",
+      activeUntil: "2026-12-30", highlightFrom: "2026-09-01",
       cheatsheets: [],
       date: "2026-11-02",
       id: "colloq1",
       title: "",
     };
     const kr2 = {
-      activeUntil: "2026-12-10",
+      activeUntil: "2026-12-10", highlightFrom: "2026-09-01",
       cheatsheets: [],
       date: "2026-12-10",
       id: "kr2",
@@ -76,7 +77,7 @@ describe("test preparation pages", () => {
   it("dates a colloquium by its window and a test by its day", () => {
     expect(
       prepWhen({
-        activeUntil: "2026-12-30",
+        activeUntil: "2026-12-30", highlightFrom: "2026-09-01",
         cheatsheets: [],
         date: "2026-11-02",
         id: "colloq1",
@@ -85,7 +86,7 @@ describe("test preparation pages", () => {
     ).toBe("02.11–30.12");
     expect(
       prepWhen({
-        activeUntil: "2026-10-23",
+        activeUntil: "2026-10-23", highlightFrom: "2026-09-01",
         cheatsheets: [],
         date: "2026-10-22",
         id: "kr1",
@@ -96,7 +97,7 @@ describe("test preparation pages", () => {
 
   it("keeps a colloquium upcoming through its whole window", () => {
     const colloq = {
-      activeUntil: "2026-12-30",
+      activeUntil: "2026-12-30", highlightFrom: "2026-09-01",
       cheatsheets: [],
       date: "2026-11-02",
       id: "colloq1",
@@ -110,8 +111,8 @@ describe("test preparation pages", () => {
   it("keeps a test through its last active day", () => {
     const preps = [
       // the second half of the stream writes the next day
-      { activeUntil: "2026-10-23", cheatsheets: [], date: "2026-10-22", id: "kr1", title: "" },
-      { activeUntil: "2026-12-10", cheatsheets: [], date: "2026-12-10", id: "kr2", title: "" },
+      { activeUntil: "2026-10-23", highlightFrom: "2026-09-01", cheatsheets: [], date: "2026-10-22", id: "kr1", title: "" },
+      { activeUntil: "2026-12-10", highlightFrom: "2026-09-01", cheatsheets: [], date: "2026-12-10", id: "kr2", title: "" },
     ];
     expect(upcomingPreps(preps, "2026-10-22").map((prep) => prep.id)).toStrictEqual(["kr1", "kr2"]);
     expect(upcomingPreps(preps, "2026-10-23").map((prep) => prep.id)).toStrictEqual(["kr1", "kr2"]);
@@ -120,7 +121,7 @@ describe("test preparation pages", () => {
 
   it("hides a one-day test the day after it", () => {
     const prep = {
-      activeUntil: "2026-10-24",
+      activeUntil: "2026-10-24", highlightFrom: "2026-09-01",
       cheatsheets: [],
       date: "2026-10-24",
       id: "kr1",
@@ -132,7 +133,7 @@ describe("test preparation pages", () => {
 
   it("names the cheatsheet PDFs after the prep page and the print variant", () => {
     const prep = {
-      activeUntil: "2026-10-24",
+      activeUntil: "2026-10-24", highlightFrom: "2026-09-01",
       cheatsheets: ["1side", "2side"],
       date: "2026-10-24",
       id: "kr1",
@@ -147,12 +148,30 @@ describe("test preparation pages", () => {
   it("has no cheatsheet links when the build found none", () => {
     expect(
       cheatsheetDocs({
-        activeUntil: "2026-10-24",
+        activeUntil: "2026-10-24", highlightFrom: "2026-09-01",
         cheatsheets: [],
         date: "2026-10-24",
         id: "kr1",
         title: "",
       }),
     ).toStrictEqual([]);
+  });
+
+  it("draws a prep in the accent colour only from its highlight day through its last day", () => {
+    const colloq = {
+      activeUntil: "2026-12-30",
+      cheatsheets: [],
+      date: "2026-11-02",
+      highlightFrom: "2026-12-07",
+      id: "colloq1",
+      title: "",
+    };
+    // upcoming but neutral: the window has opened, the session is still far
+    expect(isUpcoming(colloq, "2026-10-26")).toBe(true);
+    expect(isHighlighted(colloq, "2026-10-26")).toBe(false);
+    expect(isHighlighted(colloq, "2026-12-06")).toBe(false);
+    expect(isHighlighted(colloq, "2026-12-07")).toBe(true);
+    expect(isHighlighted(colloq, "2026-12-30")).toBe(true);
+    expect(isHighlighted(colloq, "2026-12-31")).toBe(false);
   });
 });

@@ -40,6 +40,26 @@ describe("build data schemas", () => {
     expect(catalog.preps["calculus"]?.[0]?.cheatsheets).toStrictEqual([]);
     // without `active_until` the test stays active through its own day
     expect(catalog.preps["calculus"]?.[0]?.activeUntil).toBe("2026-10-22");
+    // without `highlight_from` the accent starts two weeks before the test
+    expect(catalog.preps["calculus"]?.[0]?.highlightFrom).toBe("2026-10-08");
+  });
+
+  it("reads the first accented day of a prep", () => {
+    const catalog = CatalogSchema.parse({
+      lectures: {},
+      preps: {
+        calculus: [
+          {
+            active_until: "2026-12-30",
+            date: "2026-11-02",
+            highlight_from: "2026-12-07",
+            id: "colloq1",
+            title: "",
+          },
+        ],
+      },
+    });
+    expect(catalog.preps["calculus"]?.[0]?.highlightFrom).toBe("2026-12-07");
   });
 
   it("knows which preparation page has a ticket bank", () => {

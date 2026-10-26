@@ -802,6 +802,7 @@ function Pandoc(doc)
       kind = S.kind, lecture = tonumber(S.lecture), week_id = S.week_id,
       title = meta_str(meta, 'title'), date = meta_str(meta, 'date'),
       active_until = meta_str(meta, 'active_until'),
+      highlight_from = meta_str(meta, 'highlight_from'),
       date_ru = meta_str(doc.meta, 'date_ru'),
       header_line = meta_str(doc.meta, 'header_line'),
       toc = S.toc, labels = labels, figures = S.figures, glossary = glossary,

@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures as cf
 import dataclasses
+import datetime as dt
 import fnmatch
 import hashlib
 import html
@@ -637,6 +638,18 @@ def search_entries(course: str, doc: str, lecture: int, fragment: str) -> list[d
     return entries
 
 
+HIGHLIGHT_DAYS = 14
+
+
+def highlight_default(date: str | None) -> str | None:
+    """День, с которого подготовка выделена цветом, если в front matter нет highlight_from: date − 14 дней."""
+    try:
+        day = dt.date.fromisoformat(date or "")
+    except ValueError:  # формат даты проверяет линтер
+        return None
+    return (day - dt.timedelta(days=HIGHLIGHT_DAYS)).isoformat()
+
+
 def write_site_data(index: dict, metas: list[dict]) -> None:
     SITE.mkdir(parents=True, exist_ok=True)
     write_json(SITE / "index.json", index["labels"])
@@ -651,6 +664,9 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     # последний день, когда КР (коллоквиум) на сайте активна (плитка на главной,
                     # цветная кнопка); по умолчанию — день date
                     "active_until": m.get("active_until") or m.get("date"),
+                    # с какого дня кнопка и плитка выделены цветом (до active_until включительно);
+                    # по умолчанию — за две недели до date
+                    "highlight_from": m.get("highlight_from") or highlight_default(m.get("date")),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
                     # есть банк билетов → на странице генератор (bank.json рядом с fragment.html)
                     "bank": bool(m.get("bank")),

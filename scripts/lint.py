@@ -512,7 +512,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     colloq = build.prep_kind(exam) == "colloq"
     event = "коллоквиума" if colloq else "КР"
     dates: dict[str, dt.date] = {}
-    for k in ("date", "active_until"):
+    for k in ("date", "active_until", "highlight_from"):
         value = meta.get(k)
         if value in (None, ""):
             continue
@@ -528,6 +528,14 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
             rep.err(rel, f"{k}={value!r} не в формате YYYY-MM-DD")
     if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
         rep.err(rel, f"active_until={dates['active_until']} раньше даты {event} {dates['date']}")
+    # выделение цветом на сайте идёт с highlight_from до последнего активного дня включительно
+    last_day = dates.get("active_until") or dates.get("date")
+    if "highlight_from" in dates and last_day is not None and dates["highlight_from"] > last_day:
+        rep.err(
+            rel,
+            f"highlight_from={dates['highlight_from']} позже последнего дня {event} {last_day}"
+            " (active_until, по умолчанию date)",
+        )
     blocks = ast_of(path)["blocks"]
     own: set[str] = set()
 

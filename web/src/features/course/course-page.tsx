@@ -3,9 +3,10 @@ import { Link, useParams } from "react-router";
 import { useLabelIndex } from "#web/api/queries.ts";
 import { useCourse } from "#web/api/use-course.ts";
 import { COURSE_DOCS } from "#web/domain/course-docs.ts";
+import { dayMonth } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import { isUpcoming, prepGoal, prepWhen } from "#web/domain/preps.ts";
+import { isHighlighted, prepGoal, upcomingPreps } from "#web/domain/preps.ts";
 import { labelStats } from "#web/domain/stats.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
@@ -15,12 +16,17 @@ import { LectureTable } from "./lecture-table.tsx";
 const BUTTON =
   "inline-flex items-center gap-2 rounded-lg border border-ink/40 px-3.5 py-2.5 text-sm font-semibold text-ink no-underline";
 
+const ACCENT = `${BUTTON} border-org-fill bg-org-fill text-on-org-fill hover:border-org-fill-hover hover:bg-org-fill-hover`;
+
+const ROW = "flex flex-wrap gap-2.5";
+
 export const Component = () => {
   const { course: courseId } = useParams();
   const { hasProgram, info, lectures, preps } = useCourse(courseId);
   const stats = labelStats(Object.values(useLabelIndex()[info.id] ?? {}));
   const today = useToday();
   const current = latestLecture(lectures, today);
+  const upcoming = upcomingPreps(preps, today);
   useDocumentTitle(info.name);
 
   return (
@@ -43,39 +49,43 @@ export const Component = () => {
             <b className="font-semibold text-ink">{stats.theorems}</b> теорем
           </span>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2.5">
-          {current !== undefined && (
-            <Link
-              className={`${BUTTON} border-ink bg-ink text-paper`}
-              to={paths.lecture(info.id, current.weekId)}
-            >
-              Читать лекцию {current.lecture} →
+        {/* Row 1 — what every course has; row 2 — preps still ahead, nearest first (accent only near the event). */}
+        <div className="mt-4 flex flex-col gap-2.5">
+          <nav aria-label="Материалы курса" className={ROW}>
+            {current !== undefined && (
+              <Link
+                className={`${BUTTON} border-ink bg-ink text-paper`}
+                to={paths.lecture(info.id, current.weekId)}
+              >
+                Читать лекцию {current.lecture}
+                <span className="font-normal">· {dayMonth(current.date)}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            )}
+            <Link className={BUTTON} to={paths.theory(info.id)}>
+              Теория
             </Link>
-          )}
-          {preps.map((prep) => (
-            <Link
-              className={
-                isUpcoming(prep, today)
-                  ? `${BUTTON} border-org-fill bg-org-fill text-on-org-fill hover:border-org-fill-hover hover:bg-org-fill-hover`
-                  : BUTTON
-              }
-              key={prep.id}
-              to={paths.prep(info.id, prep.id)}
-            >
-              {prepGoal(prep.id)}
-              {isUpcoming(prep, today) && <span className="font-normal">· {prepWhen(prep)}</span>}
+            <Link className={BUTTON} to={paths.glossary(info.id)}>
+              Глоссарий
             </Link>
-          ))}
-          <Link className={BUTTON} to={paths.theory(info.id)}>
-            Теория
-          </Link>
-          <Link className={BUTTON} to={paths.glossary(info.id)}>
-            Глоссарий
-          </Link>
-          {hasProgram && (
-            <Link className={BUTTON} to={paths.program(info.id)}>
-              {COURSE_DOCS.program}
-            </Link>
+            {hasProgram && (
+              <Link className={BUTTON} to={paths.program(info.id)}>
+                {COURSE_DOCS.program}
+              </Link>
+            )}
+          </nav>
+          {upcoming.length > 0 && (
+            <nav aria-label="Подготовка к контрольным" className={ROW}>
+              {upcoming.map((prep) => (
+                <Link
+                  className={isHighlighted(prep, today) ? ACCENT : BUTTON}
+                  key={prep.id}
+                  to={paths.prep(info.id, prep.id)}
+                >
+                  {prepGoal(prep.id)}
+                </Link>
+              ))}
+            </nav>
           )}
         </div>
       </section>
