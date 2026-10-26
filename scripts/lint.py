@@ -426,6 +426,13 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
 PROGRAM_META = {"course", "title"}
 PROGRAM_BLOCKS = {"remark", "example"}
 PROGRAM_FIRST, PROGRAM_LAST = "Коротко", "Содержание курса"
+# Страница программы — справочник, а не реферат о ПУД: без пометок источников, комментариев о самой
+# программе и советов «уточнить у лектора» (context/prompts/program.md → «Как писать»)
+PROGRAM_META_WORDS = re.compile(
+    r"(уточн[а-я]* у лектора|в программе (?:прямо )?не|в программе сказано|по программе|судя по|"
+    r"по wiki|на wiki|по каналу|по календарю|по таблице планирования|сумм[а-я]* весов|сноск|звёздочк)",
+    re.I,
+)
 
 
 def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
@@ -483,6 +490,15 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
 
     walk(blocks, on_node)
     check_texts(rep, rel, blocks)
+    texts = [text_of_block(b) for b in blocks]
+    texts += [dict(n["c"][0][2]).get("title", "") for n in iter_nodes(blocks) if n["t"] == "Div"]
+    for text in texts:
+        for mm in PROGRAM_META_WORDS.finditer(re.sub(r"\$[^$]*\$", "", text)):
+            rep.err(
+                rel,
+                f"«{mm.group(0)}»: на странице программы — только факты, без пометок источников "
+                "и комментариев о самой программе (context/prompts/program.md)",
+            )
     h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
     if not h1 or h1[0] != PROGRAM_FIRST:
         rep.err(rel, f"первый раздел — «# {PROGRAM_FIRST}»")

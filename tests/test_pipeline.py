@@ -455,7 +455,7 @@ def test_program_builds(demo: Path):
     ]
     frag = (site / "algebra" / "program" / "fragment.html").read_text(encoding="utf-8")
     # замечания и примеры программы — без номеров; ссылка на конспект — как в теории
-    assert "Пример (как считается)" in frag and "Замечание (по wiki курса)" in frag
+    assert "Пример (как считается)" in frag and "Замечание (порог)" in frag
     assert "data-number" not in frag
     assert 'href="../01_sep03_matrices/#def:lec01:matrix"' in frag
     assert "<table" in frag and "<th>Вес</th>" in frag.replace(' style="text-align: left;"', "")
@@ -491,7 +491,7 @@ def test_program_optional(demo: Path):
             "можно только example, remark",
         ),
         (
-            '::: {.remark title="по wiki курса"}',
+            '::: {.remark title="порог"}',
             "::: {.remark #rem:program:wiki}",
             "в программе блоки без меток",
         ),
@@ -502,6 +502,17 @@ def test_program_optional(demo: Path):
             "у заголовка: в программе своих меток нет",
         ),
         ("— взвешенная сумма", "— взвешенная сумма (см. Р4)", "служебное слово"),
+        (
+            "— взвешенная сумма",
+            "— взвешенная сумма, уточните у лектора",
+            "«уточните у лектора»: на странице программы",
+        ),
+        ("— взвешенная сумма", "— взвешенная сумма (по wiki курса)", "«по wiki»: на странице программы"),
+        (
+            '{.remark title="порог"}',
+            '{.remark title="по каналу курса"}',
+            "«по каналу»: на странице программы",
+        ),
         ("- **Матрицы.**", "```tikz\n\\draw (0,0) -- (1,1);\n```\n\n- **Матрицы.**", "блок кода или рисунок"),
     ],
 )
