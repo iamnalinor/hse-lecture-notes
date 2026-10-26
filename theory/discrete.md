@@ -18,6 +18,7 @@ title: "Теория: дискретная математика"
 - Решение сравнения $ax \equiv c \pmod m$ — число из $\{0, \dots, m - 1\}$, решение системы — кортеж чисел из $\{0, \dots, \mu - 1\}$, $\mu$ — НОК модулей; поэтому «число решений» всегда считается по модулю (НОК) исходных модулей (замечание [-@rem:lec08:solution-convention], определение [-@def:lec08:system]).
 - Композиция отношений читается справа налево: в $Q \circ P$ первым действует $P$, как в $g(f(x))$; в курсе алгебры подстановки, наоборот, умножаются слева направо (замечание [-@rem:lec09:order]).
 - Функция $f\colon A \to B$ отождествляется со своим графиком $f \subseteq A \times B$; множество $B$ ею не определяется, поэтому сюръективность всегда понимается «для $B$» (замечание [-@rem:lec10:codomain]). Для отношения $R \subseteq A \times B$ «тотально» по умолчанию значит «тотально для $A$», «сюръективно» — «сюръективно для $B$» (определение [-@def:lec10:total-surjective]).
+- Жирное $\mathbf{n}$ — множество $\{0, 1, \dots, n - 1\}$, обычное $n$ — число; $\mathbf{2}^X$ — функции из $X$ в $\{0, 1\}$, $X^2$ — декартов квадрат (замечание [-@rem:lec11:bold]). Мощность $|A|$ определена только для конечных множеств; бесконечные сравниваются через $\sim$ и $\lesssim$ (замечание [-@rem:lec12:abs]).
 
 # Лекция 1 — Истинность, ложность и высказывания
 
@@ -701,6 +702,182 @@ $R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1}$ — 
 
 ::: {.corollary ref="cor:lec10:bijection-inverse" status="доказано в лекции 10"}
 $R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1} \circ R = \mathrm{id}_A$ и $R \circ R^{-1} = \mathrm{id}_B$.
+:::
+
+# Лекция 11 — Равномощные множества
+
+::: {.definition ref="def:lec11:equinumerous"}
+$A \sim B$ ($A$ и $B$ равномощны), если существует биекция $f\colon A \to B$; запись $A \sim_f B$.
+:::
+
+::: {.lemma ref="lem:lec11:equiv" status="доказано в лекции 11"}
+$A \sim A$; $A \sim B \Rightarrow B \sim A$; $A \sim B \wedge B \sim C \Rightarrow A \sim C$. *Идея:* $\mathrm{id}_A$, обратная биекция, композиция биекций.
+:::
+
+::: {.proposition ref="prop:lec11:onto-image" status="доказано в лекции 11"}
+Если $f\colon A \to B$ — инъекция, то $A \sim_f f[A]$ и $X \sim f[X]$ для всех $X \subseteq A$.
+:::
+
+::: {.theorem ref="thm:lec11:cantor" status="доказано в лекции 11"}
+$A \nsim \mathcal{P}(A)$ для любого $A$; более того, сюръекции $A \to \mathcal{P}(A)$ нет. *Идея:* диагональное множество $X = \{a \in A \mid a \notin \varphi(a)\}$ отличается от каждого $\varphi(a)$ в точке $a$.
+:::
+
+::: {.theorem ref="thm:lec11:arithmetic" status="доказано в лекции 11 (пункт 4 — в задаче)"}
+Если $A \sim B$, то $A \times C \sim B \times C$, $A^C \sim B^C$, $C^A \sim C^B$; $A \times B \sim B \times A$; $(A \times B) \times C \sim A \times (B \times C)$; $(A \times B)^C \sim A^C \times B^C$; $(C^B)^A \sim C^{A \times B}$. *Идея:* явные биекции; $C^A \to C^B$ — $f \mapsto f \circ \varphi^{-1}$; последний пункт — каррирование $f \mapsto ((a, b) \mapsto (f(a))(b))$.
+:::
+
+::: {.definition ref="def:lec11:n-set"}
+$\mathbf{n} = \{k \in \N \mid k < n\} = \{0, \dots, n - 1\}$; $\mathbf{0} = \varnothing$, $\mathbf{2} = \{0, 1\}$.
+:::
+
+::: {.definition ref="def:lec11:indicator"}
+Для $A \subseteq X$ индикатор $1_A\colon X \to \mathbf{2}$: $1_A(x) = 1$ при $x \in A$, $0$ при $x \notin A$.
+:::
+
+::: {.lemma ref="lem:lec11:indicator-eq" status="доказано в лекции 11"}
+Для $A, B \subseteq X$: $A = B \iff 1_A = 1_B$.
+:::
+
+::: {.lemma ref="lem:lec11:powerset" status="доказано в лекции 11"}
+$\mathcal{P}(X) \sim \mathbf{2}^X$. *Идея:* $A \mapsto 1_A$; прообраз функции $g$ — множество $g^{-1}[\{1\}]$.
+:::
+
+::: {.proposition ref="prop:lec11:indicator-ops" status="доказано в лекции 11"}
+$1_{B \cap C} = 1_B 1_C$, $1_{B \cup C} = 1_B + 1_C - 1_B 1_C$, $1_{\overline{B}} = 1 - 1_B$; $B \subseteq C \iff 1_B \le 1_C$ всюду. *Идея:* перебор четырёх случаев; $1_B^2 = 1_B$.
+:::
+
+::: {.theorem ref="thm:lec11:tuples" status="доказано в лекции 11 (набросок)"}
+$A^n \sim A^{\mathbf{n}}$ для любого $A$ и $n \in \N$. *Идея:* $f \mapsto (f(0), \dots, f(n - 1))$.
+:::
+
+::: {.definition ref="def:lec11:embedding"}
+$A \lesssim B$ ($A$ вкладывается в $B$), если существует инъекция $f\colon A \to B$ (вложение); запись $A \lesssim_f B$.
+:::
+
+::: {.lemma ref="lem:lec11:embed-props" status="доказано в лекции 11"}
+$A \lesssim A$; $A \lesssim B \wedge B \lesssim C \Rightarrow A \lesssim C$; $A \sim B \Rightarrow A \lesssim B \wedge B \lesssim A$; $A \lesssim B \iff \exists D \subseteq B\ A \sim D$.
+:::
+
+::: {.theorem ref="thm:lec11:csb" status="без доказательства"}
+Кантор — Шрёдер — Бернштейн: если $A \lesssim B$ и $B \lesssim A$, то $A \sim B$.
+:::
+
+::: {.corollary ref="cor:lec11:powerset-not-embed" status="доказано в лекции 11"}
+$\mathcal{P}(A) \not\lesssim A$ ни для какого $A$. *Идея:* $A \lesssim \mathcal{P}(A)$ через $x \mapsto \{x\}$, затем теорема Кантора — Шрёдера — Бернштейна и теорема Кантора.
+:::
+
+::: {.definition ref="def:lec11:strict"}
+$A \lnsim B$, если $A \lesssim B$ и $A \nsim B$; по теореме Кантора — Шрёдера — Бернштейна это то же, что $A \lesssim B$ и $B \not\lesssim A$.
+:::
+
+::: {.definition ref="def:lec11:countable"}
+$X$ счётно, если $X \sim \N$. Счётны $\N^2$, $\Z$, $\Q$; $\mathcal{P}(\N) \sim \R$ (принимается без доказательства) — нет.
+:::
+
+# Лекция 12 — Конечные множества. Основы подсчёта
+
+::: {.definition ref="def:lec12:finite"}
+$A$ конечно, если $A \sim \mathbf{n}$ для некоторого $n \in \N$; иначе бесконечно.
+:::
+
+::: {.definition ref="def:lec12:restriction"}
+Сужение $f\colon A \to B$ на $X \subseteq A$: $f \restriction X = f \cap (X \times B)\colon X \to B$.
+:::
+
+::: {.lemma ref="lem:lec12:n1-n" status="доказано в лекции 12"}
+Инъекции $\mathbf{n + 1} \to \mathbf{n}$ не существует. *Идея:* наименьший контрпример $n = m + 1$; переставив $f(n)$ и $m$, получаем инъекцию $\mathbf{m + 1} \to \mathbf{m}$.
+:::
+
+::: {.theorem ref="thm:lec12:pigeonhole" status="доказано в лекции 12"}
+Принцип Дирихле: при $m > n$ никакая $f\colon \mathbf{m} \to \mathbf{n}$ не инъективна, $\mathbf{m} \not\lesssim \mathbf{n}$. *Идея:* $\mathbf{n + 1} \subseteq \mathbf{m}$.
+:::
+
+::: {.corollary ref="cor:lec12:distinct" status="доказано в лекции 12"}
+$m \ne n \Rightarrow \mathbf{m} \nsim \mathbf{n}$.
+:::
+
+::: {.corollary ref="cor:lec12:unique" status="доказано в лекции 12"}
+Для конечного $A$ число $n$ с $A \sim \mathbf{n}$ единственно.
+:::
+
+::: {.definition ref="def:lec12:cardinality"}
+$|A|$ — единственное $n$ с $A \sim \mathbf{n}$ (мощность, число элементов конечного $A$); для конечных $A \sim B \iff |A| = |B|$.
+:::
+
+::: {.theorem ref="thm:lec12:no-surjection" status="доказано в лекции 12"}
+При $m > n$ никакая $f\colon \mathbf{n} \to \mathbf{m}$ не сюръективна. *Идея:* наименьший прообраз даёт инъекцию $\mathbf{m} \to \mathbf{n}$.
+:::
+
+::: {.lemma ref="lem:lec12:invariant" status="доказано в лекции 12"}
+Конечность, бесконечность и счётность сохраняются при $\sim$.
+:::
+
+::: {.lemma ref="lem:lec12:countable-infinite" status="доказано в лекции 12"}
+Если $A$ счётно и $A \lesssim B$, то $B$ бесконечно.
+:::
+
+::: {.lemma ref="lem:lec12:subset-n" status="доказано в лекции 12 (набросок)"}
+Любое $A \subseteq \N$ конечно или счётно. *Идея:* перечислить элементы по возрастанию.
+:::
+
+::: {.corollary ref="cor:lec12:sub-countable" status="доказано в лекции 12"}
+$A \lesssim B$, $B$ счётно $\Rightarrow$ $A$ конечно или счётно.
+:::
+
+::: {.corollary ref="cor:lec12:sub-finite" status="доказано в лекции 12"}
+$A \lesssim B$, $B$ конечно $\Rightarrow$ $A$ конечно и $|A| \le |B|$.
+:::
+
+::: {.definition ref="def:lec12:uncountable"}
+Несчётное множество — бесконечное и не счётное; конечные и счётные вместе — не более чем счётные (это ровно $A \lesssim \N$).
+:::
+
+::: {.lemma ref="lem:lec12:infinite-n" status="доказано в лекции 12 (набросок, с аксиомой выбора)"}
+Если $A$ бесконечно, то $\N \lesssim A$.
+:::
+
+::: {.corollary ref="cor:lec12:infinite-iff" status="доказано в лекции 12"}
+$A$ бесконечно $\iff$ $\N \lesssim A$.
+:::
+
+::: {.theorem ref="thm:lec12:sum" status="доказано в лекции 12"}
+Правило суммы: для конечных $A$, $B$ с $A \cap B = \varnothing$: $|A \cup B| = |A| + |B|$. *Идея:* $h = f$ на $A$, $h = n + g$ на $B$.
+:::
+
+::: {.corollary ref="cor:lec12:union" status="доказано в лекции 12"}
+Для конечных $A$, $B$: $|A \cup B| = |A| + |B| - |A \cap B|$.
+:::
+
+::: {.corollary ref="cor:lec12:union-le" status="доказано в лекции 12"}
+$|A \cup B| \le |A| + |B|$.
+:::
+
+::: {.corollary ref="cor:lec12:proper" status="доказано в лекции 12"}
+Если $B$ конечно и $A \subsetneq B$, то $|A| < |B|$.
+:::
+
+::: {.theorem ref="thm:lec12:product" status="доказано в лекции 12"}
+Правило произведения: $|A \times B| = |A| \cdot |B|$ для конечных $A$, $B$. *Идея:* $h(x, y) = m f(x) + g(y)$ и единственность деления с остатком.
+:::
+
+::: {.corollary ref="cor:lec12:power" status="доказано в лекции 12"}
+$|A^n| = |A|^n$.
+:::
+
+::: {.corollary ref="cor:lec12:functions" status="доказано в лекции 12"}
+$|B^A| = |B|^{|A|}$ (с $0^0 = 1$). *Идея:* $B^A \sim \mathbf{m}^{\mathbf{n}} \sim \mathbf{m}^n$.
+:::
+
+::: {.corollary ref="cor:lec12:powerset" status="доказано в лекции 12"}
+$|\mathcal{P}(A)| = 2^{|A|}$.
+:::
+
+::: {.proposition ref="prop:lec12:image-le" status="доказано в лекции 12"}
+Для конечного $A$ и $f\colon A \to B$: $|f[A]| \le |A|$.
+:::
+
+::: {.theorem ref="thm:lec12:inj-surj" status="доказано в лекции 12"}
+Если $A$, $B$ конечны и $|A| = |B|$, то $f\colon A \to B$ инъективна $\iff$ сюръективна. *Идея:* инъекция — образ равномощен $A$ и не может быть собственной частью $B$; сюръекция со склейкой — выброшенная точка уменьшает образ.
 :::
 
 # Глоссарий курса
