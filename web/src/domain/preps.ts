@@ -29,7 +29,9 @@ export const prepName = (id: string): string => {
 /** Button, crumb and search label: `Подготовка к КР-1`, `Подготовка к коллоквиуму 1`. */
 export const prepGoal = (id: string): string => {
   const prep = parse(id);
-  return prep?.colloq === true ? `Подготовка к коллоквиуму ${prep.number}` : `Подготовка к ${prepName(id)}`;
+  return prep?.colloq === true
+    ? `Подготовка к коллоквиуму ${prep.number}`
+    : `Подготовка к ${prepName(id)}`;
 };
 
 /** What the page holds: a test is about problems, a colloquium about theory and proofs. */

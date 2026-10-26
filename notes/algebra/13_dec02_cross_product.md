@@ -32,19 +32,19 @@ title: Ориентация, векторное и смешанное произ
 ```{.tikz #fig:lec13:orientation caption="Слева правая тройка: с конца $\\vec c$ поворот от $\\vec a$ к $\\vec b$ виден против часовой стрелки. Справа левая тройка с теми же $\\vec a$, $\\vec b$: вектор $\\vec c$ смотрит в другую сторону от их плоскости, и тот же поворот виден по часовой стрелке"}
 \begin{tikzpicture}[scale=1.15]
   \begin{scope}
-    \fill[nbgray!15] (-0.3,-0.25) -- (2.6,-0.25) -- (3.3,0.75) -- (0.4,0.75) -- cycle;
+    \fill[nbgray!15] (-0.3,-0.25) -- (2.6,-0.25) -- (3.5,1.15) -- (0.6,1.15) -- cycle;
     \draw[very thick, nbblue, -{Stealth}] (0,0) -- (2.1,0) node[below] {$\vec a$};
-    \draw[very thick, nbblue, -{Stealth}] (0,0) -- (0.9,0.6) node[above left] {$\vec b$};
+    \draw[very thick, nbblue, -{Stealth}] (0,0) -- (1.4,0.93) node[above left] {$\vec b$};
     \draw[very thick, nbred, -{Stealth}] (0,0) -- (0,1.8) node[left] {$\vec c$};
-    \draw[nbgreen, thick, ->] (0.8,0) arc[start angle=0, end angle=33, radius=0.8];
+    \draw[nbgreen, very thick, ->] (1.0,0) arc[start angle=0, end angle=33.6, radius=1.0];
     \node[nbred, align=center] at (1.5,1.6) {правая};
   \end{scope}
   \begin{scope}[xshift=5.2cm]
-    \fill[nbgray!15] (-0.3,-0.25) -- (2.6,-0.25) -- (3.3,0.75) -- (0.4,0.75) -- cycle;
+    \fill[nbgray!15] (-0.3,-0.25) -- (2.6,-0.25) -- (3.5,1.15) -- (0.6,1.15) -- cycle;
     \draw[very thick, nbblue, -{Stealth}] (0,0) -- (2.1,0) node[below] {$\vec a$};
-    \draw[very thick, nbblue, -{Stealth}] (0,0) -- (0.9,0.6) node[above left] {$\vec b$};
+    \draw[very thick, nbblue, -{Stealth}] (0,0) -- (1.4,0.93) node[above left] {$\vec b$};
     \draw[very thick, nbred, -{Stealth}] (0,0) -- (0,-1.5) node[left] {$\vec c$};
-    \draw[nbgreen, thick, ->] (0.8,0) arc[start angle=0, end angle=33, radius=0.8];
+    \draw[nbgreen, very thick, ->] (1.0,0) arc[start angle=0, end angle=33.6, radius=1.0];
     \node[nbred, align=center] at (1.5,1.6) {левая};
   \end{scope}
 \end{tikzpicture}
@@ -80,7 +80,7 @@ title: Ориентация, векторное и смешанное произ
 :::
 
 ::: {.remark #rem:lec13:cross-notation tag="соглашение курса"}
-Векторное произведение обозначают $[\vec a, \vec b]$ или $\vec a \times \vec b$; в курсе основное — квадратные скобки, на контрольной принимаются обе записи. Скобки не путать со скалярным произведением $(\vec a, \vec b)$: в квадратных — вектор, в круглых — число.
+Векторное произведение обозначают $[\vec a, \vec b]$ или $\vec a \times \vec b$; обе записи общеприняты, в этих конспектах — квадратные скобки. Скобки не путать со скалярным произведением $(\vec a, \vec b)$: в квадратных — вектор, в круглых — число.
 :::
 
 Каждое условие нужно. Без условия 3 подошли бы два противоположных вектора. Без условия 2 — любой вектор нужной длины. Условие 1 задаёт длину, и она имеет смысл: $|\vec a| \, |\vec b| \sin \varphi$ — площадь параллелограмма со сторонами $\vec a$ и $\vec b$, основание $|\vec a|$ на высоту $|\vec b| \sin \varphi$ (рис. [-@fig:lec13:cross]). Так, $[\vec i, \vec j] = \vec k$ в правом ортонормированном базисе: длина $1 \cdot 1 \cdot \sin \frac{\pi}{2} = 1$, перпендикуляр к $\vec i$ и $\vec j$ — это $\pm \vec k$, а правая тройка $\vec i, \vec j, \vec k$ выбирает знак «$+$».
@@ -128,7 +128,7 @@ $$\langle \vec a, \vec b, \vec c \rangle = \big([\vec a, \vec b], \vec c\big).$$
 
 *Компланарный случай.* Если $\vec a$, $\vec b$ коллинеарны, то $[\vec a, \vec b] = \vec 0$ и произведение нулевое. Иначе $[\vec a, \vec b]$ перпендикулярен плоскости $\vec a, \vec b$, а $\vec c$ лежит в ней, и $([\vec a, \vec b], \vec c) = 0$.
 
-*Некомпланарный случай.* Тогда $\vec a$, $\vec b$ неколлинеарны и $\vec n = [\vec a, \vec b] \ne \vec 0$. По формуле [-@eq:lec12:dot-projection] $\langle \vec a, \vec b, \vec c \rangle = |\vec n| \operatorname{pr}_{\vec n} \vec c$. Здесь $|\vec n| = S$ — площадь основания (утверждение [-@prop:lec13:collinear]), а $|\operatorname{pr}_{\vec n} \vec c| = h$ — высота параллелепипеда, опущенная на это основание, так как $\vec n$ перпендикулярен основанию (рис. [-@fig:lec13:volume]). Значит, $|\langle \vec a, \vec b, \vec c \rangle| = S h = V$. Знак: $\operatorname{pr}_{\vec n} \vec c > 0$ ровно тогда, когда $\vec c$ лежит по ту же сторону от плоскости $\vec a, \vec b$, что и $\vec n$. Тройка $\vec a, \vec b, \vec n$ правая по определению [-@def:lec13:cross], поэтому по свойству 4 замечания [-@rem:lec13:orientation-facts] это равносильно тому, что тройка $\vec a, \vec b, \vec c$ правая.
+*Некомпланарный случай.* Тогда $\vec a$, $\vec b$ неколлинеарны и $\vec n = [\vec a, \vec b] \ne \vec 0$. По формуле [-@eq:lec12:dot-projection] $\langle \vec a, \vec b, \vec c \rangle = |\vec n| \operatorname{pr}_{\vec n} \vec c$. Здесь $|\vec n| = S$ — площадь основания (утверждение [-@prop:lec13:collinear]), а $|\operatorname{pr}_{\vec n} \vec c| = h$ — высота параллелепипеда, опущенная на это основание, так как $\vec n$ перпендикулярен основанию (рис. [-@fig:lec13:volume]). Значит, $|\langle \vec a, \vec b, \vec c \rangle| = S h = V$. Знак: $\operatorname{pr}_{\vec n} \vec c > 0$ ровно тогда, когда $\vec c$ лежит по ту же сторону от плоскости $\vec a, \vec b$, что и $\vec n$. Тройка $\vec a, \vec b, \vec n$ правая по определению [-@def:lec13:cross], поэтому если $\vec c$ лежит по ту же сторону, что и $\vec n$, то по свойству 4 замечания [-@rem:lec13:orientation-facts] тройка $\vec a, \vec b, \vec c$ правая. Если по другую, то по ту же сторону, что и $\vec n$, лежит $-\vec c$: тройка $\vec a, \vec b, -\vec c$ правая, и по свойству 3 тройка $\vec a, \vec b, \vec c$ левая. Итак, знак произведения «$+$» ровно для правых троек.
 :::
 
 ```{.tikz #fig:lec13:volume caption="Объём параллелепипеда: площадь основания $S = |[\\vec a, \\vec b]|$, высота $h = |\\operatorname{pr}_{\\vec n} \\vec c|$, где $\\vec n = [\\vec a, \\vec b]$; здесь $\\vec c$ по ту же сторону от основания, что и $\\vec n$, тройка правая и $\\langle \\vec a, \\vec b, \\vec c \\rangle = V > 0$"}
@@ -466,6 +466,7 @@ $M(x, y, z)$, координаты точки
 10. Найдите координаты вектора $\overrightarrow{AB}$ и длину отрезка для $A(1, 2, 3)$, $B(-1, 0, 4)$.
 11. Найдите центр тяжести треугольника с вершинами $(1, 0, 0)$, $(0, 2, 0)$, $(0, 0, 3)$.
 12. Точка $M(2, 1, 0)$ делит отрезок $AB$ в отношении $1 : 3$ от $A$, и $A(1, 1, 1)$. Найдите $B$.
+13. Для тетраэдра из вопроса 6 найдите высоту, опущенную из конца вектора $\vec c$ на грань, натянутую на $\vec a$ и $\vec b$.
 
 ::: answers
 1. $(\vec k, \vec i, \vec j)$ — циклическая перестановка, правая. $(\vec j, \vec i, \vec k)$ и $(\vec i, \vec j, -\vec k)$ — левые. $(-\vec i, -\vec j, -\vec k)$ — левая: три смены знака меняют ориентацию нечётное число раз (определитель $-1$).
@@ -480,4 +481,5 @@ $M(x, y, z)$, координаты точки
 10. $\overrightarrow{AB} = (-2, -2, 1)$, $|AB| = 3$.
 11. $\left(\frac13, \frac23, 1\right)$.
 12. $\vec r_M = \frac{3\vec r_A + \vec r_B}{4}$, $\vec r_B = 4\vec r_M - 3\vec r_A = (5, 1, -3)$.
+13. $[\vec a, \vec b] = (0, 0, 1)$, площадь основания параллелепипеда $1$, объём $|\langle \vec a, \vec b, \vec c \rangle| = 1$, высота $h = \frac{V}{S} = 1$ (для тетраэдра: $\frac{3 \cdot \frac16}{\frac12} = 1$ — то же).
 :::
