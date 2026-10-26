@@ -109,9 +109,11 @@ jobs:
             [[ -f "dist/$asset" ]] || gh release delete-asset latest "$asset" --yes
           done
 
-  # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска,
-  # на Cloudflare Pages по адресу pr-<N>.<проект>.pages.dev (проект создан вручную в Cloudflare). Ссылка — комментарием в PR,
-  # обновляется на каждый пуш. PR из форков не деплоятся: им не положены секреты.
+  # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска.
+  # Загружается новой версией (не деплоем) в Cloudflare Worker со статическими ассетами
+  # (Worker создан вручную) с алиасом pr-<N>: pr-<N>-<worker>.<поддомен>.workers.dev.
+  # Продакшен Worker'а не меняется. Ссылка — комментарием в PR, обновляется на каждый пуш.
+  # PR из форков не деплоятся: им не положены секреты.
   preview:
     name: Site preview
     needs: build
@@ -125,8 +127,8 @@ jobs:
       group: preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     env:
-      PROJECT: hse-lecture-notes
-      BRANCH: pr-${{ github.event.pull_request.number }}
+      WORKER: hse-lecture-notes
+      ALIAS: pr-${{ github.event.pull_request.number }}
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
       - name: Skip without Cloudflare secrets
@@ -164,24 +166,48 @@ jobs:
           # Превью не должно попадать в поиск
           printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers
           printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+          # Worker без кода, только статические ассеты; конфиг нужен лишь превью
+          cat > wrangler.jsonc <<JSON
+          {
+            "name": "$WORKER",
+            "compatibility_date": "2026-10-01",
+            "workers_dev": true,
+            "preview_urls": true,
+            "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+          }
+          JSON
 
-      - name: Deploy
+      - name: Upload a preview version
         if: env.HAS_TOKEN == 'true'
-        id: deploy
+        id: upload
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: >-
-            pages deploy web/dist --project-name=${{ env.PROJECT }} --branch=${{ env.BRANCH }}
-            --commit-hash=${{ github.event.pull_request.head.sha }} --commit-dirty=true
+          workingDirectory: web
+          command: versions upload --preview-alias=${{ env.ALIAS }} --message="PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}"
+
+      - name: Find the preview URLs
+        if: env.HAS_TOKEN == 'true'
+        id: urls
+        env:
+          OUT: ${{ steps.upload.outputs.command-output }}
+        run: |
+          alias=$(grep -oE 'https://'"$ALIAS"'-[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | head -n1)
+          version=$(grep -oE 'https://[a-z0-9-]+-'"$WORKER"'\.[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | grep -v "^https://$ALIAS-" | head -n1)
+          if [ -z "$alias" ]; then
+            echo "$OUT"
+            echo "::error::в выводе wrangler нет ссылки превью — включены ли workers.dev и Preview URLs у Worker'а?"
+            exit 1
+          fi
+          echo "alias=$alias/" >> "$GITHUB_OUTPUT"
+          echo "version=${version:-$alias}/" >> "$GITHUB_OUTPUT"
 
       - name: Smoke test
         if: env.HAS_TOKEN == 'true'
         env:
-          URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+          URL: ${{ steps.urls.outputs.alias }}
         run: |
-          URL="${URL%/}/"
           for i in 1 2 3 4 5 6; do
             curl --fail --silent "${URL}data/courses.json" >/dev/null && break
             sleep 10
@@ -193,16 +219,16 @@ jobs:
         if: env.HAS_TOKEN == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          ALIAS: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
-          DEPLOY: ${{ steps.deploy.outputs.deployment-url }}
+          LINK: ${{ steps.urls.outputs.alias }}
+          VERSION: ${{ steps.urls.outputs.version }}
           SHA: ${{ github.event.pull_request.head.sha }}
           PR: ${{ github.event.pull_request.number }}
         run: |
           MARKER='<!-- site-preview -->'
           BODY="$MARKER
-          **Превью сайта:** ${ALIAS:-$DEPLOY}
+          **Превью сайта:** $LINK
 
-          Сборка этого коммита: $DEPLOY (коммит \`${SHA:0:7}\`). Ссылка выше всегда ведёт на последний пуш."
+          Эта сборка (коммит \`${SHA:0:7}\`): $VERSION. Ссылка выше всегда ведёт на последний пуш."
           ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
             --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n1)
           if [ -n "$ID" ]; then
