@@ -1,5 +1,7 @@
 import type { PrepEntry } from "./schemas.ts";
 
+import { shortDate } from "./dates.ts";
+
 /**
 Preparation pages live next to lectures: `/<course>/kr1` for a test (`prep/<course>/krN.md`),
 `/<course>/colloq1` for a colloquium, the oral part of the exam (`prep/<course>/colloqN.md`).
@@ -68,5 +70,24 @@ export const cheatsheetDocs = (prep: PrepEntry): readonly PdfDoc[] =>
     label: CHEATSHEET_LABELS[variant] ?? `Шпаргалка (${variant})`,
   }));
 
+/**
+When a prep is shown: a test — its day (`02.11`); a colloquium with a window — the whole window
+(`02.11–30.12`), so that in December the tile does not read like a past day.
+*/
+export const prepWhen = (prep: PrepEntry): string =>
+  parse(prep.id)?.colloq === true && prep.activeUntil !== prep.date
+    ? `${shortDate(prep.date)}–${shortDate(prep.activeUntil)}`
+    : shortDate(prep.date);
+
+/** The next day that matters: the first day while it is ahead, then the last active day. */
+const nextDay = (prep: PrepEntry, today: string): string =>
+  prep.date >= today ? prep.date : prep.activeUntil;
+
+/**
+Upcoming preps, the nearest first: a test that falls inside a colloquium's long window comes
+before the colloquium once the window has opened (the home tile shows the first one).
+*/
 export const upcomingPreps = (preps: readonly PrepEntry[], today: string): readonly PrepEntry[] =>
-  preps.filter((prep) => isUpcoming(prep, today));
+  preps
+    .filter((prep) => isUpcoming(prep, today))
+    .toSorted((a, b) => nextDay(a, today).localeCompare(nextDay(b, today)));

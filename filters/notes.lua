@@ -682,8 +682,21 @@ local function set_template_meta(doc, config)
   if S.kind == 'theory' then
     meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Теория')
   elseif S.kind == 'prep' then
+    -- коллоквиум с окном дат (active_until) — диапазон «2.11–30.12.2026», а не один день
+    -- (коротко, чтобы колонтитул остался в одну строку)
+    local when = date_ru(date)
+    local last_day = meta_str(meta, 'active_until')
+    if (S.week_id or ''):match('^colloq') and last_day and date and last_day ~= date then
+      local y1, m1, d1 = date:match('^(%d+)-(%d+)-(%d+)$')
+      local y2, m2, d2 = last_day:match('^(%d+)-(%d+)-(%d+)$')
+      if y1 and y2 then
+        local first = tonumber(d1) .. '.' .. m1
+        if y1 ~= y2 then first = first .. '.' .. y1 end
+        when = first .. '–' .. tonumber(d2) .. '.' .. m2 .. '.' .. y2
+      end
+    end
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · %s · %s',
-      config.program or '', course_name, prep_goal(S.week_id or ''), date_ru(date)))
+      config.program or '', course_name, prep_goal(S.week_id or ''), when))
   else
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · Лекция %s · %s',
       config.program or '', course_name, tostring(S.lecture), date_ru(date)))

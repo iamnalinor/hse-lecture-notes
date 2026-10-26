@@ -6,7 +6,7 @@ import type { LectureEntry, PrepEntry } from "#web/domain/schemas.ts";
 import { shortDate } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import { prepGoal, prepName, upcomingPreps } from "#web/domain/preps.ts";
+import { prepGoal, prepName, prepWhen, upcomingPreps } from "#web/domain/preps.ts";
 import { plural } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { ArrowUpRightIcon } from "#web/shared/ui/icons.tsx";
@@ -75,7 +75,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
             to={paths.prep(course.id, next.id)}
           >
             <small className="mb-0.5 block text-xs">
-              {prepName(next.id)} · {shortDate(next.date)}
+              {prepName(next.id)} · {prepWhen(next)}
             </small>
             <span className="text-[16px] leading-snug font-semibold">{prepGoal(next.id)} →</span>
           </Link>

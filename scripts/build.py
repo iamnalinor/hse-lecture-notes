@@ -74,7 +74,7 @@ def tex_env() -> dict[str, str]:
 # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)")
 PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2")
-PREP_FILES = "kr1.md, kr2.md, kr3.md (контрольные), colloq1.md, colloq2.md (коллоквиумы)"
+PREP_FILES = ", ".join(f"{i}.md" for i in PREP_IDS)
 
 
 def prep_kind(prep_id: str) -> str:

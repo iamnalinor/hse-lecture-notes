@@ -1,8 +1,7 @@
 import { useLocation, useParams } from "react-router";
 
 import { notFound, useCourse } from "#web/api/use-course.ts";
-import { shortDate } from "#web/domain/dates.ts";
-import { cheatsheetDocs, prepContents, prepGoal, prepName } from "#web/domain/preps.ts";
+import { cheatsheetDocs, prepContents, prepGoal, prepName, prepWhen } from "#web/domain/preps.ts";
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
@@ -26,7 +25,7 @@ export const Component = () => {
       courseName={info.name}
       docId={prep.id}
       downloads={cheatsheetDocs(prep)}
-      note={`${name} — ${shortDate(prep.date)}. ${prepContents(prep.id)}`}
+      note={`${name} — ${prepWhen(prep)}. ${prepContents(prep.id)}`}
       pageName={prepGoal(prep.id)}
       variant="prep"
     />

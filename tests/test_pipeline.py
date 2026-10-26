@@ -452,8 +452,9 @@ def test_colloq_builds(demo: Path):
     assert 'id="reg-thm:lec01:assoc"' in frag
     meta = json.loads((site / "algebra" / "colloq1" / "meta.json").read_text(encoding="utf-8"))
     assert meta["kind"] == "prep" and meta["lecture"] == 0
+    # у коллоквиума окно дат: в шапке диапазон, а не один день
     assert meta["header_line"] == (
-        "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к коллоквиуму 1 · 9 ноября 2026"
+        "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к коллоквиуму 1 · 9.11–20.11.2026"
     )
     courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
     assert [p["id"] for p in courses["preps"]["algebra"]] == ["kr1", "colloq1"]
@@ -509,3 +510,16 @@ def test_colloq_pdf(demo: Path):
     res = build(demo, "--no-html", "--only", "prep/algebra/colloq1.md")
     assert res.returncode == 0, res.stderr
     assert (demo / "build" / "pdf" / "algebra" / "colloq1.pdf").stat().st_size > 1_000
+
+
+def test_prep_ids_match_site():
+    """Имена подготовок, которые принимает сборка, = маршруты сайта (PREP_IDS в web/src/domain/preps.ts)."""
+    import re
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from build import PREP_IDS
+
+    ts = (ROOT / "web" / "src" / "domain" / "preps.ts").read_text(encoding="utf-8")
+    m = re.search(r"export const PREP_IDS = \[([^\]]*)\]", ts)
+    assert m, "PREP_IDS не найден в preps.ts"
+    assert tuple(re.findall(r'"([^"]+)"', m.group(1))) == PREP_IDS

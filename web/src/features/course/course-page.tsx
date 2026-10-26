@@ -2,10 +2,9 @@ import { Link, useParams } from "react-router";
 
 import { useLabelIndex } from "#web/api/queries.ts";
 import { useCourse } from "#web/api/use-course.ts";
-import { shortDate } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import { isUpcoming, prepGoal } from "#web/domain/preps.ts";
+import { isUpcoming, prepGoal, prepWhen } from "#web/domain/preps.ts";
 import { labelStats } from "#web/domain/stats.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
@@ -63,9 +62,7 @@ export const Component = () => {
               to={paths.prep(info.id, prep.id)}
             >
               {prepGoal(prep.id)}
-              {isUpcoming(prep, today) && (
-                <span className="font-normal">· {shortDate(prep.date)}</span>
-              )}
+              {isUpcoming(prep, today) && <span className="font-normal">· {prepWhen(prep)}</span>}
             </Link>
           ))}
           <Link className={BUTTON} to={paths.theory(info.id)}>
