@@ -30,22 +30,32 @@ const drawOne = (
   return fresh.length > 0 ? fresh : free;
 };
 
-type Draw = { readonly parts: readonly TicketPart[]; readonly taken: readonly TicketQuestion[] };
+type Draw = {
+  readonly bank: TicketBank;
+  readonly random: Random;
+  /** Questions already in the ticket: never again, and their topics only as a last resort. */
+  readonly taken: readonly TicketQuestion[];
+};
+
+const drawKind = (draw: Draw, kind: string, count: number): readonly TicketQuestion[] => {
+  if (count <= 0) {
+    return [];
+  }
+  const next = pick(drawOne(draw.bank.questions, kind, draw.taken), draw.random);
+  return next === undefined
+    ? []
+    : [next, ...drawKind({ ...draw, taken: [...draw.taken, next] }, kind, count - 1)];
+};
+
+const drawParts = (draw: Draw, entries: TicketBank["ticket"]): readonly TicketPart[] => {
+  const [first, ...rest] = entries;
+  if (first === undefined) {
+    return [];
+  }
+  const questions = drawKind(draw, first.kind, first.count);
+  const part = { kind: first.kind, points: first.points, questions, title: first.title };
+  return [part, ...drawParts({ ...draw, taken: [...draw.taken, ...questions] }, rest)];
+};
 
 export const drawTicket = (bank: TicketBank, random: Random = Math.random): readonly TicketPart[] =>
-  bank.ticket.reduce<Draw>(
-    ({ parts, taken }, { count, kind, points, title }) => {
-      const chosen = Array.from({ length: count }).reduce<readonly TicketQuestion[]>(
-        (picked) => {
-          const next = pick(drawOne(bank.questions, kind, [...taken, ...picked]), random);
-          return next === undefined ? picked : [...picked, next];
-        },
-        [],
-      );
-      return {
-        parts: [...parts, { kind, points, questions: chosen, title }],
-        taken: [...taken, ...chosen],
-      };
-    },
-    { parts: [], taken: [] },
-  ).parts;
+  drawParts({ bank, random, taken: [] }, bank.ticket);

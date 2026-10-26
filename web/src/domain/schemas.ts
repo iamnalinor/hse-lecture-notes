@@ -122,25 +122,32 @@ export const SearchIndexSchema = z.array(SearchEntrySchema);
 (formulas as `span.math`, references as `a.ref`); `refs` are the blocks that answer the question and
 the document each lives in (a lecture `week_id` or the prep page itself).
 */
+const TicketRefSchema = z.object({ doc: z.string(), id: z.string() });
+
+const TicketQuestionSchema = z.object({
+  answer: z.string(),
+  id: z.string(),
+  kind: z.string(),
+  refs: z.array(TicketRefSchema),
+  text: z.string(),
+  topic: z.string(),
+});
+
+const TicketPartSchema = z.object({
+  count: z.number(),
+  kind: z.string(),
+  points: z.string(),
+  title: z.string(),
+});
+
 export const TicketBankSchema = z.object({
-  questions: z.array(
-    z.object({
-      answer: z.string(),
-      id: z.string(),
-      kind: z.string(),
-      refs: z.array(z.object({ doc: z.string(), id: z.string() })),
-      text: z.string(),
-      topic: z.string(),
-    }),
-  ),
-  ticket: z.array(
-    z.object({ count: z.number(), kind: z.string(), points: z.string(), title: z.string() }),
-  ),
+  questions: z.array(TicketQuestionSchema),
+  ticket: z.array(TicketPartSchema),
   topics: z.record(z.string(), z.string()),
 });
 export type TicketBank = z.infer<typeof TicketBankSchema>;
-export type TicketQuestion = TicketBank["questions"][number];
-export type TicketRef = TicketQuestion["refs"][number];
+export type TicketQuestion = z.infer<typeof TicketQuestionSchema>;
+export type TicketRef = z.infer<typeof TicketRefSchema>;
 
 export const MacrosSchema = z.record(z.string(), z.string());
 

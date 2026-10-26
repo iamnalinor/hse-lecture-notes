@@ -69,7 +69,12 @@ def load(path: Path) -> dict:
         bad = _double_quoted_backslashes(text)
         data = yaml.safe_load(text)
     except yaml.YAMLError as e:
-        raise BankError(f"не читается как YAML: {e}") from e
+        hint = (
+            " (обратная косая черта в двойных кавычках — пиши без кавычек или в '…')"
+            if "escape" in str(e)
+            else ""
+        )
+        raise BankError(f"не читается как YAML{hint}: {e}") from e
     if bad:
         raise BankError(
             "обратная косая черта в строке в двойных кавычках (" + ", ".join(bad) + "): YAML превращает "

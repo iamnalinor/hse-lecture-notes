@@ -72,12 +72,15 @@ describe("drawTicket", () => {
       questions: [question("p1", "proof", "a"), question("p2", "proof", "a")],
       ticket: [{ count: 2, kind: "proof", points: "", title: "Теорема" }],
     };
-    expect(ids(narrow, seeded(3)).toSorted()).toStrictEqual(["p1", "p2"]);
+    expect(ids(narrow, seeded(3)).toSorted((a, b) => a.localeCompare(b))).toStrictEqual([
+      "p1",
+      "p2",
+    ]);
   });
 
   it("gives different tickets for different random numbers", () => {
     const tickets = new Set(
-      Array.from({ length: 20 }, (_, seed) => ids(BANK, seeded(seed + 1)).join()),
+      Array.from({ length: 20 }, (_, seed) => ids(BANK, seeded(seed + 1)).join(",")),
     );
     expect(tickets.size).toBeGreaterThan(1);
   });

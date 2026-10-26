@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CatalogSchema, DocMetaSchema, GlossarySchema } from "./schemas.ts";
+import { CatalogSchema, DocMetaSchema, GlossarySchema, TicketBankSchema } from "./schemas.ts";
 
 describe("build data schemas", () => {
   it("turns snake_case lecture entries into camelCase", () => {
@@ -30,6 +30,39 @@ describe("build data schemas", () => {
     expect(catalog.preps["calculus"]?.[0]?.cheatsheets).toStrictEqual([]);
     // without `active_until` the test stays active through its own day
     expect(catalog.preps["calculus"]?.[0]?.activeUntil).toBe("2026-10-22");
+  });
+
+  it("knows which preparation page has a ticket bank", () => {
+    const catalog = CatalogSchema.parse({
+      lectures: {},
+      preps: {
+        calculus: [
+          { date: "2026-10-22", id: "kr1", title: "" },
+          { bank: true, date: "2026-11-02", id: "colloq1", title: "" },
+        ],
+      },
+    });
+    expect(catalog.preps["calculus"]?.map((prep) => prep.bank)).toStrictEqual([undefined, true]);
+  });
+
+  it("reads a ticket bank and rejects one without answers", () => {
+    const bank = {
+      questions: [
+        {
+          answer: "",
+          id: "bw",
+          kind: "proof",
+          refs: [{ doc: "06_oct09_subsequences_cauchy", id: "thm:lec06:bw" }],
+          text: "<p>Теорема Больцано–Вейерштрасса.</p>",
+          topic: "bw",
+        },
+      ],
+      ticket: [{ count: 2, kind: "proof", points: "2 балла", title: "Теорема" }],
+      topics: { bw: "Подпоследовательности" },
+    };
+    expect(TicketBankSchema.parse(bank).questions[0]?.refs[0]?.id).toBe("thm:lec06:bw");
+    const broken = { ...bank, questions: [{ ...bank.questions[0], refs: undefined }] };
+    expect(TicketBankSchema.safeParse(broken).success).toBe(false);
   });
 
   it("reads the last active day of a test", () => {

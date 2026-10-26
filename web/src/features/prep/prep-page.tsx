@@ -5,9 +5,12 @@ import { cheatsheetDocs, prepContents, prepGoal, prepName, prepWhen } from "#web
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
+import { TicketGenerator } from "./ticket-generator.tsx";
+
 /**
 Preparation for a test (`prep/<course>/krN.md`: topics, methods, problems with hidden answers) or a
-colloquium (`colloqN.md`: definitions, theorems, proof outlines).
+colloquium (`colloqN.md`: definitions, theorems, proof outlines). A page with a ticket bank
+(`colloqN-bank.yaml` → `bank` in the catalog) ends with the ticket generator, right after its sample ticket.
 */
 export const Component = () => {
   const { info, preps } = useCourse(useParams()["course"]);
@@ -21,6 +24,7 @@ export const Component = () => {
 
   return (
     <CourseDocument
+      after={prep.bank === true ? <TicketGenerator course={info.id} prepId={prep.id} /> : undefined}
       course={info.id}
       courseName={info.name}
       docId={prep.id}

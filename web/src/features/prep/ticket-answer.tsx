@@ -19,14 +19,14 @@ type Props = {
 
 const LINK = "text-sm font-semibold text-def no-underline hover:underline";
 
-type Ref = { readonly course: string; readonly refId: TicketRef };
+type Ref = { readonly course: string; readonly blockRef: TicketRef };
 
 /** One block of the answer, cut out of its document (a lecture or this page) and drawn in place. */
-const AnswerBlock = ({ course, prepId, refId }: { readonly prepId: string } & Ref) => {
-  const target = useLabelIndex()[course]?.[refId.id];
+const AnswerBlock = ({ blockRef, course, prepId }: Ref & { readonly prepId: string }) => {
+  const target = useLabelIndex()[course]?.[blockRef.id];
   const { data: html, isPending } = useQuery({
-    ...fragmentQuery(course, refId.doc),
-    select: (fragment) => extractBlock(fragment, refId.id),
+    ...fragmentQuery(course, blockRef.doc),
+    select: (fragment) => extractBlock(fragment, blockRef.id),
   });
 
   if (isPending) {
@@ -39,19 +39,19 @@ const AnswerBlock = ({ course, prepId, refId }: { readonly prepId: string } & Re
       ) : (
         <FragmentView
           course={course}
-          docId={refId.doc}
+          docId={blockRef.doc}
           html={html}
           lecture={target?.lecture}
           variant="notes"
         />
       )}
       <div className="-mt-4 mb-5 text-right">
-        {refId.doc === prepId ? (
-          <Link className={LINK} to={{ hash: `#${refId.id}` }}>
+        {blockRef.doc === prepId ? (
+          <Link className={LINK} to={{ hash: `#${blockRef.id}` }}>
             На этой странице ↑
           </Link>
         ) : (
-          <Link className={LINK} to={paths.lecture(course, refId.doc, refId.id)}>
+          <Link className={LINK} to={paths.lecture(course, blockRef.doc, blockRef.id)}>
             {target === undefined ? "В конспекте" : `Лекция ${String(target.lecture)}`} →
           </Link>
         )}
@@ -66,7 +66,7 @@ export const TicketAnswer = ({ answer, course, prepId, refs }: Props) => (
       <FragmentView course={course} docId={prepId} html={answer} lecture={undefined} />
     )}
     {refs.map((ref) => (
-      <AnswerBlock course={course} key={ref.id} prepId={prepId} refId={ref} />
+      <AnswerBlock blockRef={ref} course={course} key={ref.id} prepId={prepId} />
     ))}
   </div>
 );

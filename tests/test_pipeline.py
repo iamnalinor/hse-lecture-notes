@@ -178,6 +178,7 @@ def test_html_blocks_and_refs(demo: Path):
                 "date": "2026-11-07",
                 "active_until": "2026-11-07",
                 "cheatsheets": ["1side"],
+                "bank": False,
             }
         ]
     }
@@ -510,6 +511,149 @@ def test_colloq_pdf(demo: Path):
     res = build(demo, "--no-html", "--only", "prep/algebra/colloq1.md")
     assert res.returncode == 0, res.stderr
     assert (demo / "build" / "pdf" / "algebra" / "colloq1.pdf").stat().st_size > 1_000
+
+
+# ----------------------------------------------------------------------------- банк билетов
+
+BANK = r"""
+ticket:
+  - kind: proof
+    title: Теорема с доказательством
+    points: 2 балла
+    count: 1
+  - kind: definition
+    title: Вопрос на формулировку
+    count: 2
+questions:
+  - id: assoc
+    kind: proof
+    topic: product
+    text: Ассоциативность умножения матриц $(AB)C = A(BC)$; см. [-@thm:lec01:assoc].
+    refs: [thm:lec01:assoc, rem:colloq1:order]
+  - id: matrix
+    kind: definition
+    topic: product
+    text: Что такое матрица?
+    refs: [def:lec01:matrix]
+  - id: elem
+    kind: definition
+    topic: product
+    text: Элементарное преобразование.
+    answer: >-
+      Своё: $\lambda \ne 0$, как в @rem:colloq1:order.
+    refs: [def:lec02:elem, prob:colloq1:square]
+"""
+
+
+def make_bank(demo: Path, text: str = BANK) -> Path:
+    make_colloq(demo)
+    dst = demo / "prep" / "algebra" / "colloq1-bank.yaml"
+    dst.write_text(text, encoding="utf-8")
+    return dst
+
+
+def test_bank_builds(demo: Path):
+    """colloq1-bank.yaml → bank.json рядом с фрагментом: тексты в HTML, ссылки, документ каждого ответа."""
+    make_bank(demo)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    # одна тема на все вопросы — линтер предупреждает, что темы в билете будут повторяться
+    assert "темы будут повторяться" in res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    bank = json.loads((site / "algebra" / "colloq1" / "bank.json").read_text(encoding="utf-8"))
+    assert [t["kind"] for t in bank["ticket"]] == ["proof", "definition"]
+    assert bank["ticket"][1]["points"] == ""
+    assert bank["topics"] == {"product": "Умножение матриц"}
+    q = {x["id"]: x for x in bank["questions"]}
+    assert q["assoc"]["refs"] == [
+        {"id": "thm:lec01:assoc", "doc": "01_sep03_matrices"},
+        {"id": "rem:colloq1:order", "doc": "colloq1"},
+    ]
+    assert '<span class="math inline">(AB)C = A(BC)</span>' in q["assoc"]["text"]
+    assert 'class="ref" data-ref="thm:lec01:assoc"' in q["assoc"]["text"]
+    assert 'href="../01_sep03_matrices/#thm:lec01:assoc"' in q["assoc"]["text"]
+    assert "1.3 (лекция\u00a01)" in q["assoc"]["text"]
+    assert q["assoc"]["answer"] == ""
+    # своя метка страницы — якорь на этой же странице, «Замечание N» без номера лекции
+    assert 'href="#rem:colloq1:order"' in q["elem"]["answer"]
+    assert "Замечание\u00a01<" in q["elem"]["answer"]
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert {p["id"]: p["bank"] for p in courses["preps"]["algebra"]} == {"kr1": False, "colloq1": True}
+    # в PDF и в сам фрагмент страницы банк не попадает
+    frag = (site / "algebra" / "colloq1" / "fragment.html").read_text(encoding="utf-8")
+    assert "Что такое матрица" not in frag
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("refs: [def:lec01:matrix]", "refs: [def:lec01:nope]", "метки def:lec01:nope нет"),
+        ("refs: [def:lec01:matrix]", "refs: [sec:colloq1:product]", "раздел; в refs — блоки"),
+        ("refs: [def:lec01:matrix]", "refs: []", "нет ответа"),
+        (
+            "    kind: definition\n    topic: product\n    text: Что",
+            "    kind: blitz\n    topic: product\n    text: Что",
+            "вид 'blitz' не объявлен",
+        ),
+        (
+            "topic: product\n    text: Что",
+            "topic: limits\n    text: Что",
+            "нет раздела {#sec:colloq1:limits}",
+        ),
+        ("    count: 2", "    count: 3", "вопросов вида definition 2, а в билете их 3"),
+        ("  - id: elem", "  - id: matrix", "id повторяется"),
+        ("Что такое матрица?", '"Что такое $\\lambda$?"', "обратная косая черта в двойных кавычках"),
+        (
+            "Что такое матрица?",
+            '"Что такое $\\varepsilon$?"',
+            "обратная косая черта в строке в двойных кавычках",
+        ),
+        ("Что такое матрица?", "Что такое $ матрица?", "знак $ в тексте"),
+        ("Что такое матрица?", "Что такое $\\boxed{A}$?", "boxed"),
+        (
+            "Что такое матрица?",
+            "Что такое матрица, см. [-@def:lec09:x]?",
+            "ссылка @def:lec09:x никуда не ведёт",
+        ),
+        (
+            "    text: Что такое матрица?",
+            "    text: Что такое матрица?\n    level: 2",
+            "неизвестный ключ 'level'",
+        ),
+    ],
+)
+def test_lint_bank_catches(demo: Path, old: str, new: str, expected: str):
+    assert old in BANK
+    make_bank(demo, BANK.replace(old, new, 1))
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+    # сломанный банк валит и сборку: на сайт он не уедет
+    if (
+        "двойных кавычках" not in expected
+        and "никуда не ведёт" not in expected
+        and "$" not in expected
+        and "boxed" not in expected
+    ):
+        assert build(demo, "--no-pdf", "--no-html").returncode == 0  # PDF/индекс банк не трогает
+        assert build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md").returncode != 0
+
+
+def test_lint_bank_without_page(demo: Path):
+    (demo / "prep" / "algebra" / "colloq2-bank.yaml").write_text(BANK, encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "банк билетов без страницы colloq2.md" in res.stdout
+
+
+def test_lint_bank_by_path(demo: Path):
+    """lint.py prep/…/colloq1-bank.yaml проверяет банк вместе с его страницей."""
+    bank = make_bank(demo, BANK.replace("refs: [def:lec01:matrix]", "refs: [def:lec01:nope]"))
+    res = lint(demo, str(bank))
+    assert res.returncode != 0
+    assert "метки def:lec01:nope нет" in res.stdout
 
 
 def test_prep_ids_match_site():

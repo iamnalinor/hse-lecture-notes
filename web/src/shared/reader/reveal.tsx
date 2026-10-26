@@ -32,7 +32,11 @@ export const Reveal = ({
       >
         {open ? `${openLabel} ▴` : `${closedLabel} ▾`}
       </button>
-      <div className="order-last basis-full pt-1 text-lg empty:hidden" hidden={!open} id={panelId}>
+      <div
+        className="order-last min-w-0 basis-full pt-1 text-lg empty:hidden"
+        hidden={!open}
+        id={panelId}
+      >
         {(open || !lazy) && children}
       </div>
     </>
