@@ -6,13 +6,7 @@ import type { LectureEntry, PrepEntry } from "#web/domain/schemas.ts";
 import { shortDate } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import {
-  isHighlighted,
-  prepGoal,
-  prepName,
-  prepWhen,
-  upcomingPreps,
-} from "#web/domain/preps.ts";
+import { isHighlighted, prepGoal, prepName, prepWhen, upcomingPreps } from "#web/domain/preps.ts";
 import { plural } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { ArrowUpRightIcon } from "#web/shared/ui/icons.tsx";

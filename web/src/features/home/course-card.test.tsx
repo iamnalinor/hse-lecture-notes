@@ -19,7 +19,8 @@ describe("CourseCard", () => {
         lectures={[]}
         preps={[
           {
-            activeUntil: "2026-12-30", highlightFrom: "2026-11-16",
+            activeUntil: "2026-12-30",
+            highlightFrom: "2026-11-16",
             cheatsheets: [],
             date: "2026-11-02",
             id: "colloq1",
