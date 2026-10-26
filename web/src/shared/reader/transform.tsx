@@ -1,5 +1,3 @@
-import type { ReactElement, ReactNode } from "react";
-
 import {
   attributesToProps,
   type DOMNode,
@@ -7,6 +5,7 @@ import {
   Element,
   type HTMLReactParserOptions,
 } from "html-react-parser";
+import { createElement, type ReactElement, type ReactNode } from "react";
 
 import { blockStyle } from "#web/domain/blocks.ts";
 import { isRemarkTag, REMARK_TAGS, type RemarkTag } from "#web/domain/remarks.ts";
@@ -147,13 +146,34 @@ const image: Handler = (node, options) => {
 const CARD_COLUMNS = 3;
 
 const table: Handler = (node, options, replace) => {
-  const isCards = options.variant === "program" && headerLabels(node).length >= CARD_COLUMNS;
+  const isProgram = options.variant === "program";
+  const isCards = isProgram && headerLabels(node).length >= CARD_COLUMNS;
   return (
-    <div className={isCards ? "table-cards my-5" : "my-5 overflow-x-auto"}>
-      <table>{children(node, replace)}</table>
+    <div className={isCards ? "table-cards my-5 overflow-x-auto" : "my-5 overflow-x-auto"}>
+      <table role={isProgram ? "table" : undefined}>{children(node, replace)}</table>
     </div>
   );
 };
+
+/**
+Cards restyle a program table with `display: block`, which drops its implicit table semantics in
+some browsers: the roles are spelled out, so a screen reader still reads rows and column headers.
+*/
+const TABLE_ROLES: Readonly<Record<string, string>> = {
+  tbody: "rowgroup",
+  th: "columnheader",
+  thead: "rowgroup",
+  tr: "row",
+};
+
+const tablePart: Handler = (node, options, replace) =>
+  options.variant === "program"
+    ? createElement(
+        node.name,
+        { ...attributesToProps(node.attribs), role: TABLE_ROLES[node.name] },
+        children(node, replace),
+      )
+    : undefined;
 
 /** A value this short shares the line with its column name in a card («ВЕС 0,1»). */
 const SHORT_CELL_CHARS = 24;
@@ -171,6 +191,7 @@ const cell: Handler = (node, options, replace) => {
       {...attributesToProps(node.attribs)}
       data-inline={textOf(node).trim().length <= SHORT_CELL_CHARS ? "true" : undefined}
       data-label={columnLabel(node)}
+      role="cell"
     >
       {children(node, replace)}
     </td>
@@ -214,7 +235,11 @@ const byTag: Readonly<Record<string, Handler>> = {
   img: image,
   section,
   table,
+  tbody: tablePart,
   td: cell,
+  th: tablePart,
+  thead: tablePart,
+  tr: tablePart,
 };
 
 const byClass: readonly (readonly [string, Handler])[] = [

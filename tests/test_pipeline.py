@@ -520,6 +520,8 @@ def test_program_pdf(demo: Path):
     tex = (demo / "build" / "tex" / "algebra" / "program.tex").read_text(encoding="utf-8")
     assert "Программа и оценивание" in tex and "\\begin{longtable}" in tex
     assert "\\AtBeginEnvironment{longtable}{\\small}" in tex  # таблицы программы — мельче
+    # «Первый семестр» → «Формула» → формула → таблица весов не разрываются страницей
+    assert "\\needspace{20\\baselineskip}\n\n\\section{Первый" in tex
 
 
 # ----------------------------------------------------------------------------- подготовка к коллоквиуму

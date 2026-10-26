@@ -8,7 +8,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { isCourseDoc } from "../src/domain/course-docs.ts";
+import { offlineDocKind } from "../src/domain/offline-kind.ts";
 import {
   contentHash,
   MANIFEST_PATH,
@@ -16,7 +16,6 @@ import {
   type OfflineDocKind,
   type OfflineManifest,
 } from "../src/domain/offline.ts";
-import { isPrepId } from "../src/domain/preps.ts";
 
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 const WORKER = fileURLToPath(new URL("../sw/service-worker.ts", import.meta.url));
@@ -43,16 +42,6 @@ const allFiles = async (): Promise<string[]> => {
     .toSorted((a, b) => a.localeCompare(b));
 };
 
-const kindOf = (doc: string): OfflineDocKind => {
-  if (doc === "glossary") {
-    return "glossary";
-  }
-  if (isPrepId(doc)) {
-    return "prep";
-  }
-  return isCourseDoc(doc) ? doc : "notes";
-};
-
 const docsOf = (paths: readonly string[]): OfflineDoc[] => {
   const byId = new Map<string, { files: string[]; kind: OfflineDocKind }>();
   for (const file of paths) {
@@ -62,7 +51,7 @@ const docsOf = (paths: readonly string[]): OfflineDoc[] => {
     }
     const doc = groups["doc"] ?? "glossary";
     const id = `${groups["course"]}/${doc}`;
-    const entry = byId.get(id) ?? { files: [], kind: kindOf(doc) };
+    const entry = byId.get(id) ?? { files: [], kind: offlineDocKind(doc) };
     entry.files.push(file);
     byId.set(id, entry);
   }

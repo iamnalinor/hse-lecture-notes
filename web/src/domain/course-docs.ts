@@ -11,3 +11,13 @@ export const COURSE_DOCS = {
 export type CourseDocId = keyof typeof COURSE_DOCS;
 
 export const isCourseDoc = (doc: string): doc is CourseDocId => Object.hasOwn(COURSE_DOCS, doc);
+
+/** Title of the page and of its shell (`spa-fallback.ts`): «Алгебра: программа и оценивание». */
+export const courseDocTitle = (courseName: string, doc: CourseDocId): string =>
+  `${courseName}: ${COURSE_DOCS[doc].toLowerCase()}`;
+
+/** Meta description of the page shell, after the course name. */
+export const COURSE_DOC_DESCRIPTIONS: Readonly<Record<CourseDocId, string>> = {
+  program: "формула оценки, контрольные и экзамены, темы курса",
+  theory: "определения и теоремы курса",
+};

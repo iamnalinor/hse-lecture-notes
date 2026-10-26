@@ -141,6 +141,12 @@ describe("FragmentView tables", () => {
     expect(cells).toStrictEqual(["Элемент", "Вес", "Что это"]);
     expect(document.querySelectorAll("td[data-inline]")).toHaveLength(3);
     expect(screen.getByRole("columnheader", { name: "Вес" })).toBeInTheDocument();
+    // cards are display: block on a phone: the table roles are explicit
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getAllByRole("rowgroup")).toHaveLength(2);
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByRole("cell", { name: "0,2" })).toBeInTheDocument();
+    expect(document.querySelector(".table-cards")).toHaveClass("overflow-x-auto");
   });
 
   it("keeps a two-column program table and lecture tables as plain scrolling tables", () => {

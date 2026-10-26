@@ -6,6 +6,7 @@ deep links (`/algebra/04_sep23_determinant_properties/`) work properly:
 - every known page also gets its own `<path>/index.html`: the same shell, but served with 200 and
   with its own title and description, so links, previews and search engines see a real page.
 */
+import { COURSE_DOC_DESCRIPTIONS, courseDocTitle } from "../src/domain/course-docs.ts";
 import { COURSES } from "../src/domain/courses.ts";
 import { prepDescription } from "../src/domain/preps.ts";
 import { CatalogSchema } from "../src/domain/schemas.ts";
@@ -56,17 +57,13 @@ const pages = new Map<string, string>();
 for (const { id: course, name } of COURSES) {
   pages.set(course, page(name, `${name}: конспекты лекций ПИ ФКН ВШЭ`));
   // Only documents that exist: a copy for a course without theory would be a 200 for nothing.
-  if (await isPresent(`data/${course}/theory/meta.json`)) {
-    pages.set(`${course}/theory`, page(`${name}: теория`, `${name}: определения и теоремы курса`));
-  }
-  if (await isPresent(`data/${course}/program/meta.json`)) {
-    pages.set(
-      `${course}/program`,
-      page(
-        `${name}: программа и оценивание`,
-        `${name}: формула оценки, контрольные и экзамены, темы курса`,
-      ),
-    );
+  for (const doc of ["theory", "program"] as const) {
+    if (await isPresent(`data/${course}/${doc}/meta.json`)) {
+      pages.set(
+        `${course}/${doc}`,
+        page(courseDocTitle(name, doc), `${name}: ${COURSE_DOC_DESCRIPTIONS[doc]}`),
+      );
+    }
   }
   if (await isPresent(`data/${course}/glossary.json`)) {
     pages.set(

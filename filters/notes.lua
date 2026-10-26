@@ -712,6 +712,31 @@ local function set_template_meta(doc, config)
   return doc
 end
 
+-- Программа курса: формула оценки и таблица весов под ней — одно целое; в PDF формула
+-- не остаётся внизу страницы без своей таблицы (\needspace из notes.sty).
+local function is_formula(b)
+  return b ~= nil and b.t == 'Para' and #b.content == 1 and b.content[1].t == 'Math'
+    and b.content[1].mathtype == 'DisplayMath'
+end
+
+local function keep_formula_with_table(blocks)
+  local out = pandoc.Blocks {}
+  for i, b in ipairs(blocks) do
+    -- заголовок «Формула» тоже держится вместе с ними
+    local starts = (is_formula(b) and blocks[i + 1] and blocks[i + 1].t == 'Table'
+        and not (blocks[i - 1] and blocks[i - 1].t == 'Header'))
+      or (b.t == 'Header' and is_formula(blocks[i + 1]) and blocks[i + 2] and blocks[i + 2].t == 'Table')
+    if starts then
+      -- заголовок раздела прямо над «Формулой» («Первый семестр») — тоже с ними
+      local at = #out + 1
+      if out[#out] and out[#out].t == 'Header' then at = #out end
+      out:insert(at, pandoc.RawBlock('latex', '\\needspace{20\\baselineskip}'))
+    end
+    out:insert(b)
+  end
+  return out
+end
+
 function Pandoc(doc)
   local meta = doc.meta
   S.mode = meta_str(meta, 'notes_mode') or 'render'
@@ -763,6 +788,7 @@ function Pandoc(doc)
 
   doc = render(doc)
   doc = set_template_meta(doc, config)
+  if FORMAT_LATEX and S.kind == 'program' then doc.blocks = keep_formula_with_table(doc.blocks) end
 
   if FORMAT_HTML and out_path then
     local labels = {}

@@ -1,7 +1,7 @@
 import { useParams } from "react-router";
 
 import { notFound, useCourse } from "#web/api/use-course.ts";
-import { COURSE_DOCS } from "#web/domain/course-docs.ts";
+import { COURSE_DOCS, courseDocTitle } from "#web/domain/course-docs.ts";
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
@@ -12,7 +12,7 @@ without the page is a 404, not an empty document.
 */
 export const Component = () => {
   const { hasProgram, info } = useCourse(useParams()["course"]);
-  useDocumentTitle(`${info.name}: программа и оценивание`); // same title as the page shell
+  useDocumentTitle(courseDocTitle(info.name, "program")); // same title as the page shell
   if (!hasProgram) {
     notFound();
   }

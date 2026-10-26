@@ -143,7 +143,9 @@ phone — one card per row, every value next to (short, `data-inline`) or under 
 
   .prose-notes .table-cards td[data-label]::before {
     color: var(--muted);
+    /* the column name is already read from the header: the label is for the eye only */
     content: attr(data-label);
+    content: attr(data-label) / "";
     display: block;
     font-size: 12px;
     font-weight: 600;
