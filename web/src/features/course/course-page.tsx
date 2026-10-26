@@ -4,7 +4,7 @@ import type { CourseInfo } from "#web/domain/courses.ts";
 
 import { useLabelIndex } from "#web/api/queries.ts";
 import { useCourse } from "#web/api/use-course.ts";
-import { COURSE_DOCS } from "#web/domain/course-docs.ts";
+import { COURSE_DOC_BUTTONS } from "#web/domain/course-docs.ts";
 import { dayMonth } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
@@ -72,7 +72,7 @@ export const Component = () => {
             </Link>
             {hasProgram && (
               <Link className={BUTTON} to={paths.program(info.id)}>
-                {COURSE_DOCS.program}
+                {COURSE_DOC_BUTTONS.program}
               </Link>
             )}
           </nav>

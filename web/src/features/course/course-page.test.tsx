@@ -56,16 +56,13 @@ describe("course page", () => {
 
   it("links the program page of the course next to the theory", () => {
     page(["discrete"]);
-    expect(screen.getByRole("link", { name: "План учебной дисциплины" })).toHaveAttribute(
-      "href",
-      "/discrete/program",
-    );
+    expect(screen.getByRole("link", { name: "ПУД" })).toHaveAttribute("href", "/discrete/program");
     expect(screen.getByRole("link", { name: "Теория" })).toBeInTheDocument();
   });
 
   it("has no program link when the course has no such page", () => {
     page(["algebra"]);
-    expect(screen.queryByRole("link", { name: "План учебной дисциплины" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "ПУД" })).toBeNull();
   });
 
   it("puts the latest lecture with its day first, then the course documents", () => {

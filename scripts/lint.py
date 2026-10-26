@@ -424,7 +424,7 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
 
 
 PROGRAM_META = {"course", "title"}
-PROGRAM_BLOCKS = {"remark", "example"}
+PROGRAM_BLOCKS = {"remark"}  # без примеров расчёта: страница — справочник (решение владельца)
 PROGRAM_FIRST, PROGRAM_LAST, PROGRAM_SOURCES = "О курсе", "Содержание курса", "Источники"
 # Страница программы — справочник, а не реферат о ПУД: без пометок источников, комментариев о самой
 # программе и советов «уточнить у лектора» (context/prompts/program.md → «Как писать»)
@@ -438,7 +438,7 @@ PROGRAM_META_WORDS = re.compile(
 def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
     """План учебной дисциплины курса (program/<course>.md, context/markup.md §12).
 
-    Справочная страница из ПУД: заголовки, абзацы, списки, таблицы, формулы, замечания и примеры
+    Справочная страница из ПУД: заголовки, абзацы, списки, таблицы, формулы, замечания
     без номеров и меток. Ни определений, ни задач, ни рисунков; ссылки — только на блоки конспектов.
     """
     meta = build.read_front_matter(path)

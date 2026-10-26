@@ -12,9 +12,20 @@ export type CourseDocId = keyof typeof COURSE_DOCS;
 
 export const isCourseDoc = (doc: string): doc is CourseDocId => Object.hasOwn(COURSE_DOCS, doc);
 
-/** Title of the page and of its shell (`spa-fallback.ts`): «Алгебра: план учебной дисциплины». */
+/** Button on the course page: the plan is known to students as «ПУД». */
+export const COURSE_DOC_BUTTONS: Readonly<Record<CourseDocId, string>> = {
+  program: "ПУД",
+  theory: "Теория",
+};
+
+/**
+Title of the page and of its shell (`spa-fallback.ts`), as on the page itself: «Алгебра: теория»,
+«План учебной дисциплины: математический анализ».
+*/
 export const courseDocTitle = (courseName: string, doc: CourseDocId): string =>
-  `${courseName}: ${COURSE_DOCS[doc].toLowerCase()}`;
+  doc === "program"
+    ? `${COURSE_DOCS.program}: ${courseName.toLowerCase()}`
+    : `${courseName}: ${COURSE_DOCS[doc].toLowerCase()}`;
 
 /** Meta description of the page shell, after the course name. */
 export const COURSE_DOC_DESCRIPTIONS: Readonly<Record<CourseDocId, string>> = {

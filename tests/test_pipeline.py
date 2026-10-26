@@ -456,7 +456,7 @@ def test_program_builds(demo: Path):
     ]
     frag = (site / "algebra" / "program" / "fragment.html").read_text(encoding="utf-8")
     # замечания и примеры программы — без номеров; ссылка на конспект — как в теории
-    assert "Пример (как считается)" in frag and "Замечание (порог)" in frag
+    assert "Замечание (порог)" in frag
     assert "data-number" not in frag
     assert 'href="../01_sep03_matrices/#def:lec01:matrix"' in frag
     assert "<table" in frag and "<th>Вес</th>" in frag.replace(' style="text-align: left;"', "")
@@ -491,11 +491,8 @@ def test_program_optional(demo: Path):
         ("# Содержание курса", "# Темы", "последний раздел — «# Содержание курса»"),
         ("course: algebra", "course: calculus", "а файл program/algebra.md"),
         ("title: ", "date: 2026-10-26\ntitle: ", "лишнее поле date"),
-        (
-            '::: {.example title="как считается"}',
-            "::: {.definition #def:program:x}",
-            "можно только example, remark",
-        ),
+        ('::: {.remark title="порог"}', "::: {.definition}", "можно только remark"),
+        ('::: {.remark title="порог"}', '::: {.example title="как считается"}', "можно только remark"),
         (
             '::: {.remark title="порог"}',
             "::: {.remark #rem:program:wiki}",
