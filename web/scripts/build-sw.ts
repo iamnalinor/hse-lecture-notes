@@ -8,6 +8,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isCourseDoc } from "../src/domain/course-docs.ts";
 import {
   contentHash,
   MANIFEST_PATH,
@@ -15,7 +16,6 @@ import {
   type OfflineDocKind,
   type OfflineManifest,
 } from "../src/domain/offline.ts";
-import { isCourseDoc } from "../src/domain/course-docs.ts";
 import { isPrepId } from "../src/domain/preps.ts";
 
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));

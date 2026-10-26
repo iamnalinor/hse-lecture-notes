@@ -14,10 +14,10 @@ import { isRemarkTag, REMARK_TAGS, type RemarkTag } from "#web/domain/remarks.ts
 import { splitBlockName } from "./block-name.ts";
 import { Block } from "./block.tsx";
 import { adjacentElement, childWithClass, hasClass, textOf } from "./dom-utils.ts";
-import { columnLabel, headerLabels } from "./table-labels.ts";
 import { ProblemFooter } from "./problem-footer.tsx";
 import { Proof } from "./proof.tsx";
 import { RefLink } from "./ref-link.tsx";
+import { columnLabel, headerLabels } from "./table-labels.ts";
 import { TexMath } from "./tex-math.tsx";
 
 export type TransformOptions = {
