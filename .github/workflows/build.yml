@@ -180,18 +180,26 @@ jobs:
       - name: Upload a preview version
         if: env.HAS_TOKEN == 'true'
         id: upload
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: web
-          command: versions upload --preview-alias=${{ env.ALIAS }} --message="PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}"
+        working-directory: web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MESSAGE: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
+        run: |
+          # wrangler-action ставит wrangler 3.x, а превью-алиасы и wrangler.jsonc нужны из 4.x
+          set -o pipefail
+          bunx wrangler@4.149.0 versions upload --preview-alias="$ALIAS" --message="$MESSAGE" 2>&1 | tee wrangler.out
+          {
+            echo "out<<WRANGLER_EOF"
+            cat wrangler.out
+            echo "WRANGLER_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Find the preview URLs
         if: env.HAS_TOKEN == 'true'
         id: urls
         env:
-          OUT: ${{ steps.upload.outputs.command-output }}
+          OUT: ${{ steps.upload.outputs.out }}
         run: |
           alias=$(grep -oE 'https://'"$ALIAS"'-[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | head -n1)
           version=$(grep -oE 'https://[a-z0-9-]+-'"$WORKER"'\.[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | grep -v "^https://$ALIAS-" | head -n1)
