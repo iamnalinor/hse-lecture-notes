@@ -425,7 +425,7 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
 
 PROGRAM_META = {"course", "title"}
 PROGRAM_BLOCKS = {"remark", "example"}
-PROGRAM_FIRST, PROGRAM_LAST = "О курсе", "Содержание курса"
+PROGRAM_FIRST, PROGRAM_LAST, PROGRAM_SOURCES = "О курсе", "Содержание курса", "Источники"
 # Страница программы — справочник, а не реферат о ПУД: без пометок источников, комментариев о самой
 # программе и советов «уточнить у лектора» (context/prompts/program.md → «Как писать»)
 PROGRAM_META_WORDS = re.compile(
@@ -508,8 +508,24 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
         nxt = next((b for b in blocks[first + 1 :] if b["t"] != "Para" or text_of_block(b).strip()), None)
         if nxt is None or nxt["t"] != "Table":
             rep.err(rel, f"раздел «# {PROGRAM_FIRST}» — сводная таблица курса сразу под заголовком")
-    if not h1 or h1[-1] != PROGRAM_LAST:
-        rep.err(rel, f"последний раздел — «# {PROGRAM_LAST}»")
+    tail = h1[-2:] if h1 and h1[-1] == PROGRAM_SOURCES else h1[-1:]
+    if not tail or tail[0] != PROGRAM_LAST:
+        rep.err(
+            rel, f"последний раздел — «# {PROGRAM_LAST}» (за ним может идти только «# {PROGRAM_SOURCES}»)"
+        )
+    # ссылки на первоисточники — только списком в «Источниках» (и профиль лектора в «О курсе»),
+    # не в тексте (context/prompts/facts.md)
+    section = ""
+    for b in blocks:
+        if b["t"] == "Header" and b["c"][0] == 1:
+            section = text_of_block(b).strip()
+        elif section not in (PROGRAM_FIRST, PROGRAM_SOURCES) and any(n["t"] == "Link" for n in iter_nodes(b)):
+            rep.err(
+                rel,
+                f"ссылка в разделе «{section}»: ссылки на источники — только в «# {PROGRAM_SOURCES}» в конце",
+            )
+        elif section == PROGRAM_SOURCES and b["t"] != "BulletList":
+            rep.err(rel, f"«# {PROGRAM_SOURCES}» — только список ссылок, по строке на источник")
     if not any(b["t"] == "Table" for b in blocks):
         rep.warn(rel, "в программе нет ни одной таблицы: веса элементов контроля удобнее читать таблицей")
 
@@ -641,6 +657,13 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         rep.err(
             rel, f"у страницы есть банк билетов, но нет раздела {{#{generator}}}: генератору негде встать"
         )
+    elif has_bank:
+        last_id = [b["c"][1][0] for b in blocks if b["t"] == "Header" and b["c"][0] == 1][-1]
+        if last_id != generator:
+            # «Источники» (context/prompts/facts.md, п. 7) — перед генератором: он последний и на сайте
+            rep.warn(
+                rel, f"раздел {{#{generator}}} — последний на странице; «Источники» и остальное — перед ним"
+            )
     elif generator in own and not has_bank:
         rep.err(
             rel,

@@ -452,6 +452,7 @@ def test_program_builds(demo: Path):
         "О курсе",
         "Первый семестр",
         "Содержание курса",
+        "Источники",
     ]
     frag = (site / "algebra" / "program" / "fragment.html").read_text(encoding="utf-8")
     # замечания и примеры программы — без номеров; ссылка на конспект — как в теории
@@ -506,6 +507,12 @@ def test_program_optional(demo: Path):
             "# Первый семестр {#sec:program:first}",
             "у заголовка: в программе своих меток нет",
         ),
+        (
+            "- **Матрицы.** Операции над матрицами.",
+            "- **Матрицы.** Операции над [матрицами](https://example.org).",
+            "ссылка в разделе «Содержание курса»",
+        ),
+        ("# Источники\n", "# Источники\n\nСписок.\n", "только список ссылок"),
         ("| письменный, вес 0,7 |", "| письменный, вес 0,7 (см. Р4) |", "служебное слово"),
         (
             "| письменный, вес 0,7 |",
@@ -866,6 +873,9 @@ def test_lint_bank_generator_section(demo: Path):
     res = lint(demo)
     assert res.returncode != 0
     assert "нет раздела {#sec:colloq1:generator}" in res.stdout, res.stdout
+    page.write_text(text + "\n# Источники\n\n- ПУД.\n", encoding="utf-8")
+    res = lint(demo)
+    assert "— последний на странице" in res.stdout, res.stdout
     page.write_text(text, encoding="utf-8")
     bank.unlink()
     res = lint(demo)
