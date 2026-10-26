@@ -424,6 +424,71 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
     walk(doc["blocks"], on_node)
 
 
+PROGRAM_META = {"course", "title"}
+PROGRAM_BLOCKS = {"remark", "example"}
+PROGRAM_FIRST, PROGRAM_LAST = "Коротко", "Содержание курса"
+
+
+def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
+    """Программа и оценивание курса (program/<course>.md, context/markup.md §12).
+
+    Справочная страница из ПУД: заголовки, абзацы, списки, таблицы, формулы, замечания и примеры
+    без номеров и меток. Ни определений, ни задач, ни рисунков; ссылки — только на блоки конспектов.
+    """
+    meta = build.read_front_matter(path)
+    course = path.stem
+    for k in sorted(PROGRAM_META):
+        if meta.get(k) in (None, ""):
+            rep.err(rel, f"в front matter нет поля {k}")
+    for k in sorted(set(meta) - PROGRAM_META):
+        rep.err(rel, f"лишнее поле {k} в front matter: у программы курса только {', '.join(sorted(PROGRAM_META))}")
+    if course not in cfg["courses"]:
+        rep.err(rel, f"неизвестный курс {course}: файл называется program/<course>.md")
+        return
+    if meta.get("course") != course:
+        rep.err(rel, f"course={meta.get('course')!r}, а файл program/{course}.md")
+    blocks = ast_of(path)["blocks"]
+
+    def on_node(n):
+        t = n["t"]
+        if t == "Div":
+            (ident, classes, kv), _ = n["c"]
+            kinds = [c for c in classes if c in PROGRAM_BLOCKS]
+            if not kinds:
+                rep.err(
+                    rel,
+                    f"блок ::: {{.{classes[0] if classes else '?'}}} в программе курса: можно только "
+                    f"{', '.join(sorted(PROGRAM_BLOCKS))}",
+                )
+            if ident or dict(kv).get("ref"):
+                rep.err(rel, f"у блока {ident or dict(kv).get('ref')} метка: в программе блоки без меток и ref=")
+            tag = dict(kv).get("tag")
+            if tag is not None and tag not in TAGS:
+                rep.err(rel, f"неизвестная пометка замечания: {tag!r}; допустимо: {', '.join(sorted(TAGS))}")
+        elif t == "CodeBlock":
+            rep.err(rel, "блок кода или рисунок в программе курса: здесь только текст, таблицы и формулы")
+        elif t == "Image":
+            rep.err(rel, "картинки-файлы запрещены")
+        elif t == "Header" and n["c"][1][0].startswith(("sec:", "def:", "thm:", "prob:", "rem:", "ex:")):
+            rep.err(rel, f"метка {n['c'][1][0]} у заголовка: в программе своих меток нет")
+        elif t == "Math":
+            check_math(rep, rel, n["c"][1])
+        elif t == "Cite":
+            check_cite(rep, rel, n, labels.get(course, {}))
+        elif t == "Str" and "$" in n["c"]:
+            rep.err(rel, f"знак $ в тексте — формула не распознана: «{n['c']}»")
+
+    walk(blocks, on_node)
+    check_texts(rep, rel, blocks)
+    h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
+    if not h1 or h1[0] != PROGRAM_FIRST:
+        rep.err(rel, f"первый раздел — «# {PROGRAM_FIRST}»")
+    if not h1 or h1[-1] != PROGRAM_LAST:
+        rep.err(rel, f"последний раздел — «# {PROGRAM_LAST}»")
+    if not any(b["t"] == "Table" for b in blocks):
+        rep.warn(rel, "в программе нет ни одной таблицы: веса элементов контроля удобнее читать таблицей")
+
+
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
     """Подготовка к КР или коллоквиуму (prep/<course>/krN.md, colloqN.md).
 
@@ -664,6 +729,8 @@ def main() -> int:
             lint_notes(d.path, d.rel, cfg, labels, rep)
         elif d.kind == "prep":
             lint_prep(d.path, d.rel, cfg, labels, rep)
+        elif d.kind == "program":
+            lint_program(d.path, d.rel, cfg, labels, rep)
         else:
             lint_theory(d.path, d.rel, labels, rep)
 

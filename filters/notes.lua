@@ -1,5 +1,5 @@
 --[[
-notes.lua — фильтр pandoc для конспектов и теории курсов.
+notes.lua — фильтр pandoc для конспектов, теории и программ курсов, подготовок к КР.
 
 Что делает:
   * нумерует блоки (definition, axiom, theorem, lemma, proposition, corollary,
@@ -18,6 +18,8 @@ notes.lua — фильтр pandoc для конспектов и теории к
   notes_index  путь build/index.json (render)
   notes_config путь templates/courses.json
   week_id      имя файла без расширения
+  kind         notes | theory | program | prep (program — «Программа и оценивание» курса:
+               без своих меток, блоки без номеров, своя шапка)
   site_url     (необязательно) базовый URL сайта для ссылок между лекциями в PDF
 ]]
 
@@ -136,7 +138,7 @@ end
 
 local S = {
   mode = 'render',
-  kind = 'notes',          -- notes | theory
+  kind = 'notes',          -- notes | theory | program | prep
   course = nil,
   lecture = nil,
   week_id = nil,
@@ -562,7 +564,8 @@ local function render(doc)
       local t = block_type(div)
       if t then
         local number = ''
-        if is_numbered_div(div) then number = next_number(c) end
+        -- программа курса — справочная страница: замечания и примеры без номеров
+        if is_numbered_div(div) and S.kind ~= 'program' then number = next_number(c) end
         local tag = div.attributes['tag']
         local parts = header_parts({ tag = tag, title = div.attributes['title'] })
         if tag and tag ~= '' and not TAGS[tag] then
@@ -681,6 +684,9 @@ local function set_template_meta(doc, config)
   meta['date_ru'] = pandoc.MetaString(date_ru(date))
   if S.kind == 'theory' then
     meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Теория')
+  elseif S.kind == 'program' then
+    meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Программа и оценивание')
+    meta['is_program'] = true  -- notes.latex: таблицы плотнее и мельче
   elseif S.kind == 'prep' then
     -- коллоквиум с окном дат (active_until) — диапазон «2.11–30.12.2026», а не один день
     -- (коротко, чтобы колонтитул остался в одну строку)
@@ -717,7 +723,8 @@ function Pandoc(doc)
   local out_path = meta_str(meta, 'notes_out')
   local config = read_json(meta_str(meta, 'notes_config') or 'templates/courses.json') or {}
 
-  if S.kind == 'theory' then
+  if S.kind == 'theory' or S.kind == 'program' then
+    -- своих меток нет: теория ссылается на блоки конспектов, программа — справочная страница
     S.lecture = '0'
   else
     -- подготовка к КР/коллоквиуму: свои метки (prob:kr1:…, prob:colloq1:…), номера без лекции, в индекс курса не идут

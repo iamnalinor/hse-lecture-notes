@@ -1,4 +1,4 @@
-"""Сборка конспектов и теории курсов: Markdown → PDF (xelatex) и HTML-фрагменты для сайта.
+"""Сборка конспектов, теории, программ курсов и подготовок: Markdown → PDF (xelatex) и HTML-фрагменты для сайта.
 
 Запуск:
     uv run scripts/build.py                       # всё
@@ -7,14 +7,14 @@
 
 Результат в build/:
     build/index.json                    глобальный индекс меток и глоссариев
-    build/pdf/<course>/<week_id>.pdf    PDF конспектов, build/pdf/<course>/theory.pdf
+    build/pdf/<course>/<week_id>.pdf    PDF конспектов, build/pdf/<course>/theory.pdf, program.pdf
     build/pdf/<course>/krN-cheatsheet-<variant>.pdf
                                         читлисты из prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex
     build/site-data/                    данные для будущего сайта + preview-страницы
         index.json, courses.json, katex-macros.json, search.json
         <course>/glossary.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
-        <course>/theory/...
+        <course>/theory/..., <course>/program/...
         <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
 """
 
@@ -47,7 +47,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "templates"
 FILTER = ROOT / "filters" / "notes.lua"
 CONFIG = TEMPLATES / "courses.json"
-SRC = ROOT  # где лежат notes/ и theory/ (в тестах — временная папка)
+SRC = ROOT  # где лежат notes/, theory/, program/ и prep/ (в тестах — временная папка)
 BUILD = ROOT / "build"
 CACHE = ROOT / ".cache"
 SITE = BUILD / "site-data"
@@ -88,10 +88,14 @@ def prep_kind(prep_id: str) -> str:
     return m.group("kind") if m else ""
 
 
+# Документы курса, по одному на курс: <kind>/<course>.md → site-data/<course>/<kind>/, pdf/<course>/<kind>.pdf
+COURSE_DOCS = ("theory", "program")
+
+
 @dataclass
 class Doc:
     path: Path
-    kind: str  # notes | theory | prep
+    kind: str  # notes | theory | program | prep
     course: str
     week_id: str
     meta: dict
@@ -103,7 +107,9 @@ class Doc:
 
     @property
     def out_name(self) -> str:
-        return "theory" if self.kind == "theory" else self.week_id  # prep: week_id = kr1, colloq1…
+        if self.kind in COURSE_DOCS:
+            return self.kind
+        return self.week_id  # prep: week_id = kr1, colloq1…
 
 
 class BuildError(Exception):
@@ -130,6 +136,10 @@ def discover() -> list[Doc]:
     for p in sorted((SRC / "theory").glob("*.md")):
         meta = read_front_matter(p)
         docs.append(Doc(p, "theory", p.stem, "theory", meta))
+    # программа и оценивание курса (context/markup.md §12): program/<course>.md → /<course>/program
+    for p in sorted((SRC / "program").glob("*.md")):
+        meta = read_front_matter(p)
+        docs.append(Doc(p, "program", p.stem, "program", meta))
     for p in sorted((SRC / "prep").glob("*/*.md")):
         if p.stem not in PREP_IDS:  # линтер скажет то же
             raise BuildError(f"{p}: подготовка называется {PREP_FILES}")
@@ -652,6 +662,8 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
             "config": json.loads(CONFIG.read_text(encoding="utf-8")),
             "lectures": index["lectures"],
             "preps": preps,
+            # курсы со страницей «Программа и оценивание» (program/<course>.md)
+            "programs": sorted(m["course"] for m in metas if m.get("kind") == "program"),
         },
     )
     write_json(SITE / "katex-macros.json", katex_macros())
@@ -683,6 +695,8 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
             )
         if (SITE / course / "theory").exists():
             links.append(f'<li><a href="{course}/theory/">Теория</a></li>')
+        if (SITE / course / "program").exists():
+            links.append(f'<li><a href="{course}/program/">Программа и оценивание</a></li>')
         for p in preps.get(course, []):
             links.append(f'<li><a href="{course}/{p["id"]}/">{html.escape(p["title"] or "")}</a></li>')
         links.append("</ul>")
@@ -719,7 +733,7 @@ def main() -> int:
     ap.add_argument("--no-html", action="store_true")
     ap.add_argument("--strict", action="store_true", help="предупреждения — ошибки")
     ap.add_argument("-j", "--jobs", type=int, default=os.cpu_count() or 2)
-    ap.add_argument("--src", type=Path, default=ROOT, help="папка с notes/ и theory/")
+    ap.add_argument("--src", type=Path, default=ROOT, help="папка с notes/, theory/, program/ и prep/")
     ap.add_argument("--out", type=Path, default=None, help="папка сборки (по умолчанию <src>/build)")
     args = ap.parse_args()
     set_dirs(args.src, args.out or args.src / "build")
