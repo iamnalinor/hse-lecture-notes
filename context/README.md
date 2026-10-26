@@ -16,6 +16,7 @@
 | Перевести прогноз в конспект по лекции | `prompts/normalize.md` → `workflow.md` |
 | Добавить новую лекцию в план | `workflow.md` §1 → `schedule.md` |
 | Подготовка к КР (страница `prep/<course>/krN.md`) | `prompts/prep.md` → `markup.md` §11 → `courses/<course>.md` (раздел про контрольные) |
+| Подготовка к коллоквиуму (страница `prep/<course>/colloqN.md`) | `prompts/prep.md` (раздел «Коллоквиум») → `markup.md` §11 → `courses/<course>.md` (раздел про коллоквиум) → `pud/<course>.md`, если есть |
 | Отревьюить подготовку к КР | `prompts/prep-review.md` → `prompts/prep.md` |
 | Читлист (шпаргалка) к КР | `prompts/cheatsheet.md` → `courses/<course>.md` (правила контрольной) → `prep/<course>/krN.md` |
 | Работать над сайтом | `web/README.md` → `site.md` |
