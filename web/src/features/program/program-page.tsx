@@ -22,7 +22,7 @@ export const Component = () => {
       course={info.id}
       courseName={info.name}
       docId="program"
-      note="Формула оценки, контрольные и экзамены, пересдачи, темы курса — по программе дисциплины"
+      note="Формула оценки, контрольные и экзамены, пересдачи, темы курса"
       pageName={COURSE_DOCS.program}
       variant="program"
     />

@@ -8,6 +8,9 @@ const progressText = (download: DownloadState): string | undefined => {
     case "running": {
       return `Скачиваем… ${String(download.done)} из ${String(download.total)}`;
     }
+    case "background": {
+      return "Сохраняем остальные в фоне…";
+    }
     case "failed": {
       return download.message;
     }
@@ -17,14 +20,20 @@ const progressText = (download: DownloadState): string | undefined => {
   }
 };
 
-/** Footer line: how many lecture notes open without internet, and a button to save the rest. */
+/**
+Footer line: how many lecture notes open without internet, and a button to save the rest. On
+Wi-Fi the rest is saved in the background (the counter grows as files arrive); the button then
+takes over and downloads faster.
+*/
 export const OfflineStatus = () => {
   const { canDownload, count, download, startDownload } = useOfflineStatus();
   if (count === undefined) {
     return null;
   }
   const isEverything = count.saved === count.total;
-  const progress = progressText(download);
+  // With every note saved, the background run only tops up theory and glossaries: no need to say.
+  const progress =
+    isEverything && download.kind === "background" ? undefined : progressText(download);
   return (
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
       <span>

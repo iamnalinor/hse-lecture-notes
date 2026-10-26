@@ -8,9 +8,12 @@ minute stays tiny). Any change of any file changes VERSION → the page offers t
   changed since the cached copy into a staging cache (the old worker keeps serving meanwhile);
 - activate: drop cached files whose content changed or that are gone, move the staged files in;
 - fetch: navigations get the cached app shell; known files are served from the cache and cached
-  on first use (lecture notes are never downloaded until opened); PDFs and the rest go to network.
+  on first use (lecture notes are never downloaded until opened, or until the page downloads all of
+  them: «Скачать все» or the background download on Wi-Fi, whose requests carry BACKGROUND_HEADER
+  and go to the network at low priority); PDFs and the rest go to network.
 */
 import {
+  BACKGROUND_HEADER,
   CACHE_NAME,
   type CachedHashes,
   contentHash,
@@ -44,8 +47,11 @@ const index = (manifest: OfflineManifest): Known => ({
 });
 
 /** Fetches past the HTTP cache and labels the copy with the hash of what actually arrived. */
-const fetchLabelled = async (url: string): Promise<Response> => {
-  const response = await fetch(url, { cache: "no-cache" });
+const fetchLabelled = async (
+  url: string,
+  priority: RequestPriority = "auto",
+): Promise<Response> => {
+  const response = await fetch(url, { cache: "no-cache", priority });
   if (!response.ok) {
     throw new Error(`${url}: ${String(response.status)}`);
   }
@@ -54,6 +60,8 @@ const fetchLabelled = async (url: string): Promise<Response> => {
   headers.set(HASH_HEADER, await contentHash(body));
   return new Response(body, { headers, status: response.status, statusText: response.statusText });
 };
+
+const isBackground = (request: Request): boolean => request.headers.has(BACKGROUND_HEADER);
 
 const labelOf = (response: Response | undefined): string | undefined =>
   response?.headers.get(HASH_HEADER) ?? undefined;
@@ -145,7 +153,12 @@ const announce = async (): Promise<void> => {
 };
 
 /** Cache first; a miss is fetched and kept if it is the content the manifest expects. */
-const serveKnown = async (state: Known, key: string, path: string): Promise<Response> => {
+const serveKnown = async (
+  state: Known,
+  path: string,
+  priority: RequestPriority,
+): Promise<Response> => {
+  const key = urlOf(path);
   const expected = state.manifest.files[path];
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(key);
@@ -153,7 +166,7 @@ const serveKnown = async (state: Known, key: string, path: string): Promise<Resp
     return cached;
   }
   try {
-    const response = await fetchLabelled(key);
+    const response = await fetchLabelled(key, priority);
     if (labelOf(response) === expected) {
       await cache.put(key, response.clone());
       if (state.docOf.has(path)) {
@@ -173,9 +186,11 @@ const serveFile = async (request: Request, key: string): Promise<Response> => {
   }
   const state = await getKnown();
   const path = state?.pathByUrl.get(key);
-  return state === undefined || path === undefined
-    ? await fetch(request)
-    : await serveKnown(state, key, path);
+  if (state === undefined || path === undefined) {
+    return await fetch(request);
+  }
+  // The page's background download must not compete with what the reader opens.
+  return await serveKnown(state, path, isBackground(request) ? "low" : "auto");
 };
 
 /**
@@ -240,6 +255,10 @@ self.addEventListener("fetch", (event) => {
   const key = `${url.origin}${url.pathname}`;
   const served = serveFile(request, key);
   event.respondWith(served);
+  if (isBackground(request)) {
+    // The background download asks for every file itself, one at a time.
+    return;
+  }
   const complete = async (): Promise<void> => {
     try {
       await served;

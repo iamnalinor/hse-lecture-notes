@@ -29,6 +29,12 @@ export const CACHE_NAME = "hse-notes";
 export const STAGE_PREFIX = "hse-notes-stage-";
 export const HASH_HEADER = "x-content-hash";
 export const MANIFEST_PATH = "offline-manifest.json";
+/**
+Marks a request of the page's background download (`api/offline-cache.ts`): the worker fetches
+such a file at low priority and does not fetch the rest of its document at once — the page asks
+for every file itself, one at a time.
+*/
+export const BACKGROUND_HEADER = "x-offline-background";
 
 const HASH_LENGTH = 16;
 
