@@ -3,8 +3,7 @@ import type { TicketBank, TicketQuestion } from "./schemas.ts";
 /**
 A random ticket from the bank of a preparation page (`prep/<course>/<prep>-bank.yaml`): its parts go
 in the order of `ticket`, each with `count` questions of its kind. Questions of one ticket come from
-different topics while the bank allows it; otherwise any unused question of the kind is taken. A
-question of weight 2 comes up twice as often as one of weight 1.
+different topics while the bank allows it; otherwise any unused question of the kind is taken.
 */
 
 /** `Math.random`-like: a number in `[0, 1)`. */
@@ -21,16 +20,6 @@ export type TicketPart = {
 
 const pick = <T>(items: readonly T[], random: Random): T | undefined =>
   items[Math.floor(random() * items.length)];
-
-/** A question at random, each as likely as `weight` copies of a question of weight 1. */
-const pickWeighted = (
-  questions: readonly TicketQuestion[],
-  random: Random,
-): TicketQuestion | undefined =>
-  pick(
-    questions.flatMap((question) => Array.from({ length: question.weight }, () => question)),
-    random,
-  );
 
 const drawOne = (
   questions: readonly TicketQuestion[],
@@ -54,7 +43,7 @@ const drawKind = (draw: Draw, kind: string, count: number): readonly TicketQuest
   if (count <= 0) {
     return [];
   }
-  const next = pickWeighted(drawOne(draw.bank.questions, kind, draw.taken), draw.random);
+  const next = pick(drawOne(draw.bank.questions, kind, draw.taken), draw.random);
   return next === undefined
     ? []
     : [next, ...drawKind({ ...draw, taken: [...draw.taken, next] }, kind, count - 1)];

@@ -23,7 +23,6 @@ const BANK: TicketBank = {
       ],
       text: String.raw`<p>Теорема <span class="math inline">\det A</span> Лапласа.</p>`,
       topic: "det",
-      weight: 1,
     },
     {
       answer: "<p>Свой ответ: транспонирование.</p>",
@@ -32,7 +31,6 @@ const BANK: TicketBank = {
       refs: [{ doc: LECTURE, id: "thm:lec04:laplace" }],
       text: "<p>Что такое транспонирование?</p>",
       topic: "matrix",
-      weight: 1,
     },
   ],
   ticket: [

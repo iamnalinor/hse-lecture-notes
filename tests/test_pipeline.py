@@ -683,7 +683,6 @@ questions:
   - id: assoc-proof
     kind: proof
     topic: product
-    weight: 2
     text: Ассоциативность ещё раз.
     refs: [thm:lec01:assoc]
   - id: matrix
@@ -746,8 +745,6 @@ def test_bank_builds(demo: Path):
     assert 'href="../01_sep03_matrices/#thm:lec01:assoc"' in q["assoc"]["text"]
     assert "1.3 (лекция\u00a01)" in q["assoc"]["text"]
     assert q["assoc"]["answer"] == ""
-    # weight — во сколько раз чаще вопрос выпадает; по умолчанию 1
-    assert q["assoc"]["weight"] == 1 and q["assoc-proof"]["weight"] == 2
     # своя метка страницы — якорь на этой же странице, «Замечание N» без номера лекции
     assert 'href="#rem:colloq1:order"' in q["elem"]["answer"]
     assert "Замечание\u00a01<" in q["elem"]["answer"]
@@ -809,11 +806,6 @@ def test_bank_builds(demo: Path):
             "лишняя строка :::",
         ),
         ("Что такое матрица?", "Что такое # матрица?", "« #» в строке без кавычек"),
-        (
-            "    text: Что такое матрица?",
-            "    text: Что такое матрица?\n    weight: 0.5",
-            "weight — целое число ≥ 1",
-        ),
         (
             "refs: [thm:lec01:assoc]\n",
             "refs: [def:lec01:matrix]\n",
