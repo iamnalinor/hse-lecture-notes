@@ -2,7 +2,8 @@ import type { CourseId } from "#web/domain/courses.ts";
 
 import { type Source, SOURCES } from "#web/domain/sources.ts";
 
-const LINK =
+/** An underlined text link on the course page: the lecturer, the sources. */
+export const TEXT_LINK =
   "font-semibold text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink";
 
 /** What the notes of the course were written from: one block for the whole course, not per note. */
@@ -33,7 +34,7 @@ function SourceLine({ source }: { readonly source: Source }) {
     source.url === undefined ? (
       <span className="font-semibold text-ink">{source.title}</span>
     ) : (
-      <a className={LINK} href={source.url} rel="noreferrer" target="_blank">
+      <a className={TEXT_LINK} href={source.url} rel="noreferrer" target="_blank">
         {source.title}
       </a>
     );

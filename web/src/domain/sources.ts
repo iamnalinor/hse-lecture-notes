@@ -92,7 +92,7 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
     },
     {
       note: "задачи практики и самопроверки",
-      title: "Домашние задания и семинарские листки 2026/27",
+      title: "Материалы лектора: ДЗ и семинарские листки 2026/27",
       url: "https://drive.google.com/drive/folders/1vJQkWLMxA-3_T9pb3EelOCd_3wsUvcXC",
     },
     { title: "Wiki курса", url: "https://wiki.cs.hse.ru/Дискретная_математика_26/27" },

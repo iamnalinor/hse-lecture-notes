@@ -112,6 +112,14 @@ describe("course page", () => {
     expect(sources.getByText("КР-1 2025/26")).not.toHaveAttribute("href");
   });
 
+  it("links no closed chat among the sources", () => {
+    calculusOn("2026-10-26");
+    const links = within(screen.getByRole("region", { name: "Источники" })).getAllByRole("link");
+    expect(
+      links.map((link) => link.getAttribute("href") ?? "").filter((href) => href.includes("t.me/")),
+    ).toStrictEqual([]);
+  });
+
   it("drops the prep row when nothing is ahead", () => {
     calculusOn("2026-12-31");
     expect(screen.queryByRole("navigation", { name: "Подготовка к контрольным" })).toBeNull();
