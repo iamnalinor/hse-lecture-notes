@@ -95,6 +95,16 @@ describe("build data schemas", () => {
     expect(TicketBankSchema.safeParse(broken).success).toBe(false);
   });
 
+  it("reads a ticket item with variants (`one_of`) as `oneOf`", () => {
+    const part = { count: 1, kind: "problem", points: "2 балла", proofs: false, title: "Задача" };
+    const bank = TicketBankSchema.parse({
+      questions: [],
+      ticket: [{ one_of: [[part], [{ ...part, kind: "claim" }]] }],
+      topics: {},
+    });
+    expect(bank.ticket[0]).toStrictEqual({ oneOf: [[part], [{ ...part, kind: "claim" }]] });
+  });
+
   it("reads the last active day of a test", () => {
     const catalog = CatalogSchema.parse({
       lectures: {},

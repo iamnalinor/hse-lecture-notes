@@ -894,6 +894,69 @@ def test_generator_link_only_in_pdf(demo: Path):
     assert 'id="sec:colloq1:generator"' in frag and "notes.nalinor.dev" not in frag
 
 
+ONE_OF = BANK.replace(
+    """  - kind: definition
+    title: Вопрос на формулировку
+    count: 2
+questions:
+""",
+    """  - one_of:
+      - - kind: definition
+          title: Вопрос на формулировку
+          count: 2
+      - - kind: extra
+          title: Задача
+          points: 2 балла
+          count: 1
+questions:
+  - id: hard
+    kind: extra
+    topic: product
+    text: Трудная задача.
+    answer: Ответ.
+""",
+)
+
+
+def test_bank_one_of(demo: Path):
+    """Пункт с вариантами (`one_of`): линтер проверяет оба варианта, в bank.json — те же варианты."""
+    make_bank(demo, ONE_OF)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    bank = json.loads(
+        (demo / "build" / "site-data" / "algebra" / "colloq1" / "bank.json").read_text(encoding="utf-8")
+    )
+    choice = bank["ticket"][1]
+    assert [[p["kind"] for p in option] for option in choice["one_of"]] == [["definition"], ["extra"]]
+    assert choice["one_of"][1][0]["points"] == "2 балла"
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("      - - kind: extra", "      - - kind: definition", "вид definition уже есть в билете"),
+        (
+            "      - - kind: extra\n          title: Задача\n          points: 2 балла\n          count: 1\n",
+            "",
+            "one_of — список из двух и больше вариантов",
+        ),
+        (
+            "    kind: extra\n    topic: product",
+            "    kind: proof\n    topic: product",
+            "вопросов вида extra 0, а в билете их 1",
+        ),
+    ],
+)
+def test_lint_bank_one_of_catches(demo: Path, old: str, new: str, expected: str):
+    assert old in ONE_OF
+    make_bank(demo, ONE_OF.replace(old, new, 1))
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
 def test_lint_bank_without_page(demo: Path):
     (demo / "prep" / "algebra" / "colloq2-bank.yaml").write_text(BANK, encoding="utf-8")
     res = lint(demo)

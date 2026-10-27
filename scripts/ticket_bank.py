@@ -132,6 +132,31 @@ class Labels:
     own: dict[str, str]  # id → type (section, remark, problem…)
 
 
+def ticket_parts(ticket: list) -> tuple[list[tuple[str, object]], list[str]]:
+    """Все пункты билета с местом для сообщений; `one_of` — варианты пункта, из них сайт берёт один."""
+    parts: list[tuple[str, object]] = []
+    errors: list[str] = []
+    for i, entry in enumerate(ticket, 1):
+        where = f"ticket[{i}]"
+        if isinstance(entry, dict) and "one_of" in entry:
+            options = entry["one_of"]
+            if set(entry) != {"one_of"}:
+                errors.append(f"{where}: у пункта с one_of других ключей нет")
+            if not isinstance(options, list) or len(options) < 2:
+                errors.append(
+                    f"{where}: one_of — список из двух и больше вариантов (каждый — список пунктов)"
+                )
+                continue
+            for j, option in enumerate(options, 1):
+                if not isinstance(option, list) or not option:
+                    errors.append(f"{where}.one_of[{j}]: вариант — непустой список пунктов")
+                    continue
+                parts += [(f"{where}.one_of[{j}][{k}]", part) for k, part in enumerate(option, 1)]
+        else:
+            parts.append((where, entry))
+    return parts, errors
+
+
 def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list[str]]:
     """(ошибки, предупреждения) по структуре банка; тексты проверяются отдельно (по AST)."""
     errors: list[str] = []
@@ -150,8 +175,9 @@ def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list
         questions = []
 
     kinds: dict[str, int] = {}
-    for i, entry in enumerate(ticket, 1):
-        where = f"ticket[{i}]"
+    parts, part_errors = ticket_parts(ticket)
+    errors += part_errors
+    for where, entry in parts:
         if not isinstance(entry, dict):
             errors.append(f"{where}: нужен словарь kind, title, count, points")
             continue
@@ -289,7 +315,7 @@ def missing_proofs(bank: dict, exam: str, has_proof) -> list[str]:
     Доказательство есть, если есть свой `answer`, ход доказательства `rem:<exam>:proof-…`, задача (с
     решением) или блок конспекта, за которым идёт `::: proof` (`has_proof(метка)`; сайт покажет его).
     """
-    kinds = {t["kind"] for t in bank["ticket"] if t.get("proofs")}
+    kinds = {t["kind"] for _, t in ticket_parts(bank["ticket"])[0] if t.get("proofs")}
     errors = []
     for q in bank["questions"]:
         if q["kind"] not in kinds or q.get("answer"):
@@ -302,6 +328,16 @@ def missing_proofs(bank: dict, exam: str, has_proof) -> list[str]:
             f"rem:{exam}:proof-… или свой answer"
         )
     return errors
+
+
+def _part(t: dict) -> dict:
+    return {
+        "kind": t["kind"],
+        "title": t["title"],
+        "count": t["count"],
+        "points": t.get("points", ""),
+        "proofs": bool(t.get("proofs", False)),
+    }
 
 
 def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rendered: dict[str, str]) -> dict:
@@ -331,13 +367,7 @@ def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rende
     return {
         "about": " ".join(str(bank.get("about") or "").split()),
         "ticket": [
-            {
-                "kind": t["kind"],
-                "title": t["title"],
-                "count": t["count"],
-                "points": t.get("points", ""),
-                "proofs": bool(t.get("proofs", False)),
-            }
+            {"one_of": [[_part(p) for p in option] for option in t["one_of"]]} if "one_of" in t else _part(t)
             for t in bank["ticket"]
         ],
         "topics": {k: v for k, v in topics.items() if k in used},

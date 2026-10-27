@@ -152,11 +152,16 @@ const TicketPartSchema = z.object({
   title: z.string(),
 });
 
+/** A ticket item with variants (`one_of` in the bank): the generator takes one of them at random. */
+const TicketChoiceSchema = z
+  .object({ one_of: z.array(z.array(TicketPartSchema)).min(1) })
+  .transform(({ one_of: oneOf }) => ({ oneOf }));
+
 export const TicketBankSchema = z.object({
   /** Caption of the generator: what a generated set of questions holds. */
   about: z.string().default(""),
   questions: z.array(TicketQuestionSchema),
-  ticket: z.array(TicketPartSchema),
+  ticket: z.array(z.union([TicketPartSchema, TicketChoiceSchema])),
   topics: z.record(z.string(), z.string()),
 });
 export type TicketBank = z.infer<typeof TicketBankSchema>;

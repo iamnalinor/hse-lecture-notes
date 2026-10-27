@@ -54,6 +54,10 @@ const drawParts = (draw: Draw, entries: TicketBank["ticket"]): readonly TicketPa
   if (first === undefined) {
     return [];
   }
+  if ("oneOf" in first) {
+    // a choice of variants (problem: two short items or one problem): one of them, then the rest
+    return drawParts(draw, [...(pick(first.oneOf, draw.random) ?? []), ...rest]);
+  }
   const questions = drawKind(draw, first.kind, first.count);
   const { kind, points, proofs, title } = first;
   const part = { kind, points, proofs, questions, title };

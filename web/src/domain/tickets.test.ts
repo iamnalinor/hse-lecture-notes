@@ -90,4 +90,31 @@ describe("drawTicket", () => {
     const short: TicketBank = { ...BANK, questions: [question("p1", "proof", "a")] };
     expect(ids(short, seeded(1))).toStrictEqual(["p1"]);
   });
+
+  it("takes one variant of a choice item, at random", () => {
+    const choice: TicketBank = {
+      ...BANK,
+      questions: [
+        question("c1", "claim", "a"),
+        question("d1", "disprove", "b"),
+        question("p1", "problem", "c"),
+      ],
+      ticket: [
+        {
+          oneOf: [
+            [
+              { count: 1, kind: "claim", points: "1 балл", proofs: true, title: "Докажите" },
+              { count: 1, kind: "disprove", points: "1 балл", proofs: true, title: "Опровергните" },
+            ],
+            [{ count: 1, kind: "problem", points: "2 балла", proofs: false, title: "Задача" }],
+          ],
+        },
+      ],
+    };
+    const variants = new Set(
+      Array.from({ length: 40 }, (_, seed) => ids(choice, seeded(seed + 1)).join(",")),
+    );
+    expect(variants).toStrictEqual(new Set(["c1,d1", "p1"]));
+    expect(drawTicket(choice, () => 0.99).map((part) => part.title)).toStrictEqual(["Задача"]);
+  });
 });
