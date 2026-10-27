@@ -6,7 +6,7 @@ import type { LectureEntry, PrepEntry } from "#web/domain/schemas.ts";
 import { shortDate } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import { prepName, upcomingPreps } from "#web/domain/preps.ts";
+import { isHighlighted, prepGoal, prepName, prepWhen, upcomingPreps } from "#web/domain/preps.ts";
 import { plural } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { ArrowUpRightIcon } from "#web/shared/ui/icons.tsx";
@@ -20,6 +20,12 @@ type Props = {
 
 const TILE = "relative z-10 block h-full rounded-lg px-3 py-2.5 no-underline transition-colors";
 
+/** Accent only near the event (`isHighlighted`), before that an outlined tile like the course page's buttons. */
+const PREP_TILE = {
+  accent: `${TILE} border border-org-fill bg-org-fill text-on-org-fill hover:border-org-fill-hover hover:bg-org-fill-hover`,
+  neutral: `${TILE} border border-ink/40 bg-card text-ink hover:bg-wash`,
+};
+
 /**
 The whole card links to the course: the title link is stretched over it. The card spans three
 rows of the section's grid (subgrid), so the rule under the title, the lecture tile and the test
@@ -28,6 +34,7 @@ tile line up across the cards of a row instead of floating with the title's leng
 export const CourseCard = ({ course, lectures, preps, today }: Props) => {
   const last = latestLecture(lectures, today);
   const next = upcomingPreps(preps, today)[0];
+  const isAccent = next !== undefined && isHighlighted(next, today);
   return (
     <article className="group relative row-span-3 grid cursor-pointer grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-rule bg-card transition-colors hover:bg-wash/50 has-[[data-tile]:hover]:bg-card has-[h3_a:focus-visible]:ring-2 has-[h3_a:focus-visible]:ring-brand">
       <div className="flex min-h-32.5 flex-col border-b border-rule px-5.5 pt-5.5 pb-4.5">
@@ -70,16 +77,14 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
       <div className="px-5.5 pb-4 empty:p-0">
         {next !== undefined && (
           <Link
-            className={`${TILE} border border-org-fill bg-org-fill text-on-org-fill hover:border-org-fill-hover hover:bg-org-fill-hover`}
+            className={isAccent ? PREP_TILE.accent : PREP_TILE.neutral}
             data-tile
             to={paths.prep(course.id, next.id)}
           >
-            <small className="mb-0.5 block text-xs">
-              {prepName(next.id)} · {shortDate(next.date)}
+            <small className={`mb-0.5 block text-xs ${isAccent ? "" : "text-muted"}`}>
+              {prepName(next.id)} · {prepWhen(next)}
             </small>
-            <span className="text-[16px] leading-snug font-semibold">
-              Подготовка к {prepName(next.id)} →
-            </span>
+            <span className="text-[16px] leading-snug font-semibold">{prepGoal(next.id)} →</span>
           </Link>
         )}
       </div>

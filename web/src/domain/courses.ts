@@ -5,6 +5,8 @@ export type CourseInfo = {
   readonly name: string;
   readonly short: string;
   readonly lecturer: string;
+  /** The lecturer's profile on hse.ru. */
+  readonly lecturerUrl: string;
   readonly weekday: string;
   /** «Лекции по средам» */
   readonly weekdayDative: string;
@@ -17,6 +19,7 @@ export const COURSES: readonly CourseInfo[] = [
   {
     id: "algebra",
     lecturer: "Михайлец Е. В.",
+    lecturerUrl: "https://www.hse.ru/org/persons/229698931",
     name: "Алгебра",
     short: "Алгебра",
     summary:
@@ -28,6 +31,7 @@ export const COURSES: readonly CourseInfo[] = [
   {
     id: "calculus",
     lecturer: "Бельдиев И. С.",
+    lecturerUrl: "https://www.hse.ru/org/persons/225516943",
     name: "Математический анализ",
     short: "Матан",
     summary:
@@ -39,6 +43,7 @@ export const COURSES: readonly CourseInfo[] = [
   {
     id: "discrete",
     lecturer: "Дашков Е. В.",
+    lecturerUrl: "https://www.hse.ru/org/persons/104695093",
     name: "Дискретная математика",
     short: "Дискра",
     summary:

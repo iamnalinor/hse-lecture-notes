@@ -177,7 +177,9 @@ def test_html_blocks_and_refs(demo: Path):
                 "title": "Подготовка к КР-1: Алгебра",
                 "date": "2026-11-07",
                 "active_until": "2026-11-07",
+                "highlight_from": "2026-10-24",
                 "cheatsheets": ["1side"],
+                "bank": False,
             }
         ]
     }
@@ -283,7 +285,7 @@ def test_duplicate_label_fails(demo: Path):
 def test_pdf_builds(demo: Path):
     res = build(demo, "--no-html", "--strict")
     assert res.returncode == 0, res.stderr + res.stdout
-    for name in ("01_sep03_matrices", "02_sep09_gauss", "theory", "kr1"):
+    for name in ("01_sep03_matrices", "02_sep09_gauss", "theory", "program", "kr1"):
         assert (demo / "build" / "pdf" / "algebra" / f"{name}.pdf").stat().st_size > 10_000
     # читлист prep/algebra/cheatsheet/kr1-cheatsheet-1side.tex — рядом с PDF подготовки
     assert (demo / "build" / "pdf" / "algebra" / "kr1-cheatsheet-1side.pdf").stat().st_size > 1_000
@@ -372,6 +374,16 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
             "date: 2026-11-07\nactive_until: 2026-11-08 18:00:00",
             "не в формате YYYY-MM-DD",
         ),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nhighlight_from: 1.11.2026",
+            "highlight_from='1.11.2026' не в формате",
+        ),
+        (
+            "date: 2026-11-07",
+            "date: 2026-11-07\nhighlight_from: 2026-11-08",
+            "позже последнего дня КР 2026-11-07",
+        ),
     ],
 )
 def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
@@ -399,6 +411,8 @@ def test_prep_active_until(demo: Path):
     assert res.returncode == 0, res.stderr
     courses = json.loads((demo / "build" / "site-data" / "courses.json").read_text(encoding="utf-8"))
     assert courses["preps"]["algebra"][0]["active_until"] == "2026-11-08"
+    # без highlight_from подготовка выделена цветом за две недели до date
+    assert courses["preps"]["algebra"][0]["highlight_from"] == "2026-10-24"
 
 
 @pytest.mark.skipif(not HAS_TEX, reason="нужен шрифт CMU из TeX Live")
@@ -419,3 +433,553 @@ def test_lint_weekday(demo: Path):
     src.unlink()
     res = lint(demo)
     assert "не день лекции курса" in res.stdout
+
+
+# ----------------------------------------------------------------------------- программа курса
+
+
+def test_program_builds(demo: Path):
+    """program/algebra.md: своя шапка, блоки без номеров, запись в courses.json и поиске, без меток в индексе."""
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    meta = json.loads((site / "algebra" / "program" / "meta.json").read_text(encoding="utf-8"))
+    assert meta["kind"] == "program" and meta["lecture"] == 0 and not meta["labels"]
+    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · План учебной дисциплины"
+    assert [t["text"] for t in meta["toc"] if t["level"] == 1] == [
+        "О курсе",
+        "Первый семестр",
+        "Содержание курса",
+        "Источники",
+    ]
+    frag = (site / "algebra" / "program" / "fragment.html").read_text(encoding="utf-8")
+    # замечания и примеры программы — без номеров; ссылка на конспект — как в теории
+    assert "Замечание (порог)" in frag
+    assert "data-number" not in frag
+    assert 'href="../01_sep03_matrices/#def:lec01:matrix"' in frag
+    assert "<table" in frag and "<th>Вес</th>" in frag.replace(' style="text-align: left;"', "")
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert courses["programs"] == ["algebra"]
+    search = json.loads((site / "search.json").read_text(encoding="utf-8"))
+    assert any(e["doc"] == "program" and "120 минут" in e["text"] for e in search)
+    index = json.loads((site / "index.json").read_text(encoding="utf-8"))["algebra"]
+    assert all(v["week_id"] != "program" for v in index.values())
+    preview = (site / "index.html").read_text(encoding="utf-8")
+    assert 'href="algebra/program/"' in preview
+
+
+def test_program_optional(demo: Path):
+    """Курс без program/<course>.md: страницы нет, в courses.json пустой список."""
+    shutil.rmtree(demo / "program")
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    courses = json.loads((demo / "build" / "site-data" / "courses.json").read_text(encoding="utf-8"))
+    assert courses["programs"] == []
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("# О курсе", "# Кратко", "первый раздел — «# О курсе»"),
+        (
+            "| | |\n|-----------|",
+            "Курс.\n\n| | |\n|-----------|",
+            "сводная таблица курса сразу под заголовком",
+        ),
+        ("# Содержание курса", "# Темы", "последний раздел — «# Содержание курса»"),
+        ("course: algebra", "course: calculus", "а файл program/algebra.md"),
+        ("title: ", "date: 2026-10-26\ntitle: ", "лишнее поле date"),
+        ('::: {.remark title="порог"}', "::: {.definition}", "можно только remark"),
+        ('::: {.remark title="порог"}', '::: {.example title="как считается"}', "можно только remark"),
+        (
+            '::: {.remark title="порог"}',
+            "::: {.remark #rem:program:wiki}",
+            "в программе блоки без меток",
+        ),
+        ("[-@def:lec01:matrix]", "[-@def:lec01:nope]", "ссылка @def:lec01:nope никуда не ведёт"),
+        (
+            "# Первый семестр",
+            "# Первый семестр {#sec:program:first}",
+            "у заголовка: в программе своих меток нет",
+        ),
+        (
+            "- **Матрицы.** Операции над матрицами.",
+            "- **Матрицы.** Операции над [матрицами](https://example.org).",
+            "ссылка в разделе «Содержание курса»",
+        ),
+        ("# Источники\n", "# Источники\n\nСписок.\n", "только список ссылок"),
+        ("| письменный, вес 0,7 |", "| письменный, вес 0,7 (см. Р4) |", "служебное слово"),
+        (
+            "| письменный, вес 0,7 |",
+            "| письменный, вес 0,7, уточните у лектора |",
+            "«уточните у лектора»: на странице программы",
+        ),
+        (
+            "| письменный, вес 0,7 |",
+            "| письменный, вес 0,7 (по wiki курса) |",
+            "«по wiki»: на странице программы",
+        ),
+        (
+            '{.remark title="порог"}',
+            '{.remark title="по каналу курса"}',
+            "«по каналу»: на странице программы",
+        ),
+        ("- **Матрицы.**", "```tikz\n\\draw (0,0) -- (1,1);\n```\n\n- **Матрицы.**", "блок кода или рисунок"),
+    ],
+)
+def test_lint_program_catches(demo: Path, old: str, new: str, expected: str):
+    p = demo / "program" / "algebra.md"
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+def test_lint_program_unknown_course(demo: Path):
+    src = demo / "program" / "algebra.md"
+    (demo / "program" / "physics.md").write_text(
+        src.read_text(encoding="utf-8").replace("course: algebra", "course: physics"), encoding="utf-8"
+    )
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "неизвестный курс physics" in res.stdout, res.stdout
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_program_pdf(demo: Path):
+    res = build(demo, "--no-html", "--strict", "--only", "program/algebra.md")
+    assert res.returncode == 0, res.stderr + res.stdout
+    assert (demo / "build" / "pdf" / "algebra" / "program.pdf").stat().st_size > 10_000
+    tex = (demo / "build" / "tex" / "algebra" / "program.tex").read_text(encoding="utf-8")
+    assert "План учебной дисциплины" in tex and "\\begin{longtable}" in tex
+    assert "\\AtBeginEnvironment{longtable}{\\small}" in tex  # таблицы программы — мельче
+    # «Первый семестр» → «Формула» → формула → таблица весов не разрываются страницей
+    assert "\\Needspace*{20\\baselineskip}\n\n\\section{Первый" in tex
+
+
+# ----------------------------------------------------------------------------- подготовка к коллоквиуму
+
+
+def make_colloq(demo: Path, name: str = "colloq1") -> Path:
+    """prep/algebra/colloq1.md из демо-подготовки к КР: те же блоки, свои метки и первый раздел."""
+    src = (demo / "prep" / "algebra" / "kr1.md").read_text(encoding="utf-8")
+    text = (
+        src.replace(":kr1:", f":{name}:")
+        .replace("# О контрольной", "# О коллоквиуме")
+        .replace("Подготовка к КР-1", "Подготовка к коллоквиуму 1")
+        .replace(
+            "date: 2026-11-07",
+            "date: 2026-11-09\nactive_until: 2026-11-20\nhighlight_from: 2026-11-16",
+        )
+    )
+    dst = demo / "prep" / "algebra" / f"{name}.md"
+    dst.write_text(text, encoding="utf-8")
+    return dst
+
+
+def test_colloq_builds(demo: Path):
+    """colloq1.md: свои метки prob:colloq1:…, своя шапка, своя запись в courses.json и поиске."""
+    make_colloq(demo)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    frag = (site / "algebra" / "colloq1" / "fragment.html").read_text(encoding="utf-8")
+    assert 'id="prob:colloq1:square"' in frag and "Задача 2" in frag
+    assert 'href="#prob:colloq1:square"' in frag
+    assert 'id="reg-thm:lec01:assoc"' in frag
+    meta = json.loads((site / "algebra" / "colloq1" / "meta.json").read_text(encoding="utf-8"))
+    assert meta["kind"] == "prep" and meta["lecture"] == 0
+    # у коллоквиума окно дат: в шапке диапазон, а не один день
+    assert meta["header_line"] == (
+        "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к коллоквиуму 1 · 9.11–20.11.2026"
+    )
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert [p["id"] for p in courses["preps"]["algebra"]] == ["kr1", "colloq1"]
+    colloq = courses["preps"]["algebra"][1]
+    assert colloq["date"] == "2026-11-09" and colloq["active_until"] == "2026-11-20"
+    assert colloq["highlight_from"] == "2026-11-16"
+    assert colloq["cheatsheets"] == []
+    search = json.loads((site / "search.json").read_text(encoding="utf-8"))
+    assert any(e["doc"] == "colloq1" for e in search)
+    index = json.loads((site / "index.json").read_text(encoding="utf-8"))["algebra"]
+    assert not any(":colloq1:" in k for k in index)
+
+
+def test_colloq_without_problems(demo: Path):
+    """Коллоквиум — теория: «## Прототипы» не обязательны, «## Что нужно знать» — да."""
+    p = make_colloq(demo)
+    text = p.read_text(encoding="utf-8")
+    p.write_text(text.replace("## Прототипы", "## Задачи"), encoding="utf-8")
+    assert lint(demo).returncode == 0
+    p.write_text(text.replace("## Что нужно знать", "## Теория"), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "нет ни одного подраздела «## Что нужно знать»" in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("#prob:colloq1:square", "#prob:kr1:square", "в файле colloq1.md метки вида тип:colloq1:slug"),
+        ("# О коллоквиуме", "# О контрольной", "первый раздел — «# О коллоквиуме»"),
+        ("active_until: 2026-11-20", "active_until: 2026-11-08", "раньше даты коллоквиума"),
+        (
+            "highlight_from: 2026-11-16",
+            "highlight_from: 2026-11-21",
+            "highlight_from=2026-11-21 позже последнего дня коллоквиума 2026-11-20",
+        ),
+    ],
+)
+def test_lint_colloq_catches(demo: Path, old: str, new: str, expected: str):
+    p = make_colloq(demo)
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize("name", ["colloq3", "kr4", "exam1"])
+def test_prep_unknown_name(demo: Path, name: str):
+    """Имя файла подготовки — только то, под что есть маршрут на сайте."""
+    make_colloq(demo, name)
+    assert build(demo, "--no-pdf", "--no-html").returncode != 0
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_colloq_pdf(demo: Path):
+    make_colloq(demo)
+    res = build(demo, "--no-html", "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    assert (demo / "build" / "pdf" / "algebra" / "colloq1.pdf").stat().st_size > 1_000
+
+
+# ----------------------------------------------------------------------------- банк билетов
+
+BANK = r"""
+about: Набор для тренировки.
+ticket:
+  - kind: proof
+    title: Теорема с доказательством
+    points: 2 балла
+    count: 1
+    proofs: true
+  - kind: definition
+    title: Вопрос на формулировку
+    count: 2
+questions:
+  - id: assoc
+    kind: proof
+    topic: product
+    text: Ассоциативность умножения матриц $(AB)C = A(BC)$; см. [-@thm:lec01:assoc].
+    refs: [thm:lec01:assoc, rem:colloq1:order]
+  - id: assoc-proof
+    kind: proof
+    topic: product
+    text: Ассоциативность ещё раз.
+    refs: [thm:lec01:assoc]
+  - id: matrix
+    kind: definition
+    topic: product
+    text: Что такое матрица?
+    refs: [def:lec01:matrix]
+  - id: elem
+    kind: definition
+    topic: product
+    text: Элементарное преобразование.
+    answer: >-
+      Своё: $\lambda \ne 0$, как в @rem:colloq1:order.
+    refs: [def:lec02:elem, prob:colloq1:square]
+"""
+
+
+CITE = "Смотри [см. -@thm:lec01:assoc, п. 2] и @rem:colloq1:order --- это важно."
+
+
+GENERATOR = """
+# Генератор билетов {#sec:colloq1:generator}
+
+```{=latex}
+Генератор~--- на сайте: \\url{https://notes.nalinor.dev/algebra/colloq1}.
+```
+"""
+
+
+def make_bank(demo: Path, text: str = BANK) -> Path:
+    page = make_colloq(demo)
+    # раздел генератора: на сайте в нём генератор, в PDF — ссылка на сайт
+    page.write_text(page.read_text(encoding="utf-8") + f"\n{CITE}\n{GENERATOR}", encoding="utf-8")
+    dst = demo / "prep" / "algebra" / "colloq1-bank.yaml"
+    dst.write_text(text, encoding="utf-8")
+    return dst
+
+
+def test_bank_builds(demo: Path):
+    """colloq1-bank.yaml → bank.json рядом с фрагментом: тексты в HTML, ссылки, документ каждого ответа."""
+    make_bank(demo)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    # одна тема на все вопросы — линтер предупреждает, что темы в билете будут повторяться
+    assert "темы будут повторяться" in res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    bank = json.loads((site / "algebra" / "colloq1" / "bank.json").read_text(encoding="utf-8"))
+    assert [t["kind"] for t in bank["ticket"]] == ["proof", "definition"]
+    assert bank["ticket"][1]["points"] == ""
+    assert bank["topics"] == {"product": "Умножение матриц"}
+    q = {x["id"]: x for x in bank["questions"]}
+    assert q["assoc"]["refs"] == [
+        {"id": "thm:lec01:assoc", "doc": "01_sep03_matrices"},
+        {"id": "rem:colloq1:order", "doc": "colloq1"},
+    ]
+    assert 'class="math inline">(AB)C = A(BC)</span>' in squash_html(q["assoc"]["text"])
+    assert 'data-ref="thm:lec01:assoc"' in q["assoc"]["text"]
+    assert 'href="../01_sep03_matrices/#thm:lec01:assoc"' in q["assoc"]["text"]
+    assert "1.3 (лекция\u00a01)" in q["assoc"]["text"]
+    assert q["assoc"]["answer"] == ""
+    # своя метка страницы — якорь на этой же странице, «Замечание N» без номера лекции
+    assert 'href="#rem:colloq1:order"' in q["elem"]["answer"]
+    assert "Замечание\u00a01<" in q["elem"]["answer"]
+    assert bank["ticket"][0]["proofs"] is True and bank["ticket"][1]["proofs"] is False
+    assert bank["about"] == "Набор для тренировки."
+    # временные файлы рендера банка не остаются в site-data
+    assert sorted(p.name for p in (site / "algebra" / "colloq1").iterdir()) == [
+        "bank.json",
+        "fragment.html",
+        "index.html",
+        "meta.json",
+    ]
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert {p["id"]: p["bank"] for p in courses["preps"]["algebra"]} == {"kr1": False, "colloq1": True}
+    # в PDF и в сам фрагмент страницы банк не попадает
+    frag = (site / "algebra" / "colloq1" / "fragment.html").read_text(encoding="utf-8")
+    assert "Что такое матрица" not in frag
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("refs: [def:lec01:matrix]", "refs: [def:lec01:nope]", "метки def:lec01:nope нет"),
+        ("refs: [def:lec01:matrix]", "refs: [sec:colloq1:product]", "раздел; в refs — блоки"),
+        ("refs: [def:lec01:matrix]", "refs: []", "нет ответа"),
+        (
+            "    kind: definition\n    topic: product\n    text: Что",
+            "    kind: blitz\n    topic: product\n    text: Что",
+            "вид 'blitz' не объявлен",
+        ),
+        (
+            "topic: product\n    text: Что",
+            "topic: limits\n    text: Что",
+            "нет раздела {#sec:colloq1:limits}",
+        ),
+        ("    count: 2", "    count: 3", "вопросов вида definition 2, а в билете их 3"),
+        ("  - id: elem", "  - id: matrix", "id повторяется"),
+        ("Что такое матрица?", '"Что такое $\\lambda$?"', "обратная косая черта в двойных кавычках"),
+        (
+            "Что такое матрица?",
+            '"Что такое $\\varepsilon$?"',
+            "обратная косая черта в строке в двойных кавычках",
+        ),
+        ("Что такое матрица?", "Что такое $ матрица?", "знак $ в тексте"),
+        ("Что такое матрица?", "Что такое $\\boxed{A}$?", "boxed"),
+        (
+            "Что такое матрица?",
+            "Что такое матрица, см. [-@def:lec09:x]?",
+            "ссылка @def:lec09:x никуда не ведёт",
+        ),
+        (
+            "    text: Что такое матрица?",
+            "    text: Что такое матрица?\n    level: 2",
+            "неизвестный ключ 'level'",
+        ),
+        (
+            "    text: Что такое матрица?",
+            "    text: |-\n      Что такое матрица?\n      :::",
+            "лишняя строка :::",
+        ),
+        ("Что такое матрица?", "Что такое # матрица?", "« #» в строке без кавычек"),
+        (
+            "refs: [thm:lec01:assoc]\n",
+            "refs: [def:lec01:matrix]\n",
+            "вопрос assoc-proof: в ответе нет доказательства",
+        ),
+    ],
+)
+def test_lint_bank_catches(demo: Path, old: str, new: str, expected: str):
+    assert old in BANK
+    make_bank(demo, BANK.replace(old, new, 1))
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+    # сломанный банк валит и сборку: на сайт он не уедет
+    if (
+        "двойных кавычках" not in expected
+        and "никуда не ведёт" not in expected
+        and "$" not in expected
+        and "boxed" not in expected
+        and "нет доказательства" not in expected
+    ):
+        assert build(demo, "--no-pdf", "--no-html").returncode == 0  # PDF/индекс банк не трогает
+        assert build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md").returncode != 0
+
+
+def squash_html(text: str) -> str:
+    """Переносы строк pandoc → пробел; неразрывные пробелы остаются."""
+    import re
+
+    return re.sub(r"[ \t\n]+", " ", text).strip()
+
+
+def test_bank_cites_like_page(demo: Path):
+    """Ссылка с префиксом и суффиксом в тексте банка рендерится ровно как та же фраза на странице."""
+    make_bank(demo, BANK.replace("text: Что такое матрица?", f"text: {CITE}"))
+    assert lint(demo).returncode == 0
+    res = build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data" / "algebra" / "colloq1"
+    frag = (site / "fragment.html").read_text(encoding="utf-8")
+    page_p = squash_html(frag[frag.rindex("<p>Смотри") :].split("</p>")[0] + "</p>")
+    bank = json.loads((site / "bank.json").read_text(encoding="utf-8"))
+    text = squash_html(next(q["text"] for q in bank["questions"] if q["id"] == "matrix"))
+    assert text == page_p
+    assert "см. <a" in text and "п. 2" in text and "\u00a0— это" in text
+
+
+def test_bank_only_by_bank_path(demo: Path):
+    """--only prep/…/colloq1-bank.yaml собирает страницу вместе с банком."""
+    make_bank(demo)
+    res = build(demo, "--no-pdf", "--only", "prep/algebra/colloq1-bank.yaml")
+    assert res.returncode == 0, res.stderr
+    assert (demo / "build" / "site-data" / "algebra" / "colloq1" / "bank.json").exists()
+
+
+def test_lint_bank_generator_section(demo: Path):
+    """Банк и раздел {#sec:colloq1:generator} — только вместе: генератор встаёт в этот раздел."""
+    bank = make_bank(demo)
+    page = bank.with_name("colloq1.md")
+    text = page.read_text(encoding="utf-8")
+    page.write_text(text.replace(GENERATOR, ""), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "нет раздела {#sec:colloq1:generator}" in res.stdout, res.stdout
+    page.write_text(text + "\n# Источники\n\n- ПУД.\n", encoding="utf-8")
+    res = lint(demo)
+    assert "— последний на странице" in res.stdout, res.stdout
+    page.write_text(text, encoding="utf-8")
+    bank.unlink()
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "раздел {#sec:colloq1:generator} без банка" in res.stdout, res.stdout
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
+def test_generator_link_only_in_pdf(demo: Path):
+    """Ссылка на генератор — сырой LaTeX: в PDF она есть, на сайте раздела хватает самого генератора."""
+    make_bank(demo)
+    res = build(demo, "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    tex = (demo / "build" / "tex" / "algebra" / "colloq1.tex").read_text(encoding="utf-8")
+    assert "\\url{https://notes.nalinor.dev/algebra/colloq1}" in tex
+    frag = (demo / "build" / "site-data" / "algebra" / "colloq1" / "fragment.html").read_text(
+        encoding="utf-8"
+    )
+    assert 'id="sec:colloq1:generator"' in frag and "notes.nalinor.dev" not in frag
+
+
+ONE_OF = BANK.replace(
+    """  - kind: definition
+    title: Вопрос на формулировку
+    count: 2
+questions:
+""",
+    """  - one_of:
+      - - kind: definition
+          title: Вопрос на формулировку
+          count: 2
+      - - kind: extra
+          title: Задача
+          points: 2 балла
+          count: 1
+questions:
+  - id: hard
+    kind: extra
+    topic: product
+    text: Трудная задача.
+    answer: Ответ.
+""",
+)
+
+
+def test_bank_one_of(demo: Path):
+    """Пункт с вариантами (`one_of`): линтер проверяет оба варианта, в bank.json — те же варианты."""
+    make_bank(demo, ONE_OF)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf", "--only", "prep/algebra/colloq1.md")
+    assert res.returncode == 0, res.stderr
+    bank = json.loads(
+        (demo / "build" / "site-data" / "algebra" / "colloq1" / "bank.json").read_text(encoding="utf-8")
+    )
+    choice = bank["ticket"][1]
+    assert [[p["kind"] for p in option] for option in choice["one_of"]] == [["definition"], ["extra"]]
+    assert choice["one_of"][1][0]["points"] == "2 балла"
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("      - - kind: extra", "      - - kind: definition", "вид definition уже есть в билете"),
+        (
+            "      - - kind: extra\n          title: Задача\n          points: 2 балла\n          count: 1\n",
+            "",
+            "one_of — список из двух и больше вариантов",
+        ),
+        (
+            "    kind: extra\n    topic: product",
+            "    kind: proof\n    topic: product",
+            "вопросов вида extra 0, а в билете их 1",
+        ),
+    ],
+)
+def test_lint_bank_one_of_catches(demo: Path, old: str, new: str, expected: str):
+    assert old in ONE_OF
+    make_bank(demo, ONE_OF.replace(old, new, 1))
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+def test_lint_bank_without_page(demo: Path):
+    (demo / "prep" / "algebra" / "colloq2-bank.yaml").write_text(BANK, encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "банк билетов без страницы colloq2.md" in res.stdout
+
+
+def test_lint_bank_by_path(demo: Path):
+    """lint.py prep/…/colloq1-bank.yaml проверяет банк вместе с его страницей."""
+    bank = make_bank(demo, BANK.replace("refs: [def:lec01:matrix]", "refs: [def:lec01:nope]"))
+    res = lint(demo, str(bank))
+    assert res.returncode != 0
+    assert "метки def:lec01:nope нет" in res.stdout
+
+
+def test_prep_ids_match_site():
+    """Имена подготовок, которые принимает сборка, = маршруты сайта (PREP_IDS в web/src/domain/preps.ts)."""
+    import re
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from build import PREP_IDS
+
+    ts = (ROOT / "web" / "src" / "domain" / "preps.ts").read_text(encoding="utf-8")
+    m = re.search(r"export const PREP_IDS = \[([^\]]*)\]", ts)
+    assert m, "PREP_IDS не найден в preps.ts"
+    assert tuple(re.findall(r'"([^"]+)"', m.group(1))) == PREP_IDS

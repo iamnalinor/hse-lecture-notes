@@ -1,5 +1,5 @@
 --[[
-notes.lua — фильтр pandoc для конспектов и теории курсов.
+notes.lua — фильтр pandoc для конспектов, теории и программ курсов, подготовок к КР.
 
 Что делает:
   * нумерует блоки (definition, axiom, theorem, lemma, proposition, corollary,
@@ -18,6 +18,8 @@ notes.lua — фильтр pandoc для конспектов и теории к
   notes_index  путь build/index.json (render)
   notes_config путь templates/courses.json
   week_id      имя файла без расширения
+  kind         notes | theory | program | prep (program — «План учебной дисциплины» курса:
+               без своих меток, блоки без номеров, своя шапка)
   site_url     (необязательно) базовый URL сайта для ссылок между лекциями в PDF
 ]]
 
@@ -136,7 +138,7 @@ end
 
 local S = {
   mode = 'render',
-  kind = 'notes',          -- notes | theory
+  kind = 'notes',          -- notes | theory | program | prep
   course = nil,
   lecture = nil,
   week_id = nil,
@@ -156,7 +158,7 @@ local function new_counters()
   return { n = 0 }
 end
 
--- Номер «лекция.N» (одинаковая логика в обоих проходах); в подготовке к КР — просто «N»
+-- Номер «лекция.N» (одинаковая логика в обоих проходах); в подготовке к КР и коллоквиуму — просто «N»
 local function next_number(counters)
   counters.n = counters.n + 1
   if S.kind == 'prep' then return tostring(counters.n) end
@@ -562,7 +564,8 @@ local function render(doc)
       local t = block_type(div)
       if t then
         local number = ''
-        if is_numbered_div(div) then number = next_number(c) end
+        -- программа курса — справочная страница: замечания и примеры без номеров
+        if is_numbered_div(div) and S.kind ~= 'program' then number = next_number(c) end
         local tag = div.attributes['tag']
         local parts = header_parts({ tag = tag, title = div.attributes['title'] })
         if tag and tag ~= '' and not TAGS[tag] then
@@ -664,6 +667,13 @@ end
 -- метаданные для шаблона
 -- ---------------------------------------------------------------------------
 
+-- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1» (как prepGoal на сайте)
+local function prep_goal(id)
+  local n = id:match('%d+') or ''
+  if id:match('^colloq') then return 'Подготовка к коллоквиуму ' .. n end
+  return 'Подготовка к КР-' .. n
+end
+
 local function set_template_meta(doc, config)
   local meta = doc.meta
   local course_cfg = (config.courses or {})[S.course or ''] or {}
@@ -674,10 +684,25 @@ local function set_template_meta(doc, config)
   meta['date_ru'] = pandoc.MetaString(date_ru(date))
   if S.kind == 'theory' then
     meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · Теория')
+  elseif S.kind == 'program' then
+    meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · План учебной дисциплины')
+    meta['is_program'] = true  -- notes.latex: таблицы плотнее и мельче
   elseif S.kind == 'prep' then
+    -- коллоквиум с окном дат (active_until) — диапазон «2.11–30.12.2026», а не один день
+    -- (коротко, чтобы колонтитул остался в одну строку)
+    local when = date_ru(date)
+    local last_day = meta_str(meta, 'active_until')
+    if (S.week_id or ''):match('^colloq') and last_day and date and last_day ~= date then
+      local y1, m1, d1 = date:match('^(%d+)-(%d+)-(%d+)$')
+      local y2, m2, d2 = last_day:match('^(%d+)-(%d+)-(%d+)$')
+      if y1 and y2 then
+        local first = tonumber(d1) .. '.' .. m1
+        if y1 ~= y2 then first = first .. '.' .. y1 end
+        when = first .. '–' .. tonumber(d2) .. '.' .. m2 .. '.' .. y2
+      end
+    end
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · %s · %s',
-      config.program or '', course_name, 'Подготовка к КР-' .. ((S.week_id or ''):match('%d+') or ''),
-      date_ru(date)))
+      config.program or '', course_name, prep_goal(S.week_id or ''), when))
   else
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · Лекция %s · %s',
       config.program or '', course_name, tostring(S.lecture), date_ru(date)))
@@ -685,6 +710,31 @@ local function set_template_meta(doc, config)
   -- pandoc не должен печатать дату/заголовок своими средствами
   meta['notes_title'] = meta['title']
   return doc
+end
+
+-- Программа курса: формула оценки и таблица весов под ней — одно целое; в PDF формула
+-- не остаётся внизу страницы без своей таблицы (\needspace из notes.sty).
+local function is_formula(b)
+  return b ~= nil and b.t == 'Para' and #b.content == 1 and b.content[1].t == 'Math'
+    and b.content[1].mathtype == 'DisplayMath'
+end
+
+local function keep_formula_with_table(blocks)
+  local out = pandoc.Blocks {}
+  for i, b in ipairs(blocks) do
+    -- заголовок «Формула» тоже держится вместе с ними
+    local starts = (is_formula(b) and blocks[i + 1] and blocks[i + 1].t == 'Table'
+        and not (blocks[i - 1] and blocks[i - 1].t == 'Header'))
+      or (b.t == 'Header' and is_formula(blocks[i + 1]) and blocks[i + 2] and blocks[i + 2].t == 'Table')
+    if starts then
+      -- заголовок раздела прямо над «Формулой» («Первый семестр») — тоже с ними
+      local at = #out + 1
+      if out[#out] and out[#out].t == 'Header' then at = #out end
+      out:insert(at, pandoc.RawBlock('latex', '\\Needspace*{20\\baselineskip}'))
+    end
+    out:insert(b)
+  end
+  return out
 end
 
 function Pandoc(doc)
@@ -698,10 +748,11 @@ function Pandoc(doc)
   local out_path = meta_str(meta, 'notes_out')
   local config = read_json(meta_str(meta, 'notes_config') or 'templates/courses.json') or {}
 
-  if S.kind == 'theory' then
+  if S.kind == 'theory' or S.kind == 'program' then
+    -- своих меток нет: теория ссылается на блоки конспектов, программа — справочная страница
     S.lecture = '0'
   else
-    -- подготовка к КР: свои метки (prob:kr1:…), номера без лекции, в индекс курса не идут
+    -- подготовка к КР/коллоквиуму: свои метки (prob:kr1:…, prob:colloq1:…), номера без лекции, в индекс курса не идут
     if S.kind == 'prep' then S.lecture = '0' end
     collect(doc)
   end
@@ -737,6 +788,7 @@ function Pandoc(doc)
 
   doc = render(doc)
   doc = set_template_meta(doc, config)
+  if FORMAT_LATEX and S.kind == 'program' then doc.blocks = keep_formula_with_table(doc.blocks) end
 
   if FORMAT_HTML and out_path then
     local labels = {}
@@ -750,6 +802,7 @@ function Pandoc(doc)
       kind = S.kind, lecture = tonumber(S.lecture), week_id = S.week_id,
       title = meta_str(meta, 'title'), date = meta_str(meta, 'date'),
       active_until = meta_str(meta, 'active_until'),
+      highlight_from = meta_str(meta, 'highlight_from'),
       date_ru = meta_str(doc.meta, 'date_ru'),
       header_line = meta_str(doc.meta, 'header_line'),
       toc = S.toc, labels = labels, figures = S.figures, glossary = glossary,

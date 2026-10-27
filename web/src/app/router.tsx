@@ -14,6 +14,7 @@ const PAGES = {
   home: async () => await import("#web/features/home/home-page.tsx"),
   lecture: async () => await import("#web/features/lecture/lecture-page.tsx"),
   prep: async () => await import("#web/features/prep/prep-page.tsx"),
+  program: async () => await import("#web/features/program/program-page.tsx"),
   theory: async () => await import("#web/features/theory/theory-page.tsx"),
 } satisfies Record<string, Page>;
 
@@ -25,6 +26,7 @@ const routes: RouteObject[] = [
       { index: true, lazy: async () => await PAGES.home() },
       page(":course", PAGES.course),
       page(":course/theory", PAGES.theory),
+      page(":course/program", PAGES.program),
       { Component: LegacyTheoryRedirect, path: ":course/registry" },
       page(":course/glossary", PAGES.glossary),
       ...PREP_IDS.map((id) => page(`:course/${id}`, PAGES.prep)),

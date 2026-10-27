@@ -1,4 +1,4 @@
-"""Сборка конспектов и теории курсов: Markdown → PDF (xelatex) и HTML-фрагменты для сайта.
+"""Сборка конспектов, теории, программ курсов и подготовок: Markdown → PDF (xelatex) и HTML-фрагменты для сайта.
 
 Запуск:
     uv run scripts/build.py                       # всё
@@ -7,20 +7,23 @@
 
 Результат в build/:
     build/index.json                    глобальный индекс меток и глоссариев
-    build/pdf/<course>/<week_id>.pdf    PDF конспектов, build/pdf/<course>/theory.pdf
+    build/pdf/<course>/<week_id>.pdf    PDF конспектов, build/pdf/<course>/theory.pdf, program.pdf
     build/pdf/<course>/krN-cheatsheet-<variant>.pdf
                                         читлисты из prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex
     build/site-data/                    данные для будущего сайта + preview-страницы
         index.json, courses.json, katex-macros.json, search.json
         <course>/glossary.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
-        <course>/theory/...
+        <course>/theory/..., <course>/program/...
+        <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
 """
 
 from __future__ import annotations
 
 import argparse
 import concurrent.futures as cf
+import dataclasses
+import datetime as dt
 import fnmatch
 import hashlib
 import html
@@ -38,11 +41,14 @@ from pathlib import Path
 import pypandoc
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ticket_bank  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "templates"
 FILTER = ROOT / "filters" / "notes.lua"
 CONFIG = TEMPLATES / "courses.json"
-SRC = ROOT  # где лежат notes/ и theory/ (в тестах — временная папка)
+SRC = ROOT  # где лежат notes/, theory/, program/ и prep/ (в тестах — временная папка)
 BUILD = ROOT / "build"
 CACHE = ROOT / ".cache"
 SITE = BUILD / "site-data"
@@ -70,21 +76,41 @@ def tex_env() -> dict[str, str]:
     return env
 
 
+# Подготовка к контрольной (krN) или коллоквиуму (colloqN): имя файла = id страницы на сайте.
+# = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
+PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)")
+PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2")
+PREP_FILES = ", ".join(f"{i}.md" for i in PREP_IDS)
+
+
+def prep_kind(prep_id: str) -> str:
+    """kr1 → kr, colloq1 → colloq."""
+    m = PREP_ID_RE.fullmatch(prep_id)
+    return m.group("kind") if m else ""
+
+
+# Документы курса, по одному на курс: <kind>/<course>.md → site-data/<course>/<kind>/, pdf/<course>/<kind>.pdf
+COURSE_DOCS = ("theory", "program")
+
+
 @dataclass
 class Doc:
     path: Path
-    kind: str  # notes | theory | prep
+    kind: str  # notes | theory | program | prep
     course: str
     week_id: str
     meta: dict
 
     @property
     def rel(self) -> str:
-        return self.path.relative_to(SRC).as_posix()
+        # временный файл (страница с дописанным банком билетов) может лежать вне SRC
+        return self.path.relative_to(SRC).as_posix() if self.path.is_relative_to(SRC) else self.path.name
 
     @property
     def out_name(self) -> str:
-        return "theory" if self.kind == "theory" else self.week_id  # prep: week_id = kr1, kr2…
+        if self.kind in COURSE_DOCS:
+            return self.kind
+        return self.week_id  # prep: week_id = kr1, colloq1…
 
 
 class BuildError(Exception):
@@ -111,9 +137,13 @@ def discover() -> list[Doc]:
     for p in sorted((SRC / "theory").glob("*.md")):
         meta = read_front_matter(p)
         docs.append(Doc(p, "theory", p.stem, "theory", meta))
+    # план учебной дисциплины курса (context/markup.md §12): program/<course>.md → /<course>/program
+    for p in sorted((SRC / "program").glob("*.md")):
+        meta = read_front_matter(p)
+        docs.append(Doc(p, "program", p.stem, "program", meta))
     for p in sorted((SRC / "prep").glob("*/*.md")):
-        if not re.fullmatch(r"kr[1-3]", p.stem):  # = PREP_IDS на сайте; линтер скажет то же
-            raise BuildError(f"{p}: подготовка к КР называется kr1.md, kr2.md или kr3.md")
+        if p.stem not in PREP_IDS:  # линтер скажет то же
+            raise BuildError(f"{p}: подготовка называется {PREP_FILES}")
         meta = read_front_matter(p)
         docs.append(Doc(p, "prep", p.parent.name, p.stem, meta))
     return docs
@@ -443,7 +473,53 @@ def build_html(doc: Doc) -> dict:
             fig.pop("code", None)
         write_json(sidecar, meta)
     write_preview(page_dir, meta)
+    if doc.kind == "prep" and ticket_bank.bank_path(doc.path).exists():
+        export_bank(doc, meta, page_dir)
+        meta["bank"] = True  # → courses.json: генератор на странице есть, только если bank.json записан
     return meta
+
+
+def export_bank(doc: Doc, meta: dict, page_dir: Path) -> None:
+    """prep/<course>/<prep>-bank.yaml → bank.json рядом с фрагментом страницы (только сайт, не PDF)."""
+    path = ticket_bank.bank_path(doc.path)
+    rel = path.relative_to(SRC).as_posix()
+    notes = json.loads((BUILD / "index.json").read_text(encoding="utf-8"))["labels"].get(doc.course, {})
+    own = meta.get("labels") or []
+    try:
+        bank = ticket_bank.load(path)
+        labels = ticket_bank.Labels(notes, {e["id"]: e["type"] for e in own})
+        errors, _ = ticket_bank.check_schema(bank, doc.week_id, labels)
+        if errors:
+            raise ticket_bank.BankError("; ".join(errors))
+        ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), MARKDOWN)
+        errors = ticket_bank.check_snippets(ast)
+        if errors:
+            raise ticket_bank.BankError("; ".join(errors))
+        rendered = ticket_bank.split_rendered(render_bank_texts(doc, bank, page_dir))
+        data = ticket_bank.export(bank, doc.week_id, notes, own, rendered)
+    except ticket_bank.BankError as e:
+        raise BuildError(f"{rel}: {e} (подробнее — uv run scripts/lint.py)") from e
+    write_json(page_dir / "bank.json", data)
+
+
+def render_bank_texts(doc: Doc, bank: dict, page_dir: Path) -> str:
+    """Тексты банка дописываются в конец страницы и рендерятся тем же pandoc + notes.lua, что и она:
+    ссылки на свои метки страницы и на конспекты, тире и неразрывные пробелы — ровно как на странице."""
+    tmp = page_dir / f"{doc.week_id}.bank-render.md"
+    out = page_dir / f"{doc.week_id}.bank-render.html"
+    text = doc.path.read_text(encoding="utf-8").rstrip() + "\n\n" + ticket_bank.snippets_marked(bank)
+    tmp.write_text(text, encoding="utf-8")
+    try:
+        run_pandoc(
+            dataclasses.replace(doc, path=tmp),
+            "html5",
+            out,
+            ["--katex", "-M", "notes_mode=render", "-M", f"notes_index={BUILD / 'index.json'}"],
+        )
+        return out.read_text(encoding="utf-8")
+    finally:
+        tmp.unlink(missing_ok=True)
+        out.unlink(missing_ok=True)
 
 
 def katex_macros() -> dict[str, str]:
@@ -562,6 +638,18 @@ def search_entries(course: str, doc: str, lecture: int, fragment: str) -> list[d
     return entries
 
 
+HIGHLIGHT_DAYS = 14
+
+
+def highlight_default(date: str | None) -> str | None:
+    """День, с которого подготовка выделена цветом, если в front matter нет highlight_from: date − 14 дней."""
+    try:
+        day = dt.date.fromisoformat(date or "")
+    except ValueError:  # формат даты проверяет линтер
+        return None
+    return (day - dt.timedelta(days=HIGHLIGHT_DAYS)).isoformat()
+
+
 def write_site_data(index: dict, metas: list[dict]) -> None:
     SITE.mkdir(parents=True, exist_ok=True)
     write_json(SITE / "index.json", index["labels"])
@@ -573,10 +661,15 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     "id": m["week_id"],
                     "title": m.get("title"),
                     "date": m.get("date"),
-                    # последний день, когда КР на сайте активна (плитка на главной, цветная кнопка);
-                    # по умолчанию — день КР
+                    # последний день, когда КР (коллоквиум) на сайте активна (плитка на главной,
+                    # цветная кнопка); по умолчанию — день date
                     "active_until": m.get("active_until") or m.get("date"),
+                    # с какого дня кнопка и плитка выделены цветом (до active_until включительно);
+                    # по умолчанию — за две недели до date
+                    "highlight_from": m.get("highlight_from") or highlight_default(m.get("date")),
                     "cheatsheets": [c.variant for c in find_cheatsheets(m["course"], m["week_id"])],
+                    # есть банк билетов → на странице генератор (bank.json рядом с fragment.html)
+                    "bank": bool(m.get("bank")),
                 }
             )
     write_json(
@@ -585,6 +678,8 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
             "config": json.loads(CONFIG.read_text(encoding="utf-8")),
             "lectures": index["lectures"],
             "preps": preps,
+            # курсы со страницей «План учебной дисциплины» (program/<course>.md)
+            "programs": sorted(m["course"] for m in metas if m.get("kind") == "program"),
         },
     )
     write_json(SITE / "katex-macros.json", katex_macros())
@@ -616,6 +711,8 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
             )
         if (SITE / course / "theory").exists():
             links.append(f'<li><a href="{course}/theory/">Теория</a></li>')
+        if (SITE / course / "program").exists():
+            links.append(f'<li><a href="{course}/program/">План учебной дисциплины</a></li>')
         for p in preps.get(course, []):
             links.append(f'<li><a href="{course}/{p["id"]}/">{html.escape(p["title"] or "")}</a></li>')
         links.append("</ul>")
@@ -652,7 +749,7 @@ def main() -> int:
     ap.add_argument("--no-html", action="store_true")
     ap.add_argument("--strict", action="store_true", help="предупреждения — ошибки")
     ap.add_argument("-j", "--jobs", type=int, default=os.cpu_count() or 2)
-    ap.add_argument("--src", type=Path, default=ROOT, help="папка с notes/ и theory/")
+    ap.add_argument("--src", type=Path, default=ROOT, help="папка с notes/, theory/, program/ и prep/")
     ap.add_argument("--out", type=Path, default=None, help="папка сборки (по умолчанию <src>/build)")
     args = ap.parse_args()
     set_dirs(args.src, args.out or args.src / "build")
@@ -662,6 +759,11 @@ def main() -> int:
         index = build_index(docs, args.jobs)
         targets = docs
         if args.only:
+            # банк билетов собирается вместе со своей страницей: colloq1-bank.yaml → colloq1.md
+            args.only = [
+                p.removesuffix(ticket_bank.BANK_SUFFIX) + ".md" if p.endswith(ticket_bank.BANK_SUFFIX) else p
+                for p in args.only
+            ]
             targets = [
                 d for d in docs if any(fnmatch.fnmatch(d.rel, pat) or d.rel == pat for pat in args.only)
             ]

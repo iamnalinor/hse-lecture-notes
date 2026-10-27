@@ -101,10 +101,146 @@ jobs:
           git push -f origin latest
           gh release view latest >/dev/null 2>&1 || \
             gh release create latest --prerelease --title "Конспекты (последняя сборка main)" \
-              --notes "PDF всех конспектов, теории курсов, подготовки к КР и читлистов, собранные из main."
+              --notes "PDF всех конспектов, теории и программ курсов, подготовки к КР и читлистов, собранные из main."
           gh release upload latest dist/*.pdf --clobber
           # --clobber only adds and replaces: drop PDFs that main no longer builds (e.g. the old
           # <course>-registry.pdf), so a saved link fails instead of serving a frozen copy.
           for asset in $(gh release view latest --json assets --jq '.assets[].name'); do
             [[ -f "dist/$asset" ]] || gh release delete-asset latest "$asset" --yes
           done
+
+  # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска.
+  # Загружается новой версией (не деплоем) в Cloudflare Worker со статическими ассетами
+  # (Worker создан вручную) с алиасом pr-<N>: pr-<N>-<worker>.<поддомен>.workers.dev.
+  # Продакшен Worker'а не меняется. Ссылка — комментарием в PR, обновляется на каждый пуш.
+  # PR из форков не деплоятся: им не положены секреты.
+  preview:
+    name: Site preview
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      WORKER: hse-lecture-notes
+      ALIAS: pr-${{ github.event.pull_request.number }}
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - name: Skip without Cloudflare secrets
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID не заданы — превью пропущено"
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/checkout@v7
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: ./.github/actions/setup-web
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: site-data
+          path: web/public/data
+
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: pdf
+          path: web/public/pdf
+
+      - name: Build the site like Pages does
+        if: env.HAS_TOKEN == 'true'
+        working-directory: web
+        env:
+          BASE_PATH: /
+        run: |
+          find public/data -name index.html -delete
+          shopt -s nullglob
+          for f in public/pdf/*-theory.pdf; do cp "$f" "${f%-theory.pdf}-registry.pdf"; done
+          bun run build
+          # Превью не должно попадать в поиск
+          printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+          # Worker без кода, только статические ассеты; конфиг нужен лишь превью
+          cat > wrangler.jsonc <<JSON
+          {
+            "name": "$WORKER",
+            "compatibility_date": "2026-10-01",
+            "workers_dev": false,
+            "preview_urls": true,
+            "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+          }
+          JSON
+
+      - name: Upload a preview version
+        if: env.HAS_TOKEN == 'true'
+        id: upload
+        working-directory: web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MESSAGE: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
+        run: |
+          # wrangler-action ставит wrangler 3.x, а превью-алиасы и wrangler.jsonc нужны из 4.x
+          set -o pipefail
+          bunx wrangler@4.149.0 versions upload --preview-alias="$ALIAS" --message="$MESSAGE" 2>&1 | tee wrangler.out
+          {
+            echo "out<<WRANGLER_EOF"
+            cat wrangler.out
+            echo "WRANGLER_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find the preview URLs
+        if: env.HAS_TOKEN == 'true'
+        id: urls
+        env:
+          OUT: ${{ steps.upload.outputs.out }}
+        run: |
+          alias=$(grep -oE 'https://'"$ALIAS"'-[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | head -n1)
+          version=$(grep -oE 'https://[a-z0-9-]+-'"$WORKER"'\.[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | grep -v "^https://$ALIAS-" | head -n1)
+          if [ -z "$alias" ]; then
+            echo "$OUT"
+            echo "::error::в выводе wrangler нет ссылки превью — включены ли workers.dev и Preview URLs у Worker'а?"
+            exit 1
+          fi
+          echo "alias=$alias/" >> "$GITHUB_OUTPUT"
+          echo "version=${version:-$alias}/" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        if: env.HAS_TOKEN == 'true'
+        env:
+          URL: ${{ steps.urls.outputs.alias }}
+        run: |
+          for i in 1 2 3 4 5 6; do
+            curl --fail --silent "${URL}data/courses.json" >/dev/null && break
+            sleep 10
+          done
+          curl --fail --silent "${URL}" | grep -q '<div id="root">'
+          curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория'
+
+      - name: Comment the preview link on the PR
+        if: env.HAS_TOKEN == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LINK: ${{ steps.urls.outputs.alias }}
+          VERSION: ${{ steps.urls.outputs.version }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          MARKER='<!-- site-preview -->'
+          BODY="$MARKER
+          **Превью сайта:** $LINK
+
+          Эта сборка (коммит \`${SHA:0:7}\`, слитый с main): $VERSION. Ссылка выше всегда ведёт на последний пуш."
+          ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$MARKER\"))) | .id" | head -n1)
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -f body="$BODY" >/dev/null
+          else
+            gh pr comment "$PR" --repo "${{ github.repository }}" --body "$BODY"
+          fi

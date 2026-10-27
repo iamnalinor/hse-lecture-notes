@@ -9,11 +9,15 @@ import {
 } from "#web/api/offline-cache.ts";
 import { countSavedNotes, type OfflineCount } from "#web/domain/offline.ts";
 
+import { useIsSavingInBackground } from "./use-background-download.ts";
+
 const COUNT_KEY = ["offline-count"] as const;
 const RECOUNT_DELAY_MS = 400;
 
 export type DownloadState =
+  /** On Wi-Fi the site saves everything by itself (`use-background-download.ts`). */
   | { readonly done: number; readonly kind: "running"; readonly total: number }
+  | { readonly kind: "background" }
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "idle" };
 
@@ -43,7 +47,11 @@ const useIsControlled = (): boolean =>
     () => false,
   );
 
-/** The worker announces every document file it stores; recount (debounced) when it does. */
+/**
+The worker announces every document file it stores; recount when it does, at most once per
+`RECOUNT_DELAY_MS` (throttled, not debounced: during a download files arrive faster than that,
+and the counter must still grow as they do).
+*/
 const useRecountOnCache = (): void => {
   const client = useQueryClient();
   useEffect(() => {
@@ -52,11 +60,10 @@ const useRecountOnCache = (): void => {
     }
     let timer: ReturnType<typeof setTimeout> | undefined;
     const recount = (): void => {
-      clearTimeout(timer);
-      timer = setTimeout(
-        () => void client.invalidateQueries({ queryKey: COUNT_KEY }),
-        RECOUNT_DELAY_MS,
-      );
+      timer ??= setTimeout(() => {
+        timer = undefined;
+        void client.invalidateQueries({ queryKey: COUNT_KEY });
+      }, RECOUNT_DELAY_MS);
     };
     navigator.serviceWorker.addEventListener("message", recount);
     navigator.serviceWorker.addEventListener("controllerchange", recount);
@@ -73,6 +80,7 @@ const useRecountOnCache = (): void => {
 const downloadState = (
   mutation: { readonly error: unknown; readonly status: string },
   progress: { readonly done: number; readonly total: number },
+  isBackground: boolean,
 ): DownloadState => {
   if (mutation.status === "pending") {
     return { ...progress, kind: "running" };
@@ -81,7 +89,7 @@ const downloadState = (
     const message = mutation.error instanceof Error ? mutation.error.message : "";
     return { kind: "failed", message: message === "" ? "Не получилось скачать" : message };
   }
-  return { kind: "idle" };
+  return { kind: isBackground ? "background" : "idle" };
 };
 
 /** Saved lecture notes (only up-to-date copies count) and the «download everything» action. */
@@ -124,10 +132,16 @@ export const useOfflineStatus = (): OfflineStatus => {
     throwOnError: false,
   });
 
+  const isBackground = useIsSavingInBackground({
+    // «idle»: «Скачать все» was never pressed in this tab; once it was, it is in charge.
+    isManual: download.status !== "idle",
+    manifest: isControlled ? manifest : undefined,
+  });
+
   return {
     canDownload: isControlled && manifest !== undefined,
     count,
-    download: downloadState(download, progress),
+    download: downloadState(download, progress, isBackground),
     startDownload: () => {
       download.mutate();
     },

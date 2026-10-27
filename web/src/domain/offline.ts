@@ -5,14 +5,15 @@ the manifest (`scripts/build-sw.ts`) and the page. Paths are relative to the sit
 - `files`: every file the worker knows → content hash. A cached copy is valid only while its
   hash (stored in the `HASH_HEADER` of the cached response) equals the one in the manifest.
 - `precache`: the shell and the shared data, downloaded when the worker installs.
-- `docs`: lecture notes, theory, glossaries and test preparation; cached only once the reader opens them.
+- `docs`: lecture notes, theory, the course program, glossaries and test preparation; cached only once
+  the reader opens them.
 */
 
-export type OfflineDocKind = "glossary" | "notes" | "prep" | "theory";
+export type OfflineDocKind = "glossary" | "notes" | "prep" | "program" | "theory";
 
 export type OfflineDoc = {
   readonly files: readonly string[];
-  /** `<course>/<week_id>`, `<course>/theory`, `<course>/glossary`, `<course>/kr1`. */
+  /** `<course>/<week_id>`, `<course>/theory`, `<course>/program`, `<course>/glossary`, `<course>/kr1`. */
   readonly id: string;
   readonly kind: OfflineDocKind;
 };
@@ -28,6 +29,12 @@ export const CACHE_NAME = "hse-notes";
 export const STAGE_PREFIX = "hse-notes-stage-";
 export const HASH_HEADER = "x-content-hash";
 export const MANIFEST_PATH = "offline-manifest.json";
+/**
+Marks a request of the page's background download (`api/offline-cache.ts`): the worker fetches
+such a file at low priority and does not fetch the rest of its document at once — the page asks
+for every file itself, one at a time.
+*/
+export const BACKGROUND_HEADER = "x-offline-background";
 
 const HASH_LENGTH = 16;
 

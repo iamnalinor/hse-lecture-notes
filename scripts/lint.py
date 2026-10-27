@@ -1,4 +1,4 @@
-"""Линтер конспектов и теории курсов (разметка — context/markup.md, скелет — context/recommendations.md).
+"""Линтер конспектов, теории и программ курсов, подготовок к КР (разметка — context/markup.md, скелет — context/recommendations.md).
 
     uv run scripts/lint.py                 # все файлы
     uv run scripts/lint.py notes/algebra/04_sep23_determinant_properties.md
@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build  # noqa: E402
+import ticket_bank  # noqa: E402
 
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 FILE_RE = re.compile(r"^(\d{2})_([a-z]{3})(\d{2})_([a-z0-9]+(?:_[a-z0-9]+){0,2})$")
@@ -45,9 +46,9 @@ AUX_DIVS = {"proof", "solution", "answer", "answers", "course-glossary"}
 TAGS = {"корнер-кейс", "подводный камень", "частое заблуждение", "соглашение курса", "напоминание"}
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
-PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):(kr\d+):[a-z0-9][a-z0-9-]*$")
+TYPE_OF_PREFIX = {v: k for k, v in PREFIX.items()} | {"fig": "figure", "eq": "equation", "sec": "section"}
+PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq)\d+):[a-z0-9][a-z0-9-]*$")
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
-PREP_FILE_RE = re.compile(r"^kr[1-3]$")  # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 
 PIPELINE_WORDS = re.compile(
     r"(рекомендаци|ревью|ревьюер|чек-?лист|промпт|прошлогодн|режим[а-я]* генерац|"
@@ -422,8 +423,118 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
     walk(doc["blocks"], on_node)
 
 
+PROGRAM_META = {"course", "title"}
+PROGRAM_BLOCKS = {"remark"}  # без примеров расчёта: страница — справочник (решение владельца)
+PROGRAM_FIRST, PROGRAM_LAST, PROGRAM_SOURCES = "О курсе", "Содержание курса", "Источники"
+# Страница программы — справочник, а не реферат о ПУД: без пометок источников, комментариев о самой
+# программе и советов «уточнить у лектора» (context/prompts/program.md → «Как писать»)
+PROGRAM_META_WORDS = re.compile(
+    r"(уточн[а-я]* у лектора|в программе (?:прямо )?не|в программе сказано|по программе|судя по|"
+    r"по wiki|на wiki|по каналу|по календарю|по таблице планирования|сумм[а-я]* весов|сноск|звёздочк)",
+    re.I,
+)
+
+
+def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
+    """План учебной дисциплины курса (program/<course>.md, context/markup.md §12).
+
+    Справочная страница из ПУД: заголовки, абзацы, списки, таблицы, формулы, замечания
+    без номеров и меток. Ни определений, ни задач, ни рисунков; ссылки — только на блоки конспектов.
+    """
+    meta = build.read_front_matter(path)
+    course = path.stem
+    for k in sorted(PROGRAM_META):
+        if meta.get(k) in (None, ""):
+            rep.err(rel, f"в front matter нет поля {k}")
+    for k in sorted(set(meta) - PROGRAM_META):
+        rep.err(
+            rel, f"лишнее поле {k} в front matter: у программы курса только {', '.join(sorted(PROGRAM_META))}"
+        )
+    if course not in cfg["courses"]:
+        rep.err(rel, f"неизвестный курс {course}: файл называется program/<course>.md")
+        return
+    if meta.get("course") != course:
+        rep.err(rel, f"course={meta.get('course')!r}, а файл program/{course}.md")
+    blocks = ast_of(path)["blocks"]
+
+    def on_node(n):
+        t = n["t"]
+        if t == "Div":
+            (ident, classes, kv), _ = n["c"]
+            kinds = [c for c in classes if c in PROGRAM_BLOCKS]
+            if not kinds:
+                rep.err(
+                    rel,
+                    f"блок ::: {{.{classes[0] if classes else '?'}}} в программе курса: можно только "
+                    f"{', '.join(sorted(PROGRAM_BLOCKS))}",
+                )
+            if ident or dict(kv).get("ref"):
+                rep.err(
+                    rel, f"у блока {ident or dict(kv).get('ref')} метка: в программе блоки без меток и ref="
+                )
+            tag = dict(kv).get("tag")
+            if tag is not None and tag not in TAGS:
+                rep.err(rel, f"неизвестная пометка замечания: {tag!r}; допустимо: {', '.join(sorted(TAGS))}")
+        elif t == "CodeBlock":
+            rep.err(rel, "блок кода или рисунок в программе курса: здесь только текст, таблицы и формулы")
+        elif t == "Image":
+            rep.err(rel, "картинки-файлы запрещены")
+        elif t == "Header" and n["c"][1][0].startswith(("sec:", "def:", "thm:", "prob:", "rem:", "ex:")):
+            rep.err(rel, f"метка {n['c'][1][0]} у заголовка: в программе своих меток нет")
+        elif t == "Math":
+            check_math(rep, rel, n["c"][1])
+        elif t == "Cite":
+            check_cite(rep, rel, n, labels.get(course, {}))
+        elif t == "Str" and "$" in n["c"]:
+            rep.err(rel, f"знак $ в тексте — формула не распознана: «{n['c']}»")
+
+    walk(blocks, on_node)
+    check_texts(rep, rel, blocks)
+    texts = [text_of_block(b) for b in blocks]
+    texts += [dict(n["c"][0][2]).get("title", "") for n in iter_nodes(blocks) if n["t"] == "Div"]
+    for text in texts:
+        for mm in PROGRAM_META_WORDS.finditer(re.sub(r"\$[^$]*\$", "", text)):
+            rep.err(
+                rel,
+                f"«{mm.group(0)}»: на странице программы — только факты, без пометок источников "
+                "и комментариев о самой программе (context/prompts/program.md)",
+            )
+    h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
+    if not h1 or h1[0] != PROGRAM_FIRST:
+        rep.err(rel, f"первый раздел — «# {PROGRAM_FIRST}»")
+    else:
+        # «О курсе» — сводная таблица «параметр · значение» (лектор, объём, экзамен, порог, итог)
+        first = next(i for i, b in enumerate(blocks) if b["t"] == "Header" and b["c"][0] == 1)
+        nxt = next((b for b in blocks[first + 1 :] if b["t"] != "Para" or text_of_block(b).strip()), None)
+        if nxt is None or nxt["t"] != "Table":
+            rep.err(rel, f"раздел «# {PROGRAM_FIRST}» — сводная таблица курса сразу под заголовком")
+    tail = h1[-2:] if h1 and h1[-1] == PROGRAM_SOURCES else h1[-1:]
+    if not tail or tail[0] != PROGRAM_LAST:
+        rep.err(
+            rel, f"последний раздел — «# {PROGRAM_LAST}» (за ним может идти только «# {PROGRAM_SOURCES}»)"
+        )
+    # ссылки на первоисточники — только списком в «Источниках» (и профиль лектора в «О курсе»),
+    # не в тексте (context/prompts/facts.md)
+    section = ""
+    for b in blocks:
+        if b["t"] == "Header" and b["c"][0] == 1:
+            section = text_of_block(b).strip()
+        elif section not in (PROGRAM_FIRST, PROGRAM_SOURCES) and any(n["t"] == "Link" for n in iter_nodes(b)):
+            rep.err(
+                rel,
+                f"ссылка в разделе «{section}»: ссылки на источники — только в «# {PROGRAM_SOURCES}» в конце",
+            )
+        elif section == PROGRAM_SOURCES and b["t"] != "BulletList":
+            rep.err(rel, f"«# {PROGRAM_SOURCES}» — только список ссылок, по строке на источник")
+    if not any(b["t"] == "Table" for b in blocks):
+        rep.warn(rel, "в программе нет ни одной таблицы: веса элементов контроля удобнее читать таблицей")
+
+
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
-    """Подготовка к КР (prep/<course>/krN.md): свои метки prob:krN:…, ref= на блоки конспектов."""
+    """Подготовка к КР или коллоквиуму (prep/<course>/krN.md, colloqN.md).
+
+    Свои метки prob:krN:… (prob:colloqN:…), теория — ref= на блоки конспектов.
+    """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem
     for k in ("course", "title", "date"):
@@ -434,10 +545,12 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     if course not in cfg["courses"]:
         rep.err(rel, f"неизвестный курс {course}")
         return
-    if not PREP_FILE_RE.match(exam):
-        rep.err(rel, "имя файла подготовки — kr1.md, kr2.md или kr3.md (маршруты сайта)")
+    if exam not in build.PREP_IDS:
+        rep.err(rel, f"имя файла подготовки — {build.PREP_FILES} (маршруты сайта)")
+    colloq = build.prep_kind(exam) == "colloq"
+    event = "коллоквиума" if colloq else "КР"
     dates: dict[str, dt.date] = {}
-    for k in ("date", "active_until"):
+    for k in ("date", "active_until", "highlight_from"):
         value = meta.get(k)
         if value in (None, ""):
             continue
@@ -452,7 +565,15 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         else:
             rep.err(rel, f"{k}={value!r} не в формате YYYY-MM-DD")
     if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
-        rep.err(rel, f"active_until={dates['active_until']} раньше даты КР {dates['date']}")
+        rep.err(rel, f"active_until={dates['active_until']} раньше даты {event} {dates['date']}")
+    # выделение цветом на сайте идёт с highlight_from до последнего активного дня включительно
+    last_day = dates.get("active_until") or dates.get("date")
+    if "highlight_from" in dates and last_day is not None and dates["highlight_from"] > last_day:
+        rep.err(
+            rel,
+            f"highlight_from={dates['highlight_from']} позже последнего дня {event} {last_day}"
+            " (active_until, по умолчанию date)",
+        )
     blocks = ast_of(path)["blocks"]
     own: set[str] = set()
 
@@ -520,11 +641,122 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     check_texts(rep, rel, blocks)
     check_practice(rep, rel, blocks)
     h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
-    if not h1 or h1[0] != "О контрольной":
-        rep.err(rel, "первый раздел — «# О контрольной»")
+    first = "О коллоквиуме" if colloq else "О контрольной"
+    if not h1 or h1[0] != first:
+        rep.err(rel, f"первый раздел — «# {first}»")
     h2 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 2]
-    if "Прототипы" not in h2:
-        rep.err(rel, "нет ни одного подраздела «## Прототипы»")
+    # коллоквиум — устная теория: задачи по желанию, обязательны разделы «Что нужно знать»
+    need = "Что нужно знать" if colloq else "Прототипы"
+    if need not in h2:
+        rep.err(rel, f"нет ни одного подраздела «## {need}»")
+    lint_bank(path, course, exam, labels, own, rep)
+    # на сайте генератор встаёт в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
+    generator = f"sec:{exam}:{ticket_bank.GENERATOR_SECTION}"
+    has_bank = ticket_bank.bank_path(path).exists()
+    if has_bank and generator not in own:
+        rep.err(
+            rel, f"у страницы есть банк билетов, но нет раздела {{#{generator}}}: генератору негде встать"
+        )
+    elif has_bank:
+        last_id = [b["c"][1][0] for b in blocks if b["t"] == "Header" and b["c"][0] == 1][-1]
+        if last_id != generator:
+            # «Источники» (context/prompts/facts.md, п. 7) — перед генератором: он последний и на сайте
+            rep.warn(
+                rel, f"раздел {{#{generator}}} — последний на странице; «Источники» и остальное — перед ним"
+            )
+    elif generator in own and not has_bank:
+        rep.err(
+            rel,
+            f"раздел {{#{generator}}} без банка {ticket_bank.bank_path(path).name}: на сайте он будет пустым",
+        )
+
+
+class NotesProofs:
+    """Идёт ли за блоком конспекта `::: proof` — сайт покажет его в ответе генератора билетов.
+
+    Как `extractBlock` на сайте: после блока пропускаются абзацы, поиск останавливается на следующем
+    нумерованном блоке или заголовке.
+    """
+
+    def __init__(self, course_labels: dict) -> None:
+        self.labels = course_labels
+        self.asts: dict[str, list] = {}
+
+    def has_proof(self, label: str) -> bool:
+        entry = self.labels.get(label)
+        if entry is None:
+            return False
+        file = entry["file"]
+        if file not in self.asts:
+            self.asts[file] = ast_of(build.SRC / file)["blocks"]
+        return bool(proof_after(self.asts[file], label))
+
+
+def proof_after(blocks: list, label: str) -> bool | None:
+    for i, b in enumerate(blocks):
+        if b["t"] != "Div":
+            continue
+        (ident, _, _), content = b["c"]
+        if ident == label:
+            for nxt in blocks[i + 1 :]:
+                if nxt["t"] == "Header":
+                    return False
+                if nxt["t"] == "Div":
+                    classes = nxt["c"][0][1]
+                    if "proof" in classes:
+                        return True
+                    if any(c in PREFIX for c in classes):
+                        return False
+            return False
+        found = proof_after(content, label)
+        if found is not None:
+            return found
+    return None
+
+
+def lint_bank(path: Path, course: str, exam: str, labels: dict, own: set[str], rep: Report) -> None:
+    """Банк билетов `<prep>-bank.yaml` рядом со страницей (context/markup.md §11): схема, метки, формулы."""
+    bank_file = ticket_bank.bank_path(path)
+    if not bank_file.exists():
+        return
+    rel = bank_file.relative_to(build.SRC).as_posix()
+    try:
+        bank = ticket_bank.load(bank_file)
+    except ticket_bank.BankError as e:
+        rep.err(rel, str(e))
+        return
+    own_types = {i: TYPE_OF_PREFIX[i.split(":")[0]] for i in own if PREP_LABEL_RE.match(i)}
+    course_labels = labels.get(course, {})
+    errors, warnings = ticket_bank.check_schema(bank, exam, ticket_bank.Labels(course_labels, own_types))
+    for e in errors:
+        rep.err(rel, e)
+    for w in warnings:
+        rep.warn(rel, w)
+    known = {**course_labels, **dict.fromkeys(own_types, True)}
+    ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), build.MARKDOWN)
+    for e in ticket_bank.check_snippets(ast):
+        rep.err(rel, e)
+    if not errors:
+        for e in ticket_bank.missing_proofs(bank, exam, NotesProofs(course_labels).has_proof):
+            rep.err(rel, e)
+    for snippet in ast["blocks"]:
+        if snippet["t"] != "Div":
+            continue
+        where = f"{rel} ({snippet['c'][0][0].replace('--', ': ')})"
+
+        def on_node(n, where=where):
+            t = n["t"]
+            if t == "Math":
+                check_math(rep, where, n["c"][1])
+            elif t == "Cite":
+                check_cite(rep, where, n, known)
+            elif t == "Str" and "$" in n["c"]:
+                rep.err(where, f"знак $ в тексте — формула не распознана: «{n['c']}»")
+            elif t in ("Header", "Div", "CodeBlock", "Image", "Table"):
+                rep.err(where, f"{t} в тексте вопроса: здесь только абзацы, списки и формулы")
+
+        walk(snippet["c"][1], on_node)
+        check_texts(rep, where, snippet["c"][1])
 
 
 def main() -> int:
@@ -544,7 +776,13 @@ def main() -> int:
         print(f"ERROR: {e}")
         return 1
     labels = index["labels"]
-    wanted = {p.resolve() for p in args.files}
+    # банк билетов проверяется вместе со своей страницей: colloq1-bank.yaml → colloq1.md
+    wanted = {
+        p.with_name(p.name.removesuffix(ticket_bank.BANK_SUFFIX) + ".md").resolve()
+        if p.name.endswith(ticket_bank.BANK_SUFFIX)
+        else p.resolve()
+        for p in args.files
+    }
     for d in docs:
         if wanted and d.path.resolve() not in wanted:
             continue
@@ -552,8 +790,16 @@ def main() -> int:
             lint_notes(d.path, d.rel, cfg, labels, rep)
         elif d.kind == "prep":
             lint_prep(d.path, d.rel, cfg, labels, rep)
+        elif d.kind == "program":
+            lint_program(d.path, d.rel, cfg, labels, rep)
         else:
             lint_theory(d.path, d.rel, labels, rep)
+
+    if not wanted:
+        for p in sorted((build.SRC / "prep").glob(f"*/*{ticket_bank.BANK_SUFFIX}")):
+            page = p.with_name(p.name.removesuffix(ticket_bank.BANK_SUFFIX) + ".md")
+            if not page.exists():
+                rep.err(p.relative_to(build.SRC).as_posix(), f"банк билетов без страницы {page.name}")
 
     for line in rep.errors + rep.warnings:
         print(line)

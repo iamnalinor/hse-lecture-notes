@@ -1,13 +1,14 @@
 /**
 After `vite build`: hashes everything in dist/, writes `dist/offline-manifest.json` and bundles the
 service worker (`sw/service-worker.ts` → `dist/sw.js`) with the manifest's version inlined.
-Lecture notes, theory and glossaries become documents that are cached on first open; the shell and
+Lecture notes, theory, the course program, glossaries and preps become documents that are cached on first open; the shell and
 the shared data (catalog, label index, macros) are precached. PDFs stay network-only.
 */
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { offlineDocKind } from "../src/domain/offline-kind.ts";
 import {
   contentHash,
   MANIFEST_PATH,
@@ -15,7 +16,6 @@ import {
   type OfflineDocKind,
   type OfflineManifest,
 } from "../src/domain/offline.ts";
-import { isPrepId } from "../src/domain/preps.ts";
 
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 const WORKER = fileURLToPath(new URL("../sw/service-worker.ts", import.meta.url));
@@ -26,7 +26,7 @@ const PAGE_SHELL = /^(?!data\/).+\/index\.html$/u;
 const SHARED_DATA = new Set(["data/courses.json", "data/index.json", "data/katex-macros.json"]);
 // Browsers that run service workers all take woff2: the woff/ttf fallbacks of KaTeX are not precached.
 const PRECACHED_ASSET = /^assets\/.+\.(?:css|js|woff2)$/u;
-// data/<course>/<doc>/… (a lecture or the theory) and data/<course>/glossary.json
+// data/<course>/<doc>/… (a lecture, the theory, the program, a prep) and data/<course>/glossary.json
 const DOC_FILE = /^data\/(?<course>[^/]+)\/(?:(?<doc>[^/]+)\/.+|glossary\.json)$/u;
 
 const encode = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text);
@@ -42,16 +42,6 @@ const allFiles = async (): Promise<string[]> => {
     .toSorted((a, b) => a.localeCompare(b));
 };
 
-const kindOf = (doc: string): OfflineDocKind => {
-  if (doc === "glossary") {
-    return "glossary";
-  }
-  if (isPrepId(doc)) {
-    return "prep";
-  }
-  return doc === "theory" ? "theory" : "notes";
-};
-
 const docsOf = (paths: readonly string[]): OfflineDoc[] => {
   const byId = new Map<string, { files: string[]; kind: OfflineDocKind }>();
   for (const file of paths) {
@@ -61,7 +51,7 @@ const docsOf = (paths: readonly string[]): OfflineDoc[] => {
     }
     const doc = groups["doc"] ?? "glossary";
     const id = `${groups["course"]}/${doc}`;
-    const entry = byId.get(id) ?? { files: [], kind: kindOf(doc) };
+    const entry = byId.get(id) ?? { files: [], kind: offlineDocKind(doc) };
     entry.files.push(file);
     byId.set(id, entry);
   }

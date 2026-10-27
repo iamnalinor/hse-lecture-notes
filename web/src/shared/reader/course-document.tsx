@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { PdfDoc } from "#web/domain/preps.ts";
 
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
@@ -11,17 +13,19 @@ import { useScrollToHash } from "./use-scroll-to-hash.ts";
 type Props = {
   readonly course: string;
   readonly courseName: string;
-  /** `theory`, `kr1`… — the document directory and the PDF name. */
+  /** `theory`, `program`, `kr1`, `colloq1`… — the document directory and the PDF name. */
   readonly docId: string;
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
   readonly note: string;
-  /** Crumb, title and TOC caption: «Теория», «Подготовка к КР-1». */
+  /** Crumb, title and TOC caption: «Теория», «План учебной дисциплины», «Подготовка к КР-1». */
   readonly pageName: string;
-  readonly variant: "prep" | "theory";
+  /** Content mounted at the end of a section, by its id: the ticket generator in `sec:colloq1:generator`. */
+  readonly slots?: ReadonlyMap<string, ReactNode>;
+  readonly variant: "prep" | "program" | "theory";
 };
 
-/** A course-wide document (theory, test preparation): TOC on the side, the fragment, the PDF button. */
+/** A course-wide document (theory, program, test preparation): TOC on the side, the fragment, the PDF button. */
 export const CourseDocument = ({
   course,
   courseName,
@@ -29,6 +33,7 @@ export const CourseDocument = ({
   downloads,
   note,
   pageName,
+  slots,
   variant,
 }: Props) => {
   const meta = useDocMeta(course, docId);
@@ -50,6 +55,7 @@ export const CourseDocument = ({
         docId={docId}
         html={html}
         lecture={undefined}
+        slots={slots}
         variant={variant}
       />
     </DocPage>
