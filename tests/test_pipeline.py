@@ -704,7 +704,7 @@ CITE = "Смотри [см. -@thm:lec01:assoc, п. 2] и @rem:colloq1:order --- 
 
 
 GENERATOR = """
-# Генератор вопросов {#sec:colloq1:generator}
+# Генератор билетов {#sec:colloq1:generator}
 
 ```{=latex}
 Генератор~--- на сайте: \\url{https://notes.nalinor.dev/algebra/colloq1}.

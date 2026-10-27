@@ -173,7 +173,7 @@ describe("FragmentView slots", () => {
         course="algebra"
         docId="colloq1"
         html={
-          '<section id="sec:colloq1:generator"><h1>Генератор вопросов</h1></section><section id="other"><p>Дальше.</p></section>'
+          '<section id="sec:colloq1:generator"><h1>Генератор билетов</h1></section><section id="other"><p>Дальше.</p></section>'
         }
         lecture={undefined}
         slots={

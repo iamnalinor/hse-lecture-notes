@@ -66,10 +66,10 @@ questions:
     topic: binomial
     text: Бином Ньютона.
     refs: [thm:lec02:binomial, rem:colloq1:proof-binomial]
-  - id: proof-pascal
-    kind: proof
+  - id: claim-pascal
+    kind: claim
     topic: binomial
-    text: Свойства чисел сочетаний $C_n^k = C_n^{n-k}$ и $C_n^k = C_{n-1}^k + C_{n-1}^{k-1}$ (правило Паскаля).
+    text: Докажите, что $C_n^k = C_n^{n-k}$ и $C_n^k = C_{n-1}^k + C_{n-1}^{k-1}$ (правило Паскаля).
     refs: [prop:lec02:pascal, rem:colloq1:proof-pascal]
   - id: proof-uniqueness
     kind: proof
@@ -116,10 +116,10 @@ questions:
     topic: sup
     text: Существование точной верхней (и нижней) грани у непустого ограниченного сверху (снизу) множества.
     refs: [thm:lec05:sup-exists, rem:colloq1:proof-sup]
-  - id: proof-sup-eps
-    kind: proof
+  - id: claim-sup-eps
+    kind: claim
     topic: sup
-    text: Характеризация точной верхней грани через $\varepsilon$.
+    text: Докажите, что $s = \sup A$ тогда и только тогда, когда $a \le s$ для всех $a \in A$ и $\forall \varepsilon > 0\ \exists a \in A\colon a > s - \varepsilon$.
     refs: [prop:lec05:sup-eps, rem:colloq1:proof-sup-eps]
   - id: proof-weierstrass
     kind: proof
@@ -129,7 +129,7 @@ questions:
   - id: proof-e
     kind: proof
     topic: e
-    text: Сходимость последовательности $\left(1 + \frac1n\right)^n$.
+    text: Сходимость последовательности $\left(1 + \frac1n\right)^n$. Определение числа $e$.
     refs: [thm:lec05:e, rem:colloq1:proof-e]
   - id: proof-bw
     kind: proof
