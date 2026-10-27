@@ -11,6 +11,7 @@ const question = (id: string, kind: string, topic: string): TicketQuestion => ({
   refs: [],
   text: `<p>${id}</p>`,
   topic,
+  weight: 1,
 });
 
 const BANK: TicketBank = {
@@ -116,5 +117,25 @@ describe("drawTicket", () => {
     );
     expect(variants).toStrictEqual(new Set(["c1,d1", "p1"]));
     expect(drawTicket(choice, () => 0.99).map((part) => part.title)).toStrictEqual(["Задача"]);
+  });
+
+  it("draws a question in proportion to its weight", () => {
+    const weighted: TicketBank = {
+      ...BANK,
+      questions: [
+        question("light", "proof", "a"),
+        { ...question("heavy", "proof", "b"), weight: 3 },
+      ],
+      ticket: [{ count: 1, kind: "proof", points: "", proofs: false, title: "Задача" }],
+    };
+    // [0, 1/4) — the light one, [1/4, 1) — the heavy one
+    expect(ids(weighted, () => 0.2)).toStrictEqual(["light"]);
+    expect(ids(weighted, () => 0.3)).toStrictEqual(["heavy"]);
+    const heavy = Array.from(
+      { length: 400 },
+      (_, seed) => ids(weighted, seeded(seed + 1))[0],
+    ).filter((id) => id === "heavy").length;
+    expect(heavy).toBeGreaterThan(250);
+    expect(heavy).toBeLessThan(350);
   });
 });

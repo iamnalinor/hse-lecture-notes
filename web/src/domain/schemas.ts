@@ -141,6 +141,8 @@ const TicketQuestionSchema = z.object({
   refs: z.array(TicketRefSchema),
   text: z.string(),
   topic: z.string(),
+  /** How many times more often the question is drawn than one of weight 1. */
+  weight: z.number().int().positive().default(1),
 });
 
 const TicketPartSchema = z.object({

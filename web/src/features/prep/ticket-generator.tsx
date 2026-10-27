@@ -14,10 +14,14 @@ type Props = { readonly course: string; readonly prepId: string };
 /** A drawn ticket; `serial` remounts the questions, so every new ticket starts with answers closed. */
 type Drawn = { readonly parts: readonly TicketPart[]; readonly serial: number };
 
-/** Read out to screen readers when a new ticket appears: «Билет 2: 9 вопросов». */
-const announce = (drawn: Drawn): string => {
+/** A test (`krN`) has variants, a colloquium has tickets. */
+const isTest = (prepId: string): boolean => prepId.startsWith("kr");
+
+/** Read out to screen readers when a new set appears: «Билет 2: 9 вопросов», «Вариант 2: 8 вопросов». */
+const announce = (drawn: Drawn, prepId: string): string => {
   const count = drawn.parts.flatMap((part) => part.questions).length;
-  return `Билет ${String(drawn.serial)}: ${String(count)} ${plural(count, ["вопрос", "вопроса", "вопросов"])}`;
+  const noun = isTest(prepId) ? "Вариант" : "Билет";
+  return `${noun} ${String(drawn.serial)}: ${String(count)} ${plural(count, ["вопрос", "вопроса", "вопросов"])}`;
 };
 
 /** The bank's own caption (`about`): what a generated set holds; then how many questions there are. */
@@ -69,8 +73,8 @@ const Ticket = ({
 };
 
 /**
-The ticket generator of a colloquium page: «Новый билет» draws a random ticket in the format of the
-page's sample ticket from the bank (`prep/<course>/<prep>-bank.yaml`); each question opens its answer
+The ticket generator of a colloquium page (on a test page — of variants): «Сгенерировать» draws a
+random ticket in the format of the bank's `ticket` from the bank (`prep/<course>/<prep>-bank.yaml`); each question opens its answer
 in place. Nothing goes into the URL: a ticket lives until the next one.
 */
 export const TicketGenerator = ({ course, prepId }: Props) => {
@@ -79,7 +83,7 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
 
   return (
     <div
-      aria-label="Генератор билетов"
+      aria-label={isTest(prepId) ? "Генератор вариантов" : "Генератор билетов"}
       className="mt-5 rounded-lg border border-rule bg-card px-4 py-5 sm:px-6"
       id="ticket-generator"
       role="region"
@@ -107,7 +111,7 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
         </button>
       </div>
       <p aria-live="polite" className="sr-only">
-        {drawn === undefined ? "" : announce(drawn)}
+        {drawn === undefined ? "" : announce(drawn, prepId)}
       </p>
       {bank !== undefined && drawn !== undefined && (
         <Ticket bank={bank} course={course} drawn={drawn} prepId={prepId} />

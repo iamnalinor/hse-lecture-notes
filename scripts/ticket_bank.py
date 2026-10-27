@@ -34,7 +34,7 @@ GENERATOR_SECTION = "generator"
 TICKET_KEYS = {"kind", "title", "count", "points", "proofs"}
 # значения, которые обрезает неэкранированный « #» (YAML считает его комментарием)
 TEXT_KEYS = {"about", "text", "answer", "title"}
-QUESTION_KEYS = {"id", "kind", "topic", "text", "refs", "answer"}
+QUESTION_KEYS = {"id", "kind", "topic", "text", "refs", "answer", "weight"}
 # ответом может быть блок, формула или рисунок; раздел целиком — слишком много для карточки вопроса
 NOT_AN_ANSWER = {"section"}
 MARK_RE = re.compile(r"<!--BANK (\S+)-->")
@@ -227,6 +227,11 @@ def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list
             errors.append(f"{where}: topic={topic!r} — нет раздела {{#sec:{exam}:{topic}}} на странице")
         if not isinstance(q.get("text"), str) or not q["text"].strip():
             errors.append(f"{where}: нет text")
+        weight = q.get("weight", 1)
+        if type(weight) is not int or weight < 1:
+            errors.append(
+                f"{where}: weight — целое число ≥ 1 (во сколько раз чаще выпадает), а не {weight!r}"
+            )
         answer = q.get("answer")
         if answer is not None and (not isinstance(answer, str) or not answer.strip()):
             errors.append(f"{where}: answer — непустая строка")
@@ -357,6 +362,7 @@ def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rende
                 "topic": q["topic"],
                 "text": rendered.get(f"{q['id']}:text", ""),
                 "answer": rendered.get(f"{q['id']}:answer", ""),
+                "weight": q.get("weight", 1),
                 "refs": [
                     {"id": r, "doc": exam if r in own_ids else notes[r]["week_id"]}
                     for r in q.get("refs") or []

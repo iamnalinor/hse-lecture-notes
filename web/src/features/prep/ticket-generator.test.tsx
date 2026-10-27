@@ -23,6 +23,7 @@ const BANK: TicketBank = {
       ],
       text: String.raw`<p>Теорема <span class="math inline">\det A</span> Лапласа.</p>`,
       topic: "det",
+      weight: 1,
     },
     {
       answer: "<p>Свой ответ: транспонирование.</p>",
@@ -31,6 +32,7 @@ const BANK: TicketBank = {
       refs: [{ doc: LECTURE, id: "thm:lec04:laplace" }],
       text: "<p>Что такое транспонирование?</p>",
       topic: "matrix",
+      weight: 1,
     },
   ],
   ticket: [
@@ -63,6 +65,8 @@ const FILES: Readonly<Record<string, string>> = {
   [`algebra/${LECTURE}/fragment.html`]: LECTURE_FRAGMENT,
   "algebra/colloq1/bank.json": JSON.stringify(BANK),
   "algebra/colloq1/fragment.html": PREP_FRAGMENT,
+  "algebra/kr1/bank.json": JSON.stringify(BANK),
+  "algebra/kr1/fragment.html": "",
 };
 
 beforeEach(() => {
@@ -170,5 +174,12 @@ describe("TicketGenerator", () => {
       expect(button).toHaveAttribute("aria-expanded", "false");
     }
     expect(screen.getByText("Билет 2: 2 вопроса")).toBeInTheDocument();
+  });
+
+  it("on a test page draws variants, not tickets", async () => {
+    renderWithApp(<TicketGenerator course="algebra" prepId="kr1" />, "/algebra/kr1");
+    expect(screen.getByRole("region", { name: "Генератор вариантов" })).toBeInTheDocument();
+    await newTicket();
+    expect(screen.getByText("Вариант 1: 2 вопроса")).toBeInTheDocument();
   });
 });
