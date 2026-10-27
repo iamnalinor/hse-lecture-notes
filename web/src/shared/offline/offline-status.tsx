@@ -3,10 +3,14 @@ import { DownloadIcon } from "#web/shared/ui/icons.tsx";
 
 import { type DownloadState, useOfflineStatus } from "./use-offline-status.ts";
 
+/** Share of the files downloaded, rounded down: 100 % only when everything is in. */
+const percent = (done: number, total: number): number =>
+  total === 0 ? 0 : Math.floor((done / total) * 100);
+
 const progressText = (download: DownloadState): string | undefined => {
   switch (download.kind) {
     case "running": {
-      return `Скачиваем… ${String(download.done)} из ${String(download.total)} ${plural(download.total, ["файла", "файлов", "файлов"])}`;
+      return `Скачиваем… ${String(percent(download.done, download.total))}%`;
     }
     case "background": {
       return "Сохраняем остальные в фоне…";
