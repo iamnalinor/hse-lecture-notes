@@ -13,6 +13,7 @@ import { labelStats } from "#web/domain/stats.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
 
+import { CourseSources, TEXT_LINK } from "./course-sources.tsx";
 import { LectureTable } from "./lecture-table.tsx";
 
 const BUTTON =
@@ -91,12 +92,13 @@ export const Component = () => {
           )}
         </div>
       </section>
-      <section className="py-9 pb-20">
+      <section className="py-9">
         <h2 className="mb-3.5 text-[13px] font-semibold tracking-[0.16em] text-muted uppercase">
           Лекции
         </h2>
         <LectureTable course={info.id} current={current?.weekId} lectures={lectures} />
       </section>
+      <CourseSources course={info.id} />
     </div>
   );
 };
@@ -104,12 +106,7 @@ export const Component = () => {
 /** The lecturer's name, linked to their profile on hse.ru. */
 function LecturerLink({ info }: { readonly info: CourseInfo }) {
   return (
-    <a
-      className="font-semibold text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink"
-      href={info.lecturerUrl}
-      rel="noreferrer"
-      target="_blank"
-    >
+    <a className={TEXT_LINK} href={info.lecturerUrl} rel="noreferrer" target="_blank">
       {info.lecturer}
     </a>
   );
