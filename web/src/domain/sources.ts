@@ -44,7 +44,7 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
     },
     {
       author: "А. Арунова",
-      note: "разбор типовых задач, определения и доказательства к КР-1",
+      note: "разбор типовых задач, определения и доказательства",
       title: "Алгебра ПИ 2021/22 (репозиторий adarunova/Algebra-HSE-SE)",
       url: "https://github.com/adarunova/Algebra-HSE-SE/tree/year-2021/2022",
     },

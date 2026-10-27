@@ -99,13 +99,13 @@ questions:
     topic: th-defs
     weight: 2
     text: а) Минор $k$-го порядка (с примером). б) Ранг матрицы.
-    refs: [def:lec07:minor, def:lec07:rank]
+    refs: [def:lec07:minor, ex:kr1:th-minor, def:lec07:rank]
   - id: def-dependence
     kind: definition
     topic: th-defs
     weight: 2
     text: а) Линейная зависимость строк матрицы (с примером). б) Линейно независимые столбцы (с примером).
-    refs: [def:lec07:dependent, ex:kr1:th-independent]
+    refs: [def:lec07:dependent, ex:kr1:th-dependent, ex:kr1:th-independent]
   - id: def-basis-minor-rank
     kind: definition
     topic: th-defs
@@ -196,7 +196,7 @@ questions:
     text: Найдите все матрицы $X \in M_2(\R)$, перестановочные с $A = \begin{pmatrix} 1 & 1 \\ 2 & 0 \end{pmatrix}$.
     refs: [prob:kr1:commute]
   - id: op-inverse-n
-    kind: operations
+    kind: equation
     topic: inverse
     text: >-
       Найдите обратную к матрице порядка $n$, у которой на главной диагонали стоят двойки, а остальные
@@ -425,6 +425,19 @@ questions:
       Решите неравенство
       $\begin{vmatrix} x & 0 & 1 & 2 \\ -2 & x & 0 & 0 \\ -1 & 3 & 1 & 2 \\ 2 & 1 & 0 & 2 \end{vmatrix} \le -8$.
     refs: [prob:kr1:det-inequality]
+  - id: det-coefficients
+    kind: determinant
+    topic: det-props
+    text: >-
+      Найдите коэффициенты при $x^4$ и $x^3$ у многочлена
+      $f(x) = \begin{vmatrix} x & 1 & 2 & x \\ 2 & x & 1 & 1 \\ 1 & 2 & x & 3 \\ x & 1 & 1 & 2x \end{vmatrix}$.
+    refs: [prob:kr1:coefficients]
+  - id: det-antidiagonal
+    kind: determinant
+    topic: det-props
+    text: >-
+      Как изменится определитель порядка $n$, если его матрицу отразить относительно побочной диагонали?
+    refs: [prob:kr1:antidiagonal]
   - id: det-sum-others
     kind: determinant
     topic: det-props
@@ -558,9 +571,9 @@ questions:
       $\begin{pmatrix} 1 & 2 & x & 1 \\ y & 1 & 1 & x \\ 0 & 3 & y & 1 \end{pmatrix}$ имеет наименьший ранг.
       Обоснуйте ответ.
     answer: >-
-      Все пары: ранг всегда равен $3$. Минор $M^{13}_{24} = \begin{vmatrix} 2 & 1 \\ 3 & 1 \end{vmatrix} = -1$ даёт
-      ранг не меньше $2$. Ранг $2$ требует нулевых окаймляющих миноров $M^{123}_{124} = y - 3x + 1$ и
-      $M^{123}_{234} = 3x^2 - 2xy - x + y - 1$. Из первого $y = 3x - 1$, тогда второй равен $-3x^2 + 4x - 2$,
+      Все пары: ранг всегда равен $3$. Минор $M^{24}_{13} = \begin{vmatrix} 2 & 1 \\ 3 & 1 \end{vmatrix} = -1$ даёт
+      ранг не меньше $2$. Ранг $2$ требует нулевых окаймляющих миноров $M^{124}_{123} = y - 3x + 1$ и
+      $M^{234}_{123} = 3x^2 - 2xy - x + y - 1$. Из первого $y = 3x - 1$, тогда второй равен $-3x^2 + 4x - 2$,
       а у $3x^2 - 4x + 2 = 0$ дискриминант $16 - 24 < 0$. Значит, ранг $2$ не достигается.
   - id: rank-two
     kind: rank
@@ -587,7 +600,7 @@ questions:
       $\begin{pmatrix} 1 & 2 & 1 & 3 \\ 2 & 5 & 1 & 4 \\ 1 & 3 & \lambda & 2 \\ 3 & 7 & 2 & \lambda + 5 \end{pmatrix}$.
     answer: >-
       $\det A = \lambda(\lambda - 2)$. При $\lambda \ne 0, 2$ ранг $4$, базисный минор — $\det A$. При $\lambda = 0$
-      ранг $3$, базисный минор $M^{123}_{124} = 1$. При $\lambda = 2$ ранг $3$, базисный минор $M^{123}_{123} = 2$.
+      ранг $3$, базисный минор $M^{124}_{123} = 1$. При $\lambda = 2$ ранг $3$, базисный минор $M^{123}_{123} = 2$.
   - id: rank-param-3
     kind: rank
     topic: rank
