@@ -181,5 +181,6 @@ export const OfflineManifestSchema = z.object({
   docs: z.array(OfflineDocSchema),
   files: z.record(z.string(), z.string()),
   precache: z.array(z.string()),
+  sizes: z.record(z.string(), z.number()).optional(),
   version: z.string(),
 });

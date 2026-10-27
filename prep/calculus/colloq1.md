@@ -1263,5 +1263,5 @@ $$\left(1 + \frac{4}{x - 1}\right)^{x} = \left(1 + \frac4t\right)^{t} \cdot \lef
 # Генератор билетов {#sec:colloq1:generator}
 
 ```{=latex}
-Генератор случайных билетов в формате коллоквиума, с ответами,~--- на сайте: \url{https://notes.nalinor.dev/calculus/colloq1}.
+Генератор случайных билетов в формате коллоквиума, с ответами,~--- на сайте: \url{https://hse.nalinor.dev/calculus/colloq1}.
 ```

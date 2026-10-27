@@ -1365,5 +1365,5 @@ $$\Delta_i = \det\Bigl(A_1, \dots, \sum_{k=1}^{n} x_k A_k, \dots, A_n\Bigr) = \s
 # Генератор вариантов {#sec:kr1:generator}
 
 ```{=latex}
-Генератор случайных тренировочных вариантов, с ответами,~--- на сайте: \url{https://notes.nalinor.dev/algebra/kr1}.
+Генератор случайных тренировочных вариантов, с ответами,~--- на сайте: \url{https://hse.nalinor.dev/algebra/kr1}.
 ```

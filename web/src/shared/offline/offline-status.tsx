@@ -1,4 +1,4 @@
-import { plural } from "#web/domain/text.ts";
+import { formatSize, plural } from "#web/domain/text.ts";
 import { DownloadIcon } from "#web/shared/ui/icons.tsx";
 
 import { type DownloadState, useOfflineStatus } from "./use-offline-status.ts";
@@ -6,7 +6,7 @@ import { type DownloadState, useOfflineStatus } from "./use-offline-status.ts";
 const progressText = (download: DownloadState): string | undefined => {
   switch (download.kind) {
     case "running": {
-      return `Скачиваем… ${String(download.done)} из ${String(download.total)}`;
+      return `Скачиваем… ${String(download.done)} из ${String(download.total)} ${plural(download.total, ["файла", "файлов", "файлов"])}`;
     }
     case "background": {
       return "Сохраняем остальные в фоне…";
@@ -21,7 +21,8 @@ const progressText = (download: DownloadState): string | undefined => {
 };
 
 /**
-Footer line: how many lecture notes open without internet, and a button to save the rest. On
+Footer line: how many lecture notes open without internet, and a button to save the rest (with
+the traffic it costs). On
 Wi-Fi the rest is saved in the background (the counter grows as files arrive); the button then
 takes over and downloads faster.
 */
@@ -49,6 +50,9 @@ export const OfflineStatus = () => {
         >
           <DownloadIcon size={14} />
           Скачать все
+          {count.missingBytes !== undefined && count.missingBytes > 0 && (
+            <span className="font-normal text-muted">· {formatSize(count.missingBytes)}</span>
+          )}
         </button>
       )}
     </span>

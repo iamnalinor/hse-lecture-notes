@@ -16,6 +16,7 @@ import {
   type OfflineDocKind,
   type OfflineManifest,
 } from "../src/domain/offline.ts";
+import { formatSize } from "../src/domain/text.ts";
 
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 const WORKER = fileURLToPath(new URL("../sw/service-worker.ts", import.meta.url));
@@ -65,16 +66,29 @@ const isPrecached = (file: string): boolean =>
   PRECACHED_ASSET.test(file);
 
 const paths = await allFiles();
-const hashes = await Promise.all(
-  paths.map(async (file) => await contentHash(await Bun.file(path.join(DIST, file)).bytes())),
+const contents = await Promise.all(
+  paths.map(async (file) => await Bun.file(path.join(DIST, file)).bytes()),
 );
+const hashes = await Promise.all(contents.map(async (bytes) => await contentHash(bytes)));
 const files: Record<string, string> = Object.fromEntries(
   paths.map((file, index): [string, string] => [file, hashes[index] ?? ""]),
 );
+const docs = docsOf(paths);
+const docFiles = new Set(docs.flatMap((doc) => doc.files));
+// Pages serves gzip: the size on the wire, not on disk, is what «Скачать все» costs.
+const sizes: Record<string, number> = Object.fromEntries(
+  paths.flatMap((file, index): [string, number][] => {
+    const bytes = contents[index];
+    return bytes !== undefined && docFiles.has(file)
+      ? [[file, Bun.gzipSync(bytes).byteLength]]
+      : [];
+  }),
+);
 const manifest: OfflineManifest = {
-  docs: docsOf(paths),
+  docs,
   files,
   precache: paths.filter((file) => isPrecached(file)),
+  sizes,
   version: await contentHash(encode(JSON.stringify(files))),
 };
 await Bun.write(path.join(DIST, MANIFEST_PATH), JSON.stringify(manifest));
@@ -92,5 +106,5 @@ if (!result.success) {
   process.exit(1);
 }
 console.log(
-  `dist/sw.js: ${String(manifest.precache.length)} precached files, ${String(manifest.docs.length)} documents, version ${manifest.version}`,
+  `dist/sw.js: ${String(manifest.precache.length)} precached files, ${String(manifest.docs.length)} documents (${formatSize(Object.values(sizes).reduce((sum, size) => sum + size, 0))} gzip), version ${manifest.version}`,
 );
