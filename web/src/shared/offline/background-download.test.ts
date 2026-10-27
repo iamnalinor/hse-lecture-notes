@@ -157,6 +157,21 @@ describe("scheduleBackgroundDownload", () => {
     expect(phases).toEqual(["running", "failed"]);
   });
 
+  it("pauses, not fails, when the link drops before its change event", async () => {
+    const connection = new FakeConnection("wifi");
+    const { phases, plan, settle } = harness(connection);
+    const run = vi.fn(async () => {
+      connection.type = "cellular";
+      await Promise.reject(new Error("network"));
+    });
+    scheduleBackgroundDownload({ ...plan, run });
+    settle();
+    await flush();
+    expect(phases).toEqual(["running", "paused"]);
+    connection.switchTo({ type: "wifi" });
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
   it("stop aborts the download and cancels a pending start", async () => {
     const connection = new FakeConnection("wifi");
     const { cancelSettled, phases, plan, runs, settle } = harness(connection);

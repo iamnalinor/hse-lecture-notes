@@ -51,7 +51,7 @@ export const prepDescription = (id: string): string =>
 /**
 A test is upcoming through its `activeUntil` day inclusive (front matter `active_until`; the test day
 unless set — a stream that writes on two consecutive days sets the second one), then it hides itself:
-no tile on the home page, a plain button on the course page.
+no tile on the home page, no button on the course page.
 */
 export const isUpcoming = (prep: PrepEntry, today: string): boolean => prep.activeUntil >= today;
 

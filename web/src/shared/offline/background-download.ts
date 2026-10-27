@@ -86,15 +86,17 @@ export type BackgroundPlan = {
   readonly whenSettled: (start: () => void) => () => void;
 };
 
+/** A run that failed because the link went away before its `change` event counts as aborted, not failed. */
 const attempt = async (
   run: BackgroundPlan["run"],
   signal: AbortSignal,
+  connection: ConnectionLike,
 ): Promise<"aborted" | "done" | "failed"> => {
   try {
     await run(signal);
     return "done";
   } catch {
-    return signal.aborted ? "aborted" : "failed";
+    return signal.aborted || !canAutoDownload(connection) ? "aborted" : "failed";
   }
 };
 
@@ -117,7 +119,7 @@ export const scheduleBackgroundDownload = (plan: BackgroundPlan): (() => void) =
     }
     state.controller = new AbortController();
     plan.onPhase("running");
-    const outcome = await attempt(plan.run, state.controller.signal);
+    const outcome = await attempt(plan.run, state.controller.signal, connection);
     state.controller = undefined;
     if (state.isOver) {
       return;

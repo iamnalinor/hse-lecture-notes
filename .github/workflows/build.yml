@@ -236,9 +236,9 @@ jobs:
           BODY="$MARKER
           **Превью сайта:** $LINK
 
-          Эта сборка (коммит \`${SHA:0:7}\`): $VERSION. Ссылка выше всегда ведёт на последний пуш."
+          Эта сборка (коммит \`${SHA:0:7}\`, слитый с main): $VERSION. Ссылка выше всегда ведёт на последний пуш."
           ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
-            --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n1)
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$MARKER\"))) | .id" | head -n1)
           if [ -n "$ID" ]; then
             gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -f body="$BODY" >/dev/null
           else

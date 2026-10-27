@@ -154,7 +154,7 @@ const TicketPartSchema = z.object({
 
 /** A ticket item with variants (`one_of` in the bank): the generator takes one of them at random. */
 const TicketChoiceSchema = z
-  .object({ one_of: z.array(z.array(TicketPartSchema)).min(1) })
+  .object({ one_of: z.array(z.array(TicketPartSchema)).min(2) })
   .transform(({ one_of: oneOf }) => ({ oneOf }));
 
 export const TicketBankSchema = z.object({

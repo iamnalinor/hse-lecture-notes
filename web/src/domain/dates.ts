@@ -17,9 +17,11 @@ export const dayMonth = (iso: string): string => {
 
 const DAY_MS = 86_400_000;
 
-/** `2026-11-02`, −14 → `2026-10-19`: calendar arithmetic on ISO days, no time zone involved. */
-export const addDays = (iso: string, days: number): string =>
-  new Date(Date.parse(iso) + days * DAY_MS).toISOString().slice(0, 10);
+/** `2026-11-02`, −14 → `2026-10-19`: calendar arithmetic on ISO days, no time zone involved. Not a date → as is. */
+export const addDays = (iso: string, days: number): string => {
+  const time = Date.parse(iso);
+  return Number.isNaN(time) ? iso : new Date(time + days * DAY_MS).toISOString().slice(0, 10);
+};
 
 const MOSCOW_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" });
 

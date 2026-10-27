@@ -32,6 +32,7 @@ describe("dates", () => {
   it("adds days across months and years", () => {
     expect(addDays("2026-11-02", -14)).toBe("2026-10-19");
     expect(addDays("2026-12-25", 14)).toBe("2027-01-08");
+    expect(addDays("not a date", -14)).toBe("not a date");
     expect(addDays("2027-03-10", -14)).toBe("2027-02-24");
   });
 });
