@@ -26,7 +26,7 @@ const describe = (bank: TicketBank | undefined): string => {
     return "Загрузка вопросов…";
   }
   const size = bank.questions.length;
-  const total = `Всего в банке ${String(size)} ${plural(size, ["вопрос", "вопроса", "вопросов"])}.`;
+  const total = `В банке ${String(size)} ${plural(size, ["вопрос", "вопроса", "вопросов"])}.`;
   return bank.about === "" ? total : `${bank.about} ${total}`;
 };
 

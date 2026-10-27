@@ -93,9 +93,7 @@ describe("TicketGenerator", () => {
   it("draws a ticket only on «Сгенерировать», in the format of the bank", async () => {
     view();
     expect(
-      await screen.findByText(
-        "Набор для тренировки: теорема и формулировка. Всего в банке 2 вопроса.",
-      ),
+      await screen.findByText("Набор для тренировки: теорема и формулировка. В банке 2 вопроса."),
     ).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).toBeNull();
 

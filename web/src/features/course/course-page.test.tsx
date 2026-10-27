@@ -102,6 +102,16 @@ describe("course page", () => {
     );
   });
 
+  it("lists the sources of the course, the public ones linked", () => {
+    page([]);
+    const sources = within(screen.getByRole("region", { name: "Источники" }));
+    expect(sources.getByRole("link", { name: "Elements of Discrete Mathematics" })).toHaveAttribute(
+      "href",
+      "https://drive.google.com/file/d/1YFYHP3oHlv6zPI6d0k96Intjyu0qZpus/view",
+    );
+    expect(sources.getByText("КР-1 2025/26")).not.toHaveAttribute("href");
+  });
+
   it("drops the prep row when nothing is ahead", () => {
     calculusOn("2026-12-31");
     expect(screen.queryByRole("navigation", { name: "Подготовка к контрольным" })).toBeNull();

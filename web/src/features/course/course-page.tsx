@@ -13,6 +13,7 @@ import { labelStats } from "#web/domain/stats.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
 
+import { CourseSources } from "./course-sources.tsx";
 import { LectureTable } from "./lecture-table.tsx";
 
 const BUTTON =
@@ -91,12 +92,13 @@ export const Component = () => {
           )}
         </div>
       </section>
-      <section className="py-9 pb-20">
+      <section className="py-9">
         <h2 className="mb-3.5 text-[13px] font-semibold tracking-[0.16em] text-muted uppercase">
           Лекции
         </h2>
         <LectureTable course={info.id} current={current?.weekId} lectures={lectures} />
       </section>
+      <CourseSources course={info.id} />
     </div>
   );
 };
