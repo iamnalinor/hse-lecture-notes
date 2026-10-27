@@ -42,6 +42,12 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
       title: "Материалы курса 2023/24 (репозиторий vasyukov1/HSE-FCS-SE-1-year)",
       url: PAST_YEAR,
     },
+    {
+      author: "А. Арунова",
+      note: "разбор типовых задач, определения и доказательства",
+      title: "Алгебра ПИ 2021/22 (репозиторий adarunova/Algebra-HSE-SE)",
+      url: "https://github.com/adarunova/Algebra-HSE-SE/tree/year-2021/2022",
+    },
     { author: "И. В. Проскуряков", title: "Сборник задач по линейной алгебре" },
   ],
   calculus: [

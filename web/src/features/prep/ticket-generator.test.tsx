@@ -63,6 +63,8 @@ const FILES: Readonly<Record<string, string>> = {
   [`algebra/${LECTURE}/fragment.html`]: LECTURE_FRAGMENT,
   "algebra/colloq1/bank.json": JSON.stringify(BANK),
   "algebra/colloq1/fragment.html": PREP_FRAGMENT,
+  "algebra/kr1/bank.json": JSON.stringify(BANK),
+  "algebra/kr1/fragment.html": "",
 };
 
 beforeEach(() => {
@@ -170,5 +172,12 @@ describe("TicketGenerator", () => {
       expect(button).toHaveAttribute("aria-expanded", "false");
     }
     expect(screen.getByText("Билет 2: 2 вопроса")).toBeInTheDocument();
+  });
+
+  it("on a test page draws variants, not tickets", async () => {
+    renderWithApp(<TicketGenerator course="algebra" prepId="kr1" />, "/algebra/kr1");
+    expect(screen.getByRole("region", { name: "Генератор вариантов" })).toBeInTheDocument();
+    await newTicket();
+    expect(screen.getByText("Вариант 1: 2 вопроса")).toBeInTheDocument();
   });
 });
