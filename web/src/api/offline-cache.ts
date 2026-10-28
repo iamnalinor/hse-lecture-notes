@@ -2,6 +2,7 @@ import {
   BACKGROUND_HEADER,
   CACHE_NAME,
   type CachedHashes,
+  fileWeight,
   HASH_HEADER,
   MANIFEST_PATH,
   missingDocFiles,
@@ -66,6 +67,7 @@ const fetchFile = async (path: string, background: BackgroundOptions | undefined
 /**
 Downloads every document that is missing or outdated. The requests go through the service worker,
 which stores them; without a controlling worker nothing would be saved, so the caller checks first.
+Progress is in bytes (gzip, `fileWeight`), so it grows evenly whatever the files' sizes.
 */
 export const downloadAll = async (
   manifest: OfflineManifest,
@@ -73,12 +75,12 @@ export const downloadAll = async (
   background?: BackgroundOptions,
 ): Promise<void> => {
   const queue = [...missingDocFiles(manifest, await readCachedHashes(manifest))];
-  const total = queue.length;
+  const total = queue.reduce((sum, path) => sum + fileWeight(manifest, path), 0);
   let done = 0;
   const worker = async (): Promise<void> => {
     for (let path = queue.shift(); path !== undefined; path = queue.shift()) {
       await fetchFile(path, background);
-      done += 1;
+      done += fileWeight(manifest, path);
       onProgress(done, total);
     }
   };

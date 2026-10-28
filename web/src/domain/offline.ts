@@ -87,6 +87,13 @@ export type OfflineCount = {
   readonly total: number;
 };
 
+/**
+Share of a file in the progress of «Скачать все»: its gzip size, or 1 for a manifest without sizes
+(then the progress counts files).
+*/
+export const fileWeight = (manifest: OfflineManifest, path: string): number =>
+  manifest.sizes === undefined ? 1 : (manifest.sizes[path] ?? 0);
+
 const missingBytes = (manifest: OfflineManifest, cached: CachedHashes): number | undefined => {
   const { sizes } = manifest;
   return sizes === undefined

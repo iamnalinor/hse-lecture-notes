@@ -4,6 +4,7 @@ import {
   type CachedHashes,
   contentHash,
   countSavedNotes,
+  fileWeight,
   isDocFresh,
   missingDocFiles,
   type OfflineManifest,
@@ -47,6 +48,12 @@ describe("offline documents", () => {
       "data/a/glossary.json": "g",
     });
     expect(countSavedNotes(MANIFEST, state)).toEqual({ missingBytes: 200, saved: 1, total: 2 });
+  });
+
+  it("weighs files by size, or equally without sizes", () => {
+    const { sizes: _sizes, ...withoutSizes } = MANIFEST;
+    expect(fileWeight(MANIFEST, "data/a/02/fragment.html")).toBe(200);
+    expect(fileWeight(withoutSizes, "data/a/02/fragment.html")).toBe(1);
   });
 
   it("leaves the size unknown for a manifest without sizes", () => {

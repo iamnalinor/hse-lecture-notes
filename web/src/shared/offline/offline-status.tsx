@@ -3,7 +3,7 @@ import { DownloadIcon } from "#web/shared/ui/icons.tsx";
 
 import { type DownloadState, useOfflineStatus } from "./use-offline-status.ts";
 
-/** Share of the files downloaded, rounded down: 100 % only when everything is in. */
+/** Share of the bytes downloaded, rounded down: 100 % only when everything is in. */
 const percent = (done: number, total: number): number =>
   total === 0 ? 0 : Math.floor((done / total) * 100);
 
