@@ -75,7 +75,7 @@ jobs:
       - name: Build
         working-directory: web
         env:
-          # "" on a custom domain (notes.nalinor.dev), "/<repo>" on <owner>.github.io/<repo>
+          # "" on a custom domain (hse.nalinor.dev), "/<repo>" on <owner>.github.io/<repo>
           BASE_PATH: ${{ steps.pages.outputs.base_path }}/
         run: bun run build
 

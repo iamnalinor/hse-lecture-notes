@@ -707,7 +707,7 @@ GENERATOR = """
 # Генератор билетов {#sec:colloq1:generator}
 
 ```{=latex}
-Генератор~--- на сайте: \\url{https://notes.nalinor.dev/algebra/colloq1}.
+Генератор~--- на сайте: \\url{https://hse.nalinor.dev/algebra/colloq1}.
 ```
 """
 
@@ -887,11 +887,11 @@ def test_generator_link_only_in_pdf(demo: Path):
     res = build(demo, "--only", "prep/algebra/colloq1.md")
     assert res.returncode == 0, res.stderr
     tex = (demo / "build" / "tex" / "algebra" / "colloq1.tex").read_text(encoding="utf-8")
-    assert "\\url{https://notes.nalinor.dev/algebra/colloq1}" in tex
+    assert "\\url{https://hse.nalinor.dev/algebra/colloq1}" in tex
     frag = (demo / "build" / "site-data" / "algebra" / "colloq1" / "fragment.html").read_text(
         encoding="utf-8"
     )
-    assert 'id="sec:colloq1:generator"' in frag and "notes.nalinor.dev" not in frag
+    assert 'id="sec:colloq1:generator"' in frag and "hse.nalinor.dev" not in frag
 
 
 ONE_OF = BANK.replace(

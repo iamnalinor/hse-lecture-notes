@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { plural, readingMinutes, splitTex, stripTags } from "./text.ts";
+import { formatSize, plural, readingMinutes, splitTex, stripTags } from "./text.ts";
 
 const FORMS = ["конспект", "конспекта", "конспектов"] as const;
 
@@ -16,6 +16,17 @@ describe("plural", () => {
     [0, "конспектов"],
   ])("%i → %s", (n, expected) => {
     expect(plural(n, FORMS)).toBe(expected);
+  });
+});
+
+describe("formatSize", () => {
+  it.each([
+    [100, "1 КБ"],
+    [860_000, "840 КБ"],
+    [3_460_000, "3,3 МБ"],
+    [2 * 1024 * 1024, "2 МБ"],
+  ])("%i → %s", (bytes, expected) => {
+    expect(formatSize(bytes)).toBe(expected);
   });
 });
 

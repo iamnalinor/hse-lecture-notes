@@ -24,6 +24,16 @@ export const plural = (n: number, forms: readonly [string, string, string]): str
   return ones >= 2 && ones <= 4 ? forms[1] : forms[2];
 };
 
+const KB = 1024;
+const MB = KB * KB;
+const ONE_DECIMAL = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 });
+
+/** Download size for people: «840 КБ», «3,3 МБ». */
+export const formatSize = (bytes: number): string =>
+  bytes < MB
+    ? `${String(Math.max(1, Math.round(bytes / KB)))} КБ`
+    : `${ONE_DECIMAL.format(bytes / MB)} МБ`;
+
 export type TexPart = { readonly kind: "math" | "text"; readonly value: string };
 
 /** Plain text with inline `$…$` formulas (label titles in `index.json`) split into parts. */
