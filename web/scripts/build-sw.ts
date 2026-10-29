@@ -21,7 +21,7 @@ import { formatSize } from "../src/domain/text.ts";
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 const WORKER = fileURLToPath(new URL("../sw/service-worker.ts", import.meta.url));
 
-// The crawler files (spa-fallback.ts) are never read by the app.
+// The crawler files (spa-fallback.ts) and the link preview pictures (og/) are never read by the app.
 const SKIPPED = new Set([
   "404.html",
   "llms.txt",
@@ -47,7 +47,13 @@ const allFiles = async (): Promise<string[]> => {
     .map((entry) =>
       path.relative(DIST, path.join(entry.parentPath, entry.name)).split(path.sep).join("/"),
     )
-    .filter((file) => !SKIPPED.has(file) && !PAGE_SHELL.test(file) && !file.startsWith("pdf/"))
+    .filter(
+      (file) =>
+        !SKIPPED.has(file) &&
+        !PAGE_SHELL.test(file) &&
+        !file.startsWith("pdf/") &&
+        !file.startsWith("og/"),
+    )
     .toSorted((a, b) => a.localeCompare(b));
 };
 

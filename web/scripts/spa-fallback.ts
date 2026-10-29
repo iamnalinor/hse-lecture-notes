@@ -73,6 +73,7 @@ const isPresent = async (path: string): Promise<boolean> =>
 const home: SitePage = {
   crumbs: [],
   description: SITE_DESCRIPTION,
+  image: "site",
   name: SITE_NAME,
   pdf: undefined,
   route: "",
@@ -92,12 +93,13 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
   const coursePage: SitePage = {
     crumbs: [],
     description: `Конспекты лекций по курсу «${name}», ПИ ФКН ВШЭ 2026/27. ${summary}`,
+    image: course,
     name,
     pdf: undefined,
     route: course,
     source: undefined,
   };
-  const inCourse = { crumbs: [{ name, route: course }] };
+  const inCourse = { crumbs: [{ name, route: course }], image: course };
   const docs = [];
   for (const doc of ["theory", "program"] as const) {
     if (await isPresent(`data/${course}/${doc}/meta.json`)) {

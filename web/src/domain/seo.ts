@@ -3,6 +3,8 @@ What search engines and LLMs read without running the app. `scripts/spa-fallback
 into the shell of every page and writes `sitemap.xml`, `robots.txt` and `llms.txt` next to them.
 The Markdown sources live in the public repository: an LLM reads them better than the rendered page.
 */
+import { type CourseId, findCourse } from "./courses.ts";
+
 export const SITE_NAME = "Конспекты ПИ ФКН";
 /** The same text is in `index.html`: the shell of the home page. */
 export const SITE_DESCRIPTION =
@@ -15,6 +17,19 @@ export const SITE_URL = "https://hse.nalinor.dev/";
 export const REPO_URL = "https://github.com/iamnalinor/hse-lecture-notes";
 const RAW_URL = "https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/";
 
+/**
+Link previews (Telegram, VK, X): one picture for the site and one per course, `public/og/<id>.png`,
+drawn by `scripts/og-images.ts`. A lecture, the theory or a prep shows its course's picture.
+*/
+export type OgImageId = "site" | CourseId;
+export const OG_IMAGE_SIZE = { height: 630, width: 1200 } as const;
+export const ogImagePath = (id: OgImageId): string => `og/${id}.png`;
+
+const ogImageAlt = (id: OgImageId): string => {
+  const course = id === "site" ? undefined : findCourse(id);
+  return course === undefined ? SITE_NAME : `${course.name}: конспекты лекций ПИ ФКН`;
+};
+
 export type Crumb = {
   readonly name: string;
   /** `algebra`; "" is the home page. */
@@ -25,6 +40,7 @@ export type SitePage = Crumb & {
   /** Crumbs between the home page and this one: the course of a lecture. */
   readonly crumbs: readonly Crumb[];
   readonly description: string;
+  readonly image: OgImageId;
   /** `pdf/algebra-theory.pdf`. */
   readonly pdf: string | undefined;
   /** Path of the Markdown source in the repository: `notes/algebra/01_sep03_matrices.md`. */
@@ -81,7 +97,18 @@ const structuredData = (page: SitePage): object => {
   };
 };
 
-/** Goes right before `</head>`: the address search engines should keep, the source, the crumbs. */
+const imageTags = (id: OgImageId): string[] => [
+  `<meta property="og:image" content="${SITE_URL}${ogImagePath(id)}" />`,
+  `<meta property="og:image:width" content="${String(OG_IMAGE_SIZE.width)}" />`,
+  `<meta property="og:image:height" content="${String(OG_IMAGE_SIZE.height)}" />`,
+  `<meta property="og:image:alt" content="${escapeHtml(ogImageAlt(id))}" />`,
+  '<meta name="twitter:card" content="summary_large_image" />',
+];
+
+/**
+Goes right before `</head>`: the address search engines should keep, the preview picture, the source,
+the crumbs.
+*/
 export const headTags = (page: SitePage): string => {
   const url = escapeHtml(pageUrl(page.route));
   const source =
@@ -93,6 +120,7 @@ export const headTags = (page: SitePage): string => {
   return [
     `<link rel="canonical" href="${url}" />`,
     `<meta property="og:url" content="${url}" />`,
+    ...imageTags(page.image),
     ...source,
     jsonLd(structuredData(page)),
   ].join("\n    ");

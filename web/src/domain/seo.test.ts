@@ -16,6 +16,7 @@ import {
 const lecture: SitePage = {
   crumbs: [{ name: "Алгебра", route: "algebra" }],
   description: "Конспект лекции 1: матрицы <и> «операции»",
+  image: "algebra",
   name: "Алгебра, лекция 1: матрицы",
   pdf: "pdf/algebra-01_sep03_matrices.pdf",
   route: "algebra/01_sep03_matrices",
@@ -24,6 +25,7 @@ const lecture: SitePage = {
 const home: SitePage = {
   crumbs: [],
   description: SITE_DESCRIPTION,
+  image: "site",
   name: "Конспекты ПИ ФКН",
   pdf: undefined,
   route: "",
@@ -58,6 +60,18 @@ describe("seo", () => {
       ],
     });
     expect(headTags(home)).toContain('"@type":"WebSite"');
+  });
+
+  it("shows the course picture in link previews", () => {
+    const tags = headTags(lecture);
+    expect(tags).toContain(
+      '<meta property="og:image" content="https://hse.nalinor.dev/og/algebra.png" />',
+    );
+    expect(tags).toContain(
+      '<meta property="og:image:alt" content="Алгебра: конспекты лекций ПИ ФКН" />',
+    );
+    expect(tags).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(headTags(home)).toContain("https://hse.nalinor.dev/og/site.png");
   });
 
   it("escapes the text it puts into HTML, also inside JSON-LD", () => {
