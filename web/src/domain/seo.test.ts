@@ -7,6 +7,7 @@ import {
   noscriptBody,
   pageUrl,
   robotsTxt,
+  routeOf,
   SITE_DESCRIPTION,
   sitemapXml,
   type SitePage,
@@ -31,6 +32,8 @@ const home: SitePage = {
 
 describe("seo", () => {
   it("gives every page an address with a slash, as Pages serves it", () => {
+    expect(pageUrl(routeOf("/"))).toBe("https://hse.nalinor.dev/");
+    expect(pageUrl(routeOf("/algebra/theory/"))).toBe("https://hse.nalinor.dev/algebra/theory/");
     expect(pageUrl("")).toBe("https://hse.nalinor.dev/");
     expect(pageUrl("algebra/theory")).toBe("https://hse.nalinor.dev/algebra/theory/");
   });
@@ -59,7 +62,9 @@ describe("seo", () => {
 
   it("escapes the text it puts into HTML, also inside JSON-LD", () => {
     expect(noscriptBody(lecture)).toContain("матрицы &lt;и&gt; «операции»");
-    expect(headTags({ ...lecture, name: "</script>" })).not.toContain("</script><");
+    const tags = headTags({ ...lecture, name: "</script><b>" });
+    expect(tags.split("</script>")).toHaveLength(2);
+    expect(tags).toContain(String.raw`\u003c/script>\u003cb>`);
   });
 
   it("lists the pages for search engines and LLMs", () => {
@@ -70,7 +75,7 @@ describe("seo", () => {
     const llms = llmsTxt("Конспекты", [{ pages: [lecture], title: "Алгебра" }]);
     expect(llms).toMatch(/^# Конспекты ПИ ФКН\n\n> Конспекты\n/u);
     expect(llms).toContain(
-      "## Алгебра\n\n- [Алгебра, лекция 1: матрицы](https://hse.nalinor.dev/algebra/01_sep03_matrices/)",
+      "## Алгебра\n\n- [Алгебра, лекция 1: матрицы](https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md)",
     );
     expect(llms).toContain("https://github.com/iamnalinor/hse-lecture-notes");
   });

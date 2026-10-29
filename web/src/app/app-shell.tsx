@@ -6,6 +6,7 @@ import { BackBar } from "#web/shared/layout/back-bar.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
 import { UpdateBanner } from "#web/shared/offline/update-banner.tsx";
+import { useCanonicalUrl } from "#web/shared/ui/canonical-url.ts";
 import { DocSkeleton, PageSkeleton } from "#web/shared/ui/page-skeleton.tsx";
 
 const Skeleton = ({ pathname }: { readonly pathname: string }) =>
@@ -32,6 +33,7 @@ export const AppShell = () => {
   const navigation = useNavigation();
   const pending = navigation.location?.pathname;
   const isSwitching = pending !== undefined && pending !== location.pathname;
+  useCanonicalUrl(location.pathname);
 
   return (
     <div className="flex min-h-screen flex-col bg-paper text-ink">

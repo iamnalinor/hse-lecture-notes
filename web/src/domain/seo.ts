@@ -7,6 +7,10 @@ export const SITE_NAME = "Конспекты ПИ ФКН";
 /** The same text is in `index.html`: the shell of the home page. */
 export const SITE_DESCRIPTION =
   "Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика. Теория, глоссарий, подготовка к контрольным и коллоквиумам, PDF.";
+/**
+The address search engines keep: always the production domain, also in PR previews (they must not
+compete with the site) and on a `<owner>.github.io/<repo>` deploy.
+*/
 export const SITE_URL = "https://hse.nalinor.dev/";
 export const REPO_URL = "https://github.com/iamnalinor/hse-lecture-notes";
 const RAW_URL = "https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/";
@@ -38,11 +42,20 @@ export const escapeHtml = (text: string): string =>
 export const pageUrl = (route: string): string =>
   route === "" ? SITE_URL : `${SITE_URL}${route}/`;
 
+/** `/algebra/theory/` → `algebra/theory`: the route of a router path (the router strips the base). */
+export const routeOf = (pathname: string): string =>
+  pathname
+    .split("/")
+    .filter((part) => part !== "")
+    .join("/");
+
 export const sourceUrl = (source: string): string => `${RAW_URL}${source}`;
 
-const jsonLd = (data: object): string =>
-  // `<` inside a string must not close the script tag.
-  `<script type="application/ld+json">${JSON.stringify(data).replaceAll("<", "<")}</script>`;
+const jsonLd = (data: object): string => {
+  // A `</script>` inside a title must not close the script tag: `<` goes as its JSON escape.
+  const json = JSON.stringify(data).replaceAll("<", String.raw`\u003c`);
+  return `<script type="application/ld+json">${json}</script>`;
+};
 
 const structuredData = (page: SitePage): object => {
   if (page.route === "") {
@@ -123,10 +136,11 @@ export type LlmsSection = {
   readonly title: string;
 };
 
-const llmsLine = (page: SitePage): string => {
-  const source = page.source === undefined ? "" : `, Markdown: ${sourceUrl(page.source)}`;
-  return `- [${page.name}](${pageUrl(page.route)}): ${page.description}${source}`;
-};
+/** The link goes to the Markdown an LLM can read; the page itself is empty without JavaScript. */
+const llmsLine = (page: SitePage): string =>
+  page.source === undefined
+    ? `- [${page.name}](${pageUrl(page.route)}): ${page.description}`
+    : `- [${page.name}](${sourceUrl(page.source)}): ${page.description}. Страница: ${pageUrl(page.route)}`;
 
 /** https://llmstxt.org: a map of the site with links to the Markdown each page is built from. */
 export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): string =>
@@ -136,9 +150,9 @@ export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): stri
     `> ${summary}`,
     "",
     "Сайт — одностраничное приложение: без JavaScript страницы пустые. Читайте Markdown-исходники:",
-    `весь репозиторий — ${REPO_URL}, конспекты лекций — notes/<курс>/<week_id>.md, теория курса — theory/<курс>.md,`,
-    "план учебной дисциплины — program/<курс>.md, подготовка к контрольным и коллоквиумам — prep/<курс>/<id>.md.",
-    "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида {#thm:lec04:laplace}.",
+    `весь репозиторий — ${REPO_URL}, конспекты лекций — \`notes/<курс>/<week_id>.md\`, теория курса — \`theory/<курс>.md\`,`,
+    "план учебной дисциплины — `program/<курс>.md`, подготовка к контрольным и коллоквиумам — `prep/<курс>/<id>.md`.",
+    "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида `{#thm:lec04:laplace}`.",
     ...sections.flatMap(({ pages, title }) => [
       "",
       `## ${title}`,
