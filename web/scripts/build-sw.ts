@@ -21,7 +21,15 @@ import { formatSize } from "../src/domain/text.ts";
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 const WORKER = fileURLToPath(new URL("../sw/service-worker.ts", import.meta.url));
 
-const SKIPPED = new Set(["404.html", "sw.js", MANIFEST_PATH]);
+// The crawler files (spa-fallback.ts) are never read by the app.
+const SKIPPED = new Set([
+  "404.html",
+  "llms.txt",
+  "robots.txt",
+  "sitemap.xml",
+  "sw.js",
+  MANIFEST_PATH,
+]);
 // Per-page copies of the shell (`algebra/…/index.html`) for static hosting: navigations get the one shell.
 const PAGE_SHELL = /^(?!data\/).+\/index\.html$/u;
 const SHARED_DATA = new Set(["data/courses.json", "data/index.json", "data/katex-macros.json"]);
