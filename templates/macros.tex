@@ -12,9 +12,10 @@
 \newcommand{\tr}{\operatorname{tr}}
 \newcommand{\Mat}{\operatorname{M}}
 \newcommand{\eps}{\varepsilon}
-% номер строки в элементарных преобразованиях: рубленая римская цифра, черты сверху и снизу прилегают к ней
-\newcommand{\rw}[1]{\overline{\underline{\raisebox{0.12em}{$\smash[t]{\kern0.07em\mathsf{#1}\kern0.07em}$}}\rule{0pt}{0.7em}}}
-\newcommand{\rwv}[1]{\overline{\underline{\raisebox{0.12em}{$\smash[t]{\kern0.07em #1\kern0.07em}$}}\rule{0pt}{0.7em}}}
+% номер строки в элементарных преобразованиях: рубленая римская цифра посередине между чертами сверху и снизу
+% (черты отстоят от цифры одинаково; у \rwv высота — как у цифры, чтобы черты у i и k стояли на одном уровне)
+\newcommand{\rw}[1]{\overline{\underline{\kern0.07em\mathsf{#1}\kern0.07em}}}
+\newcommand{\rwv}[1]{\overline{\underline{\kern0.07em #1\vphantom{\mathsf{I}}\kern0.07em}}}
 \renewcommand{\le}{\leqslant}
 \renewcommand{\ge}{\geqslant}
 \renewcommand{\leq}{\leqslant}
