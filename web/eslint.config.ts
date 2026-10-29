@@ -317,6 +317,7 @@ export default defineConfig([
             "^math-display$",
             "^math-inline$",
             "^flash$",
+            "^table-cards$",
           ],
         },
       ],

@@ -1,0 +1,121 @@
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+import type { TicketBank } from "#web/domain/schemas.ts";
+
+import { ticketBankQuery } from "#web/api/queries.ts";
+import { plural } from "#web/domain/text.ts";
+import { drawTicket, type TicketPart } from "#web/domain/tickets.ts";
+
+import { TicketQuestion } from "./ticket-question.tsx";
+
+type Props = { readonly course: string; readonly prepId: string };
+
+/** A drawn ticket; `serial` remounts the questions, so every new ticket starts with answers closed. */
+type Drawn = { readonly parts: readonly TicketPart[]; readonly serial: number };
+
+/** A test (`krN`) has variants, a colloquium has tickets. */
+const isTest = (prepId: string): boolean => prepId.startsWith("kr");
+
+/** Read out to screen readers when a new set appears: «Билет 2: 9 вопросов», «Вариант 2: 8 вопросов». */
+const announce = (drawn: Drawn, prepId: string): string => {
+  const count = drawn.parts.flatMap((part) => part.questions).length;
+  const noun = isTest(prepId) ? "Вариант" : "Билет";
+  return `${noun} ${String(drawn.serial)}: ${String(count)} ${plural(count, ["вопрос", "вопроса", "вопросов"])}`;
+};
+
+/** The bank's own caption (`about`): what a generated set holds; then how many questions there are. */
+const describe = (bank: TicketBank | undefined): string => {
+  if (bank === undefined) {
+    return "Загрузка вопросов…";
+  }
+  const size = bank.questions.length;
+  const total = `В банке ${String(size)} ${plural(size, ["вопрос", "вопроса", "вопросов"])}.`;
+  return bank.about === "" ? total : `${bank.about} ${total}`;
+};
+
+const Ticket = ({
+  bank,
+  course,
+  drawn,
+  prepId,
+}: Props & { readonly bank: TicketBank; readonly drawn: Drawn }) => {
+  /** Questions are numbered through the whole ticket: the first of a part follows the previous parts. */
+  const first = (index: number): number =>
+    drawn.parts.slice(0, index).flatMap((part) => part.questions).length + 1;
+  return (
+    <div className="mt-5">
+      {drawn.parts.map((part, index) => (
+        <section className="mt-4 first:mt-0" key={`${String(drawn.serial)}-${part.kind}`}>
+          <h4 className="flex flex-wrap items-baseline gap-x-2.5 border-b border-rule pb-1.5 text-[15px] font-semibold">
+            <span>{part.title}</span>
+            {part.points !== "" && (
+              <span className="text-sm font-normal text-muted">{part.points}</span>
+            )}
+          </h4>
+          <ol className="m-0 list-none p-0">
+            {part.questions.map((question, offset) => (
+              <TicketQuestion
+                course={course}
+                key={`${String(drawn.serial)}-${question.id}`}
+                number={first(index) + offset}
+                prepId={prepId}
+                proofs={part.proofs}
+                question={question}
+                topicTitle={bank.topics[question.topic]}
+              />
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+  );
+};
+
+/**
+The ticket generator of a colloquium page (on a test page — of variants): «Сгенерировать» draws a
+random ticket in the format of the bank's `ticket` from the bank (`prep/<course>/<prep>-bank.yaml`); each question opens its answer
+in place. Nothing goes into the URL: a ticket lives until the next one.
+*/
+export const TicketGenerator = ({ course, prepId }: Props) => {
+  const { data: bank, isError } = useQuery(ticketBankQuery(course, prepId));
+  const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
+
+  return (
+    <div
+      aria-label={isTest(prepId) ? "Генератор вариантов" : "Генератор билетов"}
+      className="mt-5 rounded-lg border border-rule bg-card px-4 py-5 sm:px-6"
+      id="ticket-generator"
+      role="region"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0 flex-1 basis-64">
+          <p className="m-0 text-base text-muted">
+            {isError ? "Не удалось загрузить банк вопросов." : describe(bank)}
+          </p>
+        </div>
+        <button
+          className="min-h-11 cursor-pointer rounded-md bg-def px-5 py-2.5 font-semibold text-paper disabled:cursor-default disabled:opacity-50"
+          disabled={bank === undefined}
+          onClick={() => {
+            if (bank !== undefined) {
+              setDrawn((previous) => ({
+                parts: drawTicket(bank),
+                serial: (previous?.serial ?? 0) + 1,
+              }));
+            }
+          }}
+          type="button"
+        >
+          Сгенерировать
+        </button>
+      </div>
+      <p aria-live="polite" className="sr-only">
+        {drawn === undefined ? "" : announce(drawn, prepId)}
+      </p>
+      {bank !== undefined && drawn !== undefined && (
+        <Ticket bank={bank} course={course} drawn={drawn} prepId={prepId} />
+      )}
+    </div>
+  );
+};

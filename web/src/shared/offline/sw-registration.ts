@@ -4,12 +4,18 @@ import { isOfflineSupported } from "#web/api/offline-cache.ts";
 
 const UPDATE_CHECK_MS = 60_000;
 
-/** `waiting`: a new worker installed and waiting — the site changed since this tab loaded. */
-const store: { waiting: ServiceWorker | undefined } = { waiting: undefined };
+/**
+`hasUpdate`: the site changed since this tab loaded — a new worker is waiting, or another tab
+already switched to it and this page runs the old code under the new worker.
+*/
+const store: { hasUpdate: boolean; registration: ServiceWorkerRegistration | undefined } = {
+  hasUpdate: false,
+  registration: undefined,
+};
 const listeners = new Set<() => void>();
 
-const setWaiting = (worker: ServiceWorker): void => {
-  store.waiting = worker;
+const markUpdate = (): void => {
+  store.hasUpdate = true;
   for (const listener of listeners) {
     listener();
   }
@@ -25,7 +31,7 @@ const subscribe = (listener: () => void): (() => void) => {
 export const useHasUpdate = (): boolean =>
   useSyncExternalStore(
     subscribe,
-    () => store.waiting !== undefined,
+    () => store.hasUpdate,
     () => false,
   );
 
@@ -33,7 +39,7 @@ const watchInstalling = (worker: ServiceWorker): void => {
   worker.addEventListener("statechange", () => {
     // Without a controller this is the first install, not an update.
     if (worker.state === "installed" && navigator.serviceWorker.controller !== null) {
-      setWaiting(worker);
+      markUpdate();
     }
   });
 };
@@ -52,6 +58,18 @@ const watchForUpdates = (registration: ServiceWorkerRegistration): void => {
     if (document.visibilityState === "visible") {
       void check();
     }
+  });
+};
+
+/** «Обновить» in another tab activates the new worker for every tab: this one has to reload too. */
+const watchControllerChange = (): void => {
+  let previous = navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    // From no controller to one is the first install claiming the page, not an update.
+    if (previous !== null) {
+      markUpdate();
+    }
+    previous = navigator.serviceWorker.controller;
   });
 };
 
@@ -74,9 +92,11 @@ export const registerServiceWorker = async (): Promise<void> => {
     scope: base,
     updateViaCache: "none",
   });
+  store.registration = registration;
   if (registration.waiting !== null && navigator.serviceWorker.controller !== null) {
-    setWaiting(registration.waiting);
+    markUpdate();
   }
+  watchControllerChange();
   registration.addEventListener("updatefound", () => {
     if (registration.installing !== null) {
       watchInstalling(registration.installing);
@@ -87,8 +107,9 @@ export const registerServiceWorker = async (): Promise<void> => {
 
 /** Switches to the waiting worker and reloads once it controls the page. */
 export const applyUpdate = (): void => {
-  const { waiting } = store;
-  if (waiting === undefined) {
+  // Read at the click: another tab may have activated the worker this banner was shown for.
+  const waiting = store.registration?.waiting ?? null;
+  if (waiting === null) {
     globalThis.location.reload();
     return;
   }

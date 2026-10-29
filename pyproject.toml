@@ -18,6 +18,8 @@ dev = [
 [tool.ruff]
 line-length = 110
 target-version = "py313"
+# scripts/ импортируются по имени (sys.path): first-party независимо от того, есть ли папка build/
+src = [".", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]

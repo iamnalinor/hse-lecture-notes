@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { addDays } from "./dates.ts";
+
 /** The build (`scripts/build.py`) writes snake_case JSON; the schemas expose camelCase. */
 
 const LectureEntrySchema = z
@@ -12,13 +14,39 @@ const LectureEntrySchema = z
   .transform(({ week_id: weekId, ...rest }) => ({ ...rest, weekId }));
 export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 
-/** A page that prepares for a test (`prep/<course>/krN.md`): `id` is `kr1`, `kr2`…, `date` is the test day. */
-const PrepEntrySchema = z.object({ date: z.string(), id: z.string(), title: z.string() });
+/**
+A page that prepares for a test or a colloquium (`prep/<course>/krN.md`, `colloqN.md`): `id` is `kr1`,
+`colloq1`…, `date` is the test day (for a colloquium — the first day of its window),
+`activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
+by default), `highlightFrom` — the first day the prep is drawn in the accent colour, through `activeUntil`
+(front matter `highlight_from`, two weeks before `date` by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none,
+`bank` — the page has a ticket bank (`bank.json`, see `TicketBankSchema`) and shows the ticket generator.
+*/
+/** Default accent lead before the event day; the build uses the same (`HIGHLIGHT_DAYS` in `scripts/build.py`). */
+const HIGHLIGHT_DAYS = 14;
+
+const PrepEntrySchema = z
+  .object({
+    active_until: z.string().optional(),
+    bank: z.boolean().optional(),
+    cheatsheets: z.array(z.string()).default([]),
+    date: z.string(),
+    highlight_from: z.string().nullish(),
+    id: z.string(),
+    title: z.string(),
+  })
+  .transform(({ active_until: activeUntil, highlight_from: highlightFrom, ...rest }) => ({
+    ...rest,
+    activeUntil: activeUntil ?? rest.date,
+    highlightFrom: highlightFrom ?? addDays(rest.date, -HIGHLIGHT_DAYS),
+  }));
 export type PrepEntry = z.infer<typeof PrepEntrySchema>;
 
 export const CatalogSchema = z.object({
   lectures: z.record(z.string(), z.array(LectureEntrySchema)),
   preps: z.record(z.string(), z.array(PrepEntrySchema)).default({}),
+  /** Courses that have the «План учебной дисциплины» page (`program/<course>.md`). */
+  programs: z.array(z.string()).default([]),
 });
 
 const LabelTypeSchema = z.enum([
@@ -61,7 +89,7 @@ export const DocMetaSchema = z
   .object({
     date: z.string().optional(),
     date_ru: z.string(),
-    kind: z.enum(["notes", "prep", "theory"]),
+    kind: z.enum(["notes", "prep", "program", "theory"]),
     lecture: z.number(),
     title: z.string(),
     toc: z.array(TocItemSchema),
@@ -98,18 +126,61 @@ const SearchEntrySchema = z.object({
 export type SearchEntry = z.infer<typeof SearchEntrySchema>;
 export const SearchIndexSchema = z.array(SearchEntrySchema);
 
+/**
+`<course>/<prep>/bank.json` (from `prep/<course>/<prep>-bank.yaml`): the ticket format, topic titles
+(sections `sec:<prep>:<topic>` of the page) and the questions. `text` and `answer` are HTML fragments
+(formulas as `span.math`, references as `a.ref`); `refs` are the blocks that answer the question and
+the document each lives in (a lecture `week_id` or the prep page itself).
+*/
+const TicketRefSchema = z.object({ doc: z.string(), id: z.string() });
+
+const TicketQuestionSchema = z.object({
+  answer: z.string(),
+  id: z.string(),
+  kind: z.string(),
+  refs: z.array(TicketRefSchema),
+  text: z.string(),
+  topic: z.string(),
+});
+
+const TicketPartSchema = z.object({
+  count: z.number(),
+  kind: z.string(),
+  points: z.string(),
+  /** Answers of this kind show the proofs that follow the referenced statements. */
+  proofs: z.boolean().default(false),
+  title: z.string(),
+});
+
+/** A ticket item with variants (`one_of` in the bank): the generator takes one of them at random. */
+const TicketChoiceSchema = z
+  .object({ one_of: z.array(z.array(TicketPartSchema)).min(2) })
+  .transform(({ one_of: oneOf }) => ({ oneOf }));
+
+export const TicketBankSchema = z.object({
+  /** Caption of the generator: what a generated set of questions holds. */
+  about: z.string().default(""),
+  questions: z.array(TicketQuestionSchema),
+  ticket: z.array(z.union([TicketPartSchema, TicketChoiceSchema])),
+  topics: z.record(z.string(), z.string()),
+});
+export type TicketBank = z.infer<typeof TicketBankSchema>;
+export type TicketQuestion = z.infer<typeof TicketQuestionSchema>;
+export type TicketRef = z.infer<typeof TicketRefSchema>;
+
 export const MacrosSchema = z.record(z.string(), z.string());
 
 /** `offline-manifest.json`, written by `scripts/build-sw.ts` (see `offline.ts`). */
 const OfflineDocSchema = z.object({
   files: z.array(z.string()),
   id: z.string(),
-  kind: z.enum(["glossary", "notes", "prep", "theory"]),
+  kind: z.enum(["glossary", "notes", "prep", "program", "theory"]),
 });
 
 export const OfflineManifestSchema = z.object({
   docs: z.array(OfflineDocSchema),
   files: z.record(z.string(), z.string()),
   precache: z.array(z.string()),
+  sizes: z.record(z.string(), z.number()).optional(),
   version: z.string(),
 });

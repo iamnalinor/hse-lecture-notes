@@ -8,7 +8,9 @@ describe("isDocumentPath", () => {
     ["/algebra", false],
     ["/algebra/glossary", false],
     ["/algebra/theory", true],
+    ["/algebra/program", true],
     ["/algebra/kr1", true],
+    ["/calculus/colloq1", true],
     ["/algebra/04_sep23_determinant_properties", true],
   ])("%s → %s", (pathname, expected) => {
     expect(isDocumentPath(pathname)).toBe(expected);

@@ -1,0 +1,710 @@
+# Банк вопросов генератора вариантов к КР-1 (сайт: /algebra/kr1, раздел «Генератор вариантов»).
+# Формат — context/markup.md §11, «Банк билетов». В PDF банк не попадает.
+#
+# about — подпись генератора: одна короткая фраза, что варианты неофициальные и тренировочные.
+# ticket — восемь вопросов, как на КР: определения и формулировки (пара «а) … б) …»), шесть задач —
+# по блоку тем на номер, утверждение с доказательством. Баллов нет: они не объявлены.
+# questions — id, kind (из ticket), topic (раздел sec:kr1:<topic> страницы), text, refs (блоки-ответы:
+# прототипы страницы, формулировки конспектов) и/или answer (ответ и ключевой шаг для новых задач).
+# Каждый answer пересчитан (sympy).
+# Строки с обратной косой чертой — без кавычек, в '…' или блоком >-; в "…" YAML съест «\».
+
+about: Неофициальные тренировочные варианты; задачи на КР будут другие.
+
+ticket:
+  - kind: definition
+    title: Определения и формулировки
+    count: 1
+  - kind: operations
+    title: Действия с матрицами
+    count: 1
+  - kind: permutations
+    title: Подстановки
+    count: 1
+  - kind: determinant
+    title: Определитель
+    count: 1
+  - kind: equation
+    title: Матричное уравнение или СЛАУ
+    count: 1
+  - kind: rank
+    title: Ранг
+    count: 1
+  - kind: decomposition
+    title: Разложения матриц
+    count: 1
+  - kind: proof
+    title: Утверждение с доказательством
+    count: 1
+    proofs: true
+
+questions:
+  # ------------------------------------------------------------------ 1. определения и формулировки
+  - id: def-cramer-dependence
+    kind: definition
+    topic: th-defs
+    text: а) Формулы Крамера; когда с их помощью можно найти решение СЛАУ? б) Критерий линейной зависимости.
+    refs: [thm:lec06:cramer, prop:lec06:unique-solution, thm:lec07:criterion]
+  - id: def-permutation-basis
+    kind: definition
+    topic: th-defs
+    text: а) Перестановка и подстановка. б) Базисный минор; какие строки называются базисными?
+    refs: [def:lec03:permutation, def:lec03:substitution, def:lec07:basis-minor]
+  - id: def-laplace-sign
+    kind: definition
+    topic: th-defs
+    text: а) Разложение определителя по строке и по столбцу. б) Знак и чётность подстановки.
+    refs: [thm:lec05:laplace, def:lec03:sign, def:lec03:subst-sign]
+  - id: def-elementary-product-inverse
+    kind: definition
+    topic: th-defs
+    text: а) Элементарные преобразования строк матрицы. б) Формула для матрицы, обратной к произведению двух матриц.
+    refs: [def:lec02:elementary, prop:lec06:product-transpose]
+  - id: def-fake-combination
+    kind: definition
+    topic: th-defs
+    text: а) Что такое фальшивое разложение? б) Линейная комбинация строк; что такое нетривиальная линейная комбинация?
+    refs: [prop:lec05:fake, def:lec07:lin-comb]
+  - id: def-product-echelon
+    kind: definition
+    topic: th-defs
+    text: а) Умножение матриц; коммутативно ли оно? б) Ступенчатый и канонический вид матрицы.
+    refs: [def:lec01:product, def:lec02:echelon, def:lec02:canonical]
+  - id: def-gauss-det
+    kind: definition
+    topic: th-defs
+    text: а) Теорема о методе Гаусса. б) Формула определителя произвольного порядка через подстановки.
+    refs: [thm:lec02:gauss, def:lec03:det]
+  - id: def-cofactor-adjugate
+    kind: definition
+    topic: th-defs
+    text: а) Алгебраическое дополнение. б) Союзная матрица.
+    refs: [def:lec05:cofactor, def:lec06:adjugate]
+  - id: def-inverse
+    kind: definition
+    topic: th-defs
+    text: а) Обратная матрица и критерий её существования. б) Формула для нахождения обратной матрицы.
+    refs: [def:lec06:inverse, thm:lec06:criterion]
+  - id: def-minor-rank
+    kind: definition
+    topic: th-defs
+    text: а) Минор $k$-го порядка (с примером). б) Ранг матрицы.
+    refs: [def:lec07:minor, ex:kr1:th-minor, def:lec07:rank]
+  - id: def-dependence
+    kind: definition
+    topic: th-defs
+    text: а) Линейная зависимость строк матрицы (с примером). б) Линейно независимые столбцы (с примером).
+    refs: [def:lec07:dependent, ex:kr1:th-dependent, ex:kr1:th-independent]
+  - id: def-basis-minor-rank
+    kind: definition
+    topic: th-defs
+    text: а) Теорема о базисном миноре. б) Теорема о ранге матрицы.
+    refs: [thm:lec07:basis-minor, thm:lec08:rank]
+  - id: def-nondegenerate-kc
+    kind: definition
+    topic: th-defs
+    text: а) Критерий невырожденности квадратной матрицы. б) Теорема Кронекера–Капелли.
+    refs: [thm:lec08:nondegenerate, thm:lec08:kronecker-capelli]
+
+  # ------------------------------------------------------------------ 2. действия с матрицами
+  - id: op-simplify
+    kind: operations
+    topic: operations
+    text: >-
+      Вычислите $2B(AB)^{-1} - \bigl(\tfrac13 A\bigr)^{-1} + (A^T B)^T$, где
+      $A = \begin{pmatrix} 2 & 1 \\ 3 & 2 \end{pmatrix}$, $B = \begin{pmatrix} 1 & -1 \\ 2 & 1 \end{pmatrix}$.
+    refs: [prob:kr1:simplify]
+  - id: op-half-inverse
+    kind: operations
+    topic: operations
+    text: >-
+      Вычислите $B^T \bigl(A - (\tfrac12 B)^{-1}\bigr)^T + 3(BA)^{-1} B$, где
+      $A = \begin{pmatrix} 1 & 2 \\ 1 & 3 \end{pmatrix}$, $B = \begin{pmatrix} 2 & 1 \\ 3 & 2 \end{pmatrix}$.
+    answer: >-
+      $\begin{pmatrix} 15 & 5 \\ 2 & 8 \end{pmatrix}$. Сначала упростить:
+      $(\tfrac12 B)^{-1} = 2B^{-1}$, $B^T \cdot 2(B^{-1})^T = 2E$, $(BA)^{-1} B = A^{-1}$; выражение равно
+      $(AB)^T - 2E + 3A^{-1}$, где $(AB)^T = \begin{pmatrix} 8 & 11 \\ 5 & 7 \end{pmatrix}$,
+      $A^{-1} = \begin{pmatrix} 3 & -2 \\ -1 & 1 \end{pmatrix}$.
+  - id: op-cancel-cayley
+    kind: operations
+    topic: operations
+    text: >-
+      Вычислите $(BA^{-1})^T - (A^T)^{-1} B^T + A^2 - 5A$, где
+      $A = \begin{pmatrix} 2 & 1 \\ -1 & 3 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 4 \\ 0 & 2 \end{pmatrix}$.
+    answer: >-
+      $-7E = \begin{pmatrix} -7 & 0 \\ 0 & -7 \end{pmatrix}$. $(BA^{-1})^T = (A^{-1})^T B^T = (A^T)^{-1} B^T$,
+      первые два слагаемых сокращаются; $A^2 - 5A + 7E = O$ по тождеству из задачи [-@prob:lec06:cayley]
+      ($a + d = 5$, $ad - bc = 7$). Матрица $B$ не нужна.
+  - id: op-annihilating
+    kind: operations
+    topic: operations
+    text: >-
+      а) Известно, что $f(A) = O$ для $A = \begin{pmatrix} 0 & 0 & 1 \\ 1 & 0 & 1 \\ 0 & 1 & 0 \end{pmatrix}$ и
+      $f(x) = x^6 + x^4 - 2x^2 - 3x - 1$. Найдите $g(A)$, $g(x) = x^5 + x^3 - 2x - 3$.
+      б) Есть ли многочлен $p$ ненулевой степени с $p(B) = E$ для $B = \begin{pmatrix} 3 & -2 \\ 4 & -1 \end{pmatrix}$?
+    refs: [prob:kr1:annihilating]
+  - id: op-inverse-polynomial
+    kind: operations
+    topic: operations
+    text: >-
+      Про квадратную матрицу $A$ известно, что $A^3 - 2A + 3E = O$. Докажите, что $A$ обратима, и выразите
+      $A^{-1}$ многочленом от $A$.
+    answer: >-
+      $A^{-1} = \frac13 (2E - A^2)$. Из условия $A(A^2 - 2E) = -3E$, то есть
+      $A \cdot \frac13 (2E - A^2) = E$; одного равенства достаточно (следствие [-@cor:lec06:one-side]).
+  - id: op-reduce-power
+    kind: operations
+    topic: operations
+    text: >-
+      Для $A = \begin{pmatrix} 2 & 1 \\ -1 & 2 \end{pmatrix}$ вычислите $A^5 - 4A^4 + 5A^3 + A^2 - 3A$.
+    answer: >-
+      $\begin{pmatrix} -3 & 1 \\ -1 & -3 \end{pmatrix}$. $A^2 - 4A + 5E = O$ ($a + d = 4$, $ad - bc = 5$), поэтому
+      выражение равно $A^3 (A^2 - 4A + 5E) + A^2 - 3A = A^2 - 3A = (4A - 5E) - 3A = A - 5E$.
+  - id: op-expression
+    kind: operations
+    topic: operations
+    text: >-
+      Вычислите $2A^T B - (BA^{-1})^T + 3E$, где $A = \begin{pmatrix} 1 & 2 \\ 1 & 3 \end{pmatrix}$,
+      $B = \begin{pmatrix} 2 & -1 \\ 0 & 1 \end{pmatrix}$.
+    refs: [prob:kr1:expression]
+  - id: op-polynomial
+    kind: operations
+    topic: operations
+    text: Для $A = \begin{pmatrix} 1 & 2 \\ -1 & 3 \end{pmatrix}$ вычислите $A^3 - 4A^2 + 6A - E$.
+    refs: [prob:kr1:polynomial]
+  - id: op-commute
+    kind: operations
+    topic: operations
+    text: Найдите все матрицы $X \in M_2(\R)$, перестановочные с $A = \begin{pmatrix} 1 & 1 \\ 2 & 0 \end{pmatrix}$.
+    refs: [prob:kr1:commute]
+  - id: op-inverse-n
+    kind: equation
+    topic: inverse
+    text: >-
+      Найдите обратную к матрице порядка $n$, у которой на главной диагонали стоят двойки, а остальные
+      элементы равны $1$.
+    refs: [prob:kr1:inverse-n]
+
+  # ------------------------------------------------------------------ 3. подстановки
+  - id: perm-parity-root
+    kind: permutations
+    topic: permutations
+    text: >-
+      а) Существует ли чётная $X \in S_6$, для которой $(1\, 2\, 3)\, X^5\, (1\, 2\, 3) = (1\, 4)(2\, 5\, 6)$?
+      б) Найдите все такие $X \in S_6$.
+    refs: [prob:kr1:parity-root]
+  - id: perm-parity-no
+    kind: permutations
+    topic: permutations
+    text: >-
+      Существует ли нечётная подстановка $X \in S_7$, для которой
+      $(1\, 2)(3\, 6)\, X^7\, (1\, 2)(3\, 6) = (1\, 5\, 3\, 6\, 7)$?
+    answer: >-
+      Нет. Знак левой части $\bigl(\sgn (1\, 2)(3\, 6)\bigr)^2 (\sgn X)^7 = \sgn X$ (утверждение
+      [-@prop:lec03:sign-product]), правой — $(-1)^{5 - 1} = 1$: цикл длины $5$ чётен. Значит, $X$ чётна.
+  - id: perm-generate
+    kind: permutations
+    topic: permutations
+    text: >-
+      $\sigma = (1\, 2\, 4)$, $\tau = (2\, 3\, 5)$ — подстановки из $S_7$. Можно ли многократным произведением
+      $\sigma$ и $\tau$ в любом порядке получить а) $(1\, 2)(3\, 4\, 5)$; б) $(1\, 2\, 6)$; в) $(1\, 5\, 4)$?
+    refs: [prob:kr1:generate]
+  - id: perm-generate-set
+    kind: permutations
+    topic: permutations
+    text: >-
+      $\sigma = (1\, 2)(3\, 4)$, $\tau = (2\, 3)(5\, 6)$ — подстановки из $S_6$. Можно ли многократным
+      произведением $\sigma$ и $\tau$ в любом порядке получить а) $(1\, 3)(2\, 4)$; б) $(1\, 5)(2\, 6)$;
+      в) $(1\, 2)$? Если да — покажите как, если нет — объясните почему.
+    answer: >-
+      а) Да: $\tau \sigma \tau = (1\, 3)(2\, 4)$ (слева направо: $1 \mapsto 1 \mapsto 2 \mapsto 3$,
+      $2 \mapsto 3 \mapsto 4 \mapsto 4$, $5 \mapsto 6 \mapsto 6 \mapsto 5$). б) Нет: $\sigma$ и $\tau$ переводят
+      множество $\{5, 6\}$ в себя, значит, и все их произведения, а $(1\, 5)(2\, 6)$ переводит $1$ в $5$.
+      в) Нет: $\sigma$ и $\tau$ чётны, произведения чётных чётны, а транспозиция нечётна.
+  - id: perm-tau-sigma
+    kind: permutations
+    topic: permutations
+    text: >-
+      $\sigma, \tau \in S_9$ и $\sigma \cdot P^{1001} \cdot \tau = \Id$, где
+      $P = \begin{pmatrix} 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\ 4 & 8 & 6 & 1 & 7 & 3 & 9 & 5 & 2 \end{pmatrix}$.
+      Найдите $\tau \sigma$ (все возможные варианты).
+    refs: [prob:kr1:tau-sigma]
+  - id: perm-sigma-tau
+    kind: permutations
+    topic: permutations
+    text: >-
+      $\sigma, \tau \in S_8$ и $Q^{500} \cdot \sigma \cdot \tau = \Id$, где
+      $Q = \begin{pmatrix} 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\ 3 & 7 & 1 & 8 & 2 & 4 & 6 & 5 \end{pmatrix}$.
+      Найдите $\sigma \tau$ (все возможные варианты).
+    answer: >-
+      Вариант один: $\sigma \tau = Q^{-500} = (2\, 8\, 6)(4\, 7\, 5)$. Умножая слева на $Q^{-500}$, получаем
+      $\sigma \tau = Q^{-500}$. $Q = (1\, 3)(2\, 7\, 6\, 4\, 8\, 5)$, порядок $6$, $500 = 6 \cdot 83 + 2$,
+      поэтому $Q^{-500} = Q^{-2} = Q^4$: транспозиция исчезает, цикл длины $6$ распадается на два цикла длины $3$.
+  - id: perm-power-product
+    kind: permutations
+    topic: permutations
+    text: >-
+      $\alpha = (1\, 4\, 2)$, $\beta = (2\, 5\, 6\, 3)$, $\gamma = (3\, 1\, 7)$ — подстановки из $S_7$.
+      Найдите $\mu = (\alpha \beta \gamma)^{-37}$.
+    answer: >-
+      $\mu = (1\, 6\, 5\, 4)(2\, 3\, 7)$. Слева направо $\alpha \beta \gamma = (1\, 4\, 5\, 6)(2\, 7\, 3)$,
+      порядок $12$; $-37 = 12 \cdot (-4) + 11$, поэтому $\mu = (\alpha \beta \gamma)^{11} = (\alpha \beta \gamma)^{-1}$.
+  - id: perm-square-root-7
+    kind: permutations
+    topic: permutations
+    text: Найдите все $\sigma \in S_7$, для которых $\sigma^2 = (1\, 2)(3\, 4)(5\, 6\, 7)$.
+    answer: >-
+      Две: $(1\, 3\, 2\, 4)(5\, 7\, 6)$ и $(1\, 4\, 2\, 3)(5\, 7\, 6)$. Транспозиции $(1\, 2)$ и $(3\, 4)$
+      склеиваются в цикл длины $4$ двумя способами; $(5\, 6\, 7)$ — квадрат только $(5\, 7\, 6)$, склеить его не с чем.
+  - id: perm-power
+    kind: permutations
+    topic: permutations
+    text: >-
+      Найдите $\sigma^{100}$ и знак $\sigma$, где
+      $\sigma = \begin{pmatrix} 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\ 4 & 5 & 6 & 7 & 2 & 8 & 1 & 9 & 3 \end{pmatrix}$.
+    refs: [prob:kr1:power]
+  - id: perm-axb
+    kind: permutations
+    topic: permutations
+    text: >-
+      В $S_5$ найдите $X$ из равенства $AXB = C$, где $A = (1\, 2\, 3)$, $B = (1\, 4)(2\, 5)$, $C = (1\, 5\, 3)$.
+    refs: [prob:kr1:axb]
+  - id: perm-square-root
+    kind: permutations
+    topic: permutations
+    text: >-
+      а) Найдите все $\sigma \in S_8$ с $\sigma^2 = (1\, 2\, 3\, 4)(5\, 6\, 7\, 8)$.
+      б) Есть ли $\sigma \in S_6$ с $\sigma^2 = (1\, 2\, 3\, 4)(5\, 6)$?
+    refs: [prob:kr1:square-root]
+  - id: perm-centralizer
+    kind: permutations
+    topic: permutations
+    text: >-
+      Найдите все подстановки, перестановочные с $S$: а) $S = (1\, 2\, 3\, 4) \in S_4$;
+      б) $S = (1\, 5)(2\, 4) \in S_5$.
+    refs: [prob:kr1:centralizer]
+
+  # ------------------------------------------------------------------ 4. определитель
+  - id: det-anti-tridiagonal
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n$: на побочной диагонали числа $5$, непосредственно над ней — $2$,
+      непосредственно под ней — $3$, остальные элементы равны нулю.
+    refs: [prob:kr1:anti-tridiagonal]
+  - id: det-column-sums
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n$: первая строка $(x + 1, x + 3, \dots, x + 2n - 1)$, в строке
+      $k \ge 2$ стоят $x$ в столбце $k - 1$ и $-x$ в столбце $k$, остальные элементы равны нулю.
+    refs: [prob:kr1:column-sums]
+  - id: det-anti-sums
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n \ge 2$: первая строка $(x, x + 2, x + 4, \dots, x + 2n - 2)$, в строке
+      $k \ge 2$ стоят $x$ в столбце $n - k + 1$ и $-x$ в столбце $n - k + 2$, остальные элементы равны нулю.
+      Например, при $n = 4$ это
+      $\begin{vmatrix} x & x + 2 & x + 4 & x + 6 \\ 0 & 0 & x & -x \\ 0 & x & -x & 0 \\ x & -x & 0 & 0 \end{vmatrix}$.
+    answer: >-
+      $(-1)^{\lfloor n/2 \rfloor}\, n\, x^{n-1} (x + n - 1)$. Заменить каждый столбец суммой его и всех
+      столбцов левее (начиная с последнего): в строке $k \ge 2$ остаётся один $x$ в столбце $n - k + 1$, а
+      последний столбец — $(nx + n(n - 1), 0, \dots, 0)^T$. Разложение по нему даёт
+      $(-1)^{n+1} \cdot n(x + n - 1)$ на минор порядка $n - 1$ с $x$ на побочной диагонали, равный
+      $(-1)^{\lfloor (n-1)/2 \rfloor} x^{n-1}$. Проверка при $n = 2$: $-x^2 - x(x + 2) = -2x(x + 1)$.
+  - id: det-poly-columns
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель $4 \times 4$ со строками $(2v - 3, \ 5, \ v^2 + 4v - 1, \ v^3 - v^2 + 2)$ при
+      $v = x, y, z, t$ и запишите его произведением многочленов.
+    refs: [prob:kr1:poly-columns]
+  - id: det-cyclic-corner
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n \ge 2$, у которого на главной диагонали стоят $x$, непосредственно над
+      ней — $y$, в левом нижнем углу — $y$, остальные элементы равны нулю.
+    answer: >-
+      $x^n + (-1)^{n+1} y^n$. Разложение по первому столбцу: $x$ на верхнетреугольный минор ($x^{n-1}$) и
+      $y$ в позиции $(n, 1)$ со знаком $(-1)^{n+1}$ на нижнетреугольный минор с $y$ на диагонали ($y^{n-1}$).
+      Проверка при $n = 2$: $x^2 - y^2$.
+  - id: det-tridiagonal
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n$: на главной диагонали $7$, непосредственно над ней $3$,
+      непосредственно под ней $4$, остальные элементы равны нулю.
+    refs: [prob:kr1:tridiagonal]
+  - id: det-double-root
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n$, у которого на главной диагонали стоят числа $6$, на двух соседних
+      с ней диагоналях — числа $3$, остальные элементы равны нулю.
+    answer: >-
+      $D_n = (n + 1) \cdot 3^n$: $D_n = 6D_{n-1} - 9D_{n-2}$, $D_1 = 6$, $D_2 = 27$; корень $3$
+      кратности $2$, $D_n = (c_1 + c_2 n) 3^n$.
+  - id: det-special-corner
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n$, у которого первые две строки $(3, 4, 0, \dots, 0)$ и
+      $(2, 5, 3, 0, \dots, 0)$, а начиная с третьей на диагонали $4$, над ней $3$, под ней $1$.
+    refs: [prob:kr1:special-corner]
+  - id: det-same-offdiag
+    kind: determinant
+    topic: det-n
+    text: >-
+      Вычислите определитель порядка $n$: на главной диагонали числа $x$, все остальные элементы равны $a$.
+    refs: [prob:kr1:same-offdiag]
+  - id: det-max
+    kind: determinant
+    topic: det-n
+    text: Вычислите определитель порядка $n$ с элементами $a_{ij} = \max(i, j)$.
+    refs: [prob:kr1:max]
+  - id: det-vandermonde-like
+    kind: determinant
+    topic: det-n
+    text: Вычислите определитель порядка $n$ с элементами $a_{ij} = x_i^{\,j} + 2$.
+    refs: [prob:kr1:vandermonde-like]
+  - id: det-term
+    kind: determinant
+    topic: det-props
+    text: >-
+      Подберите $i$ и $j$ так, чтобы произведение $a_{24} a_{51} a_{3i} a_{12} a_{4j} a_{65}$ входило в
+      определитель порядка $6$ со знаком минус.
+    refs: [prob:kr1:term]
+  - id: det-term-plus
+    kind: determinant
+    topic: det-props
+    text: >-
+      Подберите $i$ и $j$ так, чтобы произведение $a_{1i} a_{25} a_{3j} a_{41} a_{54} a_{66}$ входило в
+      определитель порядка $6$ со знаком плюс.
+    answer: >-
+      $i = 3$, $j = 2$. Недостающие номера столбцов — $2$ и $3$. Перестановка столбцов $(3, 5, 2, 1, 4, 6)$:
+      инверсий $2 + 3 + 1 + 0 + 0 = 6$, знак плюс; при $i = 2$, $j = 3$ — $7$ инверсий, минус.
+  - id: det-inequality
+    kind: determinant
+    topic: det-props
+    text: >-
+      Решите неравенство
+      $\begin{vmatrix} x & 0 & 1 & 2 \\ -2 & x & 0 & 0 \\ -1 & 3 & 1 & 2 \\ 2 & 1 & 0 & 2 \end{vmatrix} \le -8$.
+    refs: [prob:kr1:det-inequality]
+  - id: det-coefficients
+    kind: determinant
+    topic: det-props
+    text: >-
+      Найдите коэффициенты при $x^4$ и $x^3$ у многочлена
+      $f(x) = \begin{vmatrix} x & 1 & 2 & x \\ 2 & x & 1 & 1 \\ 1 & 2 & x & 3 \\ x & 1 & 1 & 2x \end{vmatrix}$.
+    refs: [prob:kr1:coefficients]
+  - id: det-antidiagonal
+    kind: determinant
+    topic: det-props
+    text: >-
+      Как изменится определитель порядка $n$, если его матрицу отразить относительно побочной диагонали?
+    refs: [prob:kr1:antidiagonal]
+  - id: det-sum-others
+    kind: determinant
+    topic: det-props
+    text: Как изменится определитель порядка $n$, если каждый его столбец заменить суммой всех остальных столбцов?
+    refs: [prob:kr1:sum-others]
+
+  # ------------------------------------------------------------------ 5. матричное уравнение или СЛАУ
+  - id: eq-cancel
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Решите уравнение $AX + 3X = \bigl(B - 2X^T (A^T)^{-1}\bigr)^T + 2A^{-1} X$, где
+      $A = \begin{pmatrix} -2 & 1 & 0 \\ 2 & 0 & 1 \\ 0 & 1 & -1 \end{pmatrix}$,
+      $B = \begin{pmatrix} 0 & 0 & 1 \\ 2 & 5 & 0 \end{pmatrix}$.
+    refs: [prob:kr1:cancel]
+  - id: eq-xa-transpose
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Решите уравнение $XA = (B + 2X^T)^T$ относительно $X$, где
+      $A = \begin{pmatrix} 3 & 0 & 2 \\ 1 & 3 & 0 \\ 0 & 1 & 5 \end{pmatrix}$,
+      $B = \begin{pmatrix} 0 & 2 \\ -1 & 1 \\ 2 & 7 \end{pmatrix}$.
+    answer: >-
+      $X = \begin{pmatrix} 1 & -1 & 0 \\ 2 & 0 & 1 \end{pmatrix}$. $(B + 2X^T)^T = B^T + 2X$, поэтому
+      $X(A - 2E) = B^T$, $X$ — матрица $2 \times 3$; $\det(A - 2E) = 5 \ne 0$, $X = B^T (A - 2E)^{-1}$
+      (или Гаусс над $\bigl((A - 2E)^T \mid B\bigr)$).
+  - id: eq-half-inverse
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Решите уравнение $AX + \bigl(\tfrac12 A\bigr)^{-1} X = \bigl(2X^T (A^T)^{-1} + 3X^T - B\bigr)^T$, где
+      $A = \begin{pmatrix} 4 & 2 & 0 \\ 0 & 4 & 1 \\ 1 & 1 & 4 \end{pmatrix}$,
+      $B = \begin{pmatrix} 0 & 1 & -1 \\ -2 & -2 & -2 \end{pmatrix}$.
+    answer: >-
+      $X = \begin{pmatrix} 2 & 0 \\ -1 & 1 \\ 0 & 1 \end{pmatrix}$. $(\tfrac12 A)^{-1} = 2A^{-1}$, правая часть
+      равна $2A^{-1} X + 3X - B^T$; слагаемые $2A^{-1} X$ сокращаются: $(A - 3E) X = -B^T$,
+      $\det(A - 3E) = 2 \ne 0$. $A^{-1}$ вычислять не нужно ($\det A = 62 \ne 0$).
+  - id: eq-transpose-none
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Имеет ли решения уравнение $(AX^T + B)^T = 2X - B^{-1}$, где $A = \begin{pmatrix} 4 & 3 \\ 2 & 5 \end{pmatrix}$,
+      $B = \begin{pmatrix} 1 & 1 \\ 1 & 2 \end{pmatrix}$? Если да, найдите все решения.
+    refs: [prob:kr1:transpose-none]
+  - id: eq-transpose-family
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Найдите все решения уравнения $(X^T A - C)^T = 3X$, где $A = \begin{pmatrix} 4 & 2 \\ 1 & 5 \end{pmatrix}$,
+      $C = \begin{pmatrix} 1 & 2 \\ -1 & -2 \end{pmatrix}$.
+    refs: [prob:kr1:transpose-family]
+  - id: eq-transpose-unique
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Имеет ли решения уравнение $(X^T A)^T = 2X + B$, где $A = \begin{pmatrix} 3 & 1 \\ 2 & 5 \end{pmatrix}$,
+      $B = \begin{pmatrix} 1 & 0 \\ 2 & 1 \end{pmatrix}$? Если да, найдите все решения.
+    answer: >-
+      Единственное решение $X = \begin{pmatrix} -1 & -2 \\ 1 & 1 \end{pmatrix}$. После транспонирования
+      $(A^T - 2E) X = B$, $A^T - 2E = \begin{pmatrix} 1 & 2 \\ 1 & 3 \end{pmatrix}$, $\det = 1 \ne 0$,
+      $X = (A^T - 2E)^{-1} B$.
+  - id: eq-xa-b
+    kind: equation
+    topic: matrix-equations
+    text: >-
+      Решите уравнение $X \begin{pmatrix} 1 & 2 & 0 \\ 0 & 1 & 1 \\ 2 & 3 & 1 \end{pmatrix} =
+      \begin{pmatrix} 5 & 8 & 2 \\ -1 & -1 & 1 \end{pmatrix}$.
+    refs: [prob:kr1:xa-b]
+  - id: eq-degenerate
+    kind: equation
+    topic: matrix-equations
+    text: Решите уравнение $\begin{pmatrix} 1 & 2 \\ 2 & 4 \end{pmatrix} X = \begin{pmatrix} 1 & 3 \\ 2 & 6 \end{pmatrix}$.
+    refs: [prob:kr1:degenerate-eq]
+  - id: eq-slau-inverse
+    kind: equation
+    topic: inverse
+    text: >-
+      Решите систему с помощью обратной матрицы:
+      $x_1 + 2x_2 + x_3 = 1$, $2x_1 + 5x_2 + 3x_3 = 3$, $x_1 + 3x_2 + 3x_3 = 4$.
+    refs: [prob:kr1:slau-inverse]
+  - id: eq-slau-inverse-2
+    kind: equation
+    topic: inverse
+    text: >-
+      Решите систему с помощью обратной матрицы:
+      $x_1 + x_2 + 2x_3 = 3$, $2x_1 + 3x_2 + 5x_3 = 6$, $x_1 + 2x_2 + 4x_3 = 4$.
+    answer: >-
+      $x = (2, -1, 1)^T$. $\det A = 1$,
+      $A^{-1} = \begin{pmatrix} 2 & 0 & -1 \\ -3 & 2 & -1 \\ 1 & -1 & 1 \end{pmatrix}$, $x = A^{-1} b$.
+  - id: eq-transposed-system
+    kind: equation
+    topic: inverse
+    text: >-
+      Для $A = \begin{pmatrix} 2 & 1 & 0 \\ 1 & 1 & 1 \\ 1 & 2 & 4 \end{pmatrix}$ найдите $A^{-1}$ по формуле с
+      союзной матрицей и решите систему $A^T x = b$, где $b = (1, 0, 2)^T$.
+    refs: [prob:kr1:transposed-system]
+
+  # ------------------------------------------------------------------ 6. ранг
+  - id: rank-min-line
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите все пары $(x, y) \in \R^2$, при которых матрица
+      $\begin{pmatrix} 1 & x & 2 & y \\ 0 & y & 1 & x \\ 1 & 1 & 3 & 1 \end{pmatrix}$ имеет наименьший ранг.
+    refs: [prob:kr1:min-rank]
+  - id: rank-min-pairs
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите все пары $(x, y) \in \R^2$, при которых матрица
+      $\begin{pmatrix} 1 & 0 & x & y \\ 0 & 1 & y & x \\ 1 & 1 & 3 & xy + 1 \end{pmatrix}$ имеет наименьший ранг.
+      Обоснуйте ответ.
+    answer: >-
+      $(1, 2)$ и $(2, 1)$; ранг $2$. Минор $M^{12}_{12} = 1$ без параметров даёт ранг не меньше $2$.
+      Окаймляющие миноры (строка $3$, столбец $3$ или $4$): $3 - x - y$ и $xy + 1 - x - y = (x - 1)(y - 1)$.
+      Оба равны нулю ровно при $x + y = 3$ и $x = 1$ или $y = 1$.
+  - id: rank-min-none
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите все пары $(x, y) \in \R^2$, при которых матрица
+      $\begin{pmatrix} 1 & 2 & x & 1 \\ y & 1 & 1 & x \\ 0 & 3 & y & 1 \end{pmatrix}$ имеет наименьший ранг.
+      Обоснуйте ответ.
+    answer: >-
+      Все пары: ранг всегда равен $3$. Минор $M^{24}_{13} = \begin{vmatrix} 2 & 1 \\ 3 & 1 \end{vmatrix} = -1$ даёт
+      ранг не меньше $2$. Ранг $2$ требует нулевых окаймляющих миноров $M^{124}_{123} = y - 3x + 1$ и
+      $M^{234}_{123} = 3x^2 - 2xy - x + y - 1$. Из первого $y = 3x - 1$, тогда второй равен $-3x^2 + 4x - 2$,
+      а у $3x^2 - 4x + 2 = 0$ дискриминант $16 - 24 < 0$. Значит, ранг $2$ не достигается.
+  - id: rank-two
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите все пары $(x, y) \in \R^2$, при которых матрица
+      $\begin{pmatrix} 1 & 1 & 2 & x^2 \\ 2 & 1 & y & 4 \\ 1 & 0 & 1 & 0 \end{pmatrix}$ имеет ранг $2$.
+    refs: [prob:kr1:rank-two]
+  - id: rank-param
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите ранг матрицы при всех $\lambda$ и для каждого случая укажите базисный минор:
+      $\begin{pmatrix} 1 & 2 & -1 & 3 \\ 2 & 1 & 1 & 0 \\ 3 & 3 & \lambda & 3 \\ 1 & -1 & 2 & \lambda - 4 \end{pmatrix}$.
+    refs: [prob:kr1:rank-param]
+  - id: rank-param-2
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите ранг матрицы при всех $\lambda$ и для каждого случая укажите базисный минор:
+      $\begin{pmatrix} 1 & 2 & 1 & 3 \\ 2 & 5 & 1 & 4 \\ 1 & 3 & \lambda & 2 \\ 3 & 7 & 2 & \lambda + 5 \end{pmatrix}$.
+    answer: >-
+      $\det A = \lambda(\lambda - 2)$. При $\lambda \ne 0, 2$ ранг $4$, базисный минор — $\det A$. При $\lambda = 0$
+      ранг $3$, базисный минор $M^{124}_{123} = 1$. При $\lambda = 2$ ранг $3$, базисный минор $M^{123}_{123} = 2$.
+  - id: rank-param-3
+    kind: rank
+    topic: rank
+    text: >-
+      Найдите ранг матрицы при всех $\lambda$ и для каждого случая укажите базисный минор:
+      $\begin{pmatrix} 1 & -1 & 2 & 0 \\ 2 & 1 & 1 & 3 \\ 3 & 0 & \lambda & 3 \\ 1 & 2 & -1 & \lambda \end{pmatrix}$.
+    answer: >-
+      При $\lambda \ne 3$ ранг $4$, базисный минор $\det A = 3(\lambda - 3)^2$; при $\lambda = 3$ ранг $2$,
+      базисный минор $M^{12}_{12} = 3$.
+  - id: rank-n
+    kind: rank
+    topic: rank
+    text: Найдите ранг матрицы порядка $n \ge 2$ с элементами $a_{ij} = i + j$ и укажите базисный минор.
+    refs: [prob:kr1:rank-n]
+
+  # ------------------------------------------------------------------ 7. разложения матриц
+  - id: dec-skeleton-fractions
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте скелетное разложение матрицы
+      $\begin{pmatrix} 2 & 3 & 1 & 0 & 0 \\ -4 & -6 & 2 & -8 & 4 \\ 6 & 9 & -1 & 8 & -4 \end{pmatrix}$.
+    refs: [prob:kr1:skeleton-fractions]
+  - id: dec-skeleton-3x5
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте скелетное разложение матрицы
+      $\begin{pmatrix} 1 & 2 & 0 & 1 & 5 \\ -1 & 0 & 2 & -3 & -1 \\ 3 & 1 & -5 & 8 & 5 \end{pmatrix}$.
+    answer: >-
+      $\begin{pmatrix} 1 & 2 \\ -1 & 0 \\ 3 & 1 \end{pmatrix}
+      \begin{pmatrix} 1 & 0 & -2 & 3 & 1 \\ 0 & 1 & 1 & -1 & 2 \end{pmatrix}$ (разложение не единственно).
+      Ранг $2$, базисные столбцы $1$ и $2$ ($M^{12}_{12} = 2$); $A^{(3)} = -2A^{(1)} + A^{(2)}$,
+      $A^{(4)} = 3A^{(1)} - A^{(2)}$, $A^{(5)} = A^{(1)} + 2A^{(2)}$.
+  - id: dec-skeleton-4x3
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте скелетное разложение матрицы
+      $\begin{pmatrix} 2 & 1 & 1 \\ 1 & 2 & 0 \\ -1 & -5 & 1 \\ 3 & 0 & 2 \end{pmatrix}$.
+    answer: >-
+      $\begin{pmatrix} 2 & 1 \\ 1 & 2 \\ -1 & -5 \\ 3 & 0 \end{pmatrix}
+      \begin{pmatrix} 1 & 0 & \frac23 \\ 0 & 1 & -\frac13 \end{pmatrix}$: ранг $2$, базисные столбцы $1$ и $2$,
+      $A^{(3)} = \frac23 A^{(1)} - \frac13 A^{(2)}$. Без дробей:
+      $\begin{pmatrix} 2 & 1 \\ 1 & 2 \\ -1 & -5 \\ 3 & 0 \end{pmatrix} \cdot \frac13
+      \begin{pmatrix} 3 & 0 & 2 \\ 0 & 3 & -1 \end{pmatrix}$ — множитель $\frac13$ вносится в любой из двух сомножителей.
+  - id: dec-skeleton
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте скелетное разложение матрицы
+      $\begin{pmatrix} 1 & 2 & 0 & 3 \\ 2 & 4 & 1 & 7 \\ -1 & -2 & 2 & -1 \end{pmatrix}$.
+    refs: [prob:kr1:skeleton]
+  - id: dec-skeleton-4x3-b
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте скелетное разложение матрицы
+      $\begin{pmatrix} 1 & -1 & 2 \\ 2 & -2 & 4 \\ 0 & 1 & 1 \\ 1 & 0 & 3 \end{pmatrix}$.
+    answer: >-
+      $\begin{pmatrix} 1 & -1 \\ 2 & -2 \\ 0 & 1 \\ 1 & 0 \end{pmatrix} \begin{pmatrix} 1 & 0 & 3 \\ 0 & 1 & 1 \end{pmatrix}$:
+      ранг $2$, базисные столбцы $1$ и $2$, $A^{(3)} = 3A^{(1)} + A^{(2)}$.
+  - id: dec-skeleton-one
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте скелетное разложение матрицы
+      $\begin{pmatrix} 2 & -4 & 6 \\ -1 & 2 & -3 \\ 3 & -6 & 9 \end{pmatrix}$.
+    refs: [prob:kr1:skeleton-one]
+  - id: dec-lu
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте LU-разложение матрицы $\begin{pmatrix} 2 & 1 & -1 \\ 4 & 5 & 1 \\ -2 & 2 & 7 \end{pmatrix}$.
+    refs: [prob:kr1:lu]
+  - id: dec-lu-2
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      Постройте LU-разложение матрицы $\begin{pmatrix} 1 & 2 & -1 \\ -2 & -3 & 5 \\ 3 & 7 & 2 \end{pmatrix}$.
+    answer: >-
+      $L = \begin{pmatrix} 1 & 0 & 0 \\ -2 & 1 & 0 \\ 3 & 1 & 1 \end{pmatrix}$,
+      $U = \begin{pmatrix} 1 & 2 & -1 \\ 0 & 1 & 3 \\ 0 & 0 & 2 \end{pmatrix}$. Угловые миноры $1$ и $1$ не нули;
+      $\rw{II} + 2 \cdot \rw{I}$, $\rw{III} - 3 \cdot \rw{I}$, затем $\rw{III} - \rw{II}$.
+  - id: dec-lu-exists
+    kind: decomposition
+    topic: decompositions
+    text: >-
+      При каких $a$ матрица $\begin{pmatrix} 1 & 2 & 1 \\ 2 & a & 3 \\ 1 & 1 & 1 \end{pmatrix}$ имеет
+      LU-разложение? Постройте его при $a = 5$.
+    refs: [prob:kr1:lu-exists]
+
+  # ------------------------------------------------------------------ 8. утверждение с доказательством
+  - id: proof-transpose-product
+    kind: proof
+    topic: th-proofs
+    text: Что происходит с произведением матриц при транспонировании? Ответ обосновать.
+    refs: [thm:lec02:transpose-props, rem:kr1:proof-transpose-product]
+  - id: proof-det-transpose
+    kind: proof
+    topic: th-proofs
+    text: Как меняется определитель при транспонировании? Ответ обосновать.
+    refs: [prop:lec04:transpose, rem:kr1:proof-det-transpose]
+  - id: proof-skew
+    kind: proof
+    topic: th-proofs
+    text: Докажите, что определитель — кососимметрическая функция столбцов.
+    refs: [prop:lec04:skew, rem:kr1:proof-skew]
+  - id: proof-skew-zero
+    kind: proof
+    topic: th-proofs
+    text: >-
+      Сформулируйте и докажите утверждение: для линейной функции кососимметричность равносильна обнулению на
+      паре совпадающих аргументов.
+    refs: [prop:lec05:skew-zero, rem:kr1:proof-skew-zero]
+  - id: proof-axioms
+    kind: proof
+    topic: th-proofs
+    text: >-
+      Какие три условия достаточно наложить на функцию от столбцов матрицы, чтобы она обязательно была
+      определителем? Ответ обоснуйте для матриц второго порядка.
+    refs: [def:lec05:axiomatic, rem:kr1:proof-axioms]
+  - id: proof-det-product
+    kind: proof
+    topic: th-proofs
+    text: Чему равен определитель произведения двух квадратных матриц? Ответ обосновать.
+    refs: [thm:lec05:product, rem:kr1:proof-det-product]
+  - id: proof-cramer
+    kind: proof
+    topic: th-proofs
+    text: Выпишите формулы Крамера для квадратной матрицы произвольного порядка и докажите их.
+    refs: [thm:lec06:cramer, rem:kr1:proof-cramer]
+  - id: proof-criterion
+    kind: proof
+    topic: th-proofs
+    text: Сформулируйте и докажите критерий существования обратной матрицы. Свойства определителя предполагаются известными.
+    refs: [thm:lec06:criterion, rem:kr1:proof-criterion]
+  - id: proof-rank-transpose
+    kind: proof
+    topic: th-proofs
+    text: Как связан ранг транспонированной матрицы с рангом исходной? Ответ обосновать.
+    refs: [prop:lec07:transpose, rem:kr1:proof-rank-transpose]
+  - id: proof-rank
+    kind: proof
+    topic: th-proofs
+    text: Сформулируйте и докажите теорему о ранге матрицы (теорема о базисном миноре предполагается известной).
+    refs: [thm:lec08:rank, rem:kr1:proof-rank]
+  - id: proof-nondegenerate
+    kind: proof
+    topic: th-proofs
+    text: Сформулируйте и докажите критерий невырожденности квадратной матрицы (следствие теоремы о базисном миноре).
+    refs: [thm:lec08:nondegenerate, rem:kr1:proof-nondegenerate]

@@ -11,6 +11,13 @@ $if(tables)$
 \patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
 \makeatother
 \newcounter{none}
+$if(is_program)$
+% программа курса (program/<course>.md): таблицы весов и тем — мельче и с воздухом между строками
+\renewcommand{\arraystretch}{1.3}
+\AtBeginEnvironment{longtable}{\small}
+\setlength{\LTpre}{0.9em}
+\setlength{\LTpost}{0.9em}
+$endif$
 $endif$
 \usepackage{graphicx}
 \makeatletter

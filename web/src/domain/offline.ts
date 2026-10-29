@@ -5,14 +5,17 @@ the manifest (`scripts/build-sw.ts`) and the page. Paths are relative to the sit
 - `files`: every file the worker knows → content hash. A cached copy is valid only while its
   hash (stored in the `HASH_HEADER` of the cached response) equals the one in the manifest.
 - `precache`: the shell and the shared data, downloaded when the worker installs.
-- `docs`: lecture notes, theory, glossaries and test preparation; cached only once the reader opens them.
+- `docs`: lecture notes, theory, the course program, glossaries and test preparation; cached only once
+  the reader opens them.
+- `sizes`: gzip size of every document file, the traffic of «Скачать все» (absent in manifests
+  cached before it was added).
 */
 
-export type OfflineDocKind = "glossary" | "notes" | "prep" | "theory";
+export type OfflineDocKind = "glossary" | "notes" | "prep" | "program" | "theory";
 
 export type OfflineDoc = {
   readonly files: readonly string[];
-  /** `<course>/<week_id>`, `<course>/theory`, `<course>/glossary`, `<course>/kr1`. */
+  /** `<course>/<week_id>`, `<course>/theory`, `<course>/program`, `<course>/glossary`, `<course>/kr1`. */
   readonly id: string;
   readonly kind: OfflineDocKind;
 };
@@ -21,6 +24,7 @@ export type OfflineManifest = {
   readonly docs: readonly OfflineDoc[];
   readonly files: Readonly<Record<string, string>>;
   readonly precache: readonly string[];
+  readonly sizes?: Readonly<Record<string, number>> | undefined;
   readonly version: string;
 };
 
@@ -28,6 +32,12 @@ export const CACHE_NAME = "hse-notes";
 export const STAGE_PREFIX = "hse-notes-stage-";
 export const HASH_HEADER = "x-content-hash";
 export const MANIFEST_PATH = "offline-manifest.json";
+/**
+Marks a request of the page's background download (`api/offline-cache.ts`): the worker fetches
+such a file at low priority and does not fetch the rest of its document at once — the page asks
+for every file itself, one at a time.
+*/
+export const BACKGROUND_HEADER = "x-offline-background";
 
 const HASH_LENGTH = 16;
 
@@ -70,12 +80,32 @@ export const missingDocFiles = (
 ): readonly string[] =>
   manifest.docs.flatMap((doc) => doc.files).filter((path) => !isFresh(manifest, cached, path));
 
-export type OfflineCount = { readonly saved: number; readonly total: number };
+export type OfflineCount = {
+  /** Gzip bytes left to download for every document; `undefined` when the manifest has no sizes. */
+  readonly missingBytes: number | undefined;
+  readonly saved: number;
+  readonly total: number;
+};
+
+/**
+Share of a file in the progress of «Скачать все»: its gzip size, or 1 for a manifest without sizes
+(then the progress counts files).
+*/
+export const fileWeight = (manifest: OfflineManifest, path: string): number =>
+  manifest.sizes === undefined ? 1 : (manifest.sizes[path] ?? 0);
+
+const missingBytes = (manifest: OfflineManifest, cached: CachedHashes): number | undefined => {
+  const { sizes } = manifest;
+  return sizes === undefined
+    ? undefined
+    : missingDocFiles(manifest, cached).reduce((sum, path) => sum + (sizes[path] ?? 0), 0);
+};
 
 /** Lecture notes that are saved with their current content (outdated copies do not count). */
 export const countSavedNotes = (manifest: OfflineManifest, cached: CachedHashes): OfflineCount => {
   const notes = manifest.docs.filter((doc) => doc.kind === "notes");
   return {
+    missingBytes: missingBytes(manifest, cached),
     saved: notes.filter((doc) => isDocFresh(manifest, cached, doc)).length,
     total: notes.length,
   };
