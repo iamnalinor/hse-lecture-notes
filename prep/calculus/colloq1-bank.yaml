@@ -1,0 +1,1046 @@
+# Банк вопросов генератора билетов к коллоквиуму 1 (сайт: /calculus/colloq1, раздел «Генератор билетов»).
+# Формат — context/markup.md §11, «Банк билетов». В PDF банк не попадает.
+#
+# about — подпись генератора на сайте: одна короткая фраза, что билеты тренировочные; состав билета
+# виден по самому билету.
+# ticket — пункты билета по порядку, как в правилах коллоквиума: два вопроса на доказательство, задача
+# (one_of: либо пара «докажите» + «докажите или опровергните», либо одна задача на 2 балла — сайт
+# выбирает вариант случайно), четыре вопроса на формулировки, дополнительная задача повышенной сложности
+# (вид extra — только заведомо трудные задачи). proofs: true — в ответе нужны доказательства (сайт
+# показывает ::: proof блоков конспекта, линтер требует доказательство у каждого вопроса).
+# Поменять состав билета — только здесь.
+# questions — вопросы только по программе коллоквиума: id, kind (из ticket), topic (раздел
+# sec:colloq1:<topic> страницы — «к разделу» и разные темы в одном билете), text (Markdown, формулы $…$),
+# refs (метки блоков-ответов: конспекты или эта страница) и/или answer (свой короткий ответ — только
+# если готового блока нет).
+# Строки с обратной косой чертой — без кавычек, в '…' или блоком >-; в "…" YAML съест «\».
+
+about: Тренировочные билеты; задачи на коллоквиуме будут другие.
+
+ticket:
+  - kind: proof
+    title: Вопрос на доказательство
+    points: 2 балла
+    count: 2
+    proofs: true
+  - one_of:
+      - - kind: claim
+          title: 'Задача: докажите'
+          points: 1 балл
+          count: 1
+          proofs: true
+        - kind: disprove
+          title: 'Задача: докажите или опровергните; если неверно — контрпример, исправленная формулировка и её доказательство'
+          points: 1 балл
+          count: 1
+          proofs: true
+      - - kind: problem
+          title: Задача
+          points: 2 балла
+          count: 1
+  - kind: definition
+    title: Вопрос на определение или формулировку
+    points: 0,5 балла
+    count: 4
+  - kind: extra
+    title: Дополнительная задача повышенной сложности
+    points: 2 балла, 30 минут; по желанию, при 7 баллах и больше
+    count: 1
+
+questions:
+  # ------------------------------------------------------------------ теоремы с доказательством
+  - id: proof-negation
+    kind: proof
+    topic: logic
+    text: Правило обращения кванторов (отрицание высказываний с $\forall$ и $\exists$).
+    refs: [thm:lec01:negation]
+  - id: proof-bernoulli
+    kind: proof
+    topic: induction
+    text: Неравенство Бернулли.
+    refs: [thm:lec01:bernoulli, rem:colloq1:proof-bernoulli]
+  - id: proof-counting
+    kind: proof
+    topic: binomial
+    text: Формулы для числа перестановок $P_n$, размещений $A_n^k$ и сочетаний $C_n^k$.
+    refs: [prop:lec02:permutations, prop:lec02:arrangements, prop:lec02:combinations, rem:colloq1:proof-counting]
+  - id: proof-binomial
+    kind: proof
+    topic: binomial
+    text: Бином Ньютона.
+    refs: [thm:lec02:binomial, rem:colloq1:proof-binomial]
+  - id: claim-pascal
+    kind: claim
+    topic: binomial
+    text: Докажите, что $C_n^k = C_n^{n-k}$ и $C_n^k = C_{n-1}^k + C_{n-1}^{k-1}$ (правило Паскаля).
+    refs: [prop:lec02:pascal, rem:colloq1:proof-pascal]
+  - id: proof-uniqueness
+    kind: proof
+    topic: limit
+    text: Единственность предела последовательности.
+    refs: [thm:lec03:uniqueness, rem:colloq1:proof-uniqueness]
+  - id: proof-bounded
+    kind: proof
+    topic: limit
+    text: Сходящаяся последовательность ограничена.
+    refs: [thm:lec03:bounded, rem:colloq1:proof-bounded]
+  - id: proof-separated
+    kind: proof
+    topic: arithmetic
+    text: Последовательность с ненулевыми членами, сходящаяся к ненулевому числу, отделима от нуля.
+    refs: [prop:lec04:separated, rem:colloq1:proof-separated]
+  - id: proof-sum
+    kind: proof
+    topic: arithmetic
+    text: Предел суммы и разности сходящихся последовательностей.
+    refs: [thm:lec03:sum, rem:colloq1:proof-sum]
+  - id: proof-product
+    kind: proof
+    topic: arithmetic
+    text: Предел произведения сходящихся последовательностей.
+    refs: [thm:lec04:product, rem:colloq1:proof-product]
+  - id: proof-quotient
+    kind: proof
+    topic: arithmetic
+    text: Предел частного сходящихся последовательностей.
+    refs: [thm:lec04:quotient, rem:colloq1:proof-quotient]
+  - id: proof-inequality
+    kind: proof
+    topic: squeeze
+    text: Предельный переход в неравенстве для последовательностей.
+    refs: [thm:lec04:inequality, rem:colloq1:proof-inequality]
+  - id: proof-squeeze
+    kind: proof
+    topic: squeeze
+    text: Теорема о двух милиционерах для последовательностей.
+    refs: [thm:lec04:squeeze, rem:colloq1:proof-squeeze]
+  - id: proof-sup-exists
+    kind: proof
+    topic: sup
+    text: Существование точной верхней (и нижней) грани у непустого ограниченного сверху (снизу) множества.
+    refs: [thm:lec05:sup-exists, rem:colloq1:proof-sup]
+  - id: claim-sup-eps
+    kind: claim
+    topic: sup
+    text: Докажите, что $s = \sup A$ тогда и только тогда, когда $a \le s$ для всех $a \in A$ и $\forall \varepsilon > 0\ \exists a \in A\colon a > s - \varepsilon$.
+    refs: [prop:lec05:sup-eps, rem:colloq1:proof-sup-eps]
+  - id: proof-weierstrass
+    kind: proof
+    topic: weierstrass
+    text: Теорема Вейерштрасса о монотонной ограниченной последовательности.
+    refs: [thm:lec05:weierstrass, rem:colloq1:proof-weierstrass]
+  - id: proof-e
+    kind: proof
+    topic: e
+    text: Сходимость последовательности $\left(1 + \frac1n\right)^n$. Определение числа $e$.
+    refs: [thm:lec05:e, rem:colloq1:proof-e]
+  - id: proof-bw
+    kind: proof
+    topic: bw
+    text: Теорема Больцано–Вейерштрасса.
+    refs: [thm:lec06:bw, rem:colloq1:proof-bw]
+  - id: proof-partial-limit-point
+    kind: proof
+    topic: partial
+    text: Число $a$ — частичный предел последовательности тогда и только тогда, когда $a$ — её предельная точка.
+    refs: [thm:lec06:partial-limit-point, rem:colloq1:proof-partial]
+  - id: proof-cauchy
+    kind: proof
+    topic: cauchy
+    text: Критерий Коши сходимости последовательности.
+    refs: [thm:lec06:cauchy, rem:colloq1:proof-cauchy, rem:colloq1:proof-fundamental-bounded]
+  - id: proof-cauchy-heine
+    kind: proof
+    topic: function-limit
+    text: Равносильность определений предела функции по Коши и по Гейне.
+    refs: [thm:lec07:cauchy-heine, rem:colloq1:proof-cauchy-heine]
+  - id: proof-function-arithmetic
+    kind: proof
+    topic: function-props
+    text: Арифметика предела функции (сумма, произведение, частное).
+    refs: [thm:lec07:arithmetic, rem:colloq1:proof-function-props]
+  - id: proof-function-inequalities
+    kind: proof
+    topic: function-props
+    text: Предельный переход в неравенстве и теорема о двух милиционерах для функций.
+    refs: [thm:lec07:inequalities, rem:colloq1:proof-function-props]
+  - id: proof-composite
+    kind: proof
+    topic: composite
+    text: Теорема о пределе сложной функции.
+    refs: [thm:lec07:composite, rem:colloq1:proof-composite]
+
+  - id: proof-reciprocal-large
+    kind: proof
+    topic: classes
+    text: >-
+      Последовательность $(a_n)$ с ненулевыми членами бесконечно большая тогда и только тогда, когда
+      $\left(\frac{1}{a_n}\right)$ бесконечно малая.
+    refs: [prop:lec04:reciprocal, rem:colloq1:proof-reciprocal]
+  - id: proof-reciprocal-bounded
+    kind: proof
+    topic: classes
+    text: >-
+      Последовательность $(c_n)$ с ненулевыми членами ограничена тогда и только тогда, когда
+      $\left(\frac{1}{c_n}\right)$ отделима от нуля.
+    refs: [prop:lec04:reciprocal-bounded, rem:colloq1:proof-reciprocal]
+  - id: proof-first-remarkable
+    kind: proof
+    topic: first-remarkable
+    text: Первый замечательный предел.
+    refs: [thm:lec08:first-remarkable, rem:colloq1:proof-first-remarkable]
+  - id: proof-second-remarkable
+    kind: proof
+    topic: infinity
+    text: Второй замечательный предел.
+    refs: [thm:lec08:second-remarkable, rem:colloq1:proof-second-remarkable]
+  # ------------------------------------------------------------------ короткие утверждения (пункт «а»)
+  - id: claim-quantifier-order
+    kind: claim
+    topic: logic
+    text: >-
+      Докажите, что из $\exists y\ \forall x\colon P(x, y)$ следует $\forall x\ \exists y\colon P(x, y)$, и
+      приведите пример, где обратное неверно.
+    refs: [prop:lec01:order]
+  - id: claim-contrapositive
+    kind: claim
+    topic: logic
+    text: Докажите, что $A \Rightarrow B$ равносильно $\lnot B \Rightarrow \lnot A$ и $\lnot(A \Rightarrow B)$ равносильно $A \wedge \lnot B$.
+    refs: [prop:lec01:laws, ex:lec01:contrapositive]
+  - id: claim-sum-n
+    kind: claim
+    topic: induction
+    text: Докажите по индукции, что $1 + 2 + \dots + n = \frac{n(n+1)}{2}$ при всех $n \in \N$.
+    refs: [prop:lec01:sum]
+  - id: claim-binomial-sum
+    kind: claim
+    topic: binomial
+    text: Докажите, что $\sum\limits_{k=0}^{n} C_n^k = 2^n$ и $\sum\limits_{k=0}^{n} (-1)^k C_n^k = 0$.
+    refs: [cor:lec02:sum]
+  - id: claim-bounded-abs
+    kind: claim
+    topic: classes
+    text: Докажите, что последовательность ограничена тогда и только тогда, когда $\exists C > 0\ \forall n\colon |a_n| < C$.
+    refs: [prop:lec02:bounded-abs]
+  - id: claim-large-times-separated
+    kind: claim
+    topic: classes
+    text: Докажите, что произведение бесконечно большой последовательности и последовательности, отделимой от нуля, — бесконечно большая.
+    answer: >-
+      Пусть $|d_n| > \delta > 0$ при всех $n$ и $a_n \to \infty$. Для $M > 0$ возьмём номер $N$ из
+      определения б.б. для уровня $\frac M\delta$: $|a_n| > \frac M\delta$ при $n > N$. Тогда при $n > N$
+      $$|a_n d_n| = |a_n|\,|d_n| > \frac M\delta \cdot \delta = M.$$
+    refs: [def:lec04:infinite-limit, def:lec04:separated]
+  - id: claim-bounded-small
+    kind: claim
+    topic: classes
+    text: Докажите, что произведение ограниченной последовательности на бесконечно малую — бесконечно малая.
+    refs: [prop:lec04:bounded-small, rem:colloq1:proof-small]
+  - id: claim-small-algebra
+    kind: claim
+    topic: classes
+    text: Докажите, что сумма двух бесконечно малых — бесконечно малая и что бесконечно малая ограничена.
+    refs: [cor:lec04:small-algebra]
+  - id: claim-finite-change
+    kind: claim
+    topic: limit
+    text: Докажите, что изменение (или отбрасывание) конечного числа членов не влияет на сходимость и предел последовательности.
+    refs: [prop:lec03:finite-change]
+  - id: claim-triangle
+    kind: claim
+    topic: arithmetic
+    text: Докажите неравенство треугольника $|x + y| \le |x| + |y|$ и выведите из него $\bigl||x| - |y|\bigr| \le |x - y|$.
+    answer: >-
+      Второе: $|x| = |(x - y) + y| \le |x - y| + |y|$, то есть $|x| - |y| \le |x - y|$; поменяв $x$ и $y$
+      ролями, получаем $|y| - |x| \le |x - y|$. Вместе это и есть $\bigl||x| - |y|\bigr| \le |x - y|$.
+    refs: [prop:lec03:triangle]
+  - id: claim-decomposition
+    kind: claim
+    topic: arithmetic
+    text: Докажите, что $a_n \to a$ тогда и только тогда, когда $a_n = a + \alpha_n$, где $(\alpha_n)$ — бесконечно малая.
+    refs: [lem:lec04:decomposition]
+  - id: claim-bound-limit
+    kind: claim
+    topic: squeeze
+    text: Докажите, что если $a_n \to a$ и $a_n \le C$ начиная с некоторого номера, то $a \le C$.
+    refs: [cor:lec04:bound-limit, thm:lec04:inequality]
+  - id: claim-sup-max
+    kind: claim
+    topic: sup
+    text: Докажите, что если у множества есть наибольший элемент, то он совпадает с точной верхней гранью.
+    refs: [prop:lec05:max]
+  - id: claim-inf-exists
+    kind: claim
+    topic: sup
+    text: Докажите, что у непустого ограниченного снизу множества $A$ есть $\inf A$ и $\inf A = -\sup(-A)$.
+    refs: [cor:lec05:inf-exists]
+  - id: claim-sup-sum
+    kind: claim
+    topic: sup
+    text: Докажите, что $\sup(A + B) = \sup A + \sup B$ для непустых ограниченных сверху $A, B \subseteq \R$.
+    refs: [prob:colloq1:sup-sum]
+  - id: claim-weierstrass-dec
+    kind: claim
+    topic: weierstrass
+    text: Докажите, что невозрастающая ограниченная снизу последовательность сходится к $\inf a_n$.
+    refs: [cor:lec05:weierstrass-dec]
+  - id: claim-monotone-infinite
+    kind: claim
+    topic: weierstrass
+    text: Докажите, что неубывающая неограниченная сверху последовательность стремится к $+\infty$.
+    refs: [prop:lec05:monotone-infinite]
+  - id: claim-e-bounds
+    kind: claim
+    topic: e
+    text: Докажите, что $\left(1 + \frac1n\right)^n < e \le 3$ при всех $n \in \N$.
+    answer: >-
+      По теореме о числе $e$ последовательность $a_n = \left(1 + \frac1n\right)^n$ строго возрастает и
+      $a_n < 3$. По теореме Вейерштрасса $e = \lim a_n = \sup a_n$, поэтому $a_n < a_{n+1} \le e$. Из
+      $a_n < 3$ предельным переходом получаем $e \le 3$ — только нестрогое неравенство.
+    refs: [thm:lec05:e, cor:lec04:bound-limit]
+  - id: claim-nk
+    kind: claim
+    topic: partial
+    text: Докажите, что номера подпоследовательности удовлетворяют $n_k \ge k$.
+    refs: [lem:lec05:nk]
+  - id: claim-divergence
+    kind: claim
+    topic: partial
+    text: >-
+      Докажите, что последовательность с двумя подпоследовательностями, имеющими разные пределы, расходится
+      (можно пользоваться тем, что подпоследовательность сходящейся сходится к тому же пределу).
+    refs: [cor:lec05:divergence, prop:lec05:subseq-limit]
+  - id: claim-unbounded-subseq
+    kind: claim
+    topic: bw
+    text: Докажите, что у неограниченной сверху последовательности есть подпоследовательность, стремящаяся к $+\infty$.
+    refs: [prop:lec06:unbounded-subseq]
+  - id: claim-fundamental-bounded
+    kind: claim
+    topic: cauchy
+    text: Докажите, что фундаментальная последовательность ограничена.
+    refs: [lem:lec06:fundamental-bounded, rem:colloq1:proof-fundamental-bounded]
+  - id: claim-function-uniqueness
+    kind: claim
+    topic: function-limit
+    text: Докажите единственность предела функции в точке.
+    refs: [cor:lec07:uniqueness]
+  - id: claim-two-sequences
+    kind: claim
+    topic: function-limit
+    text: >-
+      Докажите: если для двух последовательностей Гейне $(x_n)$ и $(y_n)$ в точке $x_0$ пределы $f(x_n)$ и
+      $f(y_n)$ различны, то у $f$ нет предела в точке $x_0$.
+    answer: >-
+      Если бы $\lim\limits_{x \to x_0} f(x) = L$, то по определению Гейне $f(x_n) \to L$ и $f(y_n) \to L$,
+      и по единственности предела последовательности оба предела равнялись бы $L$ — противоречие.
+    refs: [cor:lec07:two-sequences, def:lec07:heine-limit]
+  - id: claim-abs-limit
+    kind: claim
+    topic: function-props
+    text: Докажите, что если $\lim\limits_{x \to x_0} f(x) = A$, то $\lim\limits_{x \to x_0} |f(x)| = |A|$. Верно ли обратное?
+    answer: >-
+      $\bigl||f(x)| - |A|\bigr| \le |f(x) - A|$ (следствие неравенства треугольника), поэтому то же
+      $\delta(\varepsilon)$, что для $f$, годится и для $|f|$. Обратное неверно: $f(x) = 1$ при $x \ge 0$ и
+      $f(x) = -1$ при $x < 0$; $|f| \equiv 1$, а у $f$ в нуле предела нет (на $\frac1n$ значения $1$, на
+      $-\frac1n$ — значения $-1$). Обратное верно при $A = 0$: $|f(x)| \to 0 \Leftrightarrow f(x) \to 0$.
+    refs: [prop:lec03:triangle, def:lec07:cauchy-limit]
+
+  - id: claim-example-sum
+    kind: claim
+    topic: classes
+    text: Докажите, что сумма ограниченной и бесконечно большой последовательностей — бесконечно большая.
+    refs: [prob:colloq1:example-sum]
+  - id: claim-cos-limit
+    kind: claim
+    topic: first-remarkable
+    text: Докажите, что $\lim\limits_{x \to 0} \sin x = 0$ и $\lim\limits_{x \to 0} \cos x = 1$.
+    refs: [prop:lec08:sin-cos]
+  - id: claim-first-consequences
+    kind: claim
+    topic: first-remarkable
+    text: >-
+      Докажите, что $\frac{\operatorname{tg} x}{x} \to 1$ и $\frac{1 - \cos x}{x^2} \to \frac12$ при
+      $x \to 0$.
+    refs: [cor:lec08:consequences]
+  - id: claim-e-zero
+    kind: claim
+    topic: infinity
+    text: Докажите, что $(1 + x)^{1/x} \to e$ при $x \to 0$.
+    refs: [cor:lec08:e-zero]
+  - id: claim-functions-reciprocal
+    kind: claim
+    topic: infinity
+    text: >-
+      Докажите, что если $f$ бесконечно большая при $x \to a$, то $\frac1f$ бесконечно малая при
+      $x \to a$, а произведение функции, ограниченной около $a$, на бесконечно малую — бесконечно малая.
+    refs: [prop:lec08:small-large]
+  # ------------------------------------------------------------------ докажите или опровергните (пункт «б»)
+  - id: dis-quantifier-order
+    kind: disprove
+    topic: logic
+    text: Из $\forall x\ \exists y\colon P(x, y)$ следует $\exists y\ \forall x\colon P(x, y)$.
+    answer: >-
+      Неверно: $\forall x \in \R\ \exists y \in \R\colon y > x$ истинно ($y = x + 1$), а
+      $\exists y\ \forall x\colon y > x$ ложно — нет числа больше всех. Верно обратное следствие: из
+      $\exists y\ \forall x$ следует $\forall x\ \exists y$ — годится то же $y_0$ для всех $x$.
+    refs: [prop:lec01:order]
+  - id: dis-bernoulli
+    kind: disprove
+    topic: induction
+    text: $(1 + x)^n \ge 1 + nx$ при всех $n \in \N$ и всех $x \in \R$.
+    answer: >-
+      Неверно: при $n = 3$, $x = -4$ слева $-27$, справа $-11$. Верно при $x \ge -1$ (неравенство
+      Бернулли): условие нужно в шаге индукции при умножении на $1 + x \ge 0$.
+    refs: [rem:lec01:bernoulli-condition, thm:lec01:bernoulli, rem:colloq1:proof-bernoulli]
+  - id: dis-small-times-large
+    kind: disprove
+    topic: classes
+    text: Произведение бесконечно малой и бесконечно большой последовательностей — бесконечно малая.
+    answer: >-
+      Неверно: $\frac1n \cdot n = 1$, $\frac1n \cdot n^2 = n$. Верно, если бесконечно большой множитель
+      заменить ограниченным: пусть $\alpha_n \to 0$ и $|c_n| < C$; тогда $|\alpha_n c_n| \le C|\alpha_n| <
+      \varepsilon$ при $n > N\left(\frac\varepsilon C\right)$, где $N(\cdot)$ — номер из определения
+      $\alpha_n \to 0$.
+    refs: [prop:lec04:bounded-small]
+  - id: dis-product-small
+    kind: disprove
+    topic: classes
+    text: Если $a_n b_n \to 0$, то $a_n \to 0$ или $b_n \to 0$.
+    refs: [prob:colloq1:product-small]
+  - id: dis-plus-infinity
+    kind: disprove
+    topic: classes
+    text: Если $x_n \to +\infty$, а $(y_n)$ ограничена сверху, то $x_n + y_n \to +\infty$.
+    answer: >-
+      Неверно: $x_n = n$, $y_n = -n$, сумма равна $0$. Верно, если $(y_n)$ ограничена снизу.
+    refs: [prob:colloq1:plus-infinity]
+  - id: dis-divergent-sum
+    kind: disprove
+    topic: arithmetic
+    text: Сумма двух расходящихся последовательностей расходится.
+    answer: >-
+      Неверно: $(-1)^n + (-1)^{n+1} = 0$. Верно: сумма сходящейся и расходящейся последовательностей
+      расходится. Если $a_n$ сходится, $b_n$ расходится, а $a_n + b_n$ сходится, то
+      $b_n = (a_n + b_n) - a_n$ сходится как разность сходящихся — противоречие.
+    refs: [rem:lec03:sum-backwards, thm:lec03:sum]
+  - id: dis-product-convergent
+    kind: disprove
+    topic: arithmetic
+    text: Если $(a_n)$ и $(a_n b_n)$ сходятся, то $(b_n)$ сходится.
+    answer: >-
+      Неверно: $a_n = \frac1n$, $b_n = (-1)^n$; $a_n b_n \to 0$, а $(b_n)$ расходится. Верно, если
+      $a_n \to a \ne 0$ и $a_n \ne 0$ при всех $n$: тогда $b_n = \frac{a_n b_n}{a_n}$ сходится по теореме
+      о пределе частного.
+    refs: [thm:lec04:quotient]
+  - id: dis-strict-inequality
+    kind: disprove
+    topic: squeeze
+    text: Если $a_n \to a$, $b_n \to b$ и $a_n > b_n$ при всех $n$, то $a > b$.
+    answer: >-
+      Неверно: $\frac1n > 0$, но оба предела равны $0$. Верно нестрогое: $a \ge b$ (предельный переход
+      в неравенстве).
+    refs: [rem:lec04:strict, thm:lec04:inequality, rem:colloq1:proof-inequality]
+  - id: dis-squeeze-limits
+    kind: disprove
+    topic: squeeze
+    text: Если $a_n \le b_n \le c_n$ при всех $n$ и $(a_n)$, $(c_n)$ сходятся, то $(b_n)$ сходится.
+    answer: >-
+      Неверно: $-1 \le (-1)^n \le 1$. Верно, если $(a_n)$ и $(c_n)$ сходятся к одному и тому же числу
+      (теорема о двух милиционерах).
+    refs: [rem:lec04:squeeze-limits, thm:lec04:squeeze, rem:colloq1:proof-squeeze]
+  - id: dis-max
+    kind: disprove
+    topic: sup
+    text: У непустого ограниченного сверху множества есть наибольший элемент.
+    answer: >-
+      Неверно: у $(0; 1)$ наибольшего элемента нет. Верно: у непустого ограниченного сверху множества
+      есть точная верхняя грань (у $(0; 1)$ она равна $1$ и множеству не принадлежит).
+    refs: [rem:lec05:sup-not-max, thm:lec05:sup-exists, rem:colloq1:proof-sup]
+  - id: dis-sup-subset
+    kind: disprove
+    topic: sup
+    text: Если $A \subsetneq B$ — непустые ограниченные сверху множества, то $\sup A < \sup B$.
+    answer: >-
+      Неверно: $A = (0; 1)$, $B = (0; 1]$, у обоих супремум $1$. Верно нестрогое $\sup A \le \sup B$:
+      $\sup B$ не меньше всех элементов $B$, в том числе всех элементов $A$, то есть это верхняя грань
+      $A$, а $\sup A$ — наименьшая из верхних граней.
+    refs: [def:lec05:sup]
+  - id: dis-monotone
+    kind: disprove
+    topic: weierstrass
+    text: Монотонная последовательность сходится.
+    answer: >-
+      Неверно: $a_n = n$. Верно: монотонная *ограниченная* последовательность сходится (теорема
+      Вейерштрасса); монотонная последовательность сходится тогда и только тогда, когда она ограничена.
+    refs: [thm:lec05:weierstrass, rem:colloq1:proof-weierstrass, prop:lec05:monotone-infinite]
+  - id: dis-bounded-converges
+    kind: disprove
+    topic: bw
+    text: Ограниченная последовательность сходится.
+    answer: >-
+      Неверно: $(-1)^n$. Верно: у ограниченной последовательности есть сходящаяся подпоследовательность
+      (теорема Больцано–Вейерштрасса); ограниченная монотонная последовательность сходится.
+    refs: [rem:lec03:bounded-not-convergent, thm:lec06:bw, rem:colloq1:proof-bw]
+  - id: dis-even-odd
+    kind: disprove
+    topic: bw
+    text: Если подпоследовательности $(a_{2k})$ и $(a_{2k-1})$ сходятся, то $(a_n)$ сходится.
+    answer: >-
+      Неверно: $(-1)^n$ — у неё $a_{2k} \to 1$, $a_{2k-1} \to -1$. Верно, если обе подпоследовательности
+      сходятся к *одному* числу $a$: для $\varepsilon > 0$ возьмём $K_1$, $K_2$, после которых
+      $|a_{2k} - a| < \varepsilon$ и $|a_{2k-1} - a| < \varepsilon$; при $n > \max(2K_1, 2K_2)$ член $a_n$ —
+      это $a_{2k}$ или $a_{2k-1}$ с $k > K_1$ или $k > K_2$ соответственно, и $|a_n - a| < \varepsilon$.
+    refs: [prob:lec05:even-odd]
+  - id: dis-unbounded-infinite
+    kind: disprove
+    topic: bw
+    text: Неограниченная последовательность бесконечно большая.
+    answer: >-
+      Неверно: $a_n = n^{(-1)^n}$ ($1, 2, \frac13, 4, \dots$) не ограничена, но $|a_n| \le 1$ при всех
+      нечётных $n$. Верно: у неограниченной сверху последовательности есть подпоследовательность,
+      стремящаяся к $+\infty$.
+    refs: [rem:lec04:unbounded-not-large, prop:lec06:unbounded-subseq]
+  - id: dis-one-partial
+    kind: disprove
+    topic: partial
+    text: Если у последовательности ровно один конечный частичный предел, то она сходится.
+    answer: >-
+      Неверно: $0, 2, 0, 4, 0, 6, \dots$ (нули на нечётных местах, $a_{2k} = 2k$): конечный частичный
+      предел один — $0$, а последовательность не ограничена и расходится. Верно для *ограниченной*
+      последовательности.
+    refs: [prob:lec06:one-limit-point]
+  - id: dis-neighbors
+    kind: disprove
+    topic: cauchy
+    text: Если $a_{n+1} - a_n \to 0$, то $(a_n)$ сходится.
+    answer: >-
+      Неверно: $\sqrt{n+1} - \sqrt n \to 0$, а $\sqrt n \to +\infty$. Верно, например, если
+      $|a_{n+1} - a_n| \le q^n$ при некотором $0 < q < 1$: тогда последовательность фундаментальна.
+    refs: [rem:colloq1:neighbors-trap, prob:colloq1:cauchy-geometric]
+  - id: dis-fixed-p
+    kind: disprove
+    topic: cauchy
+    text: Если $a_{n+p} - a_n \to 0$ при $n \to \infty$ для каждого фиксированного $p \in \N$, то $(a_n)$ фундаментальна.
+    answer: >-
+      Неверно: $H_n = 1 + \frac12 + \dots + \frac1n$. При фиксированном $p$
+      $0 < H_{n+p} - H_n \le \frac{p}{n+1} \to 0$, но $H_{2n} - H_n \ge \frac12$, и $(H_n)$ расходится.
+      Верно, если номер не зависит от $p$: $\forall \varepsilon > 0\ \exists N\ \forall n > N\ \forall p \in \N\colon
+      |a_{n+p} - a_n| < \varepsilon$ — это и есть фундаментальность ($m = n + p$).
+    refs: [def:lec06:fundamental, ex:lec06:harmonic]
+  - id: dis-one-sequence
+    kind: disprove
+    topic: function-limit
+    text: >-
+      Если нашлась последовательность $x_n \to x_0$, $x_n \ne x_0$, для которой $f(x_n) \to A$, то
+      $\lim\limits_{x \to x_0} f(x) = A$.
+    answer: >-
+      Неверно: у $\sin\frac\pi x$ на $x_n = \frac1n$ все значения равны $0$, а предела в нуле нет. Верно,
+      если $f(x_n) \to A$ для *любой* такой последовательности — это определение по Гейне.
+    refs: [rem:lec07:one-sequence, def:lec07:heine-limit]
+  - id: dis-function-strict
+    kind: disprove
+    topic: function-props
+    text: >-
+      Если $f(x) > g(x)$ в проколотой окрестности $x_0$, $f(x) \to A$ и $g(x) \to B$ при $x \to x_0$, то
+      $A > B$.
+    answer: >-
+      Неверно: $x^2 > 0$ при $x \ne 0$, но оба предела в нуле равны $0$. Верно нестрогое $A \ge B$.
+    refs: [rem:lec07:strict, thm:lec07:inequalities]
+  - id: dis-composite
+    kind: disprove
+    topic: composite
+    text: >-
+      Если $\lim\limits_{x \to x_0} f(x) = A$ и $\lim\limits_{y \to A} g(y) = B$, то
+      $\lim\limits_{x \to x_0} g(f(x)) = B$.
+    answer: >-
+      Неверно: $f(x) \equiv 0$, $g(y) = |\operatorname{sign} y|$; $g(f(x)) \equiv 0$, а $B = 1$. Верно при
+      дополнительном условии: $g(A) = B$ или $f(x) \ne A$ в некоторой проколотой окрестности $x_0$.
+    refs: [rem:colloq1:composite-counter, thm:lec07:composite, rem:colloq1:proof-composite]
+
+  - id: dis-sum-large
+    kind: disprove
+    topic: classes
+    text: Сумма двух бесконечно больших последовательностей — бесконечно большая.
+    refs: [prob:colloq1:example-sum]
+  - id: dis-sin-substitution
+    kind: disprove
+    topic: first-remarkable
+    text: Если $\alpha(x) \to 0$ при $x \to x_0$, то $\frac{\sin \alpha(x)}{\alpha(x)} \to 1$ при $x \to x_0$.
+    answer: >-
+      Неверно в такой общности: при $\alpha(x) = x \sin\frac1x$ и $x_0 = 0$ дробь не определена в точках
+      $\frac{1}{\pi k}$, сколь угодно близких к нулю, и предела в смысле определения нет. Верно, если
+      $\alpha(x) \ne 0$ в некоторой проколотой окрестности $x_0$: это условие (2) теоремы о пределе
+      сложной функции с внешней функцией $\frac{\sin y}{y}$ и $A = 0$.
+    refs: [thm:lec07:composite, thm:lec08:first-remarkable]
+  - id: dis-sequence-function
+    kind: disprove
+    topic: infinity
+    text: Если $f(n) \to A$ при $n \to \infty$, то $\lim\limits_{x \to +\infty} f(x) = A$.
+    answer: >-
+      Неверно: у $f(x) = \sin \pi x$ все $f(n) = 0$, а в точках $n + \frac12$ значения равны $(-1)^n$,
+      поэтому по Гейне предела при $x \to +\infty$ нет. Верно обратное: если
+      $\lim\limits_{x \to +\infty} f(x) = A$, то $f(n) \to A$ — это определение по Гейне для
+      последовательности $x_n = n$.
+    refs: [rem:lec08:sequence-vs-function]
+  - id: dis-unbounded-function
+    kind: disprove
+    topic: infinity
+    text: >-
+      Если $f$ не ограничена ни в какой проколотой окрестности $x_0$, то
+      $\lim\limits_{x \to x_0} f(x) = \infty$.
+    answer: >-
+      Неверно: $\frac1x \sin\frac1x$ не ограничена около нуля, но равна $0$ в точках $\frac{1}{\pi n}$.
+      Верно обратное: если $f(x) \to \infty$, то для любого $C > 0$ есть $\delta$ с $|f(x)| > C$ во всей
+      $\mathring{U}_\delta(x_0)$, и $f$ не ограничена ни в какой проколотой окрестности $x_0$.
+    refs: [rem:lec08:unbounded-not-large]
+  # ------------------------------------------------------------------ формулировки
+  - id: def-statement-predicate
+    kind: definition
+    topic: logic
+    text: Что такое высказывание и $n$-местный предикат? Чем они различаются?
+    refs: [def:lec01:statement, def:lec01:predicate]
+  - id: def-operations
+    kind: definition
+    topic: logic
+    text: Логические операции. Когда импликация $A \Rightarrow B$ ложна?
+    refs: [def:lec01:operations]
+  - id: def-quantifiers
+    kind: definition
+    topic: logic
+    text: Кванторы $\forall$ и $\exists$ — когда высказывание с квантором истинно?
+    refs: [def:lec01:quantifiers]
+  - id: def-negation-rule
+    kind: definition
+    topic: logic
+    text: Правило построения отрицания утверждения с кванторами.
+    refs: [thm:lec01:negation]
+  - id: def-induction
+    kind: definition
+    topic: induction
+    text: Принцип математической индукции.
+    refs: [ax:lec01:induction]
+  - id: def-bernoulli
+    kind: definition
+    topic: induction
+    text: Неравенство Бернулли (с условиями).
+    refs: [thm:lec01:bernoulli]
+  - id: def-permutation
+    kind: definition
+    topic: binomial
+    text: Перестановки и размещения; формулы для $P_n$ и $A_n^k$.
+    refs: [def:lec02:permutation, def:lec02:arrangement, prop:lec02:arrangements]
+  - id: def-combination
+    kind: definition
+    topic: binomial
+    text: Сочетания; формула для $C_n^k$.
+    refs: [def:lec02:combination, prop:lec02:combinations]
+  - id: def-binomial
+    kind: definition
+    topic: binomial
+    text: Формула бинома Ньютона.
+    refs: [thm:lec02:binomial]
+  - id: def-sequence
+    kind: definition
+    topic: limit
+    text: Что такое последовательность? Чем она отличается от множества своих значений?
+    refs: [def:lec02:sequence]
+  - id: def-bounded
+    kind: definition
+    topic: classes
+    text: Ограниченная (сверху, снизу) последовательность; отрицание ограниченности сверху.
+    answer: >-
+      Не ограничена сверху: $\forall C \in \R\ \exists n \in \N\colon a_n \ge C$ — для каждого уровня есть
+      свой член не ниже него.
+    refs: [def:lec02:bounded-above]
+  - id: def-limit
+    kind: definition
+    topic: limit
+    text: Предел последовательности; отрицание («$a$ — не предел $(a_n)$»).
+    answer: >-
+      Отрицание: $\exists \varepsilon > 0$ $\forall N \in \N$ $\exists n > N\colon$ $|a_n - a| \ge
+      \varepsilon$ — есть окрестность $a$, вне которой бесконечно много членов.
+    refs: [def:lec03:limit]
+  - id: def-neighborhood-convergent
+    kind: definition
+    topic: limit
+    text: $\varepsilon$-окрестность точки; сходящаяся и расходящаяся последовательности.
+    refs: [def:lec03:neighborhood, def:lec03:convergent]
+  - id: def-small-large
+    kind: definition
+    topic: classes
+    text: Бесконечно малая и бесконечно большая последовательности ($a_n \to \infty$, $a_n \to +\infty$, $a_n \to -\infty$).
+    refs: [def:lec04:small-large, def:lec04:infinite-limit]
+  - id: def-separated
+    kind: definition
+    topic: classes
+    text: Последовательность, отделимая от нуля.
+    refs: [def:lec04:separated]
+  - id: def-arithmetic
+    kind: definition
+    topic: arithmetic
+    text: Теорема об арифметике предела последовательности (со всеми условиями).
+    refs: [thm:lec03:sum, thm:lec04:product, thm:lec04:quotient]
+  - id: def-inequality
+    kind: definition
+    topic: squeeze
+    text: Теорема о предельном переходе в неравенстве.
+    refs: [thm:lec04:inequality]
+  - id: def-squeeze
+    kind: definition
+    topic: squeeze
+    text: Теорема о двух милиционерах.
+    refs: [thm:lec04:squeeze]
+  - id: def-continuity-axiom
+    kind: definition
+    topic: sup
+    text: Аксиома непрерывности действительных чисел.
+    refs: [ax:lec05:continuity]
+  - id: def-bounded-set
+    kind: definition
+    topic: sup
+    text: Ограниченное (сверху, снизу) множество; верхняя грань.
+    refs: [def:lec05:bounded-set, def:lec05:upper-bound]
+  - id: def-sup
+    kind: definition
+    topic: sup
+    text: Точная верхняя и точная нижняя грани множества.
+    refs: [def:lec05:sup, def:lec05:inf]
+  - id: def-sup-eps
+    kind: definition
+    topic: sup
+    text: Характеризация $\sup A$ через $\varepsilon$.
+    refs: [prop:lec05:sup-eps]
+  - id: def-sup-exists
+    kind: definition
+    topic: sup
+    text: Теорема о существовании точной грани.
+    refs: [thm:lec05:sup-exists, cor:lec05:inf-exists]
+  - id: def-monotone
+    kind: definition
+    topic: weierstrass
+    text: Возрастающая, неубывающая, убывающая, невозрастающая последовательности.
+    refs: [def:lec02:monotone]
+  - id: def-weierstrass
+    kind: definition
+    topic: weierstrass
+    text: Теорема Вейерштрасса о монотонной последовательности.
+    refs: [thm:lec05:weierstrass, cor:lec05:weierstrass-dec]
+  - id: def-e
+    kind: definition
+    topic: e
+    text: Определение числа $e$. В каких пределах оно лежит?
+    answer: '$\frac94 \le e \le 3$, $e \approx 2{,}718$.'
+    refs: [def:lec05:e]
+  - id: def-subsequence
+    kind: definition
+    topic: partial
+    text: Подпоследовательность.
+    refs: [def:lec05:subsequence]
+  - id: def-bw
+    kind: definition
+    topic: bw
+    text: Теорема Больцано–Вейерштрасса.
+    refs: [thm:lec06:bw]
+  - id: def-limit-point
+    kind: definition
+    topic: partial
+    text: Предельная точка последовательности.
+    refs: [def:lec06:limit-point]
+  - id: def-partial-limit
+    kind: definition
+    topic: partial
+    text: Частичный предел. Как он связан с предельной точкой?
+    refs: [def:lec06:partial-limit, thm:lec06:partial-limit-point]
+  - id: def-fundamental
+    kind: definition
+    topic: cauchy
+    text: Фундаментальная последовательность; отрицание фундаментальности.
+    answer: >-
+      Отрицание: $\exists \varepsilon > 0$ $\forall N$ $\exists m, n > N\colon$ $|a_m - a_n| \ge
+      \varepsilon$.
+    refs: [def:lec06:fundamental]
+  - id: def-cauchy
+    kind: definition
+    topic: cauchy
+    text: Критерий Коши сходимости последовательности.
+    refs: [thm:lec06:cauchy]
+  - id: def-function
+    kind: definition
+    topic: function-limit
+    text: Функция, область определения, множество значений.
+    refs: [def:lec07:function]
+  - id: def-punctured
+    kind: definition
+    topic: function-limit
+    text: Проколотая окрестность точки.
+    refs: [def:lec07:punctured]
+  - id: def-cauchy-limit
+    kind: definition
+    topic: function-limit
+    text: Предел функции по Коши; его отрицание.
+    answer: >-
+      Отрицание: $\exists \varepsilon_0 > 0$ $\forall \delta > 0$ $\exists x$, $0 < |x - x_0| <
+      \delta\colon$ $|f(x) - A| \ge \varepsilon_0$.
+    refs: [def:lec07:cauchy-limit]
+  - id: def-heine-limit
+    kind: definition
+    topic: function-limit
+    text: Предел функции по Гейне.
+    refs: [def:lec07:heine-limit]
+  - id: def-cauchy-heine
+    kind: definition
+    topic: function-limit
+    text: Как связаны определения предела функции по Коши и по Гейне?
+    refs: [thm:lec07:cauchy-heine]
+  - id: def-function-arithmetic
+    kind: definition
+    topic: function-props
+    text: Теорема об арифметике предела функции.
+    refs: [thm:lec07:arithmetic]
+  - id: def-function-inequalities
+    kind: definition
+    topic: function-props
+    text: Предельный переход в неравенстве и теорема о двух милиционерах для функций.
+    refs: [thm:lec07:inequalities]
+  - id: def-composite
+    kind: definition
+    topic: composite
+    text: Теорема о пределе сложной функции. Что будет без дополнительных условий?
+    refs: [thm:lec07:composite, rem:colloq1:composite-counter]
+
+  - id: def-reciprocal
+    kind: definition
+    topic: classes
+    text: >-
+      Как связаны бесконечно большая $(a_n)$ и $\left(\frac{1}{a_n}\right)$? Ограниченная $(c_n)$ и
+      $\left(\frac{1}{c_n}\right)$?
+    refs: [prop:lec04:reciprocal, prop:lec04:reciprocal-bounded]
+  - id: def-first-remarkable
+    kind: definition
+    topic: first-remarkable
+    text: Первый замечательный предел и его следствия.
+    refs: [thm:lec08:first-remarkable, cor:lec08:consequences]
+  - id: def-infinity-nbhd
+    kind: definition
+    topic: infinity
+    text: Окрестности $+\infty$, $-\infty$ и $\infty$.
+    refs: [def:lec08:infinity-nbhd]
+  - id: def-general-limit
+    kind: definition
+    topic: infinity
+    text: Определения $\lim\limits_{x \to +\infty} f(x) = A$ и $\lim\limits_{x \to x_0} f(x) = \infty$.
+    refs: [def:lec08:general-limit]
+  - id: def-functions-small-large
+    kind: definition
+    topic: infinity
+    text: Бесконечно малая и бесконечно большая функции при $x \to a$.
+    refs: [def:lec08:small-large]
+  - id: def-second-remarkable
+    kind: definition
+    topic: infinity
+    text: Второй замечательный предел и его следствие $\left(1 + \frac\alpha x\right)^x \to e^\alpha$.
+    refs: [thm:lec08:second-remarkable, cor:lec08:e-alpha]
+  # ------------------------------------------------------------------ дополнительные задачи
+  - id: prob-partial-cos
+    kind: problem
+    topic: partial
+    text: >-
+      Для $a_n = (-1)^n\left(1 + \frac1n\right) + \cos\frac{\pi n}{2}$ найдите все частичные пределы,
+      $\sup a_n$ и $\inf a_n$.
+    refs: [prob:colloq1:partial-cos]
+  - id: prob-partial-sin
+    kind: problem
+    topic: partial
+    text: >-
+      Для $x_n = \frac{n}{n+1} \sin\frac{\pi n}{3}$ найдите $\sup x_n$, $\inf x_n$ и все частичные
+      пределы.
+    answer: >-
+      При $n \equiv 1, 2, 3, 4, 5, 0 \pmod 6$ синус равен $\frac{\sqrt3}{2}, \frac{\sqrt3}{2}, 0,
+      -\frac{\sqrt3}{2}, -\frac{\sqrt3}{2}, 0$, а $\frac{n}{n+1} \to 1$, возрастая. Частичные пределы
+      $\frac{\sqrt3}{2}$, $0$, $-\frac{\sqrt3}{2}$; $\sup x_n = \frac{\sqrt3}{2}$,
+      $\inf x_n = -\frac{\sqrt3}{2}$ — совпадают с наибольшим и наименьшим частичными пределами. Точные грани не достигаются: все
+      $|x_n| < \frac{\sqrt3}{2}$, а $\frac{n}{n+1} \cdot \frac{\sqrt3}{2}$ сколь угодно близко к
+      $\frac{\sqrt3}{2}$.
+    refs: [prop:lec06:split]
+  - id: prob-partial-alternating
+    kind: problem
+    topic: partial
+    text: Для $x_n = (-1)^n + \frac1n$ найдите частичные пределы, $\sup x_n$ и $\inf x_n$. Достигаются ли точные грани?
+    answer: >-
+      Чётные номера: $x_{2k} = 1 + \frac{1}{2k} \to 1$, убывая; нечётные: $x_{2k-1} = -1 + \frac{1}{2k-1}
+      \to -1$, убывая. По утверждению о разбиении номеров частичные пределы $1$ и $-1$.
+      $\sup x_n = \max x_n = x_2 = \frac32$ (чётные члены
+      не больше $x_2$, нечётные $\le 0$). $\inf x_n = -1$ и не достигается: все члены больше $-1$, а
+      $x_{2k-1} = -1 + \frac{1}{2k-1}$ сколь угодно близки к $-1$.
+    refs: [prop:lec06:split, prop:lec05:sup-eps]
+  - id: prob-partial-cos3
+    kind: problem
+    topic: partial
+    text: Для $x_n = \left(1 + \frac1n\right)\cos\frac{2\pi n}{3}$ найдите частичные пределы, $\sup x_n$ и $\inf x_n$.
+    answer: >-
+      $\cos\frac{2\pi n}{3}$ равен $1$ при $n = 3m$ и $-\frac12$ при остальных $n$. Подпоследовательность
+      $n = 3m$ стремится к $1$, остальные члены — к $-\frac12$; частичные пределы $1$ и $-\frac12$.
+      Члены с $n = 3m$ равны $1 + \frac{1}{3m}$ и
+      убывают, остальные отрицательны, поэтому $\sup x_n = \max x_n = x_3 = \frac43$. Члены с $n \ne 3m$
+      равны $-\frac12\left(1 + \frac1n\right)$ и возрастают с ростом $n$, поэтому
+      $\inf x_n = \min x_n = x_1 = -1$.
+    refs: [prop:lec06:split]
+  - id: prob-sup-set
+    kind: problem
+    topic: sup
+    text: Найдите $\sup$ и $\inf$ множества $\left\{\frac{m - n}{m + n} \;\middle|\; m, n \in \N\right\}$. Достигаются ли они?
+    refs: [prob:colloq1:sup-set]
+  - id: prob-sup-fraction
+    kind: problem
+    topic: sup
+    text: Найдите $\sup$ и $\inf$ множества $\left\{\frac{n}{n^2 + 4} \;\middle|\; n \in \N\right\}$. Достигаются ли они?
+    answer: >-
+      $\sup = \max = \frac14$ (при $n = 2$): $\frac{n}{n^2 + 4} \le \frac14 \Leftrightarrow (n - 2)^2 \ge 0$.
+      $\inf = 0$ и не достигается: все элементы положительны, а $\frac{n}{n^2 + 4} < \frac1n < \varepsilon$
+      при $n > \frac1\varepsilon$, то есть для любого $\varepsilon > 0$ есть элемент меньше $0 + \varepsilon$.
+    refs: [prop:lec05:sup-eps, prop:lec05:max]
+  - id: prob-sup-parabola
+    kind: problem
+    topic: sup
+    text: Найдите $\sup$ и $\inf$ множества $\{x^2 - 2x \mid x \in (0; 3)\}$. Достигаются ли они?
+    answer: >-
+      $x^2 - 2x = (x - 1)^2 - 1$. $\inf = \min = -1$ (при $x = 1$). $\sup = 3$ и не достигается: при
+      $x \in (0; 3)$ имеем $|x - 1| < 2$, поэтому $x^2 - 2x < 3$; при $x = 3 - t$, $0 < t < 1$, значение
+      равно $3 - 4t + t^2 > 3 - 4t$, и это больше $3 - \varepsilon$ при $t < \frac\varepsilon4$.
+    refs: [prop:lec05:sup-eps]
+  - id: prob-sup-sets
+    kind: problem
+    topic: sup
+    text: >-
+      Найдите $\sup$ и $\inf$ множеств и выясните, достигаются ли они: $\left\{\frac{3 + (-1)^n}{n} \mid n \in
+      \N\right\}$ и $\left\{\frac{n}{2n + m} \mid m, n \in \N\right\}$. В ответе это пункты (a) и (b) задачи.
+    refs: [prob:lec05:sup-sets]
+  - id: extra-recurrent-sqrt
+    kind: extra
+    topic: weierstrass
+    text: Докажите, что последовательность $x_1 = 1$, $x_{n+1} = \sqrt{2 + x_n}$ сходится, и найдите её предел.
+    refs: [prob:colloq1:recurrent]
+  - id: extra-recurrent-heron
+    kind: extra
+    topic: weierstrass
+    text: Докажите, что последовательность $x_1 = 3$, $x_{n+1} = \frac{x_n}{2} + \frac{2}{x_n}$ сходится, и найдите её предел.
+    answer: >-
+      Предел $2$. Все $x_n > 0$ (индукция). $x_{n+1} - 2 = \frac{x_n^2 - 4x_n + 4}{2x_n} = \frac{(x_n - 2)^2}{2x_n}
+      \ge 0$, то есть $x_n \ge 2$ при всех $n$ ($x_1 = 3$). Тогда $x_{n+1} - x_n = \frac{4 - x_n^2}{2x_n} \le 0$:
+      последовательность не возрастает и ограничена снизу числом $2$, по теореме Вейерштрасса $x_n \to L \ge 2$.
+      Переход к пределу в $2x_{n+1}x_n = x_n^2 + 4$ даёт $L^2 = 4$, $L = 2$.
+    refs: [thm:lec05:weierstrass, rem:lec05:recurrent-trap]
+  - id: prob-root-sum
+    kind: problem
+    topic: squeeze
+    text: Найдите $\lim\limits_{n \to \infty} \sqrt[n]{2^n + 3^n}$.
+    refs: [prob:colloq1:root-sum]
+  - id: prob-e-shift
+    kind: problem
+    topic: e
+    text: Найдите $\lim\left(1 + \frac1n\right)^{n+5}$ и $\lim\left(1 + \frac{1}{n+2}\right)^{n}$.
+    answer: >-
+      Оба предела равны $e$. Первый: $\left(1 + \frac1n\right)^{n+5} = \left(1 + \frac1n\right)^n \cdot
+      \left(1 + \frac1n\right)^5 \to e \cdot 1$ по арифметике предела. Второй:
+      $\left(1 + \frac{1}{n+2}\right)^n = \left(1 + \frac{1}{n+2}\right)^{n+2} \Big/ \left(1 + \frac{1}{n+2}\right)^2$;
+      числитель — сдвиг последовательности $\left(1 + \frac1n\right)^n$ на два номера и стремится к $e$,
+      знаменатель стремится к $1$.
+    refs: [thm:lec05:e, prop:lec03:finite-change]
+  - id: extra-cauchy-geometric
+    kind: extra
+    topic: cauchy
+    text: >-
+      Пусть $0 < q < 1$ и $|a_{n+1} - a_n| \le q^n$ при всех $n$. Докажите, что $(a_n)$ сходится. Верно ли то
+      же при условии $|a_{n+1} - a_n| \le \frac1n$?
+    refs: [prob:colloq1:cauchy-geometric]
+  - id: prob-delta-square
+    kind: problem
+    topic: function-limit
+    text: Докажите по определению Коши, что $\lim\limits_{x \to 1} (x^2 + x) = 2$.
+    refs: [prob:colloq1:cauchy-delta]
+  - id: prob-delta-root
+    kind: problem
+    topic: function-limit
+    text: Докажите по определению Коши, что $\lim\limits_{x \to 4} \sqrt x = 2$.
+    answer: >-
+      Годится $\delta(\varepsilon) = \min(4, 2\varepsilon)$. При $|x - 4| < 4$ имеем $x > 0$, и
+      $|\sqrt x - 2| = \frac{|x - 4|}{\sqrt x + 2} \le \frac{|x - 4|}{2} < \varepsilon$ при $|x - 4| < 2\varepsilon$.
+    refs: [def:lec07:cauchy-limit]
+  - id: prob-no-limit
+    kind: problem
+    topic: function-limit
+    text: Докажите, что у $f(x) = \cos\frac1x$ нет предела при $x \to 0$.
+    refs: [prob:colloq1:no-limit]
+  - id: prob-composite
+    kind: problem
+    topic: composite
+    text: >-
+      Пусть $g(y) = y^2$ при $y \ne 1$ и $g(1) = 5$. Найдите $\lim\limits_{x \to 0} g(1 + x^2)$. Какое условие
+      теоремы о пределе сложной функции здесь работает, а какое нарушено?
+    refs: [prob:colloq1:composite]
+  - id: extra-example-inf
+    kind: extra
+    topic: sup
+    text: >-
+      Пусть $x_n \to +\infty$ и $m_n = \inf\limits_{k \ge n} x_k$. Докажите, что $m_n \to +\infty$.
+    refs: [prob:colloq1:example-inf]
+  - id: extra-sup-tail
+    kind: extra
+    topic: sup
+    text: Пусть $x_n \to a$ и $M_n = \sup\limits_{k \ge n} x_k$. Докажите, что $M_n \to a$.
+    answer: >-
+      Сходящаяся последовательность ограничена, поэтому $M_n$ существует. Для $\varepsilon > 0$ возьмём
+      $N$ с $|x_k - a| < \frac\varepsilon2$ при $k > N$. При $n > N$ число $a + \frac\varepsilon2$ —
+      верхняя грань $\{x_k \mid k \ge n\}$, поэтому $M_n \le a + \frac\varepsilon2$; и
+      $M_n \ge x_n > a - \frac\varepsilon2$. Итак, $|M_n - a| < \varepsilon$ при $n > N$.
+    refs: [def:lec05:sup]
+  - id: prob-sin-ratio
+    kind: problem
+    topic: first-remarkable
+    text: Найдите $\lim\limits_{x \to 0} \dfrac{\sin 3x - \sin x}{\operatorname{tg} 2x}$.
+    refs: [prob:colloq1:sin-ratio]
+  - id: prob-infinity-power
+    kind: problem
+    topic: infinity
+    text: Найдите $\lim\limits_{x \to +\infty} \left(\dfrac{x + 3}{x - 1}\right)^{x}$.
+    refs: [prob:colloq1:infinity-power]
+  # ------------------------------------------------------------------ дополнительные задачи повышенной сложности
+  - id: extra-cesaro
+    kind: extra
+    topic: arithmetic
+    text: Пусть $a_n \to a$. Докажите, что $\frac{a_1 + a_2 + \dots + a_n}{n} \to a$.
+    answer: >-
+      Пусть $\varepsilon > 0$. Возьмём $N$ с $|a_k - a| < \frac\varepsilon2$ при $k > N$ и положим
+      $S = |a_1 - a| + \dots + |a_N - a|$ — конечное число. При $n > N$
+      $$\left|\frac{a_1 + \dots + a_n}{n} - a\right| \le \frac{S}{n} + \frac{(n - N)\frac\varepsilon2}{n} < \frac Sn + \frac\varepsilon2.$$
+      *Ключ:* первые $N$ слагаемых дают фиксированную сумму $S$, и $\frac Sn < \frac\varepsilon2$ при
+      $n > \frac{2S}{\varepsilon}$. Итак, при $n > \max\left(N, \frac{2S}{\varepsilon}\right)$ отклонение меньше
+      $\varepsilon$.
+    refs: [prop:lec03:triangle]
+  - id: extra-contraction
+    kind: extra
+    topic: cauchy
+    text: >-
+      Пусть $|a_{n+2} - a_{n+1}| \le \frac12 |a_{n+1} - a_n|$ при всех $n \in \N$. Докажите, что $(a_n)$
+      сходится.
+    answer: >-
+      Пусть $d = |a_2 - a_1|$. По индукции $|a_{k+1} - a_k| \le \frac{d}{2^{k-1}}$. При $m > n$ по
+      неравенству треугольника
+      $$|a_m - a_n| \le \sum_{k=n}^{m-1} \frac{d}{2^{k-1}} < \frac{d}{2^{n-1}} \cdot 2 = \frac{d}{2^{n-2}}.$$
+      Правая часть стремится к нулю, поэтому для $\varepsilon > 0$ найдётся $N$ с $\frac{d}{2^{n-2}} < \varepsilon$
+      при $n > N$, и $|a_m - a_n| < \varepsilon$ при $m > n > N$. Последовательность фундаментальна и по
+      критерию Коши сходится.
+    refs: [thm:lec06:cauchy]
+  - id: extra-monotone-subsequence
+    kind: extra
+    topic: weierstrass
+    text: >-
+      Пусть $(a_n)$ монотонна и у неё есть сходящаяся подпоследовательность $a_{n_k} \to L$. Докажите, что
+      $a_n \to L$.
+    answer: >-
+      Пусть $(a_n)$ не убывает (невозрастающая — то же для $-a_n$). Сходящаяся $(a_{n_k})$ ограничена:
+      $a_{n_k} \le C$. Для любого $n$ номер $n_n \ge n$ (лемма о номерах подпоследовательности), поэтому
+      $a_n \le a_{n_n} \le C$: вся последовательность ограничена сверху. По теореме Вейерштрасса она
+      сходится, а её предел совпадает с пределом любой подпоследовательности, то есть равен $L$.
+    refs: [thm:lec05:weierstrass, lem:lec05:nk, prop:lec05:subseq-limit]

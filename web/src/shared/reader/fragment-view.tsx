@@ -14,10 +14,13 @@ type Props = {
   readonly lecture: number | undefined;
   readonly nested?: boolean;
   readonly sectionNumbers?: ReadonlyMap<string, string>;
+  /** Content mounted at the end of a section, by the section's id. */
+  readonly slots?: TransformOptions["slots"] | undefined;
   readonly variant?: TransformOptions["variant"];
 };
 
 const NO_NUMBERS: ReadonlyMap<string, string> = new Map();
+const NO_SLOTS: TransformOptions["slots"] = new Map();
 
 /** Turns a build fragment (pandoc HTML) into React: blocks, references, KaTeX, spoilers. */
 export const FragmentView = ({
@@ -27,6 +30,7 @@ export const FragmentView = ({
   lecture,
   nested = false,
   sectionNumbers = NO_NUMBERS,
+  slots = NO_SLOTS,
   variant = "notes",
 }: Props) => {
   const content = useMemo(
@@ -35,10 +39,11 @@ export const FragmentView = ({
         replace: createReplacer({
           assetBase: dataUrl(`${course}/${docId}/`),
           sectionNumbers,
+          slots,
           variant,
         }),
       }),
-    [course, docId, html, sectionNumbers, variant],
+    [course, docId, html, sectionNumbers, slots, variant],
   );
 
   const context = useMemo<ReaderContextValue>(

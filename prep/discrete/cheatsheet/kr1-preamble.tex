@@ -1,0 +1,60 @@
+% Общий преамбула-стиль читлистов КР-1 (дискретная математика).
+% Подключается из kr1-cheatsheet-1side.tex и kr1-cheatsheet-2side.tex.
+\usepackage{fix-cm}
+\usepackage[a4paper,margin=6mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{fontspec}
+\setmainfont{cmunrm.otf}[BoldFont=cmunbx.otf,ItalicFont=cmunti.otf,BoldItalicFont=cmunbi.otf]
+\setsansfont{cmunss.otf}[BoldFont=cmunsx.otf,ItalicFont=cmunsi.otf,BoldItalicFont=cmunso.otf]
+\usepackage[russian]{babel}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{array}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\columnsep}{2.4mm}
+\setlength{\columnseprule}{0.25pt}
+\setlength{\multicolsep}{0pt}
+\raggedcolumns
+\sloppy
+\usepackage{ragged2e}
+\AtBeginDocument{\RaggedRight}
+\emergencystretch=2em
+\setlength{\abovedisplayskip}{1pt}\setlength{\belowdisplayskip}{1pt}
+\setlength{\abovedisplayshortskip}{0pt}\setlength{\belowdisplayshortskip}{1pt}
+\setlength{\tabcolsep}{2.2pt}
+\renewcommand{\arraystretch}{0.95}
+\setlength{\arraycolsep}{1.5pt}
+\thinmuskip=2mu \medmuskip=2.5mu plus 1mu minus 1mu \thickmuskip=3mu plus 1mu
+
+% основной кегль 8/8.8 pt (не меньше 7 pt — context/prompts/cheatsheet.md §3)
+\newcommand{\sheetsize}{\fontsize{8}{8.8}\selectfont}
+\DeclareMathSizes{8}{8}{5.8}{4.6}
+
+\setlist{nosep,leftmargin=*,labelsep=2pt,itemsep=0pt,parsep=0pt,topsep=0pt,partopsep=0pt}
+\setlist[itemize]{label=\textbullet}
+\setlist[enumerate]{label=\arabic*.}
+
+% Заголовок раздела: номер темы КР по билету, светло-серая плашка на всю колонку.
+\newcommand{\sect}[1]{\par\addvspace{1.6pt}\noindent
+  {\setlength{\fboxsep}{1pt}\colorbox{black!13}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\sffamily\bfseries #1}}}%
+  \par\nobreak\vspace{0.5pt}\nobreak}
+% Подзаголовок внутри раздела.
+\newcommand{\sub}[1]{\par\addvspace{0.4pt}\noindent\textbf{#1}\enspace}
+% Единый маркер ловушки во всём листе.
+\newcommand{\trap}{{\setlength{\fboxsep}{0.4pt}\setlength{\fboxrule}{0.4pt}\fbox{\textbf{\,!\,}}}\ }
+% Обозначения курса
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\nil}{[\,]}
+\newcommand{\lh}{\mathrm{lh}}
+\newcommand{\app}{\mathrm{app}}
+\newcommand{\rev}{\mathrm{rev}}
+\newcommand{\Prog}{\mathrm{Prog}}
+\newcommand{\Ra}{\Rightarrow}
+\newcommand{\LRa}{\Leftrightarrow}
+\newcommand{\topline}[1]{\noindent{\sffamily\bfseries Дискретная математика (ПИ ФКН ВШЭ) · КР-1 · 24.10.2026 · #1}\par\vspace{1pt}}

@@ -4,6 +4,7 @@ import {
   type CachedHashes,
   contentHash,
   countSavedNotes,
+  fileWeight,
   isDocFresh,
   missingDocFiles,
   type OfflineManifest,
@@ -25,6 +26,13 @@ const MANIFEST: OfflineManifest = {
     "index.html": "i",
   },
   precache: ["index.html"],
+  sizes: {
+    "data/a/01/fragment.html": 100,
+    "data/a/01/meta.json": 10,
+    "data/a/02/fragment.html": 200,
+    "data/a/02/meta.json": 20,
+    "data/a/glossary.json": 5,
+  },
   version: "v",
 };
 
@@ -39,7 +47,18 @@ describe("offline documents", () => {
       "data/a/02/meta.json": "m2",
       "data/a/glossary.json": "g",
     });
-    expect(countSavedNotes(MANIFEST, state)).toEqual({ saved: 1, total: 2 });
+    expect(countSavedNotes(MANIFEST, state)).toEqual({ missingBytes: 200, saved: 1, total: 2 });
+  });
+
+  it("weighs files by size, or equally without sizes", () => {
+    const { sizes: _sizes, ...withoutSizes } = MANIFEST;
+    expect(fileWeight(MANIFEST, "data/a/02/fragment.html")).toBe(200);
+    expect(fileWeight(withoutSizes, "data/a/02/fragment.html")).toBe(1);
+  });
+
+  it("leaves the size unknown for a manifest without sizes", () => {
+    const { sizes: _sizes, ...withoutSizes } = MANIFEST;
+    expect(countSavedNotes(withoutSizes, cached({})).missingBytes).toBeUndefined();
   });
 
   it("treats a half-saved document as not saved", () => {

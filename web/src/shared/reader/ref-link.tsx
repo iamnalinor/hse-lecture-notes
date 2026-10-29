@@ -36,7 +36,7 @@ export const RefLink = ({ children, refId }: Props) => {
   const href = useHref(to);
 
   if (target === undefined) {
-    // Labels of a test preparation page (`prob:kr1:…`) are local to it and not in the course
+    // Labels of a preparation page (`prob:kr1:…`, `prob:colloq1:…`) are local to it and not in the course
     // index: link to the anchor on this page, without a hover card.
     return (
       <Link className="ref" to={{ hash: refId }}>

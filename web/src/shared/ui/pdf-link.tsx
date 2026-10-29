@@ -6,10 +6,12 @@ const pdfUrl = (course: string, docId: string): string =>
 type Props = {
   readonly course: string;
   readonly docId: string;
+  /** Text of the link: «PDF» unless the page offers several files. */
+  readonly label?: string;
   readonly variant: "button" | "chip";
 };
 
-export const PdfLink = ({ course, docId, variant }: Props) => (
+export const PdfLink = ({ course, docId, label = "PDF", variant }: Props) => (
   <a
     className={
       variant === "button"
@@ -20,6 +22,6 @@ export const PdfLink = ({ course, docId, variant }: Props) => (
     href={pdfUrl(course, docId)}
   >
     {variant === "button" && <DownloadIcon size={16} />}
-    PDF
+    {label}
   </a>
 );

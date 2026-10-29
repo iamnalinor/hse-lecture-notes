@@ -59,6 +59,16 @@
   --ex-deep: color-mix(in srgb, var(--ex) 75%, var(--ink));
   --red-deep: color-mix(in srgb, var(--red) 80%, var(--ink));
   --org-deep: color-mix(in srgb, var(--org) 75%, var(--ink));
+  /* Solid fill for the upcoming-test tile and button: must stand out against wash/card tiles.
+  Text on it is the paper colour (light on burnt orange, dark on amber): ≥ 4.5:1 in both themes. */
+  --org-fill: color-mix(in srgb, var(--org) 80%, var(--ink));
+  --org-fill-hover: color-mix(in srgb, var(--org) 70%, var(--ink));
+  --on-org-fill: var(--paper);
+}
+
+:root[data-theme="dark"] {
+  --org-fill: var(--org);
+  --org-fill-hover: color-mix(in srgb, var(--org) 85%, var(--ink));
 }
 
 @theme inline {
@@ -89,6 +99,9 @@
   --color-ex-deep: var(--ex-deep);
   --color-red-deep: var(--red-deep);
   --color-org-deep: var(--org-deep);
+  --color-org-fill: var(--org-fill);
+  --color-org-fill-hover: var(--org-fill-hover);
+  --color-on-org-fill: var(--on-org-fill);
 }
 
 @layer base {

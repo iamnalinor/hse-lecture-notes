@@ -8,10 +8,11 @@ export const paths = {
   lecture: (course: string, weekId: string, hash?: string): string =>
     withHash(`/${course}/${weekId}`, hash),
   prep: (course: string, id: string, hash?: string): string => withHash(`/${course}/${id}`, hash),
+  program: (course: string, hash?: string): string => withHash(`/${course}/program`, hash),
   theory: (course: string, hash?: string): string => withHash(`/${course}/theory`, hash),
 } as const;
 
-/** Lecture and theory pages read a document (TOC + text); the rest are lists. */
+/** Lecture, theory, program and prep pages read a document (TOC + text); the rest are lists. */
 export const isDocumentPath = (pathname: string): boolean => {
   const parts = pathname.split("/").filter((part) => part !== "");
   return parts.length === 2 && parts[1] !== "glossary";

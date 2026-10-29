@@ -1,12 +1,13 @@
 import type { ReactElement } from "react";
+import type { z } from "zod";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 
-import type { LabelIndex } from "#web/domain/schemas.ts";
+import type { CatalogSchema, LabelIndex } from "#web/domain/schemas.ts";
 
-import { labelIndexQuery, macrosQuery } from "#web/api/queries.ts";
+import { catalogQuery, labelIndexQuery, macrosQuery } from "#web/api/queries.ts";
 
 const LABELS: LabelIndex = {
   algebra: {
@@ -35,6 +36,7 @@ const LABELS: LabelIndex = {
 export const renderWithApp = (
   ui: ReactElement,
   route = "/algebra/04_sep23_determinant_properties",
+  catalog?: z.infer<typeof CatalogSchema>,
 ) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(macrosQuery.queryKey, {
@@ -42,6 +44,9 @@ export const renderWithApp = (
     "\\rw": String.raw`\overline{\underline{\raisebox{0.12em}{$\smash[t]{\kern0.07em\mathsf{#1}\kern0.07em}$}}\rule{0pt}{0.7em}}`,
   });
   client.setQueryData(labelIndexQuery.queryKey, LABELS);
+  if (catalog !== undefined) {
+    client.setQueryData(catalogQuery.queryKey, catalog);
+  }
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
