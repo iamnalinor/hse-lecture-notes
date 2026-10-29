@@ -28,12 +28,28 @@ const INDEX: readonly SearchEntry[] = [
     text: "Минор порядка $k$.",
   },
   {
+    anchor: "автомат",
+    course: "discrete",
+    doc: "program",
+    heading: "Автомат",
+    lecture: 0,
+    text: "Накопленная оценка не меньше 4.",
+  },
+  {
     anchor: "sec:kr1:cramer",
     course: "algebra",
     doc: "kr1",
     heading: "Формулы Крамера",
     lecture: 0,
     text: "Как решать систему по Крамеру.",
+  },
+  {
+    anchor: "sec:colloq1:cauchy-heine",
+    course: "calculus",
+    doc: "colloq1",
+    heading: "Предел функции по Коши и по Гейне",
+    lecture: 0,
+    text: "Равносильность определений Гейне.",
   },
 ];
 
@@ -84,12 +100,32 @@ describe("SearchButton", () => {
     expect(screen.getByText("Минор", { selector: "mark" })).toBeInTheDocument();
   });
 
+  it("opens the program page of a course from a hit", async () => {
+    const input = await open();
+    await userEvent.type(input, "автомат");
+    expect(await screen.findByRole("option")).toHaveTextContent("Дискра · План учебной дисциплины");
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByTestId("location")).toHaveTextContent("/discrete/program#автомат");
+  });
+
   it("opens a test preparation page from a hit", async () => {
     const input = await open();
     await userEvent.type(input, "крамеру");
     expect(await screen.findByRole("option")).toHaveTextContent("Алгебра · Подготовка к КР-1");
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent("/algebra/kr1#sec:kr1:cramer");
+  });
+
+  it("opens a colloquium preparation page from a hit", async () => {
+    const input = await open();
+    await userEvent.type(input, "гейне");
+    expect(await screen.findByRole("option")).toHaveTextContent(
+      "Матан · Подготовка к коллоквиуму 1",
+    );
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/calculus/colloq1#sec:colloq1:cauchy-heine",
+    );
   });
 
   it("stays open under StrictMode's double mount", async () => {

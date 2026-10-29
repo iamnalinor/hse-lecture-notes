@@ -117,3 +117,82 @@ describe("FragmentView proofs and problems", () => {
     );
   });
 });
+
+const TABLE = `
+<table>
+  <colgroup><col style="width: 30%" /><col style="width: 10%" /><col style="width: 60%" /></colgroup>
+  <thead><tr class="header"><th>Элемент</th><th>Вес</th><th>Что это</th></tr></thead>
+  <tbody><tr class="odd"><td>КР</td><td>0,2</td><td>одна пара</td></tr></tbody>
+</table>`;
+
+describe("FragmentView tables", () => {
+  it("labels every cell of a wide program table for the phone cards", () => {
+    renderWithApp(
+      <FragmentView
+        course="discrete"
+        docId="program"
+        html={TABLE}
+        lecture={undefined}
+        variant="program"
+      />,
+    );
+    expect(document.querySelector(".table-cards")).not.toBeNull();
+    const cells = [...document.querySelectorAll("td")].map((td) => td.dataset["label"]);
+    expect(cells).toStrictEqual(["Элемент", "Вес", "Что это"]);
+    expect(document.querySelectorAll("td[data-inline]")).toHaveLength(3);
+    expect(screen.getByRole("columnheader", { name: "Вес" })).toBeInTheDocument();
+    // cards are display: block on a phone: the table roles are explicit
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getAllByRole("rowgroup")).toHaveLength(2);
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByRole("cell", { name: "0,2" })).toBeInTheDocument();
+    expect(document.querySelector(".table-cards")).toHaveClass("overflow-x-auto");
+  });
+
+  it("keeps a two-column program table and lecture tables as plain scrolling tables", () => {
+    view(TABLE);
+    expect(document.querySelector(".table-cards")).toBeNull();
+    expect(document.querySelector("td[data-label]")).toBeNull();
+    renderWithApp(
+      <FragmentView
+        course="discrete"
+        docId="program"
+        html="<table><thead><tr><th>Когда</th><th>Что</th></tr></thead><tbody><tr><td>24.10</td><td>КР1</td></tr></tbody></table>"
+        lecture={undefined}
+        variant="program"
+      />,
+    );
+    expect(document.querySelector(".table-cards")).toBeNull();
+  });
+});
+
+describe("FragmentView slots", () => {
+  it("mounts React content at the end of the section with that id", () => {
+    renderWithApp(
+      <FragmentView
+        course="algebra"
+        docId="colloq1"
+        html={
+          '<section id="sec:colloq1:generator"><h1>Генератор билетов</h1></section><section id="other"><p>Дальше.</p></section>'
+        }
+        lecture={undefined}
+        slots={
+          new Map([
+            [
+              "sec:colloq1:generator",
+              <button key="slot" type="button">
+                Сгенерировать
+              </button>,
+            ],
+          ])
+        }
+        variant="prep"
+      />,
+    );
+    const section = document.querySelector('[id="sec:colloq1:generator"]');
+    expect(section).toContainElement(screen.getByRole("button", { name: "Сгенерировать" }));
+    expect(document.querySelector('[id="other"]')).not.toContainElement(
+      screen.getByRole("button", { name: "Сгенерировать" }),
+    );
+  });
+});

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE = "Конспекты ПИ ФКН";
+import { SITE_NAME as SITE } from "#web/domain/seo.ts";
 
 /** The tab title of the page; when the page goes away the title falls back to the site's own. */
 export const useDocumentTitle = (title: string | undefined): void => {

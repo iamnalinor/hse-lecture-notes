@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 
-import { findById } from "#web/shared/ui/dom.ts";
+import { findById, hashTarget } from "#web/shared/ui/dom.ts";
 
 const flash = (target: Element): void => {
   // A section is too big to light up: flash its heading instead.
@@ -22,7 +22,7 @@ const flash = (target: Element): void => {
 export const useScrollToHash = (): void => {
   const { hash, key } = useLocation();
   useEffect(() => {
-    const target = hash === "" ? null : findById(document, decodeURIComponent(hash.slice(1)));
+    const target = hash === "" ? null : findById(document, hashTarget(hash));
     if (target === null) {
       return;
     }

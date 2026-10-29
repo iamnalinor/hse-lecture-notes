@@ -1,5 +1,6 @@
 import type { LabelIndex, SearchEntry } from "./schemas.ts";
 
+import { isCourseDoc } from "./course-docs.ts";
 import { paths } from "./paths.ts";
 import { isPrepId } from "./preps.ts";
 import { splitTex } from "./text.ts";
@@ -205,8 +206,8 @@ export const search = (
 };
 
 export const hitPath = (hit: SearchHit): string => {
-  if (hit.doc === "theory") {
-    return paths.theory(hit.course, hit.anchor);
+  if (isCourseDoc(hit.doc)) {
+    return paths[hit.doc](hit.course, hit.anchor);
   }
   return isPrepId(hit.doc)
     ? paths.prep(hit.course, hit.doc, hit.anchor)

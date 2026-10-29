@@ -15,6 +15,8 @@ PACKAGES=(
   tcolorbox tikzfill pdfcol environ etoolbox pgf pgfplots tikz-cd fancyhdr geometry hyperref xcolor
   enumitem booktabs caption float titlesec amsmath amsfonts tools mathtools
   bookmark zref needspace setspace parskip microtype
+  # читлисты (prep/<course>/cheatsheet)
+  ragged2e
   # сборка
   latexmk dvisvgm standalone luatex85 xetex
 )
@@ -38,6 +40,9 @@ for p in "${PACKAGES[@]}"; do
 done
 if (( ${#missing[@]} )); then
   tlmgr update --self
+  # fmtutil живёт в texlive-scripts, а не в texlive.infra: без этого свежий tlmgr
+  # зовёт старый fmtutil с несовместимыми флагами («multiple commands found»).
+  tlmgr update texlive-scripts
   echo ">> tlmgr install ${missing[*]}"
   tlmgr install "${missing[@]}"
 fi

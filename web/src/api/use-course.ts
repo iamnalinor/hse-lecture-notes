@@ -5,6 +5,8 @@ import { type CourseInfo, findCourse } from "#web/domain/courses.ts";
 import { useCatalog } from "./queries.ts";
 
 export type CourseData = {
+  /** The course has the «План учебной дисциплины» page (`/<course>/program`). */
+  readonly hasProgram: boolean;
   readonly info: CourseInfo;
   readonly lectures: readonly LectureEntry[];
   readonly preps: readonly PrepEntry[];
@@ -23,5 +25,10 @@ export const useCourse = (id: string | undefined): CourseData => {
   const lectures = info === undefined ? undefined : catalog.lectures[info.id];
   return info === undefined || lectures === undefined
     ? notFound()
-    : { info, lectures, preps: catalog.preps[info.id] ?? [] };
+    : {
+        hasProgram: catalog.programs.includes(info.id),
+        info,
+        lectures,
+        preps: catalog.preps[info.id] ?? [],
+      };
 };

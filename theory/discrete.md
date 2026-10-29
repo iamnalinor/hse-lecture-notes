@@ -16,6 +16,11 @@ title: "Теория: дискретная математика"
 - НОД и НОК — натуральные числа, определённые через делимость: $\gcd(0, 0) = 0$, $\operatorname{lcm}(0, a) = 0$; в формулах $\gcd$, $\operatorname{lcm}$, в тексте НОД, НОК (замечание [-@rem:lec07:gcd-natural]).
 - $\varphi(m)$ считает взаимно простые с $m$ числа среди $0, 1, \dots, m - 1$; $a^{-1}$ и $a^{-k} = (a^{-1})^k$ по модулю $m$ — числа из $\{0, \dots, m - 1\}$ и их степени, а не дроби (определения [-@def:lec07:inverse], [-@def:lec07:neg-power]).
 - Решение сравнения $ax \equiv c \pmod m$ — число из $\{0, \dots, m - 1\}$, решение системы — кортеж чисел из $\{0, \dots, \mu - 1\}$, $\mu$ — НОК модулей; поэтому «число решений» всегда считается по модулю (НОК) исходных модулей (замечание [-@rem:lec08:solution-convention], определение [-@def:lec08:system]).
+- Композиция отношений читается справа налево: в $Q \circ P$ первым действует $P$, как в $g(f(x))$; в курсе алгебры подстановки, наоборот, умножаются слева направо (замечание [-@rem:lec09:order]).
+- Функция $f\colon A \to B$ отождествляется со своим графиком $f \subseteq A \times B$; множество $B$ ею не определяется, поэтому сюръективность всегда понимается «для $B$» (замечание [-@rem:lec10:codomain]). Для отношения $R \subseteq A \times B$ «тотально» по умолчанию значит «тотально для $A$», «сюръективно» — «сюръективно для $B$» (определение [-@def:lec10:total-surjective]).
+- Жирное $\mathbf{n}$ — множество $\{0, 1, \dots, n - 1\}$, обычное $n$ — число; $\mathbf{2}^X$ — функции из $X$ в $\{0, 1\}$, $X^2$ — декартов квадрат (замечание [-@rem:lec11:bold]). Мощность $|A|$ определена только для конечных множеств; бесконечные сравниваются через $\sim$ и $\lesssim$ (замечание [-@rem:lec12:abs]).
+- Биномиальный коэффициент — $C_n^k$ ($n$ внизу), не $\binom{n}{k}$ (замечание [-@rem:lec13:binom-notation]).
+- Порядок по умолчанию строгий; в парах $(<, \le)$, $(\subsetneq, \subseteq)$ первый символ — строгий порядок (замечание [-@rem:lec14:pair-notation]).
 
 # Лекция 1 — Истинность, ложность и высказывания
 
@@ -567,6 +572,458 @@ $c_1, \dots, c_n$ попарно взаимно просты, если $\gcd(c_i
 
 ::: {.theorem ref="thm:lec08:crt" status="доказано в лекции 8"}
 Китайская теорема об остатках: если $m_1, \dots, m_n > 1$ попарно взаимно просты, то для любых $a_1, \dots, a_n$ система $x \equiv a_i \pmod{m_i}$ имеет единственное решение $x$ с $0 \le x < m_1 \cdots m_n$. *Идея:* единственность — НОК модулей равен произведению; существование — индукция по $n$: первые $n$ сравнений сворачиваются в $x \equiv x_0 \pmod \mu$, и при $\mu u + mv = 1$ число $x_1 = a\mu u + x_0 mv$ решает пару $x \equiv x_0 \pmod \mu$, $x \equiv a \pmod m$.
+:::
+
+# Лекция 9 — Бинарные отношения
+
+::: {.definition ref="def:lec09:relation"}
+Бинарное отношение между $A$ и $B$ — любое $R \subseteq A \times B$; при $A = B$ — отношение на $A$. Запись $xRy$ означает $(x, y) \in R$.
+:::
+
+::: {.definition ref="def:lec09:dom-rng"}
+$\operatorname{dom} R = \{a \mid \exists b\, (a, b) \in R\}$, $\operatorname{rng} R = \{b \mid \exists a\, (a, b) \in R\}$, поле — $\operatorname{dom} R \cup \operatorname{rng} R$.
+:::
+
+::: {.definition ref="def:lec09:identity"}
+$\mathrm{id}_A = \{(x, x) \mid x \in A\}$.
+:::
+
+::: {.definition ref="def:lec09:converse"}
+$R^{-1} = \{(b, a) \mid (a, b) \in R\}$; $(b, a) \in R^{-1} \iff (a, b) \in R$, $\operatorname{dom} R^{-1} = \operatorname{rng} R$, $\operatorname{rng} R^{-1} = \operatorname{dom} R$.
+:::
+
+::: {.definition ref="def:lec09:complement"}
+Для $R \subseteq A \times B$: $\overline{R} = (A \times B) \setminus R$ (зависит от выбора $A$ и $B$).
+:::
+
+::: {.lemma ref="lem:lec09:converse-props" status="доказано в лекции 9"}
+$(P^{-1})^{-1} = P$; $(P \cup Q)^{-1} = P^{-1} \cup Q^{-1}$; $(P \cap Q)^{-1} = P^{-1} \cap Q^{-1}$; для $P \subseteq A \times B$: $(\overline{P})^{-1} = \overline{P^{-1}}$ (дополнения до $A \times B$ и $B \times A$). *Идея:* цепочка равносильностей для произвольной пары.
+:::
+
+::: {.corollary ref="cor:lec09:converse-mono" status="доказано в лекции 9"}
+Если $P \subseteq Q$, то $P^{-1} \subseteq Q^{-1}$. *Идея:* $Q = P \cup Q$ и обращение объединения.
+:::
+
+::: {.proposition ref="prop:lec09:converse-ne-complement" status="доказано в лекции 9"}
+Если $R \subseteq A \times B$, $A \ne \varnothing$, $B \ne \varnothing$, то $R^{-1} \ne \overline{R}$. *Идея:* $R = \varnothing$ не подходит; из $(a, b) \in R$ получаем $b \in A \cap B$, и для пары $(b, b)$ выходит $(b, b) \in R \iff (b, b) \notin R$.
+:::
+
+::: {.definition ref="def:lec09:composition"}
+$Q \circ P = \{(a, c) \mid \exists b\, (aPb \wedge bQc)\}$ — сначала $P$, потом $Q$.
+:::
+
+::: {.proposition ref="prop:lec09:identity-unit" status="доказано в лекции 9"}
+Если $R \subseteq A \times B$, то $R \circ \mathrm{id}_A = R = \mathrm{id}_B \circ R$.
+:::
+
+::: {.theorem ref="thm:lec09:assoc" status="доказано в лекции 9"}
+$R \circ (Q \circ P) = (R \circ Q) \circ P$. *Идея:* обе части — «путь $P$, $Q$, $R$»; переставить $\exists b\, \exists c$ и вносить/выносить конъюнкт, не зависящий от переменной квантора.
+:::
+
+::: {.theorem ref="thm:lec09:converse-comp" status="доказано в лекции 9"}
+$(Q \circ P)^{-1} = P^{-1} \circ Q^{-1}$. *Идея:* $(c, a) \in Q \circ P \iff \exists b\, (cPb \wedge bQa) \iff \exists b\, (aQ^{-1}b \wedge bP^{-1}c)$.
+:::
+
+::: {.lemma ref="lem:lec09:distrib" status="доказано в лекции 9"}
+$(P \cup Q) \circ R = (P \circ R) \cup (Q \circ R)$; $(P \cap Q) \circ R \subseteq (P \circ R) \cap (Q \circ R)$, и включение бывает строгим. Так же слева: $R \circ (P \cup Q) = (R \circ P) \cup (R \circ Q)$. *Идея:* $\exists$ проходит сквозь $\vee$, но из $\exists (A \wedge B)$ следует лишь $\exists A \wedge \exists B$; левая версия — обращением.
+:::
+
+::: {.definition ref="def:lec09:image"}
+Образ $R[X] = \{b \mid \exists a \in X\ aRb\}$, прообраз $R^{-1}[X] = \{a \mid \exists b \in X\ aRb\}$.
+:::
+
+::: {.proposition ref="prop:lec09:image-props" status="доказано в лекции 9"}
+$R[X \cup Y] = R[X] \cup R[Y]$; $X \subseteq Y \Rightarrow R[X] \subseteq R[Y]$; $R[\varnothing] = \varnothing$; $R[X \cap Y] \subseteq R[X] \cap R[Y]$ (бывает строго); $(R \circ Q)[X] = R[Q[X]]$. *Идея:* те же законы о кванторах, что и для композиции; включение для $\cap$ — из монотонности.
+:::
+
+# Лекция 10 — Функции
+
+::: {.definition ref="def:lec10:functional-injective"}
+$R$ функционально, если $(xRy \wedge xRz) \Longrightarrow y = z$; инъективно, если $(yRx \wedge zRx) \Longrightarrow y = z$ (для всех $x$, $y$, $z$).
+:::
+
+::: {.definition ref="def:lec10:total-surjective"}
+$R$ тотально для $Z$, если $\forall x \in Z\ \exists y\ xRy$ (то есть $Z \subseteq \operatorname{dom} R$); сюръективно для $Z$, если $\forall x \in Z\ \exists y\ yRx$ (то есть $Z \subseteq \operatorname{rng} R$). Для $R \subseteq A \times B$ по умолчанию $Z = A$ для тотальности и $Z = B$ для сюръективности.
+:::
+
+::: {.lemma ref="lem:lec10:duality" status="доказано в лекции 10"}
+$R$ функционально $\iff$ $R^{-1}$ инъективно; $R$ инъективно $\iff$ $R^{-1}$ функционально; $R$ тотально для $Z$ $\iff$ $R^{-1}$ сюръективно для $Z$; $R$ сюръективно для $Z$ $\iff$ $R^{-1}$ тотально для $Z$. *Идея:* $xRy \iff yR^{-1}x$ превращает одно определение в другое; вторые половины — применением первых к $R^{-1}$.
+:::
+
+::: {.lemma ref="lem:lec10:composition" status="доказано в лекции 10"}
+Пусть $Q \subseteq A \times B$, $R \subseteq B \times C$. Если $Q$ и $R$ функциональны (инъективны), то $R \circ Q$ функционально (инъективно); если $Q$ тотально для $A$, а $R$ — для $B$, то $R \circ Q$ тотально для $A$; если $Q$ сюръективно для $B$, а $R$ — для $C$, то $R \circ Q$ сюръективно для $C$. *Идея:* функциональность и тотальность — прямо по путям из двух стрелок; инъективность и сюръективность — двойственностью и $(R \circ Q)^{-1} = Q^{-1} \circ R^{-1}$.
+:::
+
+::: {.proposition ref="prop:lec10:cap" status="доказано в лекции 10"}
+Если $R$ инъективно, то $R[X \cap Y] = R[X] \cap R[Y]$; если $R$ функционально, то $R^{-1}[X \cap Y] = R^{-1}[X] \cap R^{-1}[Y]$. *Идея:* две стрелки в общую точку образа выходят из одной точки; для прообраза — применить к инъективному $R^{-1}$.
+:::
+
+::: {.proposition ref="prop:lec10:preimage-image" status="доказано в лекции 10"}
+Если $R \subseteq A \times B$ тотально и $X \subseteq A$, то $X \subseteq R^{-1}[R[X]]$ (равенство не обязательно даже для функций).
+:::
+
+::: {.definition ref="def:lec10:function"}
+$f \subseteq A \times B$ — функция из $A$ в $B$ ($f\colon A \to B$), если $f$ функционально и тотально для $A$. Тогда $\operatorname{dom} f = A$, $\operatorname{rng} f \subseteq B$; множество $B$ функцией не определяется.
+:::
+
+::: {.definition ref="def:lec10:value"}
+Для $f\colon A \to B$ и $x \in A$ значение $f(x)$ — единственный $y$ с $(x, y) \in f$; $f[\{x\}] = \{f(x)\}$.
+:::
+
+::: {.lemma ref="lem:lec10:equality" status="доказано в лекции 10"}
+Для $f\colon A \to B$, $g\colon C \to D$: $f = g \iff A = C \wedge \forall x \in A\ f(x) = g(x)$. *Идея:* $A = \operatorname{dom} f$; при равных значениях каждая пара $f$ лежит в $g$ и наоборот.
+:::
+
+::: {.proposition ref="prop:lec10:comp-values" status="доказано в лекции 10"}
+Если $f\colon A \to B$, $g\colon B \to C$, то $g \circ f\colon A \to C$ и $(g \circ f)(a) = g(f(a))$. *Идея:* лемма о композиции; путь $a \to f(a) \to g(f(a))$.
+:::
+
+::: {.definition ref="def:lec10:functions-set"}
+$B^A = \{f \in \mathcal{P}(A \times B) \mid f\colon A \to B\}$; $B^\varnothing = \{\varnothing\}$, $\varnothing^A = \varnothing$ при $A \ne \varnothing$.
+:::
+
+::: {.definition ref="def:lec10:bijection"}
+Функция $f\colon A \to B$ — инъекция, если инъективна; сюръекция, если сюръективна для $B$; биекция (взаимно однозначное соответствие), если и то и другое.
+:::
+
+::: {.proposition ref="prop:lec10:by-values" status="доказано в лекции 10"}
+$f\colon A \to B$ инъективна тогда и только тогда, когда из $f(x) = f(y)$ при $x, y \in A$ следует $x = y$; сюръективна тогда и только тогда, когда $\forall y \in B\ \exists x \in A\ f(x) = y$.
+:::
+
+::: {.lemma ref="lem:lec10:bijection-converse" status="доказано в лекции 10"}
+$R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1}$ — биекция из $B$ в $A$ (обратная функция $f^{-1}$). *Идея:* двойственность переставляет четыре свойства.
+:::
+
+::: {.corollary ref="cor:lec10:bijection-comp" status="доказано в лекции 10"}
+Если $f\colon A \to B$ и $g\colon B \to C$ — биекции (инъекции, сюръекции), то $g \circ f\colon A \to C$ — биекция (инъекция, сюръекция); для биекций $(g \circ f)^{-1} = f^{-1} \circ g^{-1}$.
+:::
+
+::: {.lemma ref="lem:lec10:criteria" status="доказано в лекции 10"}
+Для $R \subseteq A \times B$: функционально $\iff$ $R \circ R^{-1} \subseteq \mathrm{id}_B$; инъективно $\iff$ $R^{-1} \circ R \subseteq \mathrm{id}_A$; сюръективно $\iff$ $\mathrm{id}_B \subseteq R \circ R^{-1}$; тотально $\iff$ $\mathrm{id}_A \subseteq R^{-1} \circ R$. *Идея:* $(x, y) \in R \circ R^{-1} \iff \exists z\, (zRx \wedge zRy)$; пункты 2 и 4 — применить 1 и 3 к $R^{-1}$.
+:::
+
+::: {.corollary ref="cor:lec10:bijection-inverse" status="доказано в лекции 10"}
+$R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1} \circ R = \mathrm{id}_A$ и $R \circ R^{-1} = \mathrm{id}_B$.
+:::
+
+# Лекция 11 — Равномощные множества
+
+::: {.definition ref="def:lec11:equinumerous"}
+$A \sim B$ ($A$ и $B$ равномощны), если существует биекция $f\colon A \to B$; запись $A \sim_f B$.
+:::
+
+::: {.lemma ref="lem:lec11:equiv" status="доказано в лекции 11"}
+$A \sim A$; $A \sim B \Rightarrow B \sim A$; $A \sim B \wedge B \sim C \Rightarrow A \sim C$. *Идея:* $\mathrm{id}_A$, обратная биекция, композиция биекций.
+:::
+
+::: {.proposition ref="prop:lec11:onto-image" status="доказано в лекции 11"}
+Если $f\colon A \to B$ — инъекция, то $A \sim_f f[A]$ и $X \sim f[X]$ для всех $X \subseteq A$.
+:::
+
+::: {.theorem ref="thm:lec11:cantor" status="доказано в лекции 11"}
+$A \nsim \mathcal{P}(A)$ для любого $A$; более того, сюръекции $A \to \mathcal{P}(A)$ нет. *Идея:* диагональное множество $X = \{a \in A \mid a \notin \varphi(a)\}$ отличается от каждого $\varphi(a)$ в точке $a$.
+:::
+
+::: {.theorem ref="thm:lec11:arithmetic" status="доказано в лекции 11 (пункт 4 — в задаче)"}
+Если $A \sim B$, то $A \times C \sim B \times C$, $A^C \sim B^C$, $C^A \sim C^B$; $A \times B \sim B \times A$; $(A \times B) \times C \sim A \times (B \times C)$; $(A \times B)^C \sim A^C \times B^C$; $(C^B)^A \sim C^{A \times B}$. *Идея:* явные биекции; $C^A \to C^B$ — $f \mapsto f \circ \varphi^{-1}$; последний пункт — каррирование $f \mapsto ((a, b) \mapsto (f(a))(b))$.
+:::
+
+::: {.definition ref="def:lec11:n-set"}
+$\mathbf{n} = \{k \in \N \mid k < n\} = \{0, \dots, n - 1\}$; $\mathbf{0} = \varnothing$, $\mathbf{2} = \{0, 1\}$.
+:::
+
+::: {.definition ref="def:lec11:indicator"}
+Для $A \subseteq X$ индикатор $1_A\colon X \to \mathbf{2}$: $1_A(x) = 1$ при $x \in A$, $0$ при $x \notin A$.
+:::
+
+::: {.lemma ref="lem:lec11:indicator-eq" status="доказано в лекции 11"}
+Для $A, B \subseteq X$: $A = B \iff 1_A = 1_B$.
+:::
+
+::: {.lemma ref="lem:lec11:powerset" status="доказано в лекции 11"}
+$\mathcal{P}(X) \sim \mathbf{2}^X$. *Идея:* $A \mapsto 1_A$; прообраз функции $g$ — множество $g^{-1}[\{1\}]$.
+:::
+
+::: {.proposition ref="prop:lec11:indicator-ops" status="доказано в лекции 11"}
+$1_{B \cap C} = 1_B 1_C$, $1_{B \cup C} = 1_B + 1_C - 1_B 1_C$, $1_{\overline{B}} = 1 - 1_B$; $B \subseteq C \iff 1_B \le 1_C$ всюду. *Идея:* перебор четырёх случаев; $1_B^2 = 1_B$.
+:::
+
+::: {.theorem ref="thm:lec11:tuples" status="доказано в лекции 11 (набросок)"}
+$A^n \sim A^{\mathbf{n}}$ для любого $A$ и $n \in \N$. *Идея:* $f \mapsto (f(0), \dots, f(n - 1))$.
+:::
+
+::: {.definition ref="def:lec11:embedding"}
+$A \lesssim B$ ($A$ вкладывается в $B$), если существует инъекция $f\colon A \to B$ (вложение); запись $A \lesssim_f B$.
+:::
+
+::: {.lemma ref="lem:lec11:embed-props" status="доказано в лекции 11"}
+$A \lesssim A$; $A \lesssim B \wedge B \lesssim C \Rightarrow A \lesssim C$; $A \sim B \Rightarrow A \lesssim B \wedge B \lesssim A$; $A \lesssim B \iff \exists D \subseteq B\ A \sim D$.
+:::
+
+::: {.theorem ref="thm:lec11:csb" status="без доказательства"}
+Кантор — Шрёдер — Бернштейн: если $A \lesssim B$ и $B \lesssim A$, то $A \sim B$.
+:::
+
+::: {.corollary ref="cor:lec11:powerset-not-embed" status="доказано в лекции 11"}
+$\mathcal{P}(A) \not\lesssim A$ ни для какого $A$. *Идея:* $A \lesssim \mathcal{P}(A)$ через $x \mapsto \{x\}$, затем теорема Кантора — Шрёдера — Бернштейна и теорема Кантора.
+:::
+
+::: {.definition ref="def:lec11:strict"}
+$A \lnsim B$, если $A \lesssim B$ и $A \nsim B$; по теореме Кантора — Шрёдера — Бернштейна это то же, что $A \lesssim B$ и $B \not\lesssim A$.
+:::
+
+::: {.definition ref="def:lec11:countable"}
+$X$ счётно, если $X \sim \N$. Счётны $\N^2$, $\Z$, $\Q$; $\mathcal{P}(\N) \sim \R$ (принимается без доказательства) — нет.
+:::
+
+# Лекция 12 — Конечные множества. Основы подсчёта
+
+::: {.definition ref="def:lec12:finite"}
+$A$ конечно, если $A \sim \mathbf{n}$ для некоторого $n \in \N$; иначе бесконечно.
+:::
+
+::: {.definition ref="def:lec12:restriction"}
+Сужение $f\colon A \to B$ на $X \subseteq A$: $f \restriction X = f \cap (X \times B)\colon X \to B$.
+:::
+
+::: {.lemma ref="lem:lec12:n1-n" status="доказано в лекции 12"}
+Инъекции $\mathbf{n + 1} \to \mathbf{n}$ не существует. *Идея:* наименьший контрпример $n = m + 1$; переставив $f(n)$ и $m$, получаем инъекцию $\mathbf{m + 1} \to \mathbf{m}$.
+:::
+
+::: {.theorem ref="thm:lec12:pigeonhole" status="доказано в лекции 12"}
+Принцип Дирихле: при $m > n$ никакая $f\colon \mathbf{m} \to \mathbf{n}$ не инъективна, $\mathbf{m} \not\lesssim \mathbf{n}$. *Идея:* $\mathbf{n + 1} \subseteq \mathbf{m}$.
+:::
+
+::: {.corollary ref="cor:lec12:distinct" status="доказано в лекции 12"}
+$m \ne n \Rightarrow \mathbf{m} \nsim \mathbf{n}$.
+:::
+
+::: {.corollary ref="cor:lec12:unique" status="доказано в лекции 12"}
+Для конечного $A$ число $n$ с $A \sim \mathbf{n}$ единственно.
+:::
+
+::: {.definition ref="def:lec12:cardinality"}
+$|A|$ — единственное $n$ с $A \sim \mathbf{n}$ (мощность, число элементов конечного $A$); для конечных $A \sim B \iff |A| = |B|$.
+:::
+
+::: {.theorem ref="thm:lec12:no-surjection" status="доказано в лекции 12"}
+При $m > n$ никакая $f\colon \mathbf{n} \to \mathbf{m}$ не сюръективна. *Идея:* наименьший прообраз даёт инъекцию $\mathbf{m} \to \mathbf{n}$.
+:::
+
+::: {.lemma ref="lem:lec12:invariant" status="доказано в лекции 12"}
+Конечность, бесконечность и счётность сохраняются при $\sim$.
+:::
+
+::: {.lemma ref="lem:lec12:countable-infinite" status="доказано в лекции 12"}
+Если $A$ счётно и $A \lesssim B$, то $B$ бесконечно.
+:::
+
+::: {.lemma ref="lem:lec12:subset-n" status="доказано в лекции 12 (набросок)"}
+Любое $A \subseteq \N$ конечно или счётно. *Идея:* перечислить элементы по возрастанию.
+:::
+
+::: {.corollary ref="cor:lec12:sub-countable" status="доказано в лекции 12"}
+$A \lesssim B$, $B$ счётно $\Rightarrow$ $A$ конечно или счётно.
+:::
+
+::: {.corollary ref="cor:lec12:sub-finite" status="доказано в лекции 12"}
+$A \lesssim B$, $B$ конечно $\Rightarrow$ $A$ конечно и $|A| \le |B|$.
+:::
+
+::: {.definition ref="def:lec12:uncountable"}
+Несчётное множество — бесконечное и не счётное; конечные и счётные вместе — не более чем счётные (это ровно $A \lesssim \N$).
+:::
+
+::: {.lemma ref="lem:lec12:infinite-n" status="доказано в лекции 12 (набросок, с аксиомой выбора)"}
+Если $A$ бесконечно, то $\N \lesssim A$.
+:::
+
+::: {.corollary ref="cor:lec12:infinite-iff" status="доказано в лекции 12"}
+$A$ бесконечно $\iff$ $\N \lesssim A$.
+:::
+
+::: {.theorem ref="thm:lec12:sum" status="доказано в лекции 12"}
+Правило суммы: для конечных $A$, $B$ с $A \cap B = \varnothing$: $|A \cup B| = |A| + |B|$. *Идея:* $h = f$ на $A$, $h = n + g$ на $B$.
+:::
+
+::: {.corollary ref="cor:lec12:union" status="доказано в лекции 12"}
+Для конечных $A$, $B$: $|A \cup B| = |A| + |B| - |A \cap B|$.
+:::
+
+::: {.corollary ref="cor:lec12:union-le" status="доказано в лекции 12"}
+$|A \cup B| \le |A| + |B|$.
+:::
+
+::: {.corollary ref="cor:lec12:proper" status="доказано в лекции 12"}
+Если $B$ конечно и $A \subsetneq B$, то $|A| < |B|$.
+:::
+
+::: {.theorem ref="thm:lec12:product" status="доказано в лекции 12"}
+Правило произведения: $|A \times B| = |A| \cdot |B|$ для конечных $A$, $B$. *Идея:* $h(x, y) = m f(x) + g(y)$ и единственность деления с остатком.
+:::
+
+::: {.corollary ref="cor:lec12:power" status="доказано в лекции 12"}
+$|A^n| = |A|^n$.
+:::
+
+::: {.corollary ref="cor:lec12:functions" status="доказано в лекции 12"}
+$|B^A| = |B|^{|A|}$ (с $0^0 = 1$). *Идея:* $B^A \sim \mathbf{m}^{\mathbf{n}} \sim \mathbf{m}^n$.
+:::
+
+::: {.corollary ref="cor:lec12:powerset" status="доказано в лекции 12"}
+$|\mathcal{P}(A)| = 2^{|A|}$.
+:::
+
+::: {.proposition ref="prop:lec12:image-le" status="доказано в лекции 12"}
+Для конечного $A$ и $f\colon A \to B$: $|f[A]| \le |A|$.
+:::
+
+::: {.theorem ref="thm:lec12:inj-surj" status="доказано в лекции 12"}
+Если $A$, $B$ конечны и $|A| = |B|$, то $f\colon A \to B$ инъективна $\iff$ сюръективна. *Идея:* инъекция — образ равномощен $A$ и не может быть собственной частью $B$; сюръекция со склейкой — выброшенная точка уменьшает образ.
+:::
+
+# Лекция 13 — Комбинаторика
+
+::: {.definition ref="def:lec13:inj"}
+$\mathrm{Inj}(A, B)$ — множество инъекций из $A$ в $B$.
+:::
+
+::: {.lemma ref="lem:lec13:only-size" status="доказано в лекции 13"}
+Если $A' \sim A$ и $B' \sim B$, то $\mathrm{Inj}(A', B') \sim \mathrm{Inj}(A, B)$. *Идея:* $f \mapsto \psi \circ f \circ \varphi^{-1}$.
+:::
+
+::: {.definition ref="def:lec13:factorial"}
+$0! = 1$, $(n + 1)! = (n + 1) \cdot n!$.
+:::
+
+::: {.lemma ref="lem:lec13:inj-count" status="доказано в лекции 13"}
+$|\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = \frac{n!}{(n - m)!}$ при $m \le n$ и $0$ при $m > n$. *Идея:* индукция по $m$; инъекции из $\mathbf{m + 1}$ делятся на $n$ равных групп по значению в точке $m$.
+:::
+
+::: {.definition ref="def:lec13:arrangement"}
+Размещение длины $m$ — кортеж из попарно различных элементов; $A_n^m = |\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = n(n - 1) \cdots (n - m + 1) = n^{(m)}$.
+:::
+
+::: {.definition ref="def:lec13:permutation"}
+Перестановка множества $A$ — биекция $A \to A$.
+:::
+
+::: {.lemma ref="lem:lec13:perm-count" status="доказано в лекции 13"}
+У $n$-элементного множества $n!$ перестановок. *Идея:* инъекция $\mathbf{n} \to \mathbf{n}$ — биекция.
+:::
+
+::: {.definition ref="def:lec13:binomial"}
+$\mathcal{P}_k(A)$ — $k$-элементные подмножества $A$; $C_n^k = |\mathcal{P}_k(\mathbf{n})|$.
+:::
+
+::: {.lemma ref="lem:lec13:pascal" status="доказано в лекции 13"}
+$C_{n + 1}^{k + 1} = C_n^{k + 1} + C_n^k$. *Идея:* делим подмножества $\mathbf{n + 1}$ по тому, содержат ли они $n$.
+:::
+
+::: {.lemma ref="lem:lec13:binom-formula" status="доказано в лекции 13"}
+$C_n^k = \frac{n!}{k!\,(n - k)!}$ при $k \le n$. *Идея:* индукция по $n$ через тождество Паскаля.
+:::
+
+::: {.lemma ref="lem:lec13:symmetry" status="доказано в лекции 13"}
+$C_n^k = C_n^{n - k}$ при $0 \le k \le n$. *Идея:* биекция $X \mapsto \mathbf{n} \setminus X$.
+:::
+
+::: {.theorem ref="thm:lec13:binomial" status="доказано в лекции 13"}
+$(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$. *Идея:* $(1 + x)^n$ индукцией с тождеством Паскаля, затем вынести $b^n$.
+:::
+
+::: {.theorem ref="thm:lec13:dependent" status="доказано в лекции 13"}
+Правило зависимого произведения: если $P$ конечно, $S \subseteq P \times Q$ и $|S[\{x\}]| = f(x)$, то $|S| = \sum_{x \in P} f(x)$. *Идея:* индукция по $|P|$ и правило суммы.
+:::
+
+::: {.corollary ref="cor:lec13:dependent-const" status="доказано в лекции 13"}
+Если $|S[\{x\}]| = k$ для всех $x \in P$, то $|S| = |P| \cdot k$.
+:::
+
+::: {.definition ref="def:lec13:multinomial"}
+$P(n; a_1, \dots, a_k) = \frac{n!}{a_1! \cdots a_k!}$ — число разбиений $\mathbf{n}$ на пронумерованные части размеров $a_1, \dots, a_k$.
+:::
+
+::: {.lemma ref="lem:lec13:sum-indicator" status="доказано в лекции 13"}
+$|B| = \sum_{x \in U} 1_B(x)$ для конечного $U$ и $B \subseteq U$.
+:::
+
+::: {.theorem ref="thm:lec13:incl-excl" status="доказано в лекции 13"}
+$|A_1 \cup \dots \cup A_n| = \sum_{\varnothing \ne I \subseteq \{1, \dots, n\}} (-1)^{|I| - 1} |A_I|$. *Идея:* сравнить вклад каждой точки через индикаторы; точка из $t \ge 1$ множеств учтена $\sum_{k \ge 1} (-1)^{k - 1} C_t^k = 1$ раз.
+:::
+
+::: {.proposition ref="prop:lec13:totient" status="доказано в лекции 13"}
+$\varphi(m) = m \prod_{i} \bigl(1 - \frac{1}{p_i}\bigr)$ по всем простым делителям $p_i$ числа $m > 1$. *Идея:* включения-исключения по свойствам «$p_i \mid x$» на $\mathbf{m}$.
+:::
+
+# Лекция 14 — Порядки
+
+::: {.definition ref="def:lec14:properties"}
+$R$ рефлексивно для $Z$: $\forall x \in Z\ xRx$; иррефлексивно: $\forall x\ \neg xRx$; симметрично: $xRy \Rightarrow yRx$; антисимметрично: $xRy \wedge yRx \Rightarrow x = y$; транзитивно: $xRy \wedge yRz \Rightarrow xRz$.
+:::
+
+::: {.lemma ref="lem:lec14:algebraic" status="доказано в лекции 14"}
+Для $R \subseteq A^2$: рефлексивно $\iff$ $\mathrm{id}_A \subseteq R$; иррефлексивно $\iff$ $\mathrm{id}_A \cap R = \varnothing$; симметрично $\iff$ $R = R^{-1}$; антисимметрично $\iff$ $R \cap R^{-1} \subseteq \mathrm{id}_A$; транзитивно $\iff$ $R \circ R \subseteq R$.
+:::
+
+::: {.definition ref="def:lec14:strict"}
+Строгий (частичный) порядок — иррефлексивное транзитивное отношение; он асимметричен.
+:::
+
+::: {.definition ref="def:lec14:nonstrict"}
+Нестрогий (частичный) порядок — рефлексивное антисимметричное транзитивное отношение.
+:::
+
+::: {.definition ref="def:lec14:poset"}
+Ч.у.м. $(A, <)$ — множество с порядком; $(A, <, \le)$ — со строгой и нестрогой версиями.
+:::
+
+::: {.theorem ref="thm:lec14:strict-nonstrict" status="доказано в лекции 14"}
+$\varphi(P) = P \cup \mathrm{id}_A$ и $\psi(Q) = Q \setminus \mathrm{id}_A$ — взаимно обратные биекции между строгими и нестрогими порядками на $A$.
+:::
+
+::: {.definition ref="def:lec14:maximal"}
+$x \in B$ максимален в $B$, если $\forall y \in B\ \neg\, x < y$; минимален, если $\forall y \in B\ \neg\, y < x$.
+:::
+
+::: {.definition ref="def:lec14:greatest"}
+$x \in B$ наибольший в $B$, если $\forall y \in B\ y \le x$; наименьший — если $\forall y \in B\ x \le y$.
+:::
+
+::: {.lemma ref="lem:lec14:greatest-unique" status="доказано в лекции 14"}
+Если $x$ — наибольший в $B$, то $\max B = \{x\}$; наибольший элемент единствен.
+:::
+
+::: {.definition ref="def:lec14:bounds"}
+$B^{\triangle}$ — верхние грани $B$ (все $x$ с $y \le x$ при $y \in B$), $B^{\triangledown}$ — нижние.
+:::
+
+::: {.definition ref="def:lec14:sup"}
+$\sup B$ — наименьший элемент $B^{\triangle}$, $\inf B$ — наибольший элемент $B^{\triangledown}$ (если существуют).
+:::
+
+::: {.definition ref="def:lec14:lattice"}
+Решётка — ч.у.м., где у любых двух элементов есть $\sup$ и $\inf$; например $(\mathcal{P}(A), \subsetneq)$ и $(\N, \mid)$.
+:::
+
+::: {.definition ref="def:lec14:linear"}
+Порядок линеен, если $\forall x, y\ (x \le y \vee y \le x)$.
+:::
+
+::: {.definition ref="def:lec14:chain"}
+Цепь — подмножество из попарно сравнимых элементов; антицепь — из попарно несравнимых различных.
+:::
+
+::: {.definition ref="def:lec14:isomorphism"}
+Изоморфизм ч.у.м. — биекция $\alpha$ с $x <_A y \iff \alpha(x) <_B \alpha(y)$; запись $\mathcal{A} \cong \mathcal{B}$.
+:::
+
+::: {.lemma ref="lem:lec14:iso-equiv" status="доказано в лекции 14"}
+$\cong$ рефлексивно, симметрично и транзитивно (через $\mathrm{id}$, $\alpha^{-1}$, $\beta \circ \alpha$).
+:::
+
+::: {.lemma ref="lem:lec14:iso-preserves" status="доказано в лекции 14"}
+Изоморфизм $\alpha$ сохраняет линейность, $\max \alpha[X] = \alpha[\max X]$ и $\sup \alpha[X] = \alpha(\sup X)$; так же для минимумов и инфимумов.
 :::
 
 # Глоссарий курса

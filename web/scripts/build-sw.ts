@@ -1,13 +1,14 @@
 /**
 After `vite build`: hashes everything in dist/, writes `dist/offline-manifest.json` and bundles the
 service worker (`sw/service-worker.ts` → `dist/sw.js`) with the manifest's version inlined.
-Lecture notes, theory and glossaries become documents that are cached on first open; the shell and
+Lecture notes, theory, the course program, glossaries and preps become documents that are cached on first open; the shell and
 the shared data (catalog, label index, macros) are precached. PDFs stay network-only.
 */
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { offlineDocKind } from "../src/domain/offline-kind.ts";
 import {
   contentHash,
   MANIFEST_PATH,
@@ -15,18 +16,26 @@ import {
   type OfflineDocKind,
   type OfflineManifest,
 } from "../src/domain/offline.ts";
-import { isPrepId } from "../src/domain/preps.ts";
+import { formatSize } from "../src/domain/text.ts";
 
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 const WORKER = fileURLToPath(new URL("../sw/service-worker.ts", import.meta.url));
 
-const SKIPPED = new Set(["404.html", "sw.js", MANIFEST_PATH]);
+// The crawler files (spa-fallback.ts) and the link preview pictures (og/) are never read by the app.
+const SKIPPED = new Set([
+  "404.html",
+  "llms.txt",
+  "robots.txt",
+  "sitemap.xml",
+  "sw.js",
+  MANIFEST_PATH,
+]);
 // Per-page copies of the shell (`algebra/…/index.html`) for static hosting: navigations get the one shell.
 const PAGE_SHELL = /^(?!data\/).+\/index\.html$/u;
 const SHARED_DATA = new Set(["data/courses.json", "data/index.json", "data/katex-macros.json"]);
 // Browsers that run service workers all take woff2: the woff/ttf fallbacks of KaTeX are not precached.
 const PRECACHED_ASSET = /^assets\/.+\.(?:css|js|woff2)$/u;
-// data/<course>/<doc>/… (a lecture or the theory) and data/<course>/glossary.json
+// data/<course>/<doc>/… (a lecture, the theory, the program, a prep) and data/<course>/glossary.json
 const DOC_FILE = /^data\/(?<course>[^/]+)\/(?:(?<doc>[^/]+)\/.+|glossary\.json)$/u;
 
 const encode = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text);
@@ -38,18 +47,14 @@ const allFiles = async (): Promise<string[]> => {
     .map((entry) =>
       path.relative(DIST, path.join(entry.parentPath, entry.name)).split(path.sep).join("/"),
     )
-    .filter((file) => !SKIPPED.has(file) && !PAGE_SHELL.test(file) && !file.startsWith("pdf/"))
+    .filter(
+      (file) =>
+        !SKIPPED.has(file) &&
+        !PAGE_SHELL.test(file) &&
+        !file.startsWith("pdf/") &&
+        !file.startsWith("og/"),
+    )
     .toSorted((a, b) => a.localeCompare(b));
-};
-
-const kindOf = (doc: string): OfflineDocKind => {
-  if (doc === "glossary") {
-    return "glossary";
-  }
-  if (isPrepId(doc)) {
-    return "prep";
-  }
-  return doc === "theory" ? "theory" : "notes";
 };
 
 const docsOf = (paths: readonly string[]): OfflineDoc[] => {
@@ -61,7 +66,7 @@ const docsOf = (paths: readonly string[]): OfflineDoc[] => {
     }
     const doc = groups["doc"] ?? "glossary";
     const id = `${groups["course"]}/${doc}`;
-    const entry = byId.get(id) ?? { files: [], kind: kindOf(doc) };
+    const entry = byId.get(id) ?? { files: [], kind: offlineDocKind(doc) };
     entry.files.push(file);
     byId.set(id, entry);
   }
@@ -75,16 +80,29 @@ const isPrecached = (file: string): boolean =>
   PRECACHED_ASSET.test(file);
 
 const paths = await allFiles();
-const hashes = await Promise.all(
-  paths.map(async (file) => await contentHash(await Bun.file(path.join(DIST, file)).bytes())),
+const contents = await Promise.all(
+  paths.map(async (file) => await Bun.file(path.join(DIST, file)).bytes()),
 );
+const hashes = await Promise.all(contents.map(async (bytes) => await contentHash(bytes)));
 const files: Record<string, string> = Object.fromEntries(
   paths.map((file, index): [string, string] => [file, hashes[index] ?? ""]),
 );
+const docs = docsOf(paths);
+const docFiles = new Set(docs.flatMap((doc) => doc.files));
+// Pages serves gzip: the size on the wire, not on disk, is what «Скачать все» costs.
+const sizes: Record<string, number> = Object.fromEntries(
+  paths.flatMap((file, index): [string, number][] => {
+    const bytes = contents[index];
+    return bytes !== undefined && docFiles.has(file)
+      ? [[file, Bun.gzipSync(bytes).byteLength]]
+      : [];
+  }),
+);
 const manifest: OfflineManifest = {
-  docs: docsOf(paths),
+  docs,
   files,
   precache: paths.filter((file) => isPrecached(file)),
+  sizes,
   version: await contentHash(encode(JSON.stringify(files))),
 };
 await Bun.write(path.join(DIST, MANIFEST_PATH), JSON.stringify(manifest));
@@ -102,5 +120,5 @@ if (!result.success) {
   process.exit(1);
 }
 console.log(
-  `dist/sw.js: ${String(manifest.precache.length)} precached files, ${String(manifest.docs.length)} documents, version ${manifest.version}`,
+  `dist/sw.js: ${String(manifest.precache.length)} precached files, ${String(manifest.docs.length)} documents (${formatSize(Object.values(sizes).reduce((sum, size) => sum + size, 0))} gzip), version ${manifest.version}`,
 );

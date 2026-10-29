@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 
+import { COURSE_DOCS, isCourseDoc } from "#web/domain/course-docs.ts";
 import { findCourse } from "#web/domain/courses.ts";
-import { isPrepId, prepName } from "#web/domain/preps.ts";
+import { isPrepId, prepGoal } from "#web/domain/preps.ts";
 import { hitPath, type SearchHit, type SnippetPart } from "#web/domain/search.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { TexText } from "#web/shared/reader/tex-text.tsx";
@@ -32,11 +33,11 @@ const Snippet = ({ parts }: { readonly parts: readonly SnippetPart[] }) =>
 
 const placeOf = (hit: SearchHit): string => {
   const course = findCourse(hit.course)?.short ?? hit.course;
-  if (hit.doc === "theory") {
-    return `${course} · Теория`;
+  if (isCourseDoc(hit.doc)) {
+    return `${course} · ${COURSE_DOCS[hit.doc]}`;
   }
   return isPrepId(hit.doc)
-    ? `${course} · Подготовка к ${prepName(hit.doc)}`
+    ? `${course} · ${prepGoal(hit.doc)}`
     : `${course} · Лекция ${String(hit.lecture)}`;
 };
 

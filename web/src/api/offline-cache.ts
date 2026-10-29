@@ -1,6 +1,8 @@
 import {
+  BACKGROUND_HEADER,
   CACHE_NAME,
   type CachedHashes,
+  fileWeight,
   HASH_HEADER,
   MANIFEST_PATH,
   missingDocFiles,
@@ -37,27 +39,52 @@ export const readCachedHashes = async (manifest: OfflineManifest): Promise<Cache
 };
 
 /**
+Background mode: one file at a time at low network priority, each only after `waitTurn` (the page
+is idle and loads nothing of its own); `signal` stops it between files or mid-request.
+*/
+export type BackgroundOptions = {
+  readonly signal: AbortSignal;
+  readonly waitTurn: () => Promise<void>;
+};
+
+const fetchFile = async (path: string, background: BackgroundOptions | undefined) => {
+  if (background !== undefined) {
+    await background.waitTurn();
+    background.signal.throwIfAborted();
+  }
+  const response = await fetch(
+    urlOf(path),
+    background === undefined
+      ? undefined
+      : { headers: { [BACKGROUND_HEADER]: "1" }, priority: "low", signal: background.signal },
+  );
+  if (!response.ok) {
+    throw new Error(`Не удалось скачать ${path}: ${String(response.status)}`);
+  }
+  await response.arrayBuffer();
+};
+
+/**
 Downloads every document that is missing or outdated. The requests go through the service worker,
 which stores them; without a controlling worker nothing would be saved, so the caller checks first.
+Progress is in bytes (gzip, `fileWeight`), so it grows evenly whatever the files' sizes.
 */
 export const downloadAll = async (
   manifest: OfflineManifest,
   onProgress: (done: number, total: number) => void,
+  background?: BackgroundOptions,
 ): Promise<void> => {
   const queue = [...missingDocFiles(manifest, await readCachedHashes(manifest))];
-  const total = queue.length;
+  const total = queue.reduce((sum, path) => sum + fileWeight(manifest, path), 0);
   let done = 0;
   const worker = async (): Promise<void> => {
     for (let path = queue.shift(); path !== undefined; path = queue.shift()) {
-      const response = await fetch(urlOf(path));
-      if (!response.ok) {
-        throw new Error(`Не удалось скачать ${path}: ${String(response.status)}`);
-      }
-      await response.arrayBuffer();
-      done += 1;
+      await fetchFile(path, background);
+      done += fileWeight(manifest, path);
       onProgress(done, total);
     }
   };
   onProgress(0, total);
-  await Promise.all(Array.from({ length: PARALLEL_DOWNLOADS }, worker));
+  const workers = background === undefined ? PARALLEL_DOWNLOADS : 1;
+  await Promise.all(Array.from({ length: workers }, worker));
 };
