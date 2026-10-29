@@ -115,5 +115,11 @@ jobs:
           curl --fail --silent --head "${URL}pdf/discrete-program.pdf" >/dev/null
           curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-1side.pdf" >/dev/null
           curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-2side.pdf" >/dev/null
+          curl --fail --silent "${URL}algebra/theory/" | grep -q '<link rel="canonical" href="https://hse.nalinor.dev/algebra/theory/"'
+          curl --fail --silent "${URL}calculus/kr1/" | grep -q '<meta property="og:image" content="https://hse.nalinor.dev/og/calculus.png"'
+          curl --fail --silent --head "${URL}og/calculus.png" >/dev/null
+          curl --fail --silent "${URL}sitemap.xml" | grep -q '<loc>https://hse.nalinor.dev/calculus/kr1/</loc>'
+          curl --fail --silent "${URL}robots.txt" | grep -q 'Sitemap: https://hse.nalinor.dev/sitemap.xml'
+          curl --fail --silent "${URL}llms.txt" | grep -q 'raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/'
           curl --fail --silent "${URL}sw.js" >/dev/null
           curl --fail --silent "${URL}offline-manifest.json" | grep -q '"precache"'

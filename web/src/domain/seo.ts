@@ -1,0 +1,191 @@
+/**
+What search engines and LLMs read without running the app. `scripts/spa-fallback.ts` puts these tags
+into the shell of every page and writes `sitemap.xml`, `robots.txt` and `llms.txt` next to them.
+The Markdown sources live in the public repository: an LLM reads them better than the rendered page.
+*/
+import { type CourseId, findCourse } from "./courses.ts";
+
+export const SITE_NAME = "Конспекты ПИ ФКН";
+/** The same text is in `index.html`: the shell of the home page. */
+export const SITE_DESCRIPTION =
+  "Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика. Теория, глоссарий, подготовка к контрольным и коллоквиумам, PDF.";
+/**
+The address search engines keep: always the production domain, also in PR previews (they must not
+compete with the site) and on a `<owner>.github.io/<repo>` deploy.
+*/
+export const SITE_URL = "https://hse.nalinor.dev/";
+export const REPO_URL = "https://github.com/iamnalinor/hse-lecture-notes";
+const RAW_URL = "https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/";
+
+/**
+Link previews (Telegram, VK, X): one picture for the site and one per course, `public/og/<id>.png`,
+drawn by `scripts/og-images.ts`. A lecture, the theory or a prep shows its course's picture.
+*/
+export type OgImageId = "site" | CourseId;
+export const OG_IMAGE_SIZE = { height: 630, width: 1200 } as const;
+export const ogImagePath = (id: OgImageId): string => `og/${id}.png`;
+
+const ogImageAlt = (id: OgImageId): string => {
+  const course = id === "site" ? undefined : findCourse(id);
+  return course === undefined ? SITE_NAME : `${course.name}: конспекты лекций ПИ ФКН`;
+};
+
+export type Crumb = {
+  readonly name: string;
+  /** `algebra`; "" is the home page. */
+  readonly route: string;
+};
+
+export type SitePage = Crumb & {
+  /** Crumbs between the home page and this one: the course of a lecture. */
+  readonly crumbs: readonly Crumb[];
+  readonly description: string;
+  readonly image: OgImageId;
+  /** `pdf/algebra-theory.pdf`. */
+  readonly pdf: string | undefined;
+  /** Path of the Markdown source in the repository: `notes/algebra/01_sep03_matrices.md`. */
+  readonly source: string | undefined;
+};
+
+export const escapeHtml = (text: string): string =>
+  text
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+
+/** Directory URL with a slash: Pages redirects `/algebra/theory` to `/algebra/theory/` anyway. */
+export const pageUrl = (route: string): string =>
+  route === "" ? SITE_URL : `${SITE_URL}${route}/`;
+
+/** `/algebra/theory/` → `algebra/theory`: the route of a router path (the router strips the base). */
+export const routeOf = (pathname: string): string =>
+  pathname
+    .split("/")
+    .filter((part) => part !== "")
+    .join("/");
+
+export const sourceUrl = (source: string): string => `${RAW_URL}${source}`;
+
+const jsonLd = (data: object): string => {
+  // A `</script>` inside a title must not close the script tag: `<` goes as its JSON escape.
+  const json = JSON.stringify(data).replaceAll("<", String.raw`\u003c`);
+  return `<script type="application/ld+json">${json}</script>`;
+};
+
+const structuredData = (page: SitePage): object => {
+  if (page.route === "") {
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      description: page.description,
+      inLanguage: "ru",
+      name: SITE_NAME,
+      url: SITE_URL,
+    };
+  }
+  const trail = [{ name: SITE_NAME, route: "" }, ...page.crumbs, page];
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((crumb, at) => ({
+      "@type": "ListItem",
+      item: pageUrl(crumb.route),
+      name: crumb.name,
+      position: at + 1,
+    })),
+  };
+};
+
+const imageTags = (id: OgImageId): string[] => [
+  `<meta property="og:image" content="${SITE_URL}${ogImagePath(id)}" />`,
+  `<meta property="og:image:width" content="${String(OG_IMAGE_SIZE.width)}" />`,
+  `<meta property="og:image:height" content="${String(OG_IMAGE_SIZE.height)}" />`,
+  `<meta property="og:image:alt" content="${escapeHtml(ogImageAlt(id))}" />`,
+  '<meta name="twitter:card" content="summary_large_image" />',
+];
+
+/**
+Goes right before `</head>`: the address search engines should keep, the preview picture, the source,
+the crumbs.
+*/
+export const headTags = (page: SitePage): string => {
+  const url = escapeHtml(pageUrl(page.route));
+  const source =
+    page.source === undefined
+      ? []
+      : [
+          `<link rel="alternate" type="text/markdown" href="${escapeHtml(sourceUrl(page.source))}" />`,
+        ];
+  return [
+    `<link rel="canonical" href="${url}" />`,
+    `<meta property="og:url" content="${url}" />`,
+    ...imageTags(page.image),
+    ...source,
+    jsonLd(structuredData(page)),
+  ].join("\n    ");
+};
+
+/** For clients that do not run scripts (LLM fetchers, simple crawlers): what the page is and where its text lies. */
+export const noscriptBody = (page: SitePage): string => {
+  const link = (href: string, text: string): string => `<a href="${escapeHtml(href)}">${text}</a>`;
+  const links = [
+    ...(page.source === undefined
+      ? []
+      : [link(sourceUrl(page.source), "Текст страницы в Markdown")]),
+    ...(page.pdf === undefined ? [] : [link(SITE_URL + page.pdf, "PDF")]),
+    link(REPO_URL, "Исходники всех конспектов на GitHub"),
+    link(`${SITE_URL}llms.txt`, "Список страниц для LLM"),
+  ];
+  const items = links.map((link) => `<li>${link}</li>`).join("");
+  return [
+    "<noscript>",
+    `<h1>${escapeHtml(page.name)}</h1>`,
+    `<p>${escapeHtml(page.description)}</p>`,
+    `<ul>${items}</ul>`,
+    "</noscript>",
+  ].join("");
+};
+
+export const sitemapXml = (pages: readonly SitePage[]): string =>
+  [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...pages.map((page) => `  <url><loc>${escapeHtml(pageUrl(page.route))}</loc></url>`),
+    "</urlset>",
+    "",
+  ].join("\n");
+
+export const robotsTxt = (): string =>
+  ["User-agent: *", "Allow: /", "", `Sitemap: ${SITE_URL}sitemap.xml`, ""].join("\n");
+
+export type LlmsSection = {
+  readonly pages: readonly SitePage[];
+  readonly title: string;
+};
+
+/** The link goes to the Markdown an LLM can read; the page itself is empty without JavaScript. */
+const llmsLine = (page: SitePage): string =>
+  page.source === undefined
+    ? `- [${page.name}](${pageUrl(page.route)}): ${page.description}`
+    : `- [${page.name}](${sourceUrl(page.source)}): ${page.description}. Страница: ${pageUrl(page.route)}`;
+
+/** https://llmstxt.org: a map of the site with links to the Markdown each page is built from. */
+export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): string =>
+  [
+    `# ${SITE_NAME}`,
+    "",
+    `> ${summary}`,
+    "",
+    "Сайт — одностраничное приложение: без JavaScript страницы пустые. Читайте Markdown-исходники:",
+    `весь репозиторий — ${REPO_URL}, конспекты лекций — \`notes/<курс>/<week_id>.md\`, теория курса — \`theory/<курс>.md\`,`,
+    "план учебной дисциплины — `program/<курс>.md`, подготовка к контрольным и коллоквиумам — `prep/<курс>/<id>.md`.",
+    "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида `{#thm:lec04:laplace}`.",
+    ...sections.flatMap(({ pages, title }) => [
+      "",
+      `## ${title}`,
+      "",
+      ...pages.map((page) => llmsLine(page)),
+    ]),
+    "",
+  ].join("\n");
