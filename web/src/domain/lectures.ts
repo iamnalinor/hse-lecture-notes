@@ -18,3 +18,33 @@ export const neighbours = (
     ? { next: undefined, prev: undefined }
     : { next: lectures[index + 1], prev: lectures[index - 1] };
 };
+
+const WEEK_ID = /^(?<number>\d{2})_(?<day>[a-z]{3}\d{2})(?:_|$)/u;
+
+const dayOf = (weekId: string): string | undefined => WEEK_ID.exec(weekId)?.groups?.["day"];
+
+/**
+The lecture a `week_id` from a URL points to. Slugs get renamed when they stop matching the lecture,
+so a saved link may name a slug that no longer exists: then the lecture of the same date (`mmmDD`)
+is taken, and if the date moved too — the one with the same number (`NN`). `exact` is false for such
+a guess, so the page can redirect to the current address.
+*/
+export const resolveLecture = (
+  lectures: readonly LectureEntry[],
+  weekId: string,
+): undefined | { readonly entry: LectureEntry; readonly exact: boolean } => {
+  const found = lectures.find((lecture) => lecture.weekId === weekId);
+  if (found !== undefined) {
+    return { entry: found, exact: true };
+  }
+  const wanted = WEEK_ID.exec(weekId)?.groups;
+  if (wanted === undefined) {
+    return undefined;
+  }
+  const only = (matches: readonly LectureEntry[]): LectureEntry | undefined =>
+    matches.length === 1 ? matches[0] : undefined;
+  const guess =
+    only(lectures.filter((lecture) => dayOf(lecture.weekId) === wanted["day"])) ??
+    only(lectures.filter((lecture) => lecture.lecture === Number(wanted["number"])));
+  return guess === undefined ? undefined : { entry: guess, exact: false };
+};

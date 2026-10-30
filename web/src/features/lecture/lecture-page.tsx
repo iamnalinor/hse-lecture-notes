@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { Navigate, useLocation, useParams } from "react-router";
 
 import { useDocMeta, useFragment, useLabelIndex } from "#web/api/queries.ts";
 import { notFound, useCourse } from "#web/api/use-course.ts";
-import { neighbours } from "#web/domain/lectures.ts";
+import { neighbours, resolveLecture } from "#web/domain/lectures.ts";
+import { paths } from "#web/domain/paths.ts";
 import { sectionNumbers } from "#web/domain/sections.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { FragmentView } from "#web/shared/reader/fragment-view.tsx";
@@ -22,7 +23,7 @@ const NOT_BLOCKS = new Set(["equation", "figure", "section"]);
 const useLecture = () => {
   const params = useParams();
   const { info, lectures } = useCourse(params["course"]);
-  const entry = lectures.find((lecture) => lecture.weekId === params["weekId"]) ?? notFound();
+  const entry = resolveLecture(lectures, params["weekId"] ?? "")?.entry ?? notFound();
   const meta = useDocMeta(info.id, entry.weekId);
   const html = useFragment(info.id, entry.weekId);
   const index = useLabelIndex();
@@ -32,7 +33,23 @@ const useLecture = () => {
   return { entry, html, info, labels, lectures, meta };
 };
 
+/** A saved link with an outdated slug lands on the lecture of the same date (`resolveLecture`). */
 export const Component = () => {
+  const params = useParams();
+  const { info, lectures } = useCourse(params["course"]);
+  const { hash, search } = useLocation();
+  const resolved = resolveLecture(lectures, params["weekId"] ?? "") ?? notFound();
+  return resolved.exact ? (
+    <LecturePage />
+  ) : (
+    <Navigate
+      replace
+      to={{ hash, pathname: paths.lecture(info.id, resolved.entry.weekId), search }}
+    />
+  );
+};
+
+const LecturePage = () => {
   const { entry, html, info, labels, lectures, meta } = useLecture();
   const { next, prev } = neighbours(lectures, entry.weekId);
 
