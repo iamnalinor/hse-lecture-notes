@@ -33,7 +33,7 @@ const useLecture = () => {
   return { entry, html, info, labels, lectures, meta };
 };
 
-/** A saved link with an outdated slug lands on the lecture of the same date (`resolveLecture`). */
+/** A saved link with an outdated slug lands on the lecture with the same number (`resolveLecture`). */
 export const Component = () => {
   const params = useParams();
   const { info, lectures } = useCourse(params["course"]);

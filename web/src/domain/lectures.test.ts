@@ -58,14 +58,14 @@ describe("resolving a week_id from a URL", () => {
     });
   });
 
-  it("falls back to the lecture of the same date when the slug was renamed", () => {
+  it("falls back to the lecture with the same number when the slug was renamed", () => {
     expect(resolveLecture(LECTURES, "10_nov11_solution_structure")).toEqual({
       entry: LECTURES[1],
       exact: false,
     });
   });
 
-  it("falls back to the lecture number when the date moved too", () => {
+  it("matches by number even when the date moved too", () => {
     expect(resolveLecture(LECTURES, "11_nov18_complex_trig_form")?.entry).toBe(LECTURES[2]);
   });
 
