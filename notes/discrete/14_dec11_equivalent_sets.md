@@ -352,7 +352,7 @@ $$t^2 = \frac{1 - y^2}{(1 - y)^2} = \frac{1 + y}{1 - y}, \qquad \frac{t^2 - 1}{t
   \draw[nbgreen!60!black, thick] (0,1) -- (-0.6,-0.8);
   \fill[nbgreen!60!black] (-0.3333,0) circle (1.6pt);
   \node[below left, font=\small] at (-0.6,-0.8) {$Q$};
-  \node[left, nbgreen!60!black, font=\small] at (-0.36,0.02) {$\sigma(Q)$};
+  \draw[nbgreen!60!black, thin] (-0.3333,0) -- (-1.3,0.45) node[left, font=\small] {$\sigma(Q)$};
 \end{tikzpicture}
 ```
 
