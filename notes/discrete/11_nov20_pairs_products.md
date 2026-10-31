@@ -192,7 +192,6 @@ $$A \times C = (A \cap B) \times (C \cap C) = (A \times C) \cap (B \times C) \su
     \draw[nbgray] (0.35,-0.12) -- (1.5,-0.75) node[right, black] {$K$ (дно)};
     \draw[nbgray] (0.75,1.4) -- (1.6,1.8) node[right, black] {$K \times B$};
   \end{scope}
-  \end{scope}
 \end{tikzpicture}
 ```
 
