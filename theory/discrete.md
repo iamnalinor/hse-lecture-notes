@@ -19,7 +19,8 @@ title: "Теория: дискретная математика"
 - Композиция отношений читается справа налево: в $Q \circ P$ первым действует $P$, как в $g(f(x))$; в курсе алгебры подстановки, наоборот, умножаются слева направо (замечание [-@rem:lec12:order]).
 - Функция $f\colon A \to B$ отождествляется со своим графиком $f \subseteq A \times B$; множество $B$ ею не определяется, поэтому сюръективность всегда понимается «для $B$» (замечание [-@rem:lec13:codomain]). Для отношения $R \subseteq A \times B$ «тотально» по умолчанию значит «тотально для $A$», «сюръективно» — «сюръективно для $B$» (определение [-@def:lec13:total-surjective]).
 - Жирное $\mathbf{n}$ — множество $\{0, 1, \dots, n - 1\}$, обычное $n$ — число; $\mathbf{2}^X$ — функции из $X$ в $\{0, 1\}$, $X^2$ — декартов квадрат (замечание [-@rem:lec15:bold]). Мощность $|A|$ определена только для конечных множеств; бесконечные сравниваются через $\sim$ и $\lesssim$ (замечание [-@rem:lec16:abs]).
-- Биномиальный коэффициент — $C_n^k$ ($n$ внизу), не $\binom{n}{k}$ (замечание [-@rem:lec17:binom-notation]).
+- Пересечение $\bigcap A$ определено только для непустого семейства $A$; $\bigcap \varnothing$ не определено (замечание [-@rem:lec10:indexed]).
+- Биномиальный коэффициент — $C_n^k$ ($n$ внизу), не $\binom{n}{k}$ (замечание [-@rem:lec17:binom-notation]); $C_n^k = 0$ при $k > n$, поэтому тождество Паскаля верно при всех $n, k \in \N$ (замечание [-@rem:lec17:pascal-edge]).
 - Порядок по умолчанию строгий; в парах $(<, \le)$, $(\subsetneq, \subseteq)$ первый символ — строгий порядок (замечание [-@rem:lec19:pair-notation]).
 - Длина цепи (антицепи) — число её элементов, а не число «шагов» (замечание [-@rem:lec20:length]).
 - Графы конечны и непусты: хотя бы одна вершина (замечание [-@rem:lec21:finite]); длина пути в графе — число рёбер.
@@ -149,7 +150,7 @@ $X \subseteq \N$ прогрессивно, $\mathrm{Prog}(X)$, если $\forall
 # Лекция 4 — Делимость. Деление с остатком. Сравнения
 
 ::: {.definition ref="def:lec04:divides"}
-$a \mid b \iff \exists k \in \Z\ b = ak$; делитель, кратное. $0 \mid 0$ верно.
+$a \mid b \iff \exists k \in \Z\ b = ak$; делитель, кратное. $0 \mid 0$ верно. Если $a \mid b$ и $b \ne 0$, то $|a| \le |b|$, поэтому у ненулевого числа конечно много делителей.
 :::
 
 ::: {.lemma ref="lem:lec04:basic" status="доказано в лекции 4"}
@@ -173,7 +174,7 @@ $a \mid b \wedge a \mid c \Rightarrow a \mid b \pm c$.
 :::
 
 ::: {.definition ref="def:lec04:quotient"}
-$q$ — неполное частное, $r$ — остаток от деления $a$ на $b$.
+$q$ — неполное частное, $r$ — остаток от деления $a$ на $b$. Если $x > 0$ даёт остаток $r > 0$ при делении на $m$, то остаток $-x$ равен $m - r$ (при $r = 0$ — тоже $0$): остаток отрицательного числа — не его последняя цифра.
 :::
 
 ::: {.corollary ref="cor:lec04:division" status="доказано в лекции 4"}
@@ -181,7 +182,7 @@ $q$ — неполное частное, $r$ — остаток от делен�
 :::
 
 ::: {.definition ref="def:lec04:congruence"}
-При $m > 1$: $a \equiv b \pmod m \iff m \mid a - b$.
+При $m > 1$: $a \equiv b \pmod m \iff m \mid a - b$. Если $a \equiv b \pmod m$, $n \mid m$ и $n > 1$, то $a \equiv b \pmod n$.
 :::
 
 ::: {.lemma ref="lem:lec04:same-rem" status="доказано в лекции 4"}
@@ -245,7 +246,7 @@ $d = \gcd(a, b)$ (НОД), если $d \in \N$, $d \mid a$, $d \mid b$ и каж
 :::
 
 ::: {.definition ref="def:lec06:lcm"}
-$m = \operatorname{lcm}(a, b)$ (НОК), если $m \in \N$, $a \mid m$, $b \mid m$ и $m$ делит каждое общее кратное $a$ и $b$.
+$m = \operatorname{lcm}(a, b)$ (НОК), если $m \in \N$, $a \mid m$, $b \mid m$ и $m$ делит каждое общее кратное $a$ и $b$. Значит, из $a \mid c$ и $b \mid c$ следует $\operatorname{lcm}(a, b) \mid c$, но не $ab \mid c$ (это верно лишь при $\gcd(a, b) = 1$: $4 \mid 12$, $6 \mid 12$, $24 \nmid 12$).
 :::
 
 ::: {.lemma ref="lem:lec06:lcm-exists" status="доказано в лекции 6"}
@@ -307,7 +308,7 @@ $a^{-1}$ — обратный к $a$ по модулю $m$: единственн
 :::
 
 ::: {.definition ref="def:lec07:totient"}
-Функция Эйлера: $\varphi(m)$ при $m > 1$ — количество чисел из $\{0, 1, \dots, m - 1\}$, взаимно простых с $m$; $\varphi(p) = p - 1$.
+Функция Эйлера: $\varphi(m)$ при $m > 1$ — количество чисел из $\{0, 1, \dots, m - 1\}$, взаимно простых с $m$; $\varphi(p) = p - 1$, а для различных простых $p$, $q$: $\varphi(pq) = (p - 1)(q - 1)$, $\varphi(p^2) = p^2 - p$.
 :::
 
 ::: {.theorem ref="thm:lec07:euler" status="доказано в лекции 7"}
@@ -315,7 +316,7 @@ $a^{-1}$ — обратный к $a$ по модулю $m$: единственн
 :::
 
 ::: {.corollary ref="cor:lec07:fermat" status="доказано в лекции 7"}
-Малая теорема Ферма: если $p$ простое и $p \nmid a$, то $a^{p-1} \equiv 1 \pmod p$.
+Малая теорема Ферма: если $p$ простое и $p \nmid a$, то $a^{p-1} \equiv 1 \pmod p$. Обращение неверно, но верен критерий простоты (без доказательства): $m > 1$ простое тогда и только тогда, когда для некоторого $a$ выполнено $a^{m-1} \equiv 1 \pmod m$ и $a^{(m-1)/q} \not\equiv 1 \pmod m$ для каждого простого $q \mid m - 1$.
 :::
 
 ::: {.proposition ref="prop:lec07:fermat-alt" status="доказано в лекции 7"}
@@ -442,8 +443,12 @@ $A \subseteq B \iff \forall x\, (x \in A \Rightarrow x \in B)$; собствен
 $A \subseteq A$; $A \subseteq B \subseteq C \Rightarrow A \subseteq C$; $A = B \iff A \subseteq B \wedge B \subseteq A$. *Идея:* произвольный элемент.
 :::
 
+::: {.corollary ref="cor:lec09:equal" status="доказано в лекции 9"}
+$A = A$; $A = B \wedge B = C \Rightarrow A = C$; $A = B \Rightarrow B = A$. *Идея:* свести к двум включениям и применить свойства $\subseteq$.
+:::
+
 ::: {.axiom ref="ax:lec09:listing"}
-Существует $\{a_1, \dots, a_n\}$: $x \in \{a_1, \dots, a_n\} \iff x = a_1 \vee \ldots \vee x = a_n$; синглетон $\{a\}$.
+Существует $\{a_1, \dots, a_n\}$: $x \in \{a_1, \dots, a_n\} \iff x = a_1 \vee \ldots \vee x = a_n$; синглетон $\{a\}$. Двух элементов запись не гарантирует: $\{a, b\} = \{a\} \iff a = b$.
 :::
 
 ::: {.axiom ref="ax:lec09:specification"}
@@ -455,7 +460,11 @@ $E$ пусто, если $\forall x\, (x \notin E)$; $\varnothing = \{x \in \N \
 :::
 
 ::: {.lemma ref="lem:lec09:empty" status="доказано в лекции 9"}
-Пустое множество — подмножество любого; любые два пустых множества равны, так что $\varnothing$ единственно. *Идея:* пустая истина.
+Пустое множество — подмножество любого; любые два пустых множества равны. *Идея:* пустая истина.
+:::
+
+::: {.corollary ref="cor:lec09:empty-unique" status="доказано в лекции 9"}
+$\varnothing$ — единственное пустое множество: например, $\{x \in \Z \mid x^2 = -1\} = \{x \in \R \mid x \ne x\} = \varnothing$.
 :::
 
 ::: {.definition ref="def:lec09:bounded"}
@@ -481,15 +490,19 @@ $\{x \in A \mid x \notin x\} \notin A$; множества всех множес
 # Лекция 10 — Объединение семейства. Алгебра множеств
 
 ::: {.axiom ref="ax:lec10:union"}
-Существует $\bigcup A$: $x \in \bigcup A \iff \exists \alpha\, (x \in \alpha \wedge \alpha \in A)$.
+Существует $\bigcup A$: $x \in \bigcup A \iff \exists \alpha\, (x \in \alpha \wedge \alpha \in A)$. Индексная запись: $\bigcup_{i \in I} A_i := \bigcup\{A_i \mid i \in I\}$, то есть $x \in \bigcup_{i \in I} A_i \iff \exists i \in I\ (x \in A_i)$. Пересечение непустого семейства $A$ аксиомы не требует: $\bigcap A = \{x \in \alpha_0 \mid \forall \alpha \in A\ (x \in \alpha)\}$ для любого $\alpha_0 \in A$; $\bigcap \varnothing$ не определено.
 :::
 
 ::: {.definition ref="def:lec10:operations"}
 $A \cup B = \bigcup\{A, B\}$, $A \cap B = \{x \in A \mid x \in B\}$, $A \setminus B = \{x \in A \mid x \notin B\}$; непересекающиеся — $A \cap B = \varnothing$.
 :::
 
+::: {.lemma ref="lem:lec10:basic-incl" status="доказано в лекции 10"}
+$A \cap B \subseteq A \subseteq A \cup B$, $A \cap B \subseteq B \subseteq A \cup B$; $A \setminus B \subseteq A$ и $(A \setminus B) \cap B = \varnothing$. *Идея:* каждое включение — тавтология о принадлежности.
+:::
+
 ::: {.lemma ref="lem:lec10:subset-equiv" status="доказано в лекции 10"}
-$A \subseteq B \iff A \cap B = A \iff A \cup B = B$. *Идея:* доказательство по кругу.
+$A \subseteq B \iff A \cap B = A \iff A \cup B = B$; для $A, B \subseteq U$ ещё $\iff A \setminus B = \varnothing \iff \bar B \subseteq \bar A$. *Идея:* доказательство по кругу; две последние формы — через тождества алгебры множеств.
 :::
 
 ::: {.definition ref="def:lec10:complement"}
@@ -497,17 +510,21 @@ $\bar A = U \setminus A$ для $A \subseteq U$; $A \setminus B = A \cap \bar B$
 :::
 
 ::: {.theorem ref="thm:lec10:identities" status="доказано в лекции 10"}
-Коммутативность, ассоциативность, идемпотентность, поглощение, $\bar{\bar A} = A$, две дистрибутивности, законы де Моргана, свойства $\varnothing$ и $U$, $A \cap \bar A = \varnothing$, $A \cup \bar A = U$. *Идея:* поэлементный перевод в логические эквивалентности; на практике — таблица принадлежности из $2^k$ строк.
+Коммутативность, ассоциативность, идемпотентность, поглощение, $\bar{\bar A} = A$, две дистрибутивности, законы де Моргана, свойства $\varnothing$ и $U$, $A \cap \bar A = \varnothing$, $A \cup \bar A = U$. Де Морган для разности (без универсума): $A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C)$, $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$. *Идея:* поэлементный перевод в логические эквивалентности; на практике — таблица принадлежности из $2^k$ строк.
 :::
 
 # Лекция 11 — Упорядоченные пары. Декартово произведение
 
 ::: {.definition ref="def:lec11:pair"}
-$(a, b) = \{\{a\}, \{a, b\}\}$ (по Куратовскому); $(a, a) = \{\{a\}\}$.
+$(a, b) = \{\{a\}, \{a, b\}\}$ (по Куратовскому); $(a, a) = \{\{a\}\}$. Компоненты восстанавливаются: $\bigcup (a, b) = \{a, b\}$, $\bigcap (a, b) = \{a\}$.
 :::
 
 ::: {.lemma ref="lem:lec11:pair" status="доказано в лекции 11"}
 $(a, b) = (c, d) \iff a = c \wedge b = d$. *Идея:* из $\{a\} \in (c, d)$ получить $a = c$, затем разобрать $\{a, b\} = \{c\}$ и $\{a, b\} = \{c, d\}$.
+:::
+
+::: {.corollary ref="cor:lec11:pair-swap" status="доказано в лекции 11"}
+$(a, b) = (b, a) \iff a = b$.
 :::
 
 ::: {.definition ref="def:lec11:product"}
@@ -515,7 +532,7 @@ $A \times B = \{z \in \mathcal{P}(\mathcal{P}(A \cup B)) \mid \exists a \in A\ \
 :::
 
 ::: {.definition ref="def:lec11:power"}
-$A^0 = \{\varnothing\}$, $A^1 = A$, $A^n = A \times \ldots \times A$ при $n \ge 2$; $A^{n+1} = A^n \times A$ только при $n \ge 1$.
+$A^0 = \{\varnothing\}$, $A^1 = A$, $A^n = A \times \ldots \times A$ при $n \ge 2$; $A^{n+1} = A^n \times A$ только при $n \ge 1$. Так, $\R^3 = \R^2 \times \R$ и $(x, y, z) = ((x, y), z)$, но $\R \times \R^2 \ne \R^3$.
 :::
 
 ::: {.definition ref="def:lec11:tuple"}
@@ -672,6 +689,10 @@ $A \sim A$; $A \sim B \Rightarrow B \sim A$; $A \sim B \wedge B \sim C \Rightarr
 Если $f\colon A \to B$ — инъекция, то $A \sim_f f[A]$ и $X \sim f[X]$ для всех $X \subseteq A$.
 :::
 
+::: {.proposition ref="prop:lec14:glue" status="доказано в лекции 14"}
+Склейка биекций: если $A \cap C = \varnothing$, $B \cap D = \varnothing$, $A \sim_f B$ и $C \sim_g D$, то $A \cup C \sim_{f \cup g} B \cup D$. *Идея:* $f \cup g$ — функция, так как области не пересекаются; инъективность внутри куска — от $f$ или $g$, между кусками — из $B \cap D = \varnothing$.
+:::
+
 ::: {.theorem ref="thm:lec14:cantor" status="доказано в лекции 14"}
 $A \nsim \mathcal{P}(A)$ для любого $A$; более того, сюръекции $A \to \mathcal{P}(A)$ нет. *Идея:* диагональное множество $X = \{a \in A \mid a \notin \varphi(a)\}$ отличается от каждого $\varphi(a)$ в точке $a$.
 :::
@@ -702,8 +723,8 @@ $\mathcal{P}(X) \sim \mathbf{2}^X$. *Идея:* $A \mapsto 1_A$; прообра�
 $1_{B \cap C} = 1_B 1_C$, $1_{B \cup C} = 1_B + 1_C - 1_B 1_C$, $1_{\overline{B}} = 1 - 1_B$; $B \subseteq C \iff 1_B \le 1_C$ всюду. *Идея:* перебор четырёх случаев; $1_B^2 = 1_B$.
 :::
 
-::: {.theorem ref="thm:lec15:tuples" status="доказано в лекции 15 (набросок)"}
-$A^n \sim A^{\mathbf{n}}$ для любого $A$ и $n \in \N$. *Идея:* $f \mapsto (f(0), \dots, f(n - 1))$.
+::: {.theorem ref="thm:lec15:tuples" status="доказано в лекции 15 (индукция по $n$)"}
+$A^n \sim A^{\mathbf{n}}$ для любого $A$ и $n \in \N$; биекция $A^{\mathbf{n}} \to A^n$ — $f \mapsto (f(0), \dots, f(n - 1))$. *Идея:* индукция по $n$: функция на $\mathbf{m + 1}$ — это её сужение на $\mathbf{m}$ плюс значение в точке $m$, а кортеж длины $m + 1$ — кортеж длины $m$ плюс компонента.
 :::
 
 ::: {.definition ref="def:lec15:embedding"}
@@ -855,7 +876,7 @@ $|\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = \frac{n!}{(n - m)!}$ при $m \le n$ 
 :::
 
 ::: {.definition ref="def:lec17:arrangement"}
-Размещение длины $m$ — кортеж из попарно различных элементов; $A_n^m = |\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = n(n - 1) \cdots (n - m + 1) = n^{(m)}$.
+Размещение длины $m$ — кортеж из попарно различных элементов; $A_n^m = |\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = n(n - 1) \cdots (n - m + 1) = n^{(m)}$ при $m \le n$, $A_n^m = 0$ при $m > n$.
 :::
 
 ::: {.definition ref="def:lec17:permutation"}
@@ -867,11 +888,11 @@ $|\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = \frac{n!}{(n - m)!}$ при $m \le n$ 
 :::
 
 ::: {.definition ref="def:lec17:binomial"}
-$\mathcal{P}_k(A)$ — $k$-элементные подмножества $A$; $C_n^k = |\mathcal{P}_k(\mathbf{n})|$.
+$\mathcal{P}_k(A)$ — $k$-элементные подмножества ($k$-сочетания) $A$; $C_n^k = |\mathcal{P}_k(\mathbf{n})|$ — число сочетаний из $n$ по $k$; $C_n^k = 0$ при $k > n$. Сочетание с повторениями — выбор $m$ предметов из $n$ видов с повторениями и без учёта порядка; их $C_{n + m - 1}^m$ (шары и перегородки).
 :::
 
 ::: {.lemma ref="lem:lec17:pascal" status="доказано в лекции 17"}
-$C_{n + 1}^{k + 1} = C_n^{k + 1} + C_n^k$. *Идея:* делим подмножества $\mathbf{n + 1}$ по тому, содержат ли они $n$.
+$C_{n + 1}^{k + 1} = C_n^{k + 1} + C_n^k$ для любых $n, k \in \N$. *Идея:* делим подмножества $\mathbf{n + 1}$ по тому, содержат ли они $n$.
 :::
 
 ::: {.lemma ref="lem:lec17:binom-formula" status="доказано в лекции 17"}
@@ -883,13 +904,13 @@ $C_n^k = C_n^{n - k}$ при $0 \le k \le n$. *Идея:* биекция $X \map
 :::
 
 ::: {.theorem ref="thm:lec17:binomial" status="доказано в лекции 17"}
-$(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$. *Идея:* $(1 + x)^n$ индукцией с тождеством Паскаля, затем вынести $b^n$.
+$(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$ для $a, b \in \R$, $n \in \N$. *Идея:* $(1 + x)^n$ индукцией с тождеством Паскаля, затем вынести $b^n$.
 :::
 
 # Лекция 18 — Зависимое произведение. Формула включений-исключений
 
 ::: {.theorem ref="thm:lec18:dependent" status="доказано в лекции 18"}
-Правило зависимого произведения: если $P$ конечно, $S \subseteq P \times Q$ и $|S[\{x\}]| = f(x)$, то $|S| = \sum_{x \in P} f(x)$. *Идея:* индукция по $|P|$ и правило суммы.
+Правило зависимого произведения: если $P$ конечно, $S \subseteq P \times Q$ и каждое $S[\{x\}]$ конечно, $|S[\{x\}]| = f(x)$, то $S$ конечно и $|S| = \sum_{x \in P} f(x)$. *Идея:* индукция по $|P|$ и правило суммы.
 :::
 
 ::: {.corollary ref="cor:lec18:dependent-const" status="доказано в лекции 18"}
@@ -897,7 +918,7 @@ $(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$. *Идея:* $(1 + x)^n$ инд
 :::
 
 ::: {.definition ref="def:lec18:multinomial"}
-$P(n; a_1, \dots, a_k) = \frac{n!}{a_1! \cdots a_k!}$ — число разбиений $\mathbf{n}$ на пронумерованные части размеров $a_1, \dots, a_k$.
+При $a_1 + \dots + a_k = n$: $P(n; a_1, \dots, a_k) = \frac{n!}{a_1! \cdots a_k!}$ — число кортежей $(A_1, \dots, A_k)$ попарно непересекающихся множеств с $A_1 \cup \dots \cup A_k = \mathbf{n}$ и $|A_i| = a_i$, то есть разбиений на *нумерованные* части. Для ненумерованных частей ответ меньше: разбить $6$ человек на три пары можно $15$ способами, а не $P(6; 2, 2, 2) = 90$.
 :::
 
 ::: {.lemma ref="lem:lec18:sum-indicator" status="доказано в лекции 18"}
@@ -906,6 +927,10 @@ $|B| = \sum_{x \in U} 1_B(x)$ для конечного $U$ и $B \subseteq U$.
 
 ::: {.theorem ref="thm:lec18:incl-excl" status="доказано в лекции 18"}
 $|A_1 \cup \dots \cup A_n| = \sum_{\varnothing \ne I \subseteq \{1, \dots, n\}} (-1)^{|I| - 1} |A_I|$. *Идея:* сравнить вклад каждой точки через индикаторы; точка из $t \ge 1$ множеств учтена $\sum_{k \ge 1} (-1)^{k - 1} C_t^k = 1$ раз.
+:::
+
+::: {.corollary ref="cor:lec18:symmetric" status="доказано в лекции 18"}
+Симметричный случай: если $X$ конечно, $A_1, \dots, A_n \subseteq X$, $|A_I| = a_k$ для всех $I$ с $|I| = k$ и $a_0 = |X|$, то $|X \setminus (A_1 \cup \dots \cup A_n)| = \sum_{k = 0}^n (-1)^k C_n^k a_k$. *Идея:* наборов $I$ размера $k$ ровно $C_n^k$; вычесть формулу включений-исключений из $|X|$.
 :::
 
 ::: {.proposition ref="prop:lec18:totient" status="доказано в лекции 18"}
