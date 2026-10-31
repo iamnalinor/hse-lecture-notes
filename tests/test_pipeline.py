@@ -435,6 +435,17 @@ def test_lint_weekday(demo: Path):
     assert "не день лекции курса" in res.stdout
 
 
+def test_lint_duplicate_lecture_number(demo: Path):
+    """Номер лекции однозначен: по нему сайт перенаправляет устаревшие адреса."""
+    src = demo / "notes" / "algebra" / "02_sep09_gauss.md"
+    (src.with_name("02_sep16_gauss_copy.md")).write_text(
+        src.read_text(encoding="utf-8").replace("2026-09-09", "2026-09-16"), encoding="utf-8"
+    )
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "две лекции с номером 02 в курсе algebra" in res.stdout, res.stdout
+
+
 # ----------------------------------------------------------------------------- программа курса
 
 

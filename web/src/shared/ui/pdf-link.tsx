@@ -1,6 +1,7 @@
 import { DownloadIcon } from "./icons.tsx";
 
-const pdfUrl = (course: string, docId: string): string =>
+/** A document's PDF as the site serves it (`/pdf/<course>-<doc>.pdf`), with the base path. */
+export const pdfUrl = (course: string, docId: string): string =>
   `${import.meta.env.BASE_URL}pdf/${course}-${docId}.pdf`;
 
 type Props = {

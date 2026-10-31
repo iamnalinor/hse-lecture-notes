@@ -3,7 +3,7 @@ import { createBrowserRouter, type RouteObject } from "react-router";
 import { PREP_IDS } from "#web/domain/preps.ts";
 
 import { AppShell, ShellFallback } from "./app-shell.tsx";
-import { LegacyTheoryRedirect } from "./legacy-redirect.tsx";
+import { LegacyPdfRedirect, LegacyTheoryRedirect } from "./legacy-redirect.tsx";
 import { RouteError } from "./route-error.tsx";
 
 type Page = () => Promise<{ readonly Component: React.ComponentType }>;
@@ -28,6 +28,7 @@ const routes: RouteObject[] = [
       page(":course/theory", PAGES.theory),
       page(":course/program", PAGES.program),
       { Component: LegacyTheoryRedirect, path: ":course/registry" },
+      { Component: LegacyPdfRedirect, path: "pdf/:file" },
       page(":course/glossary", PAGES.glossary),
       ...PREP_IDS.map((id) => page(`:course/${id}`, PAGES.prep)),
       page(":course/:weekId", PAGES.lecture),

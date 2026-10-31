@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router";
 
+import type { CourseInfo } from "#web/domain/courses.ts";
+import type { LectureEntry } from "#web/domain/schemas.ts";
+
 import { useDocMeta, useFragment, useLabelIndex } from "#web/api/queries.ts";
 import { notFound, useCourse } from "#web/api/use-course.ts";
 import { neighbours, resolveLecture } from "#web/domain/lectures.ts";
@@ -20,17 +23,10 @@ import { PrevNext } from "./prev-next.tsx";
 const WIDE_QUERY = "(min-width: 1100px)";
 const NOT_BLOCKS = new Set(["equation", "figure", "section"]);
 
-const useLecture = () => {
-  const params = useParams();
-  const { info, lectures } = useCourse(params["course"]);
-  const entry = resolveLecture(lectures, params["weekId"] ?? "")?.entry ?? notFound();
-  const meta = useDocMeta(info.id, entry.weekId);
-  const html = useFragment(info.id, entry.weekId);
-  const index = useLabelIndex();
-  const labels = Object.values(index[info.id] ?? {}).filter(
-    (label) => label.weekId === entry.weekId,
-  );
-  return { entry, html, info, labels, lectures, meta };
+type LectureProps = {
+  readonly entry: LectureEntry;
+  readonly info: CourseInfo;
+  readonly lectures: readonly LectureEntry[];
 };
 
 /** A saved link with an outdated slug lands on the lecture with the same number (`resolveLecture`). */
@@ -40,7 +36,7 @@ export const Component = () => {
   const { hash, search } = useLocation();
   const resolved = resolveLecture(lectures, params["weekId"] ?? "") ?? notFound();
   return resolved.exact ? (
-    <LecturePage />
+    <LecturePage entry={resolved.entry} info={info} lectures={lectures} />
   ) : (
     <Navigate
       replace
@@ -49,8 +45,13 @@ export const Component = () => {
   );
 };
 
-const LecturePage = () => {
-  const { entry, html, info, labels, lectures, meta } = useLecture();
+const LecturePage = ({ entry, info, lectures }: LectureProps) => {
+  const meta = useDocMeta(info.id, entry.weekId);
+  const html = useFragment(info.id, entry.weekId);
+  const index = useLabelIndex();
+  const labels = Object.values(index[info.id] ?? {}).filter(
+    (label) => label.weekId === entry.weekId,
+  );
   const { next, prev } = neighbours(lectures, entry.weekId);
 
   useDocumentTitle(`${info.name}, лекция ${String(meta.lecture)}: ${meta.title}`);
