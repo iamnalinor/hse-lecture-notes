@@ -264,9 +264,9 @@ $$xEy \iff \varphi(x) E' \varphi(y) \quad \text{для всех } x, y \in V.$$
 Отношение смежности $\overline{G}$ — это $(V^2 \setminus \mathrm{id}_V) \setminus E$, где $E \subseteq V^2 \setminus \mathrm{id}_V$. По правилу суммы (теорема [-@thm:lec12:sum]) в нём $n^2 - n - 2m = 2(C_n^2 - m)$ пар, то есть $C_n^2 - m$ рёбер.
 :::
 
-Пример: $\overline{C_5}$ — $(5, 5)$-граф; на рис. [-@fig:lec16:complement] видно, что это «звезда», снова изоморфная $C_5$. Граф, изоморфный своему дополнению, называется *самодополнительным*.
+Пример: $\overline{C_5}$ — $(5, 5)$-граф; на рис. [-@fig:lec16:complement] видно, что это пентаграмма, снова изоморфная $C_5$. Граф, изоморфный своему дополнению, называется *самодополнительным*.
 
-```{.tikz #fig:lec16:complement caption="$C_5$ (чёрный) и его дополнение (красная звезда). Вершины звезды, прочитанные вдоль красных рёбер, $1, 3, 5, 2, 4$ образуют цикл, поэтому $\\overline{C_5} \\cong C_5$; изоморфизм $C_5 \\to \\overline{C_5}$: $1 \\mapsto 1$, $2 \\mapsto 3$, $3 \\mapsto 5$, $4 \\mapsto 2$, $5 \\mapsto 4$"}
+```{.tikz #fig:lec16:complement caption="$C_5$ (чёрный) и его дополнение (красная пентаграмма). Вершины пентаграммы, прочитанные вдоль красных рёбер, $1, 3, 5, 2, 4$ образуют цикл, поэтому $\\overline{C_5} \\cong C_5$; изоморфизм $C_5 \\to \\overline{C_5}$: $1 \\mapsto 1$, $2 \\mapsto 3$, $3 \\mapsto 5$, $4 \\mapsto 2$, $5 \\mapsto 4$"}
 \begin{tikzpicture}[v/.style={circle, fill=white, draw=black, inner sep=1pt, font=\scriptsize, minimum size=4.5mm}]
   \foreach \i in {1,...,5} { \node[v] (c\i) at ({90+72*(\i-1)}:1.3) {$\i$}; }
   \draw[thick] (c1) -- (c2) -- (c3) -- (c4) -- (c5) -- (c1);
