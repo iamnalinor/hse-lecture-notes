@@ -926,6 +926,28 @@ $F$ — первообразная $f$ на интервале $I$, если $F$
 $\int(\alpha f + \beta g)\,dx = \alpha\int f\,dx + \beta\int g\,dx$ ($\alpha$, $\beta$ не равны нулю одновременно); $\int f(kx + b)\,dx = \frac1k F(kx + b) + C$ при $k \ne 0$. *Идея:* дифференцирование правой части.
 :::
 
+# Лекция 17 — Внесение под знак дифференциала. Замена переменной. Интегрирование по частям
+
+::: {.theorem ref="thm:lec17:substitution" status="доказано в лекции 17"}
+Если $F' = f$ на интервале $J$, $\varphi$ дифференцируема на интервале $I$ и $\varphi(I) \subseteq J$, то $\int f(\varphi(x))\varphi'(x)\,dx = F(\varphi(x)) + C$, то есть $\int f(\varphi)\,d\varphi = F(\varphi) + C$. *Идея:* правило дифференцирования сложной функции.
+:::
+
+::: {.corollary ref="cor:lec17:log" status="доказано в лекции 17"}
+$\int \frac{\varphi'(x)}{\varphi(x)}\,dx = \ln|\varphi(x)| + C$ на интервале, где $\varphi \ne 0$. *Идея:* подстановка в $\int \frac{dt}{t}$; $\varphi$ сохраняет знак по теореме о промежуточном значении.
+:::
+
+::: {.theorem ref="thm:lec17:change" status="доказано в лекции 17"}
+Если $\varphi$ непрерывна, строго монотонна и дифференцируема на интервале $J$, $\varphi' \ne 0$, $I = \varphi(J)$ и $G' = f(\varphi(t))\varphi'(t)$ на $J$, то $\int f(x)\,dx = G(\varphi^{-1}(x)) + C$ на $I$. *Идея:* $(G \circ \varphi^{-1})' = G'(t) \cdot \frac{1}{\varphi'(t)}$ по теоремам о сложной и обратной функции.
+:::
+
+::: {.proposition ref="prop:lec17:table" status="доказано в лекции 17"}
+$\int \frac{dx}{x^2 + a^2} = \frac1a\operatorname{arctg}\frac xa + C$; $\int \frac{dx}{x^2 - a^2} = \frac{1}{2a}\ln\left|\frac{x - a}{x + a}\right| + C$; $\int \frac{dx}{\sqrt{a^2 - x^2}} = \arcsin\frac xa + C$; $\int \frac{dx}{\sqrt{x^2 + A}} = \ln\left|x + \sqrt{x^2 + A}\right| + C$ ($a > 0$, $A \ne 0$). *Идея:* линейная замена, разложение $\frac{1}{x^2 - a^2}$ на две дроби, дифференцирование.
+:::
+
+::: {.theorem ref="thm:lec17:parts" status="доказано в лекции 17"}
+Если $u$, $v$ дифференцируемы на интервале и $u'v$ имеет первообразную, то $\int u v'\,dx = uv - \int u'v\,dx$ ($\int u\,dv = uv - \int v\,du$). *Идея:* $(uv)' = u'v + uv'$.
+:::
+
 # Глоссарий курса
 
 ::: course-glossary
