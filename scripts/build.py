@@ -183,7 +183,20 @@ def run_pandoc(doc: Doc, to: str, out: Path, extra: list[str]) -> None:
 # ----------------------------------------------------------------------------- индекс
 
 
+def check_lecture_numbers(docs: list[Doc]) -> None:
+    """Номер лекции однозначен в курсе: по нему сайт находит лекцию по устаревшему адресу (смена slug)."""
+    seen: dict[tuple[str, str], str] = {}
+    for doc in docs:
+        if doc.kind != "notes":
+            continue
+        key = (doc.course, doc.week_id[:2])
+        if key in seen:
+            raise BuildError(f"две лекции с номером {key[1]} в курсе {doc.course}: {seen[key]} и {doc.week_id}")
+        seen[key] = doc.week_id
+
+
 def build_index(docs: list[Doc], jobs: int) -> dict:
+    check_lecture_numbers(docs)
     # отдельная временная папка на каждый запуск: агенты могут собирать параллельно
     BUILD.mkdir(parents=True, exist_ok=True)
     idx_dir = Path(tempfile.mkdtemp(prefix="idx-", dir=BUILD))

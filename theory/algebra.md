@@ -18,6 +18,8 @@ title: "Теория: алгебра"
 - Главное значение аргумента $\arg z$ берётся в $(-\pi, \pi]$ (допустимо и $[0, 2\pi)$); множество всех аргументов — $\operatorname{Arg} z$ [-@rem:lec11:arg-convention].
 - Геометрические векторы пишутся со стрелкой, $\vec a$; скалярное произведение — $(\vec a, \vec b)$; матрица Грама — $\Gamma$ [-@rem:lec12:vector-notation].
 - Векторное произведение — $[\vec a, \vec b]$ (допустимо $\vec a \times \vec b$), смешанное — $\langle \vec a, \vec b, \vec c \rangle$ [-@rem:lec13:cross-notation]; направляющий вектор прямой — $\vec s = (s_1, s_2, s_3)$, а не $(l, m, n)$ [-@rem:lec14:line-notation].
+- Композиция отображений читается справа налево: $(g \circ f)(x) = g(f(x))$; подстановки (и симметрии многоугольника) умножаются слева направо, поэтому $\sigma\tau = \tau \circ \sigma$ [-@rem:lec15:product-vs-composition].
+- Черта над элементом фактормножества — класс эквивалентности (вычет $\bar k \in \Z_n$), а не комплексное сопряжение (у комплексных чисел черта — по-прежнему сопряжение); иначе пишут $[x]$ [-@rem:lec15:class-notation].
 
 # Лекция 1 — Матрицы и операции над ними
 
@@ -845,6 +847,216 @@ $F(x, y, z) = 0$ — уравнение множества $S$, если ему 
 
 ::: {.proposition ref="prop:lec14:point-plane" status="доказано в лекции 14"}
 $\rho(M_0, \pi) = \frac{|Ax_0 + By_0 + Cz_0 + D|}{\sqrt{A^2 + B^2 + C^2}}$. *Идея:* модуль проекции $\overrightarrow{M_1 M_0}$ на нормаль.
+:::
+
+# Лекция 15 — Отображения, отношения эквивалентности, бинарные операции. Полугруппы, моноиды, группы
+
+::: {.definition ref="def:lec15:set-operations"}
+$S \cap T$, $S \cup T$, $S \setminus T$; прямое произведение $S \times T = \{(x, y) \mid x \in S, \ y \in T\}$ — множество упорядоченных пар.
+:::
+
+::: {.definition ref="def:lec15:map"}
+Отображение $f\colon X \to Y$ сопоставляет каждому $x \in X$ один элемент $f(x) \in Y$; при числовом $Y$ — функция, при $Y = X$ — преобразование (оператор) на $X$.
+:::
+
+::: {.definition ref="def:lec15:image"}
+$\operatorname{Im} f = f(X) = \{f(x) \mid x \in X\}$, $f(A) = \{f(x) \mid x \in A\}$; полный прообраз $f^{-1}(y) = \{x \mid f(x) = y\}$, $f^{-1}(B) = \{x \mid f(x) \in B\}$ (определён для любого $f$, может быть пустым).
+:::
+
+::: {.definition ref="def:lec15:injection"}
+$f$ сюръективно, если $\operatorname{Im} f = Y$; инъективно, если $x_1 \ne x_2 \Rightarrow f(x_1) \ne f(x_2)$; биективно, если инъективно и сюръективно.
+:::
+
+::: {.definition ref="def:lec15:composition"}
+$(g \circ f)(x) = g(f(x))$ — сначала $f$, потом $g$; $\Id_X(x) = x$.
+:::
+
+::: {.proposition ref="prop:lec15:composition-assoc" status="доказано в лекции 15"}
+$f \circ (g \circ h) = (f \circ g) \circ h$; $f \circ \Id = \Id \circ f = f$. *Идея:* обе части в каждой точке равны $f(g(h(u)))$.
+:::
+
+::: {.proposition ref="prop:lec15:inverse-map" status="доказано в лекции 15"}
+$g$ с $g \circ f = \Id_X$, $f \circ g = \Id_Y$ существует $\Leftrightarrow$ $f$ — биекция; оно единственно ($f^{-1}$); композиция биекций — биекция. *Идея:* $g(y)$ — единственный прообраз $y$; единственность — $g_1 = g_1 \circ (f \circ g_2) = (g_1 \circ f) \circ g_2 = g_2$.
+:::
+
+::: {.definition ref="def:lec15:relation"}
+Бинарное отношение — подмножество $W \subseteq X \times Y$; запись $x W y$.
+:::
+
+::: {.definition ref="def:lec15:equivalence"}
+Отношение эквивалентности на $X$ — рефлексивное ($x \sim x$), симметричное ($x \sim x' \Rightarrow x' \sim x$) и транзитивное ($x \sim x'$, $x' \sim x'' \Rightarrow x \sim x''$).
+:::
+
+::: {.definition ref="def:lec15:class"}
+Класс эквивалентности $\bar x = \{x' \mid x' \sim x\}$ (также $[x]$); фактормножество $X/\!\sim$ — множество классов.
+:::
+
+::: {.theorem ref="thm:lec15:partition" status="доказано в лекции 15"}
+Классы эквивалентности образуют разбиение $X$ (непусты, попарно совпадают или не пересекаются, покрывают $X$); обратно, любое разбиение задаёт отношение эквивалентности «лежать в одном куске», классы которого — куски. *Идея:* общий элемент $z$ двух классов даёт $x \sim z \sim y$, откуда $\bar x = \bar y$.
+:::
+
+::: {.definition ref="def:lec15:residues"}
+Вычеты по модулю $n$: классы отношения «$a - b$ делится на $n$»; $\Z_n = \{\bar 0, \bar 1, \dots, \overline{n - 1}\}$, $\bar k$ — числа с остатком $k$.
+:::
+
+::: {.definition ref="def:lec15:operation"}
+Бинарная операция на $X$ — отображение $X \times X \to X$ (результат существует для любой пары и лежит в $X$); ассоциативная: $(a * b) * c = a * (b * c)$; коммутативная: $a * b = b * a$.
+:::
+
+::: {.proposition ref="prop:lec15:residues-correct" status="доказано в лекции 15"}
+$\bar a + \bar b := \overline{a + b}$ и $\bar a \cdot \bar b := \overline{ab}$ не зависят от представителей, ассоциативны и коммутативны. *Идея:* $ab - a'b' = a(b - b') + b'(a - a')$.
+:::
+
+::: {.definition ref="def:lec15:groupoid"}
+Группоид (магма) $(M, *)$ — множество с бинарной операцией; полугруппа — группоид с ассоциативной операцией.
+:::
+
+::: {.definition ref="def:lec15:neutral"}
+Нейтральный элемент: $e * x = x * e = x$ для всех $x$; моноид — полугруппа с нейтральным элементом.
+:::
+
+::: {.proposition ref="prop:lec15:neutral-unique" status="доказано в лекции 15"}
+Нейтральный элемент единствен. *Идея:* $e_1 = e_1 * e_2 = e_2$ (нужны обе стороны: односторонних нейтральных может быть много).
+:::
+
+::: {.definition ref="def:lec15:invertible"}
+Элемент $a$ моноида обратим, если $\exists b\colon a * b = b * a = e$; такой $b$ — обратный, он единствен (утверждение [-@prop:lec15:inverse-props]) и обозначается $a^{-1}$; $(a^{-1})^{-1} = a$.
+:::
+
+::: {.proposition ref="prop:lec15:inverse-props" status="доказано в лекции 15"}
+Обратный элемент единствен; $(a * b)^{-1} = b^{-1} * a^{-1}$. *Идея:* $b_1 = b_1 (a b_2) = (b_1 a) b_2 = b_2$.
+:::
+
+::: {.definition ref="def:lec15:group"}
+Группа — моноид, все элементы которого обратимы.
+:::
+
+# Лекция 16 — Группы. Подгруппы. Гомоморфизмы и изоморфизмы
+
+::: {.definition ref="def:lec16:group"}
+Группа — множество с корректно заданной операцией, для которой выполнены: ассоциативность; существует $e$ с $xe = ex = x$; для каждого $x$ существует $x^{-1}$ с $x x^{-1} = x^{-1} x = e$.
+:::
+
+::: {.proposition ref="prop:lec16:cancellation" status="доказано в лекции 16"}
+В группе $ab = ac \Rightarrow b = c$, $ba = ca \Rightarrow b = c$; уравнение $ax = b$ имеет единственное решение $x = a^{-1} b$, уравнение $xa = b$ — $x = b a^{-1}$. *Идея:* умножить на $a^{-1}$ с нужной стороны.
+:::
+
+::: {.proposition ref="prop:lec16:units" status="доказано в лекции 16"}
+Обратимые элементы моноида образуют группу $M^*$. *Идея:* произведение обратимых обратимо, $e$ и $a^{-1}$ обратимы. Примеры: $GL_n(\R)$; биекции $X \to X$ с композицией, $S(X)$; при $X = \{1, \dots, n\}$ это множество $S_n$ — с умножением подстановок (композиция в обратном порядке) тоже группа.
+:::
+
+::: {.definition ref="def:lec16:gl"}
+$GL_n(\R) = \{A \in M_n(\R) \mid \det A \ne 0\}$ с умножением — общая линейная группа.
+:::
+
+::: {.definition ref="def:lec16:order"}
+Порядок группы $|G|$ — число её элементов; группа конечна или бесконечна.
+:::
+
+::: {.definition ref="def:lec16:abelian"}
+Абелева группа — группа с коммутативной операцией.
+:::
+
+::: {.definition ref="def:lec16:subgroup"}
+$H \le G$, если $e \in H$, $h_1 h_2 \in H$ и $h^{-1} \in H$ для всех $h, h_1, h_2 \in H$; собственная — $H \ne \{e\}$, $H \ne G$. Примеры: $SL_n(\R) \le GL_n(\R)$ ($\det A = 1$), $A_n \le S_n$ (чётные подстановки, $|A_n| = \frac{n!}{2}$), $k\Z \le \Z$.
+:::
+
+::: {.theorem ref="thm:lec16:criterion" status="доказано в лекции 16"}
+Непустое $H \subseteq G$ — подгруппа $\Leftrightarrow$ $h_1 h_2^{-1} \in H$ для всех $h_1, h_2 \in H$. *Идея:* подставить пары $(h, h)$ — получится $e$, $(e, h)$ — получится $h^{-1}$, $(h_1, h_2^{-1})$ — получится $h_1 h_2$.
+:::
+
+::: {.definition ref="def:lec16:homomorphism"}
+Гомоморфизм групп $f\colon (G_1, *) \to (G_2, \star)$: $f(a * b) = f(a) \star f(b)$ для всех $a, b$. Примеры: $\det\colon GL_n(\R) \to \R \setminus \{0\}$, $\ln\colon (\R_{>0}, \cdot) \to (\R, +)$, $\sgn\colon S_n \to \{\pm 1\}$.
+:::
+
+::: {.definition ref="def:lec16:iso"}
+Мономорфизм — инъективный, эпиморфизм — сюръективный, изоморфизм — биективный гомоморфизм; $G_1 \cong G_2$, если есть изоморфизм.
+:::
+
+::: {.proposition ref="prop:lec16:iso-props" status="доказано в лекции 16"}
+$\Id_G$ — изоморфизм; обратный к изоморфизму — изоморфизм; композиция гомоморфизмов (изоморфизмов) — гомоморфизм (изоморфизм). *Идея:* для $x = f(a)$, $y = f(b)$: $f^{-1}(xy) = f^{-1}(f(ab)) = ab$.
+:::
+
+::: {.proposition ref="prop:lec16:invariants" status="доказано в лекции 16"}
+Изоморфные группы имеют одинаковый порядок и одновременно абелевы или нет. *Идея:* $xy = f(a) f(b) = f(ab) = f(ba) = yx$.
+:::
+
+::: {.definition ref="def:lec16:dihedral"}
+Группа диэдра $D_n$ — симметрии правильного $n$-угольника с последовательным выполнением (в курсе — слева направо, как подстановки); $|D_n| = 2n$ ($n$ поворотов и $n$ осевых симметрий).
+:::
+
+::: {.proposition ref="prop:lec16:d3-s3" status="доказано в лекции 16"}
+$D_3 \cong S_3$: симметрии сопоставляется подстановка вершин треугольника. *Идея:* шесть симметрий дают шесть различных подстановок, а выполнение подряд соответствует умножению подстановок слева направо.
+:::
+
+::: {.definition ref="def:lec16:cayley"}
+Таблица Кэли конечной группы: на пересечении строки $g_i$ и столбца $g_j$ стоит $g_i g_j$.
+:::
+
+::: {.proposition ref="prop:lec16:cayley-props" status="доказано в лекции 16"}
+В таблице Кэли группы каждый элемент встречается ровно один раз в каждой строке и столбце; группа абелева $\Leftrightarrow$ таблица симметрична. *Идея:* сокращение. Обратное к первому неверно.
+:::
+
+# Лекция 17 — Порядок элемента. Циклические группы. Подгруппы группы целых чисел
+
+::: {.proposition ref="prop:lec17:power-laws" status="доказано в лекции 17"}
+$a^m a^n = a^{m + n}$, $(a^m)^n = a^{mn}$, $(a^n)^{-1} = a^{-n}$ при любых целых $m, n$; $(ab)^n = a^n b^n$ — только при $ab = ba$. *Идея:* подсчёт множителей и сокращение $a a^{-1} = e$.
+:::
+
+::: {.definition ref="def:lec17:order"}
+Порядок элемента $\operatorname{ord} a$ — наименьшее целое $q \ge 1$ с $a^q = e$; если такого нет, $\operatorname{ord} a = \infty$ (элемент бесконечного порядка).
+:::
+
+::: {.proposition ref="prop:lec17:divides" status="доказано в лекции 17"}
+При $\operatorname{ord} a = m$: $a^k = e \Leftrightarrow m \mid k$; $a^k = a^l \Leftrightarrow m \mid k - l$; $a^k = a^r$, $r$ — остаток от деления $k$ на $m$. *Идея:* $k = qm + r$, $a^k = a^r$, и $0 < r < m$ противоречит минимальности $m$.
+:::
+
+::: {.proposition ref="prop:lec17:cyclic-subgroup" status="доказано в лекции 17"}
+$\langle g \rangle = \{g^n \mid n \in \Z\}$ — наименьшая подгруппа, содержащая $g$. *Идея:* $g^m (g^n)^{-1} = g^{m - n}$ и критерий подгруппы.
+:::
+
+::: {.definition ref="def:lec17:cyclic"}
+Группа циклическая, если $G = \langle a \rangle$ для некоторого $a$; $a$ — порождающий (образующий) элемент.
+:::
+
+::: {.proposition ref="prop:lec17:cyclic-abelian" status="доказано в лекции 17"}
+Циклическая группа абелева (обратное неверно: $(\Q, +)$, $\Z_8^*$ — группа порядка $4$ без элемента порядка $4$). *Идея:* $a^k a^l = a^{k + l} = a^l a^k$.
+:::
+
+::: {.theorem ref="thm:lec17:order-cyclic" status="доказано в лекции 17"}
+$\operatorname{ord} g = |\langle g \rangle|$: при $\operatorname{ord} g = \infty$ все степени различны, при $\operatorname{ord} g = m$ $\langle g \rangle = \{e, g, \dots, g^{m - 1}\}$ без повторов. *Идея:* $g^k = g^s \Leftrightarrow g^{k - s} = e$.
+:::
+
+::: {.corollary ref="cor:lec17:generator" status="доказано в лекции 17"}
+Группа порядка $n$ циклическая $\Leftrightarrow$ в ней есть элемент порядка $n$; порождающие — ровно элементы порядка $n$.
+:::
+
+::: {.theorem ref="thm:lec17:cyclic-iso" status="доказано в лекции 17"}
+Бесконечная циклическая группа $\cong (\Z, +)$, циклическая группа порядка $n$ $\cong (\Z_n, +)$; циклические группы одного порядка изоморфны. *Идея:* $a^k \mapsto k$ (или $\bar k$); корректность и инъективность — утверждение о степенях и порядке.
+:::
+
+::: {.proposition ref="prop:lec17:iso-order" status="доказано в лекции 17"}
+Изоморфизм $\varphi$ переводит нейтральный элемент в нейтральный, $\varphi(a^q) = \varphi(a)^q$, и $\operatorname{ord} \varphi(a) = \operatorname{ord} a$. *Идея:* $\varphi(e)\varphi(e) = \varphi(e) = \varphi(e) e$ и сокращение; $\varphi(a)^q = e \Leftrightarrow \varphi(a^q) = \varphi(e) \Leftrightarrow a^q = e$ по инъективности.
+:::
+
+::: {.theorem ref="thm:lec17:subgroups-z" status="доказано в лекции 17"}
+Любая подгруппа $(\Z, +)$ равна $k\Z$, $k \ge 0$; при $H \ne \{0\}$ $k$ — наименьшее положительное число в $H$. *Идея:* остаток от деления элемента $H$ на $k$ лежит в $H$ и меньше $k$, значит, равен $0$.
+:::
+
+::: {.proposition ref="prop:lec17:subgroups-cyclic" status="доказано в лекции 17"}
+Подгруппа $H$ циклической группы $\langle a \rangle$ циклическая: $H = \langle e \rangle$ или $H = \langle a^k \rangle$, $k$ — наименьшее положительное с $a^k \in H$. *Идея:* деление показателя с остатком.
+:::
+
+::: {.definition ref="def:lec17:generated"}
+Подгруппа $(\Z, +)$, порождённая $a$ и $b$, — наименьшая подгруппа, содержащая $a$ и $b$.
+:::
+
+::: {.proposition ref="prop:lec17:gcd" status="доказано в лекции 17"}
+Подгруппа, порождённая $a$ и $b$ (не оба нулевые), равна $\text{НОД}(a, b) \cdot \Z$; при $a, b \ne 0$ $a\Z \cap b\Z = \operatorname{lcm}(a, b) \cdot \Z$. *Идея:* шаги алгоритма Евклида не выводят из подгруппы.
+:::
+
+::: {.proposition ref="prop:lec17:zn-order" status="доказано в лекции 17"}
+В $\Z_n$: $\operatorname{ord} \bar k = \frac{n}{\text{НОД}(k, n)}$; $\bar k$ порождает $\Z_n$ $\Leftrightarrow$ $\text{НОД}(k, n) = 1$. *Идея:* $n \mid qk \Leftrightarrow \frac{n}{d} \mid q$ при $d = \text{НОД}(k, n)$.
 :::
 
 # Глоссарий курса
