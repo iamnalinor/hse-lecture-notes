@@ -19,7 +19,7 @@ title: "Теория: алгебра"
 - Геометрические векторы пишутся со стрелкой, $\vec a$; скалярное произведение — $(\vec a, \vec b)$; матрица Грама — $\Gamma$ [-@rem:lec12:vector-notation].
 - Векторное произведение — $[\vec a, \vec b]$ (допустимо $\vec a \times \vec b$), смешанное — $\langle \vec a, \vec b, \vec c \rangle$ [-@rem:lec13:cross-notation]; направляющий вектор прямой — $\vec s = (s_1, s_2, s_3)$, а не $(l, m, n)$ [-@rem:lec14:line-notation].
 - Композиция отображений читается справа налево: $(g \circ f)(x) = g(f(x))$; подстановки (и симметрии многоугольника) умножаются слева направо, поэтому $\sigma\tau = \tau \circ \sigma$ [-@rem:lec15:product-vs-composition].
-- Черта $\bar x$ в общей алгебре — класс эквивалентности (вычет $\bar k \in \Z_n$), а не комплексное сопряжение; иначе пишут $[x]$ [-@rem:lec15:class-notation].
+- Черта над элементом фактормножества — класс эквивалентности (вычет $\bar k \in \Z_n$), а не комплексное сопряжение (у комплексных чисел черта — по-прежнему сопряжение); иначе пишут $[x]$ [-@rem:lec15:class-notation].
 
 # Лекция 1 — Матрицы и операции над ними
 
@@ -888,7 +888,7 @@ $g$ с $g \circ f = \Id_X$, $f \circ g = \Id_Y$ существует $\Leftright
 :::
 
 ::: {.definition ref="def:lec15:class"}
-Класс эквивалентности $\bar x = \{x' \mid x' \sim x\}$; фактормножество $X/\!\sim$ — множество классов.
+Класс эквивалентности $\bar x = \{x' \mid x' \sim x\}$ (также $[x]$); фактормножество $X/\!\sim$ — множество классов.
 :::
 
 ::: {.theorem ref="thm:lec15:partition" status="доказано в лекции 15"}
@@ -920,7 +920,7 @@ $\bar a + \bar b := \overline{a + b}$ и $\bar a \cdot \bar b := \overline{ab}$ 
 :::
 
 ::: {.definition ref="def:lec15:invertible"}
-Элемент $a$ моноида обратим, если $\exists b\colon a * b = b * a = e$; $b = a^{-1}$, $(a^{-1})^{-1} = a$.
+Элемент $a$ моноида обратим, если $\exists b\colon a * b = b * a = e$; такой $b$ — обратный, он единствен (утверждение [-@prop:lec15:inverse-props]) и обозначается $a^{-1}$; $(a^{-1})^{-1} = a$.
 :::
 
 ::: {.proposition ref="prop:lec15:inverse-props" status="доказано в лекции 15"}
