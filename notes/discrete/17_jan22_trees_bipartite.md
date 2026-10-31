@@ -90,14 +90,15 @@ $1 \Rightarrow 4$. В связном графе любые две вершины
   \node[v, label={[font=\small]below:$u$}] (u) at (1.6,0) {};
   \node[v, label={[font=\small]above:$v$}] (v) at (2.4,0.7) {};
   \node[v, label={[font=\small]below:$w$}] (w) at (2.4,-0.7) {};
-  \node[v, label={[font=\small]right:$z$}] (z) at (4.4,0) {};
+  \node[v] (z) at (4.4,0) {};
+  \node[font=\small] at (4.4,0.32) {$z$};
   \node[v, label={[font=\small]below:$y$}] (y) at (6.2,0) {};
   \draw[very thick] (x) -- (u);
   \draw[nbblue, thick] (u) -- (v) .. controls (3.3,1.1) .. (z);
   \draw[nbred, thick, dashed] (u) -- (w) .. controls (3.3,-1.1) .. (z);
   \draw[nbblue, thick] (z) .. controls (5.3,0.5) .. (y);
   \draw[nbred, thick, dashed] (z) .. controls (5.3,-0.5) .. (y);
-  \node[font=\small] at (0.8,0.3) {общее начало};
+  \node[font=\small] at (0.8,-0.55) {общее начало};
 \end{tikzpicture}
 ```
 

@@ -937,7 +937,7 @@ $\int \frac{\varphi'(x)}{\varphi(x)}\,dx = \ln|\varphi(x)| + C$ на интер�
 :::
 
 ::: {.theorem ref="thm:lec17:change" status="доказано в лекции 17"}
-Если $\varphi$ непрерывна, строго монотонна и дифференцируема на интервале $J$, $\varphi' \ne 0$, $I = \varphi(J)$ и $G' = f(\varphi(t))\varphi'(t)$ на $J$, то $\int f(x)\,dx = G(\varphi^{-1}(x)) + C$ на $I$. *Идея:* $(G \circ \varphi^{-1})' = G'(t) \cdot \frac{1}{\varphi'(t)}$ по теоремам о сложной и обратной функции.
+Если $\varphi$ непрерывна, строго монотонна и дифференцируема на интервале $J$, $\varphi' \ne 0$, $I = \varphi(J)$, $f$ определена на $I$ и $G' = f(\varphi(t))\varphi'(t)$ на $J$, то $\int f(x)\,dx = G(\varphi^{-1}(x)) + C$ на $I$. *Идея:* $(G \circ \varphi^{-1})' = G'(t) \cdot \frac{1}{\varphi'(t)}$ по теоремам о сложной и обратной функции.
 :::
 
 ::: {.proposition ref="prop:lec17:table" status="доказано в лекции 17"}
