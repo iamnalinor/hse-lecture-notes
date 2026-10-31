@@ -75,10 +75,12 @@ describe("LegacyPdfRedirect", () => {
 
   it("sends an old lecture PDF link to the file of the lecture with the same number", async () => {
     const replace = vi.fn();
-    vi.stubGlobal("location", { replace });
+    vi.stubGlobal("location", { hash: "#page=3", replace });
     openPdf("/pdf/algebra-03_sep16_permutations.pdf");
     await waitFor(() => {
-      expect(replace).toHaveBeenCalledWith("/pdf/algebra-03_sep16_permutations_determinant.pdf");
+      expect(replace).toHaveBeenCalledWith(
+        "/pdf/algebra-03_sep16_permutations_determinant.pdf#page=3",
+      );
     });
   });
 

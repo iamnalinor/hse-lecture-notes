@@ -35,8 +35,7 @@ export const RouteError = () => {
         <h1 className="text-4xl font-bold">
           {isMissing ? "Такой страницы нет" : "Не получилось открыть страницу"}
         </h1>
-        <p className="mt-4 text-xl text-muted">{describe(error)}</p>
-        {hasUpdate && (
+        {hasUpdate ? (
           <p className="mt-4 text-xl text-muted">
             Сайт обновился, а эта вкладка открыта на старой версии.{" "}
             <button
@@ -47,6 +46,8 @@ export const RouteError = () => {
               Обновить
             </button>
           </p>
+        ) : (
+          <p className="mt-4 text-xl text-muted">{describe(error)}</p>
         )}
         <Link className="mt-8 inline-block font-semibold" to={paths.home()}>
           На главную →

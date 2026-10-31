@@ -31,7 +31,8 @@ export const LegacyPdfRedirect = () => {
   const target = resolved === undefined || resolved.exact ? undefined : resolved.entry.weekId;
   useEffect(() => {
     if (target !== undefined) {
-      globalThis.location.replace(pdfUrl(info.id, target));
+      // `#page=N` of a PDF link survives the move.
+      globalThis.location.replace(`${pdfUrl(info.id, target)}${globalThis.location.hash}`);
     }
   }, [info.id, target]);
   return target === undefined ? notFound() : null;
