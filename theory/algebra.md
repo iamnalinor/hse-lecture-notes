@@ -1004,7 +1004,7 @@ $a^m a^n = a^{m + n}$, $(a^m)^n = a^{mn}$, $(a^n)^{-1} = a^{-n}$ при любы
 :::
 
 ::: {.definition ref="def:lec17:order"}
-Порядок элемента $\operatorname{ord} a$ — наименьшее натуральное $q$ с $a^q = e$; если такого нет, $\operatorname{ord} a = \infty$ (элемент бесконечного порядка).
+Порядок элемента $\operatorname{ord} a$ — наименьшее целое $q \ge 1$ с $a^q = e$; если такого нет, $\operatorname{ord} a = \infty$ (элемент бесконечного порядка).
 :::
 
 ::: {.proposition ref="prop:lec17:divides" status="доказано в лекции 17"}
@@ -1020,7 +1020,7 @@ $\langle g \rangle = \{g^n \mid n \in \Z\}$ — наименьшая подгр�
 :::
 
 ::: {.proposition ref="prop:lec17:cyclic-abelian" status="доказано в лекции 17"}
-Циклическая группа абелева (обратное неверно: $(\Q, +)$, группа порядка $4$ без элемента порядка $4$). *Идея:* $a^k a^l = a^{k + l} = a^l a^k$.
+Циклическая группа абелева (обратное неверно: $(\Q, +)$, $\Z_8^*$ — группа порядка $4$ без элемента порядка $4$). *Идея:* $a^k a^l = a^{k + l} = a^l a^k$.
 :::
 
 ::: {.theorem ref="thm:lec17:order-cyclic" status="доказано в лекции 17"}
@@ -1035,8 +1035,28 @@ $\operatorname{ord} g = |\langle g \rangle|$: при $\operatorname{ord} g = \in
 Бесконечная циклическая группа $\cong (\Z, +)$, циклическая группа порядка $n$ $\cong (\Z_n, +)$; циклические группы одного порядка изоморфны. *Идея:* $a^k \mapsto k$ (или $\bar k$); корректность и инъективность — утверждение о степенях и порядке.
 :::
 
+::: {.proposition ref="prop:lec17:iso-order" status="доказано в лекции 17"}
+Изоморфизм $\varphi$ переводит нейтральный элемент в нейтральный, $\varphi(a^q) = \varphi(a)^q$, и $\operatorname{ord} \varphi(a) = \operatorname{ord} a$. *Идея:* $\varphi(e)\varphi(e) = \varphi(e) = \varphi(e) e$ и сокращение; $\varphi(a)^q = e \Leftrightarrow \varphi(a^q) = \varphi(e) \Leftrightarrow a^q = e$ по инъективности.
+:::
+
 ::: {.theorem ref="thm:lec17:subgroups-z" status="доказано в лекции 17"}
-Любая подгруппа $(\Z, +)$ равна $k\Z$, $k \ge 0$; при $H \ne \{0\}$ $k$ — наименьшее натуральное число в $H$. *Идея:* остаток от деления элемента $H$ на $k$ лежит в $H$ и меньше $k$, значит, равен $0$.
+Любая подгруппа $(\Z, +)$ равна $k\Z$, $k \ge 0$; при $H \ne \{0\}$ $k$ — наименьшее положительное число в $H$. *Идея:* остаток от деления элемента $H$ на $k$ лежит в $H$ и меньше $k$, значит, равен $0$.
+:::
+
+::: {.proposition ref="prop:lec17:subgroups-cyclic" status="доказано в лекции 17"}
+Подгруппа $H$ циклической группы $\langle a \rangle$ циклическая: $H = \langle e \rangle$ или $H = \langle a^k \rangle$, $k$ — наименьшее положительное с $a^k \in H$. *Идея:* деление показателя с остатком.
+:::
+
+::: {.definition ref="def:lec17:generated"}
+Подгруппа $(\Z, +)$, порождённая $a$ и $b$, — наименьшая подгруппа, содержащая $a$ и $b$.
+:::
+
+::: {.proposition ref="prop:lec17:gcd" status="доказано в лекции 17"}
+Подгруппа, порождённая $a$ и $b$ (не оба нулевые), равна $\text{НОД}(a, b) \cdot \Z$; при $a, b \ne 0$ $a\Z \cap b\Z = \operatorname{lcm}(a, b) \cdot \Z$. *Идея:* шаги алгоритма Евклида не выводят из подгруппы.
+:::
+
+::: {.proposition ref="prop:lec17:zn-order" status="доказано в лекции 17"}
+В $\Z_n$: $\operatorname{ord} \bar k = \frac{n}{\text{НОД}(k, n)}$; $\bar k$ порождает $\Z_n$ $\Leftrightarrow$ $\text{НОД}(k, n) = 1$. *Идея:* $n \mid qk \Leftrightarrow \frac{n}{d} \mid q$ при $d = \text{НОД}(k, n)$.
 :::
 
 # Глоссарий курса
