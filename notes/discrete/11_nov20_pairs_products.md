@@ -48,8 +48,8 @@ $$(a, b) := \{\{a\}, \{a, b\}\}.$$
 
 *Шаг 2: $b = d$.* Так как $\{a, b\}$ — элемент левой части, $\{a, b\} = \{c\}$ или $\{a, b\} = \{c, d\}$.
 
-- Если $\{a, b\} = \{c\}$, то $b \in \{c\}$, и $b = c = a$. Тогда левая часть равна $\{\{a\}\}$, и элемент $\{c, d\}$ правой части равен $\{a\}$, откуда $d = a = b$.
-- Если $\{a, b\} = \{c, d\} = \{a, d\}$, то $b \in \{a, d\}$, то есть $b = d$ или $b = a$. В первом случае всё доказано. Во втором $\{a, d\} = \{a, b\} = \{a\}$, откуда $d = a = b$.
+- Если $\{a, b\} = \{c\}$, то $b \in \{c\}$, и $b = c = a$. Тогда левая часть равна $\{\{a\}\}$, и элемент $\{c, d\} = \{a, d\}$ правой части равен $\{a\}$, откуда $d = a = b$ (замечание [-@rem:lec09:pair-collapse]).
+- Если $\{a, b\} = \{c, d\} = \{a, d\}$, то $b \in \{a, d\}$, то есть $b = d$ или $b = a$. В первом случае всё доказано. Во втором $\{a, d\} = \{a, b\} = \{a\}$, откуда $d = a = b$ — снова по замечанию [-@rem:lec09:pair-collapse].
 :::
 
 ::: {.corollary #cor:lec11:pair-swap title="перестановка компонент"}
@@ -164,7 +164,7 @@ $$A \times C = (A \cap B) \times (C \cap C) = (A \times C) \cap (B \times C) \su
 По соглашению $\R^3 = \R \times \R \times \R = (\R \times \R) \times \R = \R^2 \times \R$: точка пространства $(x, y, z) = ((x, y), z)$ — это точка плоскости $(x, y)$ и высота $z$. Поэтому произведение фигуры на плоскости и множества на прямой — фигура в пространстве. Круг $K = \{(x, y) \in \R^2 \mid x^2 + y^2 \le 1\}$, умноженный на отрезок $[0, 2]$, — сплошной цилиндр высоты $2$ (рис. [-@fig:lec11:examples], справа); окружность, умноженная на тот же отрезок, — его боковая поверхность; квадрат $[0, 1]^2$, умноженный на $[0, 1]$, — куб $[0, 1]^3$. При этом $\R \times \R^2 \ne \R^3$: элементы $\R \times \R^2$ — пары $(x, (y, z))$, «точка на прямой и точка плоскости», и это другая расстановка скобок.
 :::
 
-```{.tikz #fig:lec11:examples caption="Слева: $\\{1, 2, 3\\} \\times \\{1, 2\\}$ — шесть точек сетки. Справа: круг $K$ в плоскости $z = 0$, отрезок $B = [0, 2]$ на оси $z$ и произведение $K \\times B \\subseteq \\R^2 \\times \\R = \\R^3$ — цилиндр"}
+```{.tikz #fig:lec11:examples caption="Слева: $\\{1, 2, 3\\} \\times \\{1, 2\\}$ — шесть точек сетки. Справа: круг $K$ радиуса $1$ с центром в начале координат в плоскости $z = 0$, отрезок $B = [0, 2]$ на оси $z$ и произведение $K \\times B \\subseteq \\R^2 \\times \\R = \\R^3$ — цилиндр с осью $z$; невидимые линии пунктиром"}
 \begin{tikzpicture}
   \begin{scope}
     \draw[-{Stealth}] (-0.2,0) -- (3.6,0) node[right] {\small $1$-я};
@@ -175,28 +175,29 @@ $$A \times C = (A \cap B) \times (C \cap C) = (A \times C) \cap (B \times C) \su
     \node[font=\scriptsize, above right] at (3,2) {$(3, 2)$};
     \node[font=\scriptsize, below right] at (1,1) {$(1, 1)$};
   \end{scope}
-  \begin{scope}[xshift=6.3cm, yshift=0.6cm]
-    \draw[-{Stealth}] (0,0) -- (0,3.3) node[above] {$z$};
-    \draw[-{Stealth}] (0,0) -- (3.6,0) node[right] {$y$};
-    \draw[-{Stealth}] (0,0) -- (-1.3,-1.1) node[below left] {$x$};
-    \draw[very thick, nbred] (0,0) -- (0,2) node[midway, left] {$B$};
-    \fill[nbblue!25] (0.9,-0.4) rectangle (2.9,1.6);
-    \fill[nbblue!25] (1.9,1.6) ellipse (1 and 0.35);
-    \fill[nbblue!25] (1.9,-0.4) ellipse (1 and 0.35);
-    \draw[thick] (1.9,1.6) ellipse (1 and 0.35);
-    \draw[thick] (0.9,-0.4) -- (0.9,1.6); \draw[thick] (2.9,-0.4) -- (2.9,1.6);
-    \draw[thick] (0.9,-0.4) arc (180:360:1 and 0.35);
-    \draw[thick, dashed] (2.9,-0.4) arc (0:180:1 and 0.35);
-    \fill[nborange!50] (1.9,-0.4) ellipse (0.95 and 0.32);
-    \node at (1.9,-0.4) {\small $K$};
-    \draw[aux] (0,2) -- (0.9,1.6);
-    \node at (1.9,0.65) {$K \times B$};
+  \begin{scope}[xshift=7.2cm, yshift=0.9cm]
+    \fill[nbblue!22] (-1,0) -- (-1,2) arc (180:360:1 and 0.35) -- (1,0) arc (0:-180:1 and 0.35) -- cycle;
+    \fill[nbblue!40] (0,2) ellipse (1 and 0.35);
+    \draw[thick, dashed] (1,0) arc (0:180:1 and 0.35);
+    \draw[dashed] (0,0) -- (1,0);
+    \draw[dashed] (0,0) -- (-0.38,-0.32);
+    \draw[very thick, nbred] (0,0) -- (0,2);
+    \node[nbred, font=\small] at (0.22,1.05) {$B$};
+    \draw[thick] (0,2) ellipse (1 and 0.35);
+    \draw[thick] (-1,0) -- (-1,2); \draw[thick] (1,0) -- (1,2);
+    \draw[thick] (-1,0) arc (180:360:1 and 0.35);
+    \draw[-{Stealth}] (0,2) -- (0,3.2) node[above] {$z$};
+    \draw[-{Stealth}] (1,0) -- (2.8,0) node[right] {$y$};
+    \draw[-{Stealth}] (-0.38,-0.32) -- (-1.3,-1.1) node[below left] {$x$};
+    \draw[nbgray] (0.35,-0.12) -- (1.5,-0.75) node[right, black] {$K$ (дно)};
+    \draw[nbgray] (0.75,1.4) -- (1.6,1.8) node[right, black] {$K \times B$};
+  \end{scope}
   \end{scope}
 \end{tikzpicture}
 ```
 
 ::: {.remark #rem:lec11:power0 tag="корнер-кейс"}
-Равенство $A^{n+1} = A^n \times A$ при $n = 0$, вообще говоря, не выполняется (при $A \ne \varnothing$): $A^0 \times A$ состоит из пар $(\varnothing, a)$, а не из элементов $A$. Например, для $A = \{\varnothing\}$ получаем $A^0 \times A = \{(\varnothing, \varnothing)\} = \{\{\{\varnothing\}\}\} \ne \{\varnothing\} = A^1$. Поэтому $A^1$ задаётся отдельно. При этом $\varnothing^0 = \{\varnothing\}$ — одноэлементное множество, а $\varnothing^n = \varnothing$ при $n \ge 1$ (пример [-@ex:lec11:product-empty]): как $0^0 = 1$ и $0^n = 0$.
+Равенство $A^{n+1} = A^n \times A$ при $n = 0$, вообще говоря, не выполняется: $A^0 \times A$ состоит из пар $(\varnothing, a)$, а не из элементов $A$. При $A = \varnothing$ обе части пусты, но уже для $A = \{\varnothing\}$ получаем $A^0 \times A = \{(\varnothing, \varnothing)\} = \{\{\{\varnothing\}\}\} \ne \{\varnothing\} = A^1$. Поэтому $A^1$ задаётся отдельно. При этом $\varnothing^0 = \{\varnothing\}$ — одноэлементное множество, а $\varnothing^n = \varnothing$ при $n \ge 1$ (пример [-@ex:lec11:product-empty]): как $0^0 = 1$ и $0^n = 0$.
 :::
 
 ::: {.definition #def:lec11:tuple title="кортеж"}
@@ -220,8 +221,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 и в частности $x \in A^n \iff \exists a_1 \in A \dots \exists a_n \in A\ x = (a_1, \dots, a_n)$.
 
 ::: {.remark #rem:lec11:tuples-strings title="кортежи и последовательности"}
-Кортеж — модель конечной последовательности: он строится слева направо, вкладыванием в пары, а критерий равенства кортежей не постулируется, а доказывается из определения пары. Дальше пары и произведения — основной строительный материал: бинарное отношение будет подмножеством $A \times B$, функция — отношением особого вида.
-
+Кортеж — модель конечной последовательности: он строится слева направо, вкладыванием в пары, а критерий равенства кортежей не постулируется, а доказывается из определения пары. Так, решение системы сравнений с неизвестными $x_1, \dots, x_k$ из лекции 8 — кортеж $(x_1, \dots, x_k) \in \Z^k$.
 :::
 
 # Практика
@@ -253,7 +253,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 
 «$\supseteq$»: пусть $z \in A \times C$ (случай $z \in B \times C$ симметричен). Тогда $z = (x, c)$ с $x \in A \subseteq A \cup B$ и $c \in C$, значит, $z \in (A \cup B) \times C$.
 
-*Ключ:* в отличие от замечания [-@rem:lec11:product-union], «$\cup$» стоит только в одном множителе: на рис. [-@fig:lec11:product] (где роль $C$ задачи играет отрезок $B$, а роль $B$ задачи — отрезок $C$) это квадраты $A \times B$ и $C \times B$ — одна горизонтальная полоса $(A \cup C) \times B$, без «перекрёстных» квадратов.
+*Ключ:* в отличие от замечания [-@rem:lec11:product-union], «$\cup$» стоит только в одном множителе: на рис. [-@fig:lec11:product] (где роль $C$ задачи играет отрезок $B$, а роль $B$ задачи — отрезок $C$) это квадраты $A \times B$ и $C \times B$: они стоят в одном ряду и вместе дают полосу $(A \cup C) \times B$, «перекрёстных» квадратов нет.
 :::
 
 ::: {.problem #prob:lec11:loop-pair}
@@ -283,7 +283,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec11:minus}
-Докажите, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найдите $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и изобразите его.
+Докажите, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найдите $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и опишите его как фигуру на плоскости.
 :::
 
 ::: answer
@@ -350,6 +350,8 @@ $\R^2$, $\R^3$
 8. Какая фигура в $\R^3 = \R^2 \times \R$ — множество $L \times \R$, где $L = \{(x, y) \in \R^2 \mid y = x\}$?
 9. Почему $A^1$ задаётся отдельно, а не формулой $A^{n+1} = A^n \times A$ при $n = 0$? Чему равны $\varnothing^0$ и $\varnothing^2$?
 10. Является ли множество $\{\{\{\varnothing\}\}, \{\{\varnothing\}, \varnothing\}\}$ упорядоченной парой? Если да, найдите её компоненты.
+11. Может ли быть $(a, b) \in a$?
+12. При каких $x$, $y$ выполнено $(x, 1, y) = (2, y, x)$?
 
 ::: answers
 1. Нет, по следствию [-@cor:lec11:pair-swap], так как $\varnothing \ne \{\varnothing\}$. $(\varnothing, \varnothing) = \{\{\varnothing\}, \{\varnothing, \varnothing\}\} = \{\{\varnothing\}\}$.
@@ -362,4 +364,6 @@ $\R^2$, $\R^3$
 8. Вертикальная плоскость, проходящая через ось $z$ и прямую $y = x$ плоскости $z = 0$: точки $(x, x, z)$ при всех $x, z \in \R$.
 9. Формула при $n = 0$ дала бы $A^1 = \{\varnothing\} \times A$ — пары $(\varnothing, a)$, а не элементы $A$ (замечание [-@rem:lec11:power0]). $\varnothing^0 = \{\varnothing\}$, $\varnothing^2 = \varnothing \times \varnothing = \varnothing$.
 10. Да: пересечение элементов равно $\{\{\varnothing\}\}$, поэтому первая компонента — $\{\varnothing\}$; объединение равно $\{\{\varnothing\}, \varnothing\}$, вторая компонента — $\varnothing$. Проверка: $(\{\varnothing\}, \varnothing) = \{\{\{\varnothing\}\}, \{\{\varnothing\}, \varnothing\}\}$.
+11. Нет: тогда $a \in \{a\} \in (a, b) \in a$, и $a \ni (a, b) \ni \{a\} \ni a \ni \dots$ — бесконечная цепочка, запрещённая аксиомой [-@ax:lec09:foundation].
+12. Ни при каких: по лемме [-@lem:lec11:tuple] $x = 2$, $1 = y$ и $y = x$, откуда $1 = 2$.
 :::
