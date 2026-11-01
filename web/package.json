@@ -23,12 +23,12 @@
   },
   "dependencies": {
     "@floating-ui/react-dom": "2.1.9",
-    "@tanstack/react-query": "5.104.4",
-    "html-react-parser": "6.1.8",
-    "katex": "0.19.0",
+    "@tanstack/react-query": "5.105.0",
+    "html-react-parser": "6.1.9",
+    "katex": "0.19.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router": "8.4.0",
+    "react-router": "8.5.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -41,9 +41,9 @@
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
     "@tsconfig/strictest": "2.0.8",
-    "@types/bun": "1.4.3",
+    "@types/bun": "1.4.4",
     "@types/katex": "0.16.8",
-    "@types/node": "26.6.5",
+    "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
@@ -68,11 +68,11 @@
     "jsdom": "30.1.3",
     "knip": "6.42.0",
     "lefthook": "2.2.2",
-    "playwright-core": "1.63.0",
+    "playwright-core": "1.64.1",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.2",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "5.0.5"
   }
 }
