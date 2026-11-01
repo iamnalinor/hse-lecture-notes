@@ -15,10 +15,10 @@ import { prepDescription } from "../src/domain/preps.ts";
 import { CatalogSchema } from "../src/domain/schemas.ts";
 import {
   escapeHtml,
+  fallbackBody,
   headTags,
   type LlmsSection,
   llmsTxt,
-  noscriptBody,
   robotsTxt,
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -29,12 +29,12 @@ import {
 const dist = new URL("../dist/", import.meta.url);
 
 const shell = await Bun.file(new URL("index.html", dist)).text();
-await Bun.write(new URL("404.html", dist), shell);
 
 const TITLE = /<title>.*?<\/title>/u;
 const DESCRIPTION = /(<meta name="description" content=")[^"]*(")/u;
 const OG_DESCRIPTION = /(<meta property="og:description" content=")[^"]*(")/u;
 const OG_TITLE = /(<meta property="og:title" content=")[^"]*(")/u;
+const ROOT = '<div id="root">';
 
 /** Replaces the part of the shell that the pattern finds; a missing tag fails the build. */
 const replaceIn = (
@@ -48,7 +48,7 @@ const replaceIn = (
   return html.replace(pattern, (_all, open: string, close: string) => replace(open, close));
 };
 
-const render = (page: SitePage): string => {
+const render = (page: SitePage, children: readonly SitePage[] = []): string => {
   const [title, text] = [escapeHtml(page.name), escapeHtml(page.description)];
   const isHome = page.route === "";
   const fullTitle = isHome ? SITE_NAME : `${title} — ${SITE_NAME}`;
@@ -58,7 +58,7 @@ const render = (page: SitePage): string => {
     [OG_DESCRIPTION, (open, close) => `${open}${text}${close}`],
     [OG_TITLE, (open, close) => `${open}${isHome ? SITE_NAME : title}${close}`],
     ["</head>", () => `  ${headTags(page)}\n  </head>`],
-    ["<body>", () => `<body>\n    ${noscriptBody(page)}`],
+    [ROOT, () => `${ROOT}${fallbackBody(page, children)}`],
   ];
   let html = shell;
   for (const [pattern, replace] of steps) {
@@ -79,6 +79,18 @@ const home: SitePage = {
   route: "",
   source: undefined,
 };
+
+/** Any unknown path (a stale link, a renamed lecture): no canonical or breadcrumbs, only where the text lies. */
+const notFound: SitePage = {
+  ...home,
+  description:
+    "Такой страницы нет: возможно, лекцию переименовали. Список всех страниц — в llms.txt.",
+  name: "Страница не найдена",
+};
+await Bun.write(
+  new URL("404.html", dist),
+  replaceIn(shell, ROOT, () => `${ROOT}${fallbackBody(notFound)}`),
+);
 
 const catalogFile = Bun.file(new URL("data/courses.json", dist));
 if (!(await catalogFile.exists())) {
@@ -148,9 +160,14 @@ const sections: LlmsSection[] = await Promise.all(
 const pages = sections.flatMap((section) => section.pages);
 await Promise.all([
   Bun.write(new URL("index.html", dist), render(home)),
-  ...pages.map(
-    async (page) => await Bun.write(new URL(`${page.route}/index.html`, dist), render(page)),
-  ),
+  // The course page comes first in its section and lists the Markdown of the rest.
+  ...sections.flatMap((section) => {
+    const [coursePage, ...children] = section.pages;
+    return section.pages.map(async (page) => {
+      const html = page === coursePage ? render(page, children) : render(page);
+      await Bun.write(new URL(`${page.route}/index.html`, dist), html);
+    });
+  }),
   Bun.write(new URL("sitemap.xml", dist), sitemapXml([home, ...pages])),
   Bun.write(new URL("robots.txt", dist), robotsTxt()),
   Bun.write(new URL("llms.txt", dist), llmsTxt(home.description, sections)),

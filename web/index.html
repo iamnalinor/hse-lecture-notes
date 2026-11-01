@@ -29,6 +29,13 @@
         });
       })();
     </script>
+    <!-- The page copies put a text fallback for clients without scripts into #root (src/domain/seo.ts):
+         the script above has set data-theme, so this browser runs scripts and React will draw the page. -->
+    <style>
+      html[data-theme] .static-fallback {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

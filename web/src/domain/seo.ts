@@ -16,6 +16,9 @@ compete with the site) and on a `<owner>.github.io/<repo>` deploy.
 export const SITE_URL = "https://hse.nalinor.dev/";
 export const REPO_URL = "https://github.com/iamnalinor/hse-lecture-notes";
 const RAW_URL = "https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/";
+const LLMS_URL = `${SITE_URL}llms.txt`;
+/** `index.html` hides this class once its inline script has run: see `fallbackBody`. */
+export const FALLBACK_CLASS = "static-fallback";
 
 /**
 Link previews (Telegram, VK, X): one picture for the site and one per course, `public/og/<id>.png`,
@@ -122,28 +125,43 @@ export const headTags = (page: SitePage): string => {
     `<meta property="og:url" content="${url}" />`,
     ...imageTags(page.image),
     ...source,
+    `<link rel="alternate" type="text/plain" href="${LLMS_URL}" title="llms.txt" />`,
     jsonLd(structuredData(page)),
   ].join("\n    ");
 };
 
-/** For clients that do not run scripts (LLM fetchers, simple crawlers): what the page is and where its text lies. */
-export const noscriptBody = (page: SitePage): string => {
+/**
+For clients that do not run scripts (LLM fetchers, HTML-to-Markdown converters, simple crawlers): what
+the page is and where its text lies. It goes inside `#root`, not into `<noscript>`: converters drop
+`<noscript>` together with its links. React replaces it on mount; until then `index.html` hides it
+from browsers that run scripts.
+*/
+export const fallbackBody = (page: SitePage, children: readonly SitePage[] = []): string => {
   const link = (href: string, text: string): string => `<a href="${escapeHtml(href)}">${text}</a>`;
+  // A course page lists the Markdown of its lectures and documents: one step to any of them.
+  const sources = children
+    .filter((child) => child.source !== undefined)
+    .map((child) => `<li>${link(sourceUrl(child.source ?? ""), escapeHtml(child.name))}</li>`);
   const links = [
     ...(page.source === undefined
       ? []
-      : [link(sourceUrl(page.source), "Текст страницы в Markdown")]),
+      : [
+          `Текст страницы в Markdown: ${link(sourceUrl(page.source), escapeHtml(sourceUrl(page.source)))}`,
+        ]),
     ...(page.pdf === undefined ? [] : [link(SITE_URL + page.pdf, "PDF")]),
+    `Все страницы со ссылками на Markdown: ${link(LLMS_URL, LLMS_URL)}`,
     link(REPO_URL, "Исходники всех конспектов на GitHub"),
-    link(`${SITE_URL}llms.txt`, "Список страниц для LLM"),
   ];
-  const items = links.map((link) => `<li>${link}</li>`).join("");
+  const items = links.map((item) => `<li>${item}</li>`).join("");
   return [
-    "<noscript>",
+    `<div class="${FALLBACK_CLASS}">`,
     `<h1>${escapeHtml(page.name)}</h1>`,
     `<p>${escapeHtml(page.description)}</p>`,
     `<ul>${items}</ul>`,
-    "</noscript>",
+    ...(sources.length === 0
+      ? []
+      : ["<p>Markdown страниц раздела:</p>", `<ul>${sources.join("")}</ul>`]),
+    "</div>",
   ].join("");
 };
 
@@ -177,7 +195,7 @@ export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): stri
     "",
     `> ${summary}`,
     "",
-    "Сайт — одностраничное приложение: без JavaScript страницы пустые. Читайте Markdown-исходники:",
+    "Сайт — одностраничное приложение: без JavaScript на страницах только ссылки. Читайте Markdown-исходники:",
     `весь репозиторий — ${REPO_URL}, конспекты лекций — \`notes/<курс>/<week_id>.md\`, теория курса — \`theory/<курс>.md\`,`,
     "план учебной дисциплины — `program/<курс>.md`, подготовка к контрольным и коллоквиумам — `prep/<курс>/<id>.md`.",
     "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида `{#thm:lec04:laplace}`.",

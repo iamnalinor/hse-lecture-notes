@@ -121,5 +121,7 @@ jobs:
           curl --fail --silent "${URL}sitemap.xml" | grep -q '<loc>https://hse.nalinor.dev/calculus/kr1/</loc>'
           curl --fail --silent "${URL}robots.txt" | grep -q 'Sitemap: https://hse.nalinor.dev/sitemap.xml'
           curl --fail --silent "${URL}llms.txt" | grep -q 'raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/'
+          # Clients without JS get the Markdown link inside #root (converters drop <noscript>)
+          curl --fail --silent "${URL}algebra/theory/" | grep -q '<div id="root"><div class="static-fallback">.*raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/theory/algebra.md'
           curl --fail --silent "${URL}sw.js" >/dev/null
           curl --fail --silent "${URL}offline-manifest.json" | grep -q '"precache"'
