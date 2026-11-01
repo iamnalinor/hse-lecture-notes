@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import shell from "../../index.html?raw";
 import {
+  FALLBACK_CLASS,
+  fallbackBody,
   headTags,
   llmsTxt,
-  noscriptBody,
   pageUrl,
   robotsTxt,
   routeOf,
@@ -75,10 +76,29 @@ describe("seo", () => {
   });
 
   it("escapes the text it puts into HTML, also inside JSON-LD", () => {
-    expect(noscriptBody(lecture)).toContain("матрицы &lt;и&gt; «операции»");
+    expect(fallbackBody(lecture)).toContain("матрицы &lt;и&gt; «операции»");
     const tags = headTags({ ...lecture, name: "</script><b>" });
     expect(tags.split("</script>")).toHaveLength(2);
     expect(tags).toContain(String.raw`\u003c/script>\u003cb>`);
+  });
+
+  it("points clients without scripts to the Markdown of this very page, outside <noscript>", () => {
+    const body = fallbackBody(lecture);
+    expect(body).not.toContain("noscript");
+    expect(body).toContain(
+      'href="https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md"',
+    );
+    expect(body).toContain('href="https://hse.nalinor.dev/llms.txt"');
+    expect(fallbackBody(home)).toContain('href="https://hse.nalinor.dev/llms.txt"');
+    expect(headTags(lecture)).toContain(
+      '<link rel="alternate" type="text/plain" href="https://hse.nalinor.dev/llms.txt" title="llms.txt" />',
+    );
+  });
+
+  it("hides the text fallback from browsers that run scripts", () => {
+    expect(fallbackBody(home)).toContain(`<div class="${FALLBACK_CLASS}">`);
+    expect(shell).toContain(`html[data-theme] .${FALLBACK_CLASS} {`);
+    expect(shell).toContain('<div id="root"></div>');
   });
 
   it("lists the pages for search engines and LLMs", () => {

@@ -15,10 +15,10 @@ import { prepDescription } from "../src/domain/preps.ts";
 import { CatalogSchema } from "../src/domain/schemas.ts";
 import {
   escapeHtml,
+  fallbackBody,
   headTags,
   type LlmsSection,
   llmsTxt,
-  noscriptBody,
   robotsTxt,
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -29,12 +29,12 @@ import {
 const dist = new URL("../dist/", import.meta.url);
 
 const shell = await Bun.file(new URL("index.html", dist)).text();
-await Bun.write(new URL("404.html", dist), shell);
 
 const TITLE = /<title>.*?<\/title>/u;
 const DESCRIPTION = /(<meta name="description" content=")[^"]*(")/u;
 const OG_DESCRIPTION = /(<meta property="og:description" content=")[^"]*(")/u;
 const OG_TITLE = /(<meta property="og:title" content=")[^"]*(")/u;
+const ROOT = '<div id="root">';
 
 /** Replaces the part of the shell that the pattern finds; a missing tag fails the build. */
 const replaceIn = (
@@ -58,7 +58,7 @@ const render = (page: SitePage): string => {
     [OG_DESCRIPTION, (open, close) => `${open}${text}${close}`],
     [OG_TITLE, (open, close) => `${open}${isHome ? SITE_NAME : title}${close}`],
     ["</head>", () => `  ${headTags(page)}\n  </head>`],
-    ["<body>", () => `<body>\n    ${noscriptBody(page)}`],
+    [ROOT, () => `${ROOT}${fallbackBody(page)}`],
   ];
   let html = shell;
   for (const [pattern, replace] of steps) {
@@ -79,6 +79,12 @@ const home: SitePage = {
   route: "",
   source: undefined,
 };
+
+// Any unknown path: no canonical or breadcrumbs of a real page, only where the text lies.
+await Bun.write(
+  new URL("404.html", dist),
+  replaceIn(shell, ROOT, () => `${ROOT}${fallbackBody(home)}`),
+);
 
 const catalogFile = Bun.file(new URL("data/courses.json", dist));
 if (!(await catalogFile.exists())) {
