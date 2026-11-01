@@ -90,6 +90,10 @@ describe("seo", () => {
     );
     expect(body).toContain('href="https://hse.nalinor.dev/llms.txt"');
     expect(fallbackBody(home)).toContain('href="https://hse.nalinor.dev/llms.txt"');
+    expect(fallbackBody(home, [lecture])).toContain(
+      '<a href="https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md">Алгебра, лекция 1: матрицы</a>',
+    );
+    expect(fallbackBody(home)).not.toContain("Markdown страниц раздела");
     expect(headTags(lecture)).toContain(
       '<link rel="alternate" type="text/plain" href="https://hse.nalinor.dev/llms.txt" title="llms.txt" />',
     );

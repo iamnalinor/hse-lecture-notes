@@ -136,8 +136,12 @@ the page is and where its text lies. It goes inside `#root`, not into `<noscript
 `<noscript>` together with its links. React replaces it on mount; until then `index.html` hides it
 from browsers that run scripts.
 */
-export const fallbackBody = (page: SitePage): string => {
+export const fallbackBody = (page: SitePage, children: readonly SitePage[] = []): string => {
   const link = (href: string, text: string): string => `<a href="${escapeHtml(href)}">${text}</a>`;
+  // A course page lists the Markdown of its lectures and documents: one step to any of them.
+  const sources = children
+    .filter((child) => child.source !== undefined)
+    .map((child) => `<li>${link(sourceUrl(child.source ?? ""), escapeHtml(child.name))}</li>`);
   const links = [
     ...(page.source === undefined
       ? []
@@ -154,6 +158,9 @@ export const fallbackBody = (page: SitePage): string => {
     `<h1>${escapeHtml(page.name)}</h1>`,
     `<p>${escapeHtml(page.description)}</p>`,
     `<ul>${items}</ul>`,
+    ...(sources.length === 0
+      ? []
+      : ["<p>Markdown страниц раздела:</p>", `<ul>${sources.join("")}</ul>`]),
     "</div>",
   ].join("");
 };
