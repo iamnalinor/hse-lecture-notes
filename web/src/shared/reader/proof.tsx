@@ -1,11 +1,16 @@
 import type { ReactNode } from "react";
 
-type Props = { readonly children: ReactNode; readonly collapsed: boolean };
+type Props = {
+  readonly children: ReactNode;
+  readonly collapsed: boolean;
+  /** «Доказательство теоремы 5.3.» when the proof has a title; plain «Доказательство.» otherwise. */
+  readonly label?: ReactNode;
+};
 
-export const Proof = ({ children, collapsed }: Props) => (
+export const Proof = ({ children, collapsed, label }: Props) => (
   <details className="group -mt-1.5 mb-7" open={!collapsed}>
     <summary className="flex cursor-pointer list-none items-baseline gap-2.5 [&::-webkit-details-marker]:hidden">
-      <span className="italic">Доказательство.</span>
+      <span className="italic">{label ?? "Доказательство."}</span>
       <span className="ml-auto rounded-full border border-rule px-2.5 py-0.5 text-xs whitespace-nowrap text-muted">
         <span className="group-open:hidden">развернуть</span>
         <span className="hidden group-open:inline">свернуть</span>

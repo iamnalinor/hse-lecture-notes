@@ -67,6 +67,17 @@ describe("FragmentView proofs and problems", () => {
     expect(second?.open).toBe(true);
   });
 
+  it("shows the proof title in the summary, not in the body", () => {
+    const body = "слово ".repeat(200);
+    view(`<div class="nb-proof"><p><em>Доказательство теоремы Лапласа.</em> ${body}</p></div>
+      <div class="nb-proof"><p><em>Доказательство.</em> Коротко.</p></div>`);
+    const summaries = [...document.querySelectorAll("summary")].map((s) => s.textContent);
+    expect(summaries[0]).toContain("Доказательство теоремы Лапласа.");
+    expect(summaries[1]).toContain("Доказательство.");
+    const bodies = [...document.querySelectorAll("details > div")].map((d) => d.textContent);
+    expect(bodies.join(" ")).not.toContain("Доказательство");
+  });
+
   it("keeps the solution behind a button while the answer is open", async () => {
     view(`<div class="nb nb-problem" data-type="problem" data-number="4.26">
       <div class="nb-head"><span class="nb-name">Задача 4.26</span></div>
