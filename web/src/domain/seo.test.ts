@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import shell from "../../index.html?raw";
 import {
   FALLBACK_CLASS,
+  fallbackArticle,
   fallbackBody,
   headTags,
   llmsTxt,
@@ -82,6 +83,23 @@ describe("seo", () => {
     expect(tags).toContain(String.raw`\u003c/script>\u003cb>`);
   });
 
+  it("carries the page text with LaTeX, pictures from data/ and headings under the title", () => {
+    const fragment = [
+      '<section class="level1"><h1>Контекст</h1>',
+      '<p>Пусть <span class="math inline">\\(a_{ij}\\)</span>, см. <a href="../02_sep09_gauss/#x" class="ref">2.7</a>.</p>',
+      '<figure><img src="fig/abc.svg" alt="Рис. 1.2"></figure></section>',
+    ].join("");
+    const article = fallbackArticle(fragment, lecture.route);
+    expect(article).toContain("<h2>Контекст</h2>");
+    expect(article).toContain(String.raw`\(a_{ij}\)`);
+    expect(article).toContain('href="../02_sep09_gauss/#x"');
+    expect(article).toContain('src="../../data/algebra/01_sep03_matrices/fig/abc.svg"');
+    const body = fallbackBody(lecture, { article });
+    expect(body).toContain(`<article>\n${article}\n</article>`);
+    expect(body.match(/<h1>/gu)).toHaveLength(1);
+    expect(fallbackBody(lecture)).not.toContain("<article>");
+  });
+
   it("points clients without scripts to the Markdown of this very page, outside <noscript>", () => {
     const body = fallbackBody(lecture);
     expect(body).not.toContain("noscript");
@@ -90,7 +108,7 @@ describe("seo", () => {
     );
     expect(body).toContain('href="https://hse.nalinor.dev/llms.txt"');
     expect(fallbackBody(home)).toContain('href="https://hse.nalinor.dev/llms.txt"');
-    expect(fallbackBody(home, [lecture])).toContain(
+    expect(fallbackBody(home, { children: [lecture] })).toContain(
       '<a href="https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md">Алгебра, лекция 1: матрицы</a>',
     );
     expect(fallbackBody(home)).not.toContain("Markdown страниц раздела");

@@ -1,7 +1,8 @@
 /**
 What search engines and LLMs read without running the app. `scripts/spa-fallback.ts` puts these tags
 into the shell of every page and writes `sitemap.xml`, `robots.txt` and `llms.txt` next to them.
-The Markdown sources live in the public repository: an LLM reads them better than the rendered page.
+The page copies carry the text of the page; the Markdown sources in the public repository are
+the most exact form of it.
 */
 import { type CourseId, findCourse } from "./courses.ts";
 
@@ -131,12 +132,41 @@ export const headTags = (page: SitePage): string => {
 };
 
 /**
-For clients that do not run scripts (LLM fetchers, HTML-to-Markdown converters, simple crawlers): what
-the page is and where its text lies. It goes inside `#root`, not into `<noscript>`: converters drop
-`<noscript>` together with its links. React replaces it on mount; until then `index.html` hides it
-from browsers that run scripts.
+The text of a page for its fallback (`data/<route>/fragment.html`, `context/site.md`): formulas stay
+LaTeX in `span.math`, links between lectures are relative to `/<route>/` already. Pictures are
+relative to the fragment (`fig/<sha1>.svg`), so they get the path to `data/<route>/`; headings go one
+level down under the page's `<h1>`.
 */
-export const fallbackBody = (page: SitePage, children: readonly SitePage[] = []): string => {
+export const fallbackArticle = (fragment: string, route: string): string => {
+  const up = "../".repeat(route.split("/").length);
+  return fragment
+    .replaceAll(
+      /(<img\b[^>]*?\ssrc=")fig\//gu,
+      (_src, open: string) => `${open}${up}data/${route}/fig/`,
+    )
+    .replaceAll(
+      /<(\/?)h([1-5])\b/gu,
+      (_tag, close: string, level: string) => `<${close}h${String(Number(level) + 1)}`,
+    );
+};
+
+type FallbackContent = {
+  /** The page text from `fallbackArticle`: search engines, previews and LLMs read it in one request. */
+  readonly article?: string | undefined;
+  /** A course page lists the Markdown of its lectures and documents. */
+  readonly children?: readonly SitePage[];
+};
+
+/**
+For clients that do not run scripts (LLM fetchers, HTML-to-Markdown converters, simple crawlers): what
+the page is, its text and where its source lies. It goes inside `#root`, not into `<noscript>`:
+converters drop `<noscript>` together with its links. React replaces it on mount; until then
+`index.html` hides it from browsers that run scripts, so it never flashes on a slow load.
+*/
+export const fallbackBody = (
+  page: SitePage,
+  { article, children = [] }: FallbackContent = {},
+): string => {
   const link = (href: string, text: string): string => `<a href="${escapeHtml(href)}">${text}</a>`;
   // A course page lists the Markdown of its lectures and documents: one step to any of them.
   const sources = children
@@ -161,6 +191,7 @@ export const fallbackBody = (page: SitePage, children: readonly SitePage[] = [])
     ...(sources.length === 0
       ? []
       : ["<p>Markdown страниц раздела:</p>", `<ul>${sources.join("")}</ul>`]),
+    ...(article === undefined ? [] : [`<article>\n${article}\n</article>`]),
     "</div>",
   ].join("");
 };
@@ -182,7 +213,7 @@ export type LlmsSection = {
   readonly title: string;
 };
 
-/** The link goes to the Markdown an LLM can read; the page itself is empty without JavaScript. */
+/** The link goes to the Markdown: the source an LLM reads best (the page copy has the text too). */
 const llmsLine = (page: SitePage): string =>
   page.source === undefined
     ? `- [${page.name}](${pageUrl(page.route)}): ${page.description}`
@@ -195,7 +226,7 @@ export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): stri
     "",
     `> ${summary}`,
     "",
-    "Сайт — одностраничное приложение: без JavaScript на страницах только ссылки. Читайте Markdown-исходники:",
+    "Сайт — одностраничное приложение; HTML каждой страницы содержит и её текст (формулы — LaTeX), но точнее всего Markdown-исходники:",
     `весь репозиторий — ${REPO_URL}, конспекты лекций — \`notes/<курс>/<week_id>.md\`, теория курса — \`theory/<курс>.md\`,`,
     "план учебной дисциплины — `program/<курс>.md`, подготовка к контрольным и коллоквиумам — `prep/<курс>/<id>.md`.",
     "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида `{#thm:lec04:laplace}`.",
