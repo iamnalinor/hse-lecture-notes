@@ -138,12 +138,17 @@ const proofLead = (proofNode: Element): Element | undefined => {
 
 const proof: Handler = (node, _options, replace) => {
   const lead = proofLead(node);
+  const paragraph = lead?.parent;
+  // A proof that opens with a list or display math has a paragraph of the lead alone: drop it whole.
+  const isLeadOnly = paragraph instanceof Element && textOf(paragraph).trim() === textOf(lead);
+  const body = (node.children as DOMNode[]).filter((child) => !isLeadOnly || child !== paragraph);
   return (
     <Proof
       collapsed={textOf(node).length > LONG_PROOF_CHARS}
-      label={lead === undefined ? undefined : children(lead, replace)}
+      // Plain text: a reference in the title would turn a tap on the summary into a link or a preview.
+      label={lead === undefined ? undefined : textOf(lead)}
     >
-      {children(node, replace)}
+      {domToReact(body, { replace })}
     </Proof>
   );
 };

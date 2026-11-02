@@ -52,10 +52,16 @@ const replaceIn = (
 
 /** The text of a lecture, the theory, the program or a prep: `data/<route>/fragment.html`, if built. */
 const articleOf = async (page: SitePage): Promise<string | undefined> => {
+  if (page.source === undefined) {
+    return undefined;
+  }
   const fragment = Bun.file(new URL(`data/${page.route}/fragment.html`, dist));
-  return page.source !== undefined && (await fragment.exists())
-    ? fallbackArticle(await fragment.text(), page.route)
-    : undefined;
+  if (!(await fragment.exists())) {
+    // A page with a source but no text: the data pull is broken, the copy still has its links.
+    console.warn(`dist/data/${page.route}/fragment.html is missing: its page copy has no text`);
+    return undefined;
+  }
+  return fallbackArticle(await fragment.text(), page.route);
 };
 
 const render = async (page: SitePage, children: readonly SitePage[] = []): Promise<string> => {

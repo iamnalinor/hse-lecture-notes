@@ -86,14 +86,18 @@ describe("seo", () => {
   it("carries the page text with LaTeX, pictures from data/ and headings under the title", () => {
     const fragment = [
       '<section class="level1"><h1>Контекст</h1>',
-      '<p>Пусть <span class="math inline">\\(a_{ij}\\)</span>, см. <a href="../02_sep09_gauss/#x" class="ref">2.7</a>.</p>',
+      '<p>Пусть <span class="math inline">a_{ij}</span>, см. <a href="../02_sep09_gauss/#x" class="ref">2.7</a>.</p>',
+      '<span class="nb-eq"><span\nclass="math display">\\det A = 0</span></span>',
       '<figure><img src="fig/abc.svg" alt="Рис. 1.2"></figure></section>',
     ].join("");
     const article = fallbackArticle(fragment, lecture.route);
     expect(article).toContain("<h2>Контекст</h2>");
-    expect(article).toContain(String.raw`\(a_{ij}\)`);
     expect(article).toContain('href="../02_sep09_gauss/#x"');
-    expect(article).toContain('src="../../data/algebra/01_sep03_matrices/fig/abc.svg"');
+    expect(article).toContain(String.raw`<span class="math inline">\(a_{ij}\)</span>`);
+    expect(article).toContain(String.raw`<span class="math display">\[\det A = 0\]</span>`);
+    expect(article).toContain(
+      '<img loading="lazy" src="../../data/algebra/01_sep03_matrices/fig/abc.svg"',
+    );
     const body = fallbackBody(lecture, { article });
     expect(body).toContain(`<article>\n${article}\n</article>`);
     expect(body.match(/<h1>/gu)).toHaveLength(1);

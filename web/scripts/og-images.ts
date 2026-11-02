@@ -5,7 +5,7 @@ card. The pictures are committed: run this after a course's name, lecturer or sy
 
     bun scripts/og-images.ts
 
-Needs Chromium of Playwright 1.63 (`npx playwright@1.63.0 install chromium`, or `PLAYWRIGHT_BROWSERS_PATH`).
+Needs Chromium of Playwright 1.64 (`npx playwright@1.64.1 install chromium`, or `PLAYWRIGHT_BROWSERS_PATH`).
 */
 import { renderToString } from "katex";
 import { mkdtemp, rm } from "node:fs/promises";

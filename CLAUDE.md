@@ -17,8 +17,8 @@ uv run pytest -q                # тесты фильтра, сборки, ли�
 
 1. `./scripts/setup.sh` (идемпотентен, первый раз ~5 минут: качает TinyTeX и пакеты TeX Live, делает `uv sync --locked`). Без него `build.py` и часть `pytest` падают с `FileNotFoundError: 'xelatex'`. PATH не сохраняется между командами: в каждой, где нужен TeX, — `export PATH="$HOME/.TinyTeX/bin/x86_64-linux:$PATH"`.
 2. `cd web && bun install` — иначе `bun run lint`/`test` падают с `biome: command not found`. Он же ставит git-хуки lefthook: pre-commit гоняет `bun run lint`, pre-push — `bun run test` (только при правках в `web/`).
-3. Сайт с настоящими данными: `uv run scripts/build.py`, затем `cp -r build/site-data web/public/data && find web/public/data -name index.html -delete` (как в `pages.yml`; `web/public/data` в `.gitignore`), `bun run build` и `bunx vite preview` из `web/`. Без данных `bun run build` собирает только оболочку и `404.html`.
-4. Playwright с Chromium уже стоит в контейнере (`require('playwright')`), ставить его заново не нужно.
+3. Сайт с настоящими данными: `uv run scripts/build.py`, затем `rm -rf web/public/data && cp -r build/site-data web/public/data && find web/public/data -name index.html -delete` (как в `pages.yml`; `web/public/data` в `.gitignore`), `bun run build` и `bunx vite preview` из `web/`. Без данных `bun run build` собирает только оболочку и `404.html`.
+4. Playwright с Chromium уже стоит в контейнере (`require('playwright')`) — для проверок в браузере ставить его заново не нужно. `bun og:images` требует Chromium той версии Playwright, что в `web/package.json` (см. `web/scripts/og-images.ts`).
 
 Код пайплайна: `filters/notes.lua` (нумерация, блоки, ссылки), `templates/` (LaTeX-стиль, шаблоны, макросы), `scripts/` (сборка, линт). CI — `.github/workflows/build.yml`. `build/`, `.cache/`, `sources/` не коммитятся.
 

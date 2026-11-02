@@ -133,16 +133,26 @@ export const headTags = (page: SitePage): string => {
 
 /**
 The text of a page for its fallback (`data/<route>/fragment.html`, `context/site.md`): formulas stay
-LaTeX in `span.math`, links between lectures are relative to `/<route>/` already. Pictures are
-relative to the fragment (`fig/<sha1>.svg`), so they get the path to `data/<route>/`; headings go one
-level down under the page's `<h1>`.
+LaTeX in `span.math`, wrapped in `\\( \\)` and `\\[ \\]` so an HTML-to-Markdown converter that drops the
+class keeps them apart from the prose; links between lectures are relative to `/<route>/` already.
+Pictures are relative to the fragment (`fig/<sha1>.svg`), so they get the path to `data/<route>/`
+and `loading="lazy"`: a hidden lazy image is never fetched, so browsers that run scripts do not pay
+for them. Headings go one level down under the page's `<h1>`.
 */
 export const fallbackArticle = (fragment: string, route: string): string => {
   const up = "../".repeat(route.split("/").length);
   return fragment
     .replaceAll(
-      /(<img\b[^>]*?\ssrc=")fig\//gu,
-      (_src, open: string) => `${open}${up}data/${route}/fig/`,
+      /<img\b([^>]*?\ssrc=")fig\//gu,
+      (_src, attributes: string) => `<img loading="lazy"${attributes}${up}data/${route}/fig/`,
+    )
+    .replaceAll(
+      /<span\s+class="math (inline|display)">([^<]*)<\/span>/gu,
+      // Pandoc wraps lines inside tags too: `<span\nclass="math inline">`.
+      (_math, kind: string, tex: string) => {
+        const [open, close] = kind === "inline" ? [String.raw`\(`, String.raw`\)`] : ["\\[", "\\]"];
+        return `<span class="math ${kind}">${open}${tex}${close}</span>`;
+      },
     )
     .replaceAll(
       /<(\/?)h([1-5])\b/gu,
