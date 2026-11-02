@@ -26,13 +26,12 @@ class FakeConnection extends EventTarget {
   }
 }
 
-type Run = {
-  readonly finish: () => void;
-  readonly signal: AbortSignal;
-};
-
 /** A plan whose start, runs and phases the test drives and inspects. */
 const harness = (connection: FakeConnection | undefined) => {
+  type Run = {
+    readonly finish: () => void;
+    readonly signal: AbortSignal;
+  };
   const runs: Run[] = [];
   const phases: BackgroundPhase[] = [];
   const settled = { start: (): void => undefined };

@@ -5,7 +5,8 @@ deep links (`/algebra/04_sep23_determinant_properties/`) work properly:
 - `404.html` is the app shell, so any path still boots the router;
 - every known page also gets its own `<path>/index.html`: the same shell, but served with 200 and
   with its own title, description, canonical URL and breadcrumbs (`src/domain/seo.ts`), so links,
-  previews and search engines see a real page.
+  previews and search engines see a real page; a lecture, the theory, the program and a prep carry
+  their whole text (`fragment.html`) for clients that do not run scripts.
 
 The same list of pages becomes `sitemap.xml` and `llms.txt` (with `robots.txt` beside them).
 */
@@ -15,6 +16,7 @@ import { prepDescription } from "../src/domain/preps.ts";
 import { CatalogSchema } from "../src/domain/schemas.ts";
 import {
   escapeHtml,
+  fallbackArticle,
   fallbackBody,
   headTags,
   type LlmsSection,
@@ -48,7 +50,22 @@ const replaceIn = (
   return html.replace(pattern, (_all, open: string, close: string) => replace(open, close));
 };
 
-const render = (page: SitePage, children: readonly SitePage[] = []): string => {
+/** The text of a lecture, the theory, the program or a prep: `data/<route>/fragment.html`, if built. */
+const articleOf = async (page: SitePage): Promise<string | undefined> => {
+  if (page.source === undefined) {
+    return undefined;
+  }
+  const fragment = Bun.file(new URL(`data/${page.route}/fragment.html`, dist));
+  if (!(await fragment.exists())) {
+    // A page with a source but no text: the data pull is broken, the copy still has its links.
+    console.warn(`dist/data/${page.route}/fragment.html is missing: its page copy has no text`);
+    return undefined;
+  }
+  return fallbackArticle(await fragment.text(), page.route);
+};
+
+const render = async (page: SitePage, children: readonly SitePage[] = []): Promise<string> => {
+  const article = await articleOf(page);
   const [title, text] = [escapeHtml(page.name), escapeHtml(page.description)];
   const isHome = page.route === "";
   const fullTitle = isHome ? SITE_NAME : `${title} — ${SITE_NAME}`;
@@ -58,7 +75,7 @@ const render = (page: SitePage, children: readonly SitePage[] = []): string => {
     [OG_DESCRIPTION, (open, close) => `${open}${text}${close}`],
     [OG_TITLE, (open, close) => `${open}${isHome ? SITE_NAME : title}${close}`],
     ["</head>", () => `  ${headTags(page)}\n  </head>`],
-    [ROOT, () => `${ROOT}${fallbackBody(page, children)}`],
+    [ROOT, () => `${ROOT}${fallbackBody(page, { article, children })}`],
   ];
   let html = shell;
   for (const [pattern, replace] of steps) {
@@ -159,12 +176,14 @@ const sections: LlmsSection[] = await Promise.all(
 );
 const pages = sections.flatMap((section) => section.pages);
 await Promise.all([
-  Bun.write(new URL("index.html", dist), render(home)),
+  (async () => {
+    await Bun.write(new URL("index.html", dist), await render(home));
+  })(),
   // The course page comes first in its section and lists the Markdown of the rest.
   ...sections.flatMap((section) => {
     const [coursePage, ...children] = section.pages;
     return section.pages.map(async (page) => {
-      const html = page === coursePage ? render(page, children) : render(page);
+      const html = await (page === coursePage ? render(page, children) : render(page));
       await Bun.write(new URL(`${page.route}/index.html`, dist), html);
     });
   }),

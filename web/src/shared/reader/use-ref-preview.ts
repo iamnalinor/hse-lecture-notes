@@ -33,13 +33,12 @@ const useDismiss = (
   }, [close, inside, isOpen]);
 };
 
-type Intent = { readonly delay: number; readonly open: boolean };
-
 /**
 Hover card behaviour: mouse hover and keyboard focus open it, a first tap on a touch
 screen opens it instead of following the link (the second tap follows).
 */
 export const useRefPreview = () => {
+  type Intent = { readonly delay: number; readonly open: boolean };
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [card, setCard] = useState<HTMLElement | null>(null);

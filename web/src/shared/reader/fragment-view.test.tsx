@@ -67,6 +67,26 @@ describe("FragmentView proofs and problems", () => {
     expect(second?.open).toBe(true);
   });
 
+  it("shows the proof title in the summary, not in the body", () => {
+    const body = "слово ".repeat(200);
+    view(`<div class="nb-proof"><p><em>Доказательство теоремы Лапласа.</em> ${body}</p></div>
+      <div class="nb-proof"><p><em>Доказательство.</em> Коротко.</p></div>`);
+    const summaries = [...document.querySelectorAll("summary")].map((s) => s.textContent);
+    expect(summaries[0]).toContain("Доказательство теоремы Лапласа.");
+    expect(summaries[1]).toContain("Доказательство.");
+    const bodies = [...document.querySelectorAll("details > div")].map((d) => d.textContent);
+    expect(bodies.join(" ")).not.toContain("Доказательство");
+  });
+
+  it("keeps a reference in the proof title as text and drops a lead-only paragraph", () => {
+    view(`<div class="nb-proof"><p><em>Доказательство теоремы <a href="#thm:x" class="ref" data-ref="thm:x">6.2</a>.</em></p>
+      <span class="math display">x = 1</span></div>`);
+    const summary = document.querySelector("summary");
+    expect(summary?.textContent).toContain("Доказательство теоремы 6.2.");
+    expect(summary?.querySelector("a")).toBeNull();
+    expect(document.querySelector("details > div p")).toBeNull();
+  });
+
   it("keeps the solution behind a button while the answer is open", async () => {
     view(`<div class="nb nb-problem" data-type="problem" data-number="4.26">
       <div class="nb-head"><span class="nb-name">Задача 4.26</span></div>

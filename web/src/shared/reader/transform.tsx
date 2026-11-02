@@ -121,15 +121,42 @@ const absorbedAnswer: Handler = (node) => {
   return isAbsorbed ? <span hidden /> : undefined;
 };
 
-const proof: Handler = (node, _options, replace) => (
-  <Proof collapsed={textOf(node).length > LONG_PROOF_CHARS}>{children(node, replace)}</Proof>
-);
+const firstElement = (nodes: readonly DOMNode[]): Element | undefined =>
+  nodes.find((child): child is Element => child instanceof Element);
+
+/** The filter opens a proof with `<em>Доказательство[ title].</em>`; the summary shows it instead. */
+const proofLead = (proofNode: Element): Element | undefined => {
+  const paragraph = firstElement(proofNode.children as DOMNode[]);
+  if (paragraph?.name !== "p") {
+    return undefined;
+  }
+  const [lead] = paragraph.children;
+  return lead instanceof Element && lead.name === "em" && textOf(lead).startsWith("Доказательство")
+    ? lead
+    : undefined;
+};
+
+const proof: Handler = (node, _options, replace) => {
+  const lead = proofLead(node);
+  const paragraph = lead?.parent;
+  // A proof that opens with a list or display math has a paragraph of the lead alone: drop it whole.
+  const isLeadOnly = paragraph instanceof Element && textOf(paragraph).trim() === textOf(lead);
+  const body = (node.children as DOMNode[]).filter((child) => !isLeadOnly || child !== paragraph);
+  return (
+    <Proof
+      collapsed={textOf(node).length > LONG_PROOF_CHARS}
+      // Plain text: a reference in the title would turn a tap on the summary into a link or a preview.
+      label={lead === undefined ? undefined : textOf(lead)}
+    >
+      {domToReact(body, { replace })}
+    </Proof>
+  );
+};
 
 const proofLabel: Handler = (node) => {
-  const isLead = node.parent instanceof Element && node.parent.name === "p";
-  const isInProof =
-    isLead && node.parent?.parent instanceof Element && hasClass(node.parent.parent, "nb-proof");
-  return isInProof && textOf(node).trim() === "Доказательство." ? <span hidden /> : undefined;
+  const proofNode = node.parent?.parent;
+  const isLead = proofNode instanceof Element && hasClass(proofNode, "nb-proof");
+  return isLead && proofLead(proofNode) === node ? <span hidden /> : undefined;
 };
 
 const image: Handler = (node, options) => {
