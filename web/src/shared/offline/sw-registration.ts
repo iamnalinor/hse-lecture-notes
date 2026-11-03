@@ -2,6 +2,8 @@ import { useSyncExternalStore } from "react";
 
 import { isOfflineSupported } from "#web/api/offline-cache.ts";
 
+import { whenPageSettled } from "./background-download.ts";
+
 const UPDATE_CHECK_MS = 60_000;
 const FRESH_REPLY_MS = 1000;
 const SWITCH_TIMEOUT_MS = 3000;
@@ -69,7 +71,12 @@ const adopt = (worker: ServiceWorker): void => {
       store.adopting = undefined;
     }
   });
-  worker.postMessage({ type: "skip-waiting" });
+  // Not while the page still loads through the old worker: Chrome then stops that worker mid-request,
+  // the new one may never activate, and the next page load hangs. Once the page is idle the switch
+  // is like a press of «Обновить».
+  whenPageSettled(() => {
+    worker.postMessage({ type: "skip-waiting" });
+  });
 };
 
 /**

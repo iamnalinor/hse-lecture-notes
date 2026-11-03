@@ -3,6 +3,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("#web/api/offline-cache.ts", () => ({ isOfflineSupported: () => true }));
 
+/** Tasks waiting for the page to settle; `pageSettles` runs them. */
+const settleQueue: (() => void)[] = [];
+vi.mock("./background-download.ts", () => ({
+  whenPageSettled: (start: () => void) => {
+    settleQueue.push(start);
+    return () => undefined;
+  },
+}));
+
+const pageSettles = (): void => {
+  for (const start of settleQueue.splice(0)) {
+    start();
+  }
+};
+
 type Message = { readonly type: string };
 
 /** A service worker that records what the page posts and answers «is-fresh». */
@@ -79,6 +94,7 @@ const settle = async (): Promise<void> => {
 describe("registerServiceWorker", () => {
   beforeEach(() => {
     vi.resetModules();
+    settleQueue.length = 0;
   });
 
   afterEach(() => {
@@ -91,12 +107,15 @@ describe("registerServiceWorker", () => {
     expect(hasBanner()).toBe(true);
   });
 
-  it("switches a fresh page to the new worker quietly", async () => {
+  it("switches a fresh page to the new worker quietly once the page settles", async () => {
     const { container, hasBanner } = await setup({ isFresh: true });
     const next = new FakeWorker("installing");
     container.registration.startInstall(next);
     next.becomes("installed");
     await settle();
+    // Not while the page still loads through the old worker.
+    expect(next.posted).toStrictEqual([]);
+    pageSettles();
     expect(next.posted).toStrictEqual(["skip-waiting"]);
     container.switchTo(next);
     await settle();
@@ -114,6 +133,7 @@ describe("registerServiceWorker", () => {
     container.registration.dispatchEvent(new Event("updatefound"));
     next.becomes("installed");
     await settle();
+    pageSettles();
     expect(next.posted).toStrictEqual(["skip-waiting"]);
     expect(renderHook(() => module.useHasUpdate()).result.current).toBe(false);
   });
