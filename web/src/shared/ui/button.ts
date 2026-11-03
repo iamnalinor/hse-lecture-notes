@@ -1,10 +1,12 @@
 /*
 The site's buttons: one primary (ink fill), one secondary (hairline), and the signal fill for a test
 that is close (`isHighlighted`) — orange means «скоро КР» everywhere, never just «important».
-Same height, radius and type for all three, so only the fill says which is which.
+Same height, radius and type for all three, so only the fill says which is which. No colour
+transition: a fade on hover runs while the page scrolls under a resting cursor and the button seems
+to leave a darker copy of itself behind.
 */
 const BASE =
-  "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-4 text-subhead font-semibold no-underline transition-colors disabled:cursor-default disabled:opacity-50";
+  "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-4 text-subhead font-semibold no-underline disabled:cursor-default disabled:opacity-50";
 
 export const BUTTON_PRIMARY = `${BASE} bg-ink text-paper hover:bg-ink/85`;
 

@@ -210,7 +210,8 @@ stray `text-sm` does nothing instead of adding an eleventh size.
 
 .flash {
   animation: flash 1.4s ease-out;
-  border-radius: 4px;
+  /* the radius of a block, so the ring follows its corners */
+  border-radius: var(--radius-lg);
 }
 
 @media (prefers-reduced-motion: reduce) {
