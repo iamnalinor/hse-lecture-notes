@@ -41,7 +41,7 @@ const Sheet = ({ caption, minutes, toc }: Props) => {
       >
         <button
           aria-haspopup="dialog"
-          className="pointer-events-auto flex min-h-11 max-w-full cursor-pointer items-center gap-2.5 rounded-full border border-rule bg-[color-mix(in_srgb,var(--paper)_78%,transparent)] px-4.5 text-footnote text-ink shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150"
+          className="pointer-events-auto flex min-h-11 max-w-full cursor-pointer items-center gap-2.5 rounded-full border border-rule bg-[color-mix(in_srgb,var(--paper)_88%,transparent)] px-4.5 text-footnote text-ink shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150"
           onClick={() => {
             setIsOpen(true);
             ref.current?.showModal();
