@@ -89,15 +89,26 @@ const readManifest = async (cacheName: string): Promise<OfflineManifest | undefi
   return manifest?.version === VERSION ? manifest : undefined;
 };
 
-/** The manifest of this worker's version, read once from the cache. */
+/**
+The manifest of this worker's version, read once from the cache. A page that switches to this worker
+quietly (`sw-registration.ts`) sends requests while `activate` has not yet moved the manifest out of
+the staging cache: then it is read from there. Not found → not remembered, the next request reads
+again (remembering it left the worker unable to save anything until the browser restarted it).
+*/
 const known: { promise: Promise<Known | undefined> | undefined } = { promise: undefined };
 const loadKnown = async (): Promise<Known | undefined> => {
-  const manifest = await readManifest(CACHE_NAME);
+  // `caches.open` would create the staging cache that `activate` already removed.
+  const staged = async () => ((await caches.has(STAGE)) ? await readManifest(STAGE) : undefined);
+  const manifest = (await readManifest(CACHE_NAME)) ?? (await staged());
   return manifest === undefined ? undefined : index(manifest);
 };
 const getKnown = async (): Promise<Known | undefined> => {
   known.promise ??= loadKnown();
-  return await known.promise;
+  const state = await known.promise;
+  if (state === undefined) {
+    known.promise = undefined;
+  }
+  return state;
 };
 
 const install = async (): Promise<void> => {

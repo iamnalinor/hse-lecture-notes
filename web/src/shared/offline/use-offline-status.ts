@@ -9,6 +9,7 @@ import {
 } from "#web/api/offline-cache.ts";
 import { countSavedNotes, type OfflineCount } from "#web/domain/offline.ts";
 
+import { whenOnOwnWorker } from "./sw-registration.ts";
 import { useIsSavingInBackground } from "./use-background-download.ts";
 
 const COUNT_KEY = ["offline-count"] as const;
@@ -120,11 +121,14 @@ export const useOfflineStatus = (): OfflineStatus => {
 
   const download = useMutation({
     mutationFn: async () => {
-      if (manifest !== undefined) {
-        await downloadAll(manifest, (done, total) => {
-          setProgress({ done, total });
-        });
+      if (manifest === undefined) {
+        return;
       }
+
+      await whenOnOwnWorker({ hurry: true });
+      await downloadAll(manifest, (done, total) => {
+        setProgress({ done, total });
+      });
     },
     onSettled: async () => {
       await client.invalidateQueries({ queryKey: COUNT_KEY });
