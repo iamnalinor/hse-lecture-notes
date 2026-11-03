@@ -10,10 +10,10 @@ export const TopBar = () => (
   <header className="border-b border-rule bg-paper">
     <div className="mx-auto flex min-h-15 max-w-[1360px] flex-wrap items-center gap-x-7 gap-y-1 px-4 py-2 sm:px-8">
       <Link
-        className="flex items-center gap-2.5 text-[15px] font-bold tracking-[0.01em] text-ink no-underline"
+        className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
         to={paths.home()}
       >
-        <span className="flex size-7 items-center justify-center rounded-md bg-brand text-xs font-black text-white">
+        <span className="flex size-7 items-center justify-center rounded-md bg-brand text-caption font-black text-white">
           ПИ
         </span>
         <span>
@@ -26,7 +26,7 @@ export const TopBar = () => (
       >
         {COURSES.map((course) => (
           <NavLink
-            className="rounded-md px-3 py-2 text-[14.5px] whitespace-nowrap text-muted no-underline aria-[current=page]:bg-wash aria-[current=page]:font-semibold aria-[current=page]:text-ink"
+            className="rounded-md px-3 py-2 text-subhead whitespace-nowrap text-muted no-underline focus-visible:-outline-offset-2 aria-[current=page]:bg-wash aria-[current=page]:font-semibold aria-[current=page]:text-ink"
             key={course.id}
             to={paths.course(course.id)}
           >

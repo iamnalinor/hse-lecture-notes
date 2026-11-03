@@ -5,7 +5,9 @@ import type { PdfDoc } from "#web/domain/preps.ts";
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { DocPage } from "#web/shared/ui/doc-page.tsx";
-import { DocToc } from "#web/shared/ui/doc-toc.tsx";
+import { DocToc, WIDE_QUERY } from "#web/shared/ui/doc-toc.tsx";
+import { TocSheet } from "#web/shared/ui/toc-sheet.tsx";
+import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
 import { FragmentView } from "./fragment-view.tsx";
 import { useScrollToHash } from "./use-scroll-to-hash.ts";
@@ -39,10 +41,11 @@ export const CourseDocument = ({
   const meta = useDocMeta(course, docId);
   const html = useFragment(course, docId);
   useScrollToHash();
+  const isWide = useIsMatching(WIDE_QUERY);
 
   return (
     <DocPage
-      aside={<DocToc caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />}
+      aside={isWide && <DocToc caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />}
       course={course}
       courseName={courseName}
       downloads={downloads}
@@ -58,6 +61,7 @@ export const CourseDocument = ({
         slots={slots}
         variant={variant}
       />
+      <TocSheet caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />
     </DocPage>
   );
 };

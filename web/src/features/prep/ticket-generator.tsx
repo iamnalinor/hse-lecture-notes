@@ -6,6 +6,7 @@ import type { TicketBank } from "#web/domain/schemas.ts";
 import { ticketBankQuery } from "#web/api/queries.ts";
 import { plural } from "#web/domain/text.ts";
 import { drawTicket, type TicketPart } from "#web/domain/tickets.ts";
+import { BUTTON_PRIMARY } from "#web/shared/ui/button.ts";
 
 import { TicketQuestion } from "./ticket-question.tsx";
 
@@ -47,10 +48,10 @@ const Ticket = ({
     <div className="mt-5">
       {drawn.parts.map((part, index) => (
         <section className="mt-4 first:mt-0" key={`${String(drawn.serial)}-${part.kind}`}>
-          <h4 className="flex flex-wrap items-baseline gap-x-2.5 border-b border-rule pb-1.5 text-[15px] font-semibold">
+          <h4 className="flex flex-wrap items-baseline gap-x-2.5 border-b border-rule pb-1.5 text-subhead font-semibold">
             <span>{part.title}</span>
             {part.points !== "" && (
-              <span className="text-sm font-normal text-muted">{part.points}</span>
+              <span className="text-footnote font-normal text-muted">{part.points}</span>
             )}
           </h4>
           <ol className="m-0 list-none p-0">
@@ -90,12 +91,12 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
     >
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 flex-1 basis-64">
-          <p className="m-0 text-base text-muted">
+          <p className="m-0 text-body text-muted">
             {isError ? "Не удалось загрузить банк вопросов." : describe(bank)}
           </p>
         </div>
         <button
-          className="min-h-11 cursor-pointer rounded-md bg-def px-5 py-2.5 font-semibold text-paper disabled:cursor-default disabled:opacity-50"
+          className={`${BUTTON_PRIMARY} min-h-11`}
           disabled={bank === undefined}
           onClick={() => {
             if (bank !== undefined) {

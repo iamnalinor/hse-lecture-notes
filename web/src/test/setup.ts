@@ -14,6 +14,11 @@ HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
   });
 };
 
+// jsdom does no layout: scrolling an element into view is a no-op (the table of contents calls it).
+Element.prototype.scrollIntoView = function scrollIntoView() {
+  // nothing to scroll
+};
+
 afterEach(() => {
   cleanup();
 });

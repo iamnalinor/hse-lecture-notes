@@ -72,13 +72,13 @@ describe("course page", () => {
       "/calculus/08_oct23_continuity",
     );
     expect(navLinks("Материалы курса")).toStrictEqual([
-      "Читать лекцию 8 · 23 окт →",
+      "Читать лекцию 8 · 23 окт",
       "Теория",
       "Глоссарий",
     ]);
   });
 
-  it("lists only the preps still ahead in a row of their own, neutral far from the event", () => {
+  it("lists only the preps still ahead after the documents, neutral far from the event", () => {
     calculusOn("2026-10-26");
     expect(navLinks("Подготовка к контрольным")).toStrictEqual([
       "Подготовка к коллоквиуму 1",

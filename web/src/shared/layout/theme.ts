@@ -20,7 +20,7 @@ export const setTheme = (theme: Theme): void => {
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
     meta.removeAttribute("media");
     // Same colors as the meta tags and the inline script in index.html (it runs before any bundle).
-    meta.content = theme === "dark" ? "#1a1916" : "#fcfbf7";
+    meta.content = theme === "dark" ? "#141415" : "#fafaf8";
   }
   try {
     localStorage.setItem(STORAGE_KEY, theme);

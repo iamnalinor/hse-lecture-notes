@@ -11,7 +11,7 @@ export const TagPill = ({ tag }: { readonly tag: RemarkTag }) => {
   const { label, tone } = REMARK_TAGS[tag];
   return (
     <span
-      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONES[tone]}`}
+      className={`rounded-sm px-1.5 py-px text-caption font-semibold ${TONES[tone]}`}
       data-testid="tag-pill"
     >
       {label}

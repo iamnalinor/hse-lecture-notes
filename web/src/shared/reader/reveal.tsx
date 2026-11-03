@@ -1,5 +1,7 @@
 import { type ReactNode, useId, useState } from "react";
 
+import { ChevronIcon } from "#web/shared/ui/icons.tsx";
+
 type Props = {
   /** Name for screen readers when the visible label is the same for many buttons («Показать ответ»). */
   readonly accessibleName?: string;
@@ -28,19 +30,18 @@ export const Reveal = ({
         aria-controls={panelId}
         aria-expanded={open}
         aria-label={accessibleName}
-        className="min-h-6 cursor-pointer rounded-md border border-prob/40 bg-paper px-3.5 py-2 text-sm font-semibold text-prob aria-expanded:bg-prob-soft"
+        className="group/reveal inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md border border-rule bg-card px-3.5 text-footnote font-semibold text-ink transition-colors hover:bg-wash"
         onClick={() => {
           setOpen((value) => !value);
         }}
         type="button"
       >
-        {open ? openLabel : closedLabel} <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+        {open ? openLabel : closedLabel}
+        <span className="text-muted transition-transform duration-200 group-aria-expanded/reveal:rotate-90">
+          <ChevronIcon size={14} />
+        </span>
       </button>
-      <div
-        className="order-last min-w-0 basis-full pt-1 text-lg empty:hidden"
-        hidden={!open}
-        id={panelId}
-      >
+      <div className="order-last min-w-0 basis-full pt-1 empty:hidden" hidden={!open} id={panelId}>
         {(open || !lazy) && children}
       </div>
     </>

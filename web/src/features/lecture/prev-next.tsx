@@ -22,18 +22,18 @@ export const PrevNext = ({ course, next, prev }: Props) => (
       <span />
     ) : (
       <Link className={CARD} to={paths.lecture(course, prev.weekId)}>
-        <small className="mb-1 block text-[12.5px] text-muted">
+        <small className="mb-1 block text-footnote text-muted">
           ← Лекция {prev.lecture} · {shortDate(prev.date)}
         </small>
-        <span className="text-[15.5px] leading-snug font-semibold">{prev.title}</span>
+        <span className="text-subhead/snug font-semibold">{prev.title}</span>
       </Link>
     )}
     {next !== undefined && (
       <Link className={`${CARD} sm:text-right`} to={paths.lecture(course, next.weekId)}>
-        <small className="mb-1 block text-[12.5px] text-muted">
+        <small className="mb-1 block text-footnote text-muted">
           Лекция {next.lecture} · {shortDate(next.date)} →
         </small>
-        <span className="text-[15.5px] leading-snug font-semibold">{next.title}</span>
+        <span className="text-subhead/snug font-semibold">{next.title}</span>
       </Link>
     )}
   </nav>

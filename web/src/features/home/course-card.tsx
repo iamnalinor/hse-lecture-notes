@@ -38,11 +38,11 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
   return (
     <article className="group relative row-span-3 grid cursor-pointer grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-rule bg-card transition-colors hover:bg-wash/50 has-[[data-tile]:hover]:bg-card has-[h3_a:focus-visible]:ring-2 has-[h3_a:focus-visible]:ring-brand">
       <div className="flex min-h-32.5 flex-col border-b border-rule px-5.5 pt-5.5 pb-4.5">
-        <span aria-hidden="true" className="absolute top-4.5 right-5 text-[26px] text-faint">
+        <span aria-hidden="true" className="absolute top-4.5 right-5 text-title2 text-faint">
           <TexMath display={false} tex={course.symbol} />
         </span>
-        <span className="text-[12.5px] tracking-wider text-muted uppercase">{course.weekday}</span>
-        <h3 className="mt-2.5 mb-1.5 max-w-55 text-[25px] leading-tight font-bold">
+        <span className="text-footnote text-muted">{course.weekday}</span>
+        <h3 className="mt-2.5 mb-1.5 max-w-55 text-title2/tight font-bold">
           <Link
             className="text-ink no-underline after:absolute after:inset-0 after:content-['']"
             to={paths.course(course.id)}
@@ -50,7 +50,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
             {course.name}
           </Link>
         </h3>
-        <span className="mt-auto flex items-center justify-between gap-3 text-[13.5px] text-muted">
+        <span className="mt-auto flex items-center justify-between gap-3 text-footnote text-muted">
           <span>
             {course.lecturer} · {lectures.length}{" "}
             {plural(lectures.length, ["лекция", "лекции", "лекций"])}
@@ -63,14 +63,14 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
       <div className="px-5.5 py-4 empty:p-0">
         {last !== undefined && (
           <Link
-            className={`${TILE} bg-wash text-ink hover:bg-rule/60`}
+            className={`${TILE} -mx-3 text-ink hover:bg-wash`}
             data-tile
             to={paths.lecture(course.id, last.weekId)}
           >
-            <small className="mb-0.5 block text-xs text-muted">
+            <small className="mb-0.5 block text-caption text-muted">
               Лекция {last.lecture} · {shortDate(last.date)}
             </small>
-            <span className="text-[16px] leading-snug">{last.title}</span>
+            <span className="text-body/snug">{last.title}</span>
           </Link>
         )}
       </div>
@@ -81,10 +81,10 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
             data-tile
             to={paths.prep(course.id, next.id)}
           >
-            <small className={`mb-0.5 block text-xs ${isAccent ? "" : "text-muted"}`}>
+            <small className={`mb-0.5 block text-caption ${isAccent ? "" : "text-muted"}`}>
               {prepName(next.id)} · {prepWhen(next)}
             </small>
-            <span className="text-[16px] leading-snug font-semibold">{prepGoal(next.id)} →</span>
+            <span className="text-body/snug font-semibold">{prepGoal(next.id)} →</span>
           </Link>
         )}
       </div>
