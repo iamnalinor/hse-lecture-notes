@@ -6,6 +6,7 @@ import { useDocMeta, useFragment } from "#web/api/queries.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { DocPage } from "#web/shared/ui/doc-page.tsx";
 import { DocToc } from "#web/shared/ui/doc-toc.tsx";
+import { TocSheet } from "#web/shared/ui/toc-sheet.tsx";
 
 import { FragmentView } from "./fragment-view.tsx";
 import { useScrollToHash } from "./use-scroll-to-hash.ts";
@@ -58,6 +59,7 @@ export const CourseDocument = ({
         slots={slots}
         variant={variant}
       />
+      <TocSheet caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />
     </DocPage>
   );
 };

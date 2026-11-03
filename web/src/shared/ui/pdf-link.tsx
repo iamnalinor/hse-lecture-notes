@@ -1,3 +1,4 @@
+import { BUTTON_SECONDARY } from "./button.ts";
 import { DownloadIcon } from "./icons.tsx";
 
 /** A document's PDF as the site serves it (`/pdf/<course>-<doc>.pdf`), with the base path. */
@@ -16,13 +17,13 @@ export const PdfLink = ({ course, docId, label = "PDF", variant }: Props) => (
   <a
     className={
       variant === "button"
-        ? "inline-flex min-h-6 items-center gap-2 rounded-md border border-ink px-4 py-2 text-sm font-semibold text-ink no-underline"
-        : "inline-flex items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-[13px] text-muted no-underline"
+        ? BUTTON_SECONDARY
+        : "inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-footnote text-muted no-underline transition-colors hover:bg-wash hover:text-ink"
     }
     download
     href={pdfUrl(course, docId)}
   >
-    {variant === "button" && <DownloadIcon size={16} />}
+    <DownloadIcon size={variant === "button" ? 16 : 14} />
     {label}
   </a>
 );

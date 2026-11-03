@@ -12,7 +12,7 @@
   --card: #fff;
   --ink: #1d1b18;
   --muted: #6b665e;
-  --faint: #8c867b;
+  --faint: #756f65;
   --rule: #e3ded3;
   --wash: #f3f0e8;
   --brand: #0f2d69;
@@ -32,7 +32,7 @@
   --card: #221f1b;
   --ink: #ece7dd;
   --muted: #a49e92;
-  --faint: #857f73;
+  --faint: #9a9488;
   --rule: #36332d;
   --wash: #2a2722;
   --brand: #2e4f94;
@@ -48,17 +48,17 @@
 
 /* Derived tints: a hue mixed into the paper (backgrounds) or into the ink (small text). */
 :root {
-  --def-soft: color-mix(in srgb, var(--def) 5%, var(--paper));
-  --thm-soft: color-mix(in srgb, var(--thm) 5%, var(--paper));
+  --def-soft: color-mix(in srgb, var(--def) 7%, var(--paper));
+  --thm-soft: color-mix(in srgb, var(--thm) 7%, var(--paper));
   --ex-soft: color-mix(in srgb, var(--ex) 14%, var(--paper));
   --red-soft: color-mix(in srgb, var(--red) 14%, var(--paper));
   --org-soft: color-mix(in srgb, var(--org) 16%, var(--paper));
-  --prob-soft: color-mix(in srgb, var(--prob) 5%, var(--paper));
+  --prob-soft: color-mix(in srgb, var(--prob) 7%, var(--paper));
   --def-chip: color-mix(in srgb, var(--def) 14%, var(--paper));
   --def-deep: color-mix(in srgb, var(--def) 80%, var(--ink));
   --ex-deep: color-mix(in srgb, var(--ex) 75%, var(--ink));
   --red-deep: color-mix(in srgb, var(--red) 80%, var(--ink));
-  --org-deep: color-mix(in srgb, var(--org) 75%, var(--ink));
+  --org-deep: color-mix(in srgb, var(--org) 62%, var(--ink));
   /* Solid fill for the upcoming-test tile and button: must stand out against wash/card tiles.
   Text on it is the paper colour (light on burnt orange, dark on amber): ≥ 4.5:1 in both themes. */
   --org-fill: color-mix(in srgb, var(--org) 80%, var(--ink));
@@ -69,6 +69,40 @@
 :root[data-theme="dark"] {
   --org-fill: var(--org);
   --org-fill-hover: color-mix(in srgb, var(--org) 85%, var(--ink));
+}
+
+/*
+One type scale for the whole site (the steps of Apple's text styles, adapted): every size in the UI is
+one of these. The notes body is 18px in `prose.css`. The default Tailwind sizes are switched off, so a
+stray `text-sm` does nothing instead of adding an eleventh size.
+*/
+@theme {
+  --text-*: initial;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-footnote: 13px;
+  --text-footnote--line-height: 18px;
+  --text-subhead: 15px;
+  --text-subhead--line-height: 21px;
+  --text-body: 17px;
+  --text-body--line-height: 26px;
+  --text-title3: 20px;
+  --text-title3--line-height: 26px;
+  --text-title2: 24px;
+  --text-title2--line-height: 30px;
+  --text-title1: 32px;
+  --text-title1--line-height: 38px;
+  --text-large: 40px;
+  --text-large--line-height: 44px;
+  --text-display: 56px;
+  --text-display--line-height: 58px;
+
+  /* Four radii: hairline details (kbd, highlight), controls, cards, large surfaces. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
 @theme inline {
@@ -121,6 +155,26 @@
     color: var(--def);
   }
 
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--def) 24%, transparent);
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
   :focus-visible {
     outline: 2px solid var(--def);
     outline-offset: 2px;
@@ -155,7 +209,7 @@
 }
 
 .flash {
-  animation: flash 2.4s ease-out;
+  animation: flash 1.4s ease-out;
   border-radius: 4px;
 }
 
@@ -163,5 +217,26 @@
   .flash {
     animation: none;
     box-shadow: 0 0 0 3px var(--flash);
+  }
+}
+
+/* The floating table-of-contents pill gives way to the back bar: both sit at the bottom edge. */
+body:has(aside[aria-label="Возврат"]) [data-toc-pill] {
+  display: none;
+}
+
+@keyframes sheet-in {
+  from {
+    translate: 0 100%;
+  }
+}
+
+[data-toc-sheet][open] {
+  animation: sheet-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-toc-sheet][open] {
+    animation: none;
   }
 }

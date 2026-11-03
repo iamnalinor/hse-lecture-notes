@@ -46,7 +46,7 @@ export const Component = () => {
     >
       <input
         aria-label="Найти термин"
-        className="mt-6 w-full rounded-lg border border-rule bg-card px-3.5 py-2.5 text-[15px] text-ink placeholder:text-faint"
+        className="mt-6 w-full rounded-lg border border-rule bg-card px-3.5 py-2.5 text-subhead text-ink placeholder:text-faint"
         onChange={(event) => {
           setQuery(event.target.value);
         }}
@@ -57,15 +57,15 @@ export const Component = () => {
       {groups.length === 0 && <p className="mt-8 text-muted">Ничего не нашлось.</p>}
       {groups.map((group) => (
         <section className="scroll-mt-6" id={anchor(group.lecture)} key={group.lecture}>
-          <h2 className="mt-10 mb-1 flex items-baseline gap-3 border-b border-rule pb-2 text-lg font-bold">
+          <h2 className="mt-10 mb-1 flex items-baseline gap-3 border-b border-rule pb-2 text-body font-bold">
             <Link className="text-ink no-underline" to={paths.lecture(info.id, group.weekId)}>
               Лекция {group.lecture}
             </Link>
-            <span className="text-[15px] font-normal text-muted">{group.title}</span>
+            <span className="text-subhead font-normal text-muted">{group.title}</span>
           </h2>
           <div className="grid gap-x-10 xl:grid-cols-2">
             {group.entries.map((entry) => (
-              <div className="mt-4 [&_.prose-notes]:text-[16.5px]" key={entry.term}>
+              <div className="mt-4 [&_.prose-notes]:text-body" key={entry.term}>
                 <div className="font-semibold [&_.prose-notes]:font-semibold">
                   <FragmentView
                     course={info.id}

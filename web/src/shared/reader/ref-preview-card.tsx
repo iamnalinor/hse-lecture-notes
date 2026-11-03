@@ -13,11 +13,11 @@ import { useReaderContext } from "./reader-context.ts";
 import { TexText } from "./tex-text.tsx";
 
 const HEADER_TONE = {
-  definition: "bg-def-soft text-def",
-  example: "bg-ex-soft text-ex",
-  problem: "bg-prob-soft text-prob",
-  remark: "bg-wash text-muted",
-  theorem: "bg-thm-soft text-thm",
+  definition: "text-def",
+  example: "text-ex",
+  problem: "text-prob",
+  remark: "text-muted",
+  theorem: "text-thm",
 } as const;
 
 type Props = {
@@ -35,7 +35,7 @@ export const RefPreviewCard = ({ cardProps, onGo, refCallback, style, target }: 
     select: (fragment) => extractPreview(fragment, target.id),
   });
   const kind = blockStyle(target.type);
-  const tone = kind === undefined ? "bg-wash text-ink" : HEADER_TONE[kind];
+  const tone = kind === undefined ? "text-ink" : HEADER_TONE[kind];
   // A formula is referred to as «(4.4)» in the text, so the card says the same.
   const heading =
     target.type === "equation"
@@ -44,7 +44,7 @@ export const RefPreviewCard = ({ cardProps, onGo, refCallback, style, target }: 
 
   return createPortal(
     <div
-      className="z-50 w-[min(430px,calc(100vw-24px))] cursor-pointer overflow-hidden rounded-lg border border-rule bg-card shadow-[0_18px_40px_-12px_rgba(40,30,10,0.28)]"
+      className="z-50 w-[min(430px,calc(100vw-24px))] cursor-pointer overflow-hidden rounded-lg border border-rule bg-card shadow-[0_18px_40px_-12px_rgba(0,0,0,0.25)]"
       onClick={onGo}
       onKeyDown={undefined}
       ref={refCallback}
@@ -52,23 +52,23 @@ export const RefPreviewCard = ({ cardProps, onGo, refCallback, style, target }: 
       style={style}
       {...cardProps}
     >
-      <div className={`flex gap-2 border-b border-rule px-4 py-2.5 text-sm ${tone}`}>
-        <b>{heading}</b>
+      <div className={`flex gap-2 px-4 pt-3.5 text-subhead ${tone}`}>
+        <b className="font-semibold">{heading}</b>
         {/* A figure's title is its caption, and the caption is the card body. */}
         {target.title !== "" && target.type !== "figure" && (
-          <span className="text-ink">
+          <span className="text-muted">
             <TexText text={target.title} />
           </span>
         )}
       </div>
-      <div className="prose-notes ref-preview max-h-72 overflow-hidden px-4 pt-3 pb-1 text-[17px] leading-normal">
+      <div className="prose-notes ref-preview max-h-72 overflow-hidden px-4 pt-1.5 pb-1 text-body/normal">
         {html === undefined ? (
           <p className="text-muted">Загрузка…</p>
         ) : (
           renderPreview(html, target.weekId)
         )}
       </div>
-      <div className="flex justify-between border-t border-rule px-4 py-2 text-xs text-muted">
+      <div className="flex justify-between border-t border-rule px-4 py-2 text-caption text-muted">
         <span>Лекция {target.lecture}</span>
         <span className="font-semibold text-def">Перейти →</span>
       </div>

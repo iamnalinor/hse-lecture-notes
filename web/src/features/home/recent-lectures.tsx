@@ -24,7 +24,7 @@ export const RecentLectures = ({ items }: { readonly items: readonly RecentItem[
         <tr>
           {["Курс", "Дата", "Тема"].map((title) => (
             <th
-              className="border-b border-rule px-4.5 py-3 text-left text-[12.5px] font-semibold text-muted"
+              className="border-b border-rule px-4.5 py-3 text-left text-footnote font-semibold text-muted"
               key={title}
               scope="col"
             >
@@ -39,15 +39,15 @@ export const RecentLectures = ({ items }: { readonly items: readonly RecentItem[
             className="border-b border-rule last:border-0 max-sm:grid max-sm:grid-cols-[auto_1fr] max-sm:px-4.5 max-sm:py-3"
             key={`${course.id}/${lecture.weekId}`}
           >
-            <td className="px-4.5 py-3.5 text-[14.5px] whitespace-nowrap text-muted max-sm:p-0 max-sm:pr-3 max-sm:text-[13px]">
+            <td className="px-4.5 py-3.5 text-subhead whitespace-nowrap text-muted max-sm:p-0 max-sm:pr-3 max-sm:text-footnote">
               {course.short} · {lecture.lecture}
             </td>
-            <td className="px-4.5 py-3.5 text-[14.5px] whitespace-nowrap text-muted max-sm:p-0 max-sm:text-[13px]">
+            <td className="px-4.5 py-3.5 text-subhead whitespace-nowrap text-muted max-sm:p-0 max-sm:text-footnote">
               {shortDate(lecture.date)}
             </td>
             <td className="px-4.5 py-3.5 max-sm:col-span-2 max-sm:p-0 max-sm:pt-1">
               <Link
-                className="text-[16.5px] text-ink no-underline"
+                className="text-body text-ink no-underline"
                 to={paths.lecture(course.id, lecture.weekId)}
               >
                 {lecture.title}

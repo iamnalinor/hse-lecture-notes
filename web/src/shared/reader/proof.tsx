@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { ChevronIcon } from "#web/shared/ui/icons.tsx";
+
 type Props = {
   readonly children: ReactNode;
   readonly collapsed: boolean;
@@ -9,11 +11,10 @@ type Props = {
 
 export const Proof = ({ children, collapsed, label }: Props) => (
   <details className="group -mt-1.5 mb-7" open={!collapsed}>
-    <summary className="flex cursor-pointer list-none items-baseline gap-2.5 [&::-webkit-details-marker]:hidden">
+    <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1.5 [&::-webkit-details-marker]:hidden">
       <span className="italic">{label ?? "Доказательство."}</span>
-      <span className="ml-auto rounded-full border border-rule px-2.5 py-0.5 text-xs whitespace-nowrap text-muted">
-        <span className="group-open:hidden">развернуть</span>
-        <span className="hidden group-open:inline">свернуть</span>
+      <span className="text-muted transition-transform duration-200 group-open:rotate-90">
+        <ChevronIcon size={16} />
       </span>
     </summary>
     <div className="pt-2">

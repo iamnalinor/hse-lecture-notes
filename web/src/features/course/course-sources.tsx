@@ -9,16 +9,13 @@ export const TEXT_LINK =
 /** What the notes of the course were written from: one block for the whole course, not per note. */
 export const CourseSources = ({ course }: { readonly course: CourseId }) => (
   <section aria-labelledby="sources" className="border-t border-rule py-9 pb-20">
-    <h2
-      className="mb-3.5 text-[13px] font-semibold tracking-[0.16em] text-muted uppercase"
-      id="sources"
-    >
+    <h2 className="mb-3 text-title3 font-semibold" id="sources">
       Источники
     </h2>
-    <p className="mb-4 max-w-160 text-[15px]/relaxed text-ink/80">
+    <p className="mb-4 max-w-160 text-subhead/relaxed text-ink/80">
       Конспекты написаны по лекциям и материалам курса, часть задач и примеров взята из них.
     </p>
-    <ul className="flex max-w-200 flex-col gap-2 text-[15px]/snug">
+    <ul className="flex max-w-200 flex-col gap-2 text-subhead/snug">
       {SOURCES[course].map((source) => (
         <li key={source.title}>
           <SourceLine source={source} />

@@ -35,11 +35,11 @@ export const RouteError = () => {
     <div className="flex min-h-screen flex-col bg-paper text-ink">
       <TopBar />
       <main className="mx-auto w-full max-w-[720px] flex-1 px-4 py-16 sm:px-8 sm:py-24">
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-large font-bold">
           {isMissing ? "Такой страницы нет" : "Не получилось открыть страницу"}
         </h1>
         {hasUpdate ? (
-          <p className="mt-4 text-xl text-muted">
+          <p className="mt-4 text-title3 text-muted">
             Сайт обновился, а эта вкладка открыта на старой версии.{" "}
             <button
               className="cursor-pointer font-semibold text-brand underline"
@@ -50,7 +50,7 @@ export const RouteError = () => {
             </button>
           </p>
         ) : (
-          <p className="mt-4 text-xl text-muted">{describe(error)}</p>
+          <p className="mt-4 text-title3 text-muted">{describe(error)}</p>
         )}
         <Link className="mt-8 inline-block font-semibold" to={paths.home()}>
           На главную →

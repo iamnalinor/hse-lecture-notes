@@ -13,7 +13,7 @@ type Props = {
   readonly lectures: readonly LectureEntry[];
 };
 
-const CELL = "border-b border-rule px-2 py-3.5 sm:px-3 align-top text-[15px]";
+const CELL = "border-b border-rule px-2 py-3.5 align-baseline text-body sm:px-3";
 
 export const LectureTable = ({ course, current, lectures }: Props) => (
   <div className="overflow-x-auto">
@@ -22,7 +22,7 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
         <tr>
           {["№", "Дата", "Тема", "PDF"].map((title) => (
             <th
-              className={`border-b border-ink/40 px-2 py-2.5 text-left text-[12.5px] font-semibold whitespace-nowrap text-muted sm:px-3 ${title === "Дата" ? "max-sm:hidden" : ""}`}
+              className={`border-b border-ink/40 px-2 py-2.5 text-left text-footnote font-semibold whitespace-nowrap text-muted sm:px-3 ${title === "Дата" ? "max-sm:hidden" : ""}`}
               key={title}
               scope="col"
             >
@@ -33,9 +33,9 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
       </thead>
       <tbody>
         {lectures.map((lecture) => (
-          <tr key={lecture.weekId}>
+          <tr className="transition-colors hover:bg-wash/60" key={lecture.weekId}>
             <td
-              className={`${CELL} w-11 text-[22px] font-bold tabular-nums ${lecture.weekId === current ? "text-def" : "text-faint"}`}
+              className={`${CELL} w-11 font-semibold tabular-nums ${lecture.weekId === current ? "text-def" : "text-muted"}`}
             >
               {lecture.lecture}
             </td>
@@ -46,13 +46,13 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
             </td>
             <td className={CELL}>
               <Link
-                className="text-[17px] leading-snug text-ink no-underline"
+                className="text-body/snug text-ink no-underline hover:text-def"
                 to={paths.lecture(course, lecture.weekId)}
               >
                 {lecture.title}
               </Link>
               {/* The date column does not fit on a phone: the date moves under the title. */}
-              <span className="mt-1 block text-[13px] text-muted tabular-nums sm:hidden">
+              <span className="mt-1 block text-footnote text-muted tabular-nums sm:hidden">
                 {shortDate(lecture.date)}
               </span>
             </td>

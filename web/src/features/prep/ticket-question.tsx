@@ -22,7 +22,7 @@ type Props = {
 /** A numbered ticket question: its text, «Показать ответ» (answer in place) and a link to its section. */
 export const TicketQuestion = ({ course, number, prepId, proofs, question, topicTitle }: Props) => (
   <li className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-1 border-t border-rule py-4 first:border-t-0">
-    <span className="pt-px text-lg font-bold text-muted tabular-nums">{number}.</span>
+    <span className="pt-px text-body font-bold text-muted tabular-nums">{number}.</span>
     <div>
       <div className="[&_.prose-notes>p]:my-0">
         <FragmentView course={course} docId={prepId} html={question.text} lecture={undefined} />
@@ -44,7 +44,7 @@ export const TicketQuestion = ({ course, number, prepId, proofs, question, topic
         </Reveal>
         {topicTitle !== undefined && (
           <Link
-            className="text-sm text-muted underline decoration-rule underline-offset-4 hover:text-ink"
+            className="text-footnote text-muted underline decoration-rule underline-offset-4 hover:text-ink"
             to={{ hash: `#sec:${prepId}:${question.topic}` }}
           >
             К разделу «<TexText text={topicTitle} />»

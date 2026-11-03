@@ -72,7 +72,7 @@ const SearchPanel = ({ onClose }: Props) => {
           aria-expanded={hits.length > 0}
           aria-label="Поиск по конспектам"
           autoFocus
-          className="w-full bg-transparent py-3.5 text-[16px] text-ink outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+          className="w-full bg-transparent py-3.5 text-body text-ink outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
           onChange={(event) => {
             setQuery(event.target.value);
             setActive(0);
@@ -83,9 +83,9 @@ const SearchPanel = ({ onClose }: Props) => {
           type="search"
           value={query}
         />
-        <kbd className="rounded-sm border border-rule px-1.5 py-px text-[11px]">Esc</kbd>
+        <kbd className="rounded-sm border border-rule px-1.5 py-px text-caption">Esc</kbd>
       </label>
-      <p className="px-5 text-[14px] text-muted not-empty:py-6" role="status">
+      <p className="px-5 text-subhead text-muted not-empty:py-6" role="status">
         {status}
       </p>
       {hits.length > 0 && (

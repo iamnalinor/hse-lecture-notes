@@ -62,12 +62,12 @@ export const SearchResults = ({ active, hits, onHover, onPick }: Props) => (
           tabIndex={-1}
           to={hitPath(hit)}
         >
-          <small className="block text-xs text-muted">{placeOf(hit)}</small>
-          <span className="block text-[15px] font-semibold">
+          <small className="block text-caption text-muted">{placeOf(hit)}</small>
+          <span className="block text-subhead font-semibold">
             <TexText text={hit.heading} />
           </span>
           {hit.snippet.length > 0 && (
-            <span className="mt-0.5 line-clamp-2 block text-[13.5px] leading-snug text-muted">
+            <span className="mt-0.5 line-clamp-2 block text-footnote/snug text-muted">
               <Snippet parts={hit.snippet} />
             </span>
           )}

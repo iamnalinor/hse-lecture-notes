@@ -41,8 +41,8 @@ type Handler = (
 
 const LONG_PROOF_CHARS = 700;
 const PART_HEADING =
-  "mt-13 mb-1.5 flex items-center gap-3.5 text-[13px] font-semibold tracking-[0.16em] text-muted uppercase after:h-px after:flex-1 after:bg-rule after:content-['']";
-const TITLE_HEADING = "mt-11 mb-3 text-[25px] leading-tight font-bold";
+  "mt-13 mb-1.5 flex items-center gap-3.5 text-subhead font-semibold text-muted after:h-px after:flex-1 after:bg-rule after:content-['']";
+const TITLE_HEADING = "mt-11 mb-3 text-title2 leading-tight font-bold";
 
 const children = (node: Element, replace: Replace): ReactNode =>
   domToReact(node.children as DOMNode[], { replace });
@@ -255,7 +255,7 @@ const heading: Handler = (node, options, replace) => {
       </h3>
     );
   }
-  return <h4 className="mt-8 mb-2 text-xl font-bold">{children(node, replace)}</h4>;
+  return <h4 className="mt-8 mb-2 text-title3 font-bold">{children(node, replace)}</h4>;
 };
 
 const byTag: Readonly<Record<string, Handler>> = {

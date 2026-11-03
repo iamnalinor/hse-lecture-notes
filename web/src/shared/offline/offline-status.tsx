@@ -48,7 +48,7 @@ export const OfflineStatus = () => {
       {progress !== undefined && <span aria-live="polite">{progress}</span>}
       {!isEverything && download.kind !== "running" && canDownload && (
         <button
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-[13px] font-semibold text-ink hover:bg-wash"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-footnote font-semibold text-ink hover:bg-wash"
           onClick={startDownload}
           type="button"
         >

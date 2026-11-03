@@ -45,10 +45,10 @@ export const DocPage = ({
     <div className="min-w-0 pb-20">
       <header>
         <Crumbs course={course} courseName={courseName} current={pageName} />
-        <h1 className="mt-5.5 mb-4.5 text-[32px] leading-[1.12] font-bold tracking-tight sm:text-[40px]">
+        <h1 className="mt-5.5 mb-4.5 text-title1 leading-[1.12] font-bold tracking-tight sm:text-large">
           {pageName}: {courseName.toLowerCase()}
         </h1>
-        <div className="flex flex-wrap items-center gap-x-5.5 gap-y-2.5 border-b border-rule pb-6 text-sm text-muted">
+        <div className="flex flex-wrap items-center gap-x-5.5 gap-y-2.5 border-b border-rule pb-6 text-footnote text-muted">
           {note !== undefined && <span>{note}</span>}
           {pdfDoc !== undefined && (
             <span className="ml-auto flex flex-wrap gap-2.5">

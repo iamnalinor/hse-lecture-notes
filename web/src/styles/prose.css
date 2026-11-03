@@ -64,16 +64,40 @@
   margin: 0.15em 0 0;
 }
 
+/* The answers list of a self-check: the same disclosure as a proof — a label and a turning chevron. */
 .prose-notes details.nb-answers {
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  padding: 0.6em 1em;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.4em;
 }
 
 .prose-notes details.nb-answers > summary {
+  align-items: center;
   cursor: pointer;
-  font-size: 14px;
+  display: flex;
+  font-size: 15px;
   font-weight: 600;
+  gap: 6px;
+  list-style: none;
+  min-height: 36px;
+}
+
+.prose-notes details.nb-answers > summary::-webkit-details-marker {
+  display: none;
+}
+
+.prose-notes details.nb-answers > summary::after {
+  background: var(--muted);
+  content: "";
+  height: 16px;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transition: rotate 200ms ease-out;
+  width: 16px;
+}
+
+.prose-notes details.nb-answers[open] > summary::after {
+  rotate: 90deg;
 }
 
 .prose-notes table {

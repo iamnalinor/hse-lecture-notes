@@ -19,7 +19,7 @@ type Props = {
   readonly withProofs: boolean;
 };
 
-const LINK = "text-sm font-semibold text-def no-underline hover:underline";
+const LINK = "text-footnote font-semibold text-def no-underline hover:underline";
 
 type Ref = { readonly course: string; readonly blockRef: TicketRef };
 
@@ -37,12 +37,12 @@ const AnswerBlock = ({
   });
 
   if (isPending) {
-    return <p className="text-base text-muted">Загрузка…</p>;
+    return <p className="text-body text-muted">Загрузка…</p>;
   }
   return (
     <div>
       {html === undefined ? (
-        <p className="text-base text-muted">Не удалось загрузить ответ.</p>
+        <p className="text-body text-muted">Не удалось загрузить ответ.</p>
       ) : (
         <FragmentView
           course={course}

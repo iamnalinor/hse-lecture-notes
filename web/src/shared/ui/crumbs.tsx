@@ -13,7 +13,7 @@ type Props = {
 export const Crumbs = ({ course, courseName, current }: Props) => (
   <nav
     aria-label="Навигация"
-    className="flex items-center gap-2 pt-8 text-[13.5px] text-muted lg:pt-12"
+    className="flex items-center gap-2 pt-8 text-footnote text-muted lg:pt-12"
   >
     <Link className="text-muted no-underline" to={paths.course(course)}>
       {courseName}

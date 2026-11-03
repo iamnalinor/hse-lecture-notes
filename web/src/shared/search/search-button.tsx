@@ -55,7 +55,7 @@ export const SearchButton = () => {
     <>
       <button
         aria-label="Поиск"
-        className="flex size-10 cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-rule bg-card text-[13.5px] text-faint transition-colors hover:text-ink lg:w-auto lg:min-w-65 lg:justify-start lg:px-3"
+        className="flex size-10 cursor-pointer items-center justify-center gap-2.5 rounded-lg border border-rule bg-card text-footnote text-faint transition-colors hover:text-ink lg:w-auto lg:min-w-65 lg:justify-start lg:px-3"
         onClick={() => {
           setIsOpen(true);
         }}
@@ -63,7 +63,7 @@ export const SearchButton = () => {
       >
         <SearchIcon size={15} />
         <span className="hidden lg:inline">Поиск: «4.3», «миноры»…</span>
-        <kbd className="ml-auto hidden rounded-sm border border-rule px-1.5 py-px text-[11px] lg:inline">
+        <kbd className="ml-auto hidden rounded-sm border border-rule px-1.5 py-px text-caption lg:inline">
           {isMac() ? "⌘K" : "Ctrl K"}
         </kbd>
       </button>

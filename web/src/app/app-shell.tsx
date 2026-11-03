@@ -54,7 +54,7 @@ export const AppShell = () => {
       </a>
       <UpdateBanner />
       <TopBar />
-      <main className="flex-1 outline-none" id="content" tabIndex={-1}>
+      <main className="min-h-dvh flex-1 outline-none" id="content" tabIndex={-1}>
         {isSwitching ? (
           <Skeleton pathname={pending} />
         ) : (
