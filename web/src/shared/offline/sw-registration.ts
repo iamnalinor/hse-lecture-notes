@@ -3,13 +3,23 @@ import { useSyncExternalStore } from "react";
 import { isOfflineSupported } from "#web/api/offline-cache.ts";
 
 const UPDATE_CHECK_MS = 60_000;
+const FRESH_REPLY_MS = 1000;
 
 /**
 `hasUpdate`: the site changed since this tab loaded — a new worker is waiting, or another tab
 already switched to it and this page runs the old code under the new worker.
 */
-const store: { hasUpdate: boolean; registration: ServiceWorkerRegistration | undefined } = {
+const store: {
+  /** The next controller change is this page adopting the new worker: no banner. */
+  adopting: boolean;
+  hasUpdate: boolean;
+  /** The old worker loaded this page of a newer deploy from the network (`service-worker.ts`). */
+  isFresh: boolean;
+  registration: ServiceWorkerRegistration | undefined;
+} = {
+  adopting: false,
   hasUpdate: false,
+  isFresh: false,
   registration: undefined,
 };
 const listeners = new Set<() => void>();
@@ -35,14 +45,43 @@ export const useHasUpdate = (): boolean =>
     () => false,
   );
 
+/**
+A new worker is waiting. A page that already runs the new code switches to it quietly (other tabs
+see the controller change and offer to reload), any other page offers to reload.
+*/
+const onWaiting = (worker: ServiceWorker): void => {
+  if (!store.isFresh) {
+    markUpdate();
+    return;
+  }
+  store.isFresh = false;
+  store.adopting = true;
+  worker.postMessage({ type: "skip-waiting" });
+};
+
 const watchInstalling = (worker: ServiceWorker): void => {
   worker.addEventListener("statechange", () => {
     // Without a controller this is the first install, not an update.
     if (worker.state === "installed" && navigator.serviceWorker.controller !== null) {
-      markUpdate();
+      onWaiting(worker);
     }
   });
 };
+
+/** Asks the worker whether it loaded this page from the network; a worker without the answer → no. */
+const wasLoadedFresh = async (controller: ServiceWorker): Promise<boolean> =>
+  await new Promise((resolve) => {
+    const channel = new MessageChannel();
+    const timer = setTimeout(() => {
+      resolve(false);
+    }, FRESH_REPLY_MS);
+    channel.port1.addEventListener("message", (event) => {
+      clearTimeout(timer);
+      resolve(event.data === true);
+    });
+    channel.port1.start();
+    controller.postMessage({ type: "is-fresh" }, [channel.port2]);
+  });
 
 const watchForUpdates = (registration: ServiceWorkerRegistration): void => {
   const check = async (): Promise<void> => {
@@ -66,9 +105,10 @@ const watchControllerChange = (): void => {
   let previous = navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     // From no controller to one is the first install claiming the page, not an update.
-    if (previous !== null) {
+    if (previous !== null && !store.adopting) {
       markUpdate();
     }
+    store.adopting = false;
     previous = navigator.serviceWorker.controller;
   });
 };
@@ -76,6 +116,19 @@ const watchControllerChange = (): void => {
 const unregisterAll = async (): Promise<void> => {
   const registrations = await navigator.serviceWorker.getRegistrations();
   await Promise.all(registrations.map(async (registration) => await registration.unregister()));
+};
+
+const watchRegistration = async (registration: ServiceWorkerRegistration): Promise<void> => {
+  const { controller } = navigator.serviceWorker;
+  store.isFresh = controller !== null && (await wasLoadedFresh(controller));
+  watchControllerChange();
+  if (controller !== null && registration.waiting !== null) {
+    onWaiting(registration.waiting);
+  }
+  // The worker that served a fresh page starts the update itself: it may be installing already.
+  if (registration.installing !== null) {
+    watchInstalling(registration.installing);
+  }
 };
 
 /** Registers `sw.js` in production; in dev removes a worker left over from `vite preview`. */
@@ -93,10 +146,7 @@ export const registerServiceWorker = async (): Promise<void> => {
     updateViaCache: "none",
   });
   store.registration = registration;
-  if (registration.waiting !== null && navigator.serviceWorker.controller !== null) {
-    markUpdate();
-  }
-  watchControllerChange();
+  await watchRegistration(registration);
   registration.addEventListener("updatefound", () => {
     if (registration.installing !== null) {
       watchInstalling(registration.installing);

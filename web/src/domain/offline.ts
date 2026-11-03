@@ -110,3 +110,23 @@ export const countSavedNotes = (manifest: OfflineManifest, cached: CachedHashes)
     total: notes.length,
   };
 };
+
+/**
+Pages the app of this manifest can show, as paths under the site base without slashes at the ends:
+the home page (`""`), every course and every document. A navigation elsewhere is a page of a newer
+deploy (or a 404): the worker asks the network first instead of serving its cached shell.
+*/
+export const knownPages = (manifest: OfflineManifest): ReadonlySet<string> =>
+  new Set([
+    "",
+    ...manifest.docs.map((doc) => doc.id.split("/", 1)[0] ?? ""),
+    ...manifest.docs.map((doc) => doc.id),
+  ]);
+
+/** `/base/algebra/theory/` under the scope `/base/` → `algebra/theory`. */
+export const pageOf = (scopePath: string, pathname: string): string =>
+  pathname
+    .slice(scopePath.length)
+    .split("/")
+    .filter((part) => part !== "")
+    .join("/");

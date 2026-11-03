@@ -7,7 +7,9 @@ minute stays tiny). Any change of any file changes VERSION → the page offers t
 - install: fetch the manifest of this version; download the shell and shared data whose content
   changed since the cached copy into a staging cache (the old worker keeps serving meanwhile);
 - activate: drop cached files whose content changed or that are gone, move the staged files in;
-- fetch: navigations get the cached app shell; known files are served from the cache and cached
+- fetch: navigations to a page this version knows get the cached app shell; a page it does not know
+  (a new lecture of a newer deploy) is asked from the network first, and that tab gets everything
+  from the network until the page adopts the new worker (`sw-registration.ts`); known files are served from the cache and cached
   on first use (lecture notes are never downloaded until opened, or until the page downloads all of
   them: «Скачать все» or the background download on Wi-Fi, whose requests carry BACKGROUND_HEADER
   and go to the network at low priority); PDFs and the rest go to network.
@@ -18,8 +20,10 @@ import {
   type CachedHashes,
   contentHash,
   HASH_HEADER,
+  knownPages,
   MANIFEST_PATH,
   type OfflineManifest,
+  pageOf,
   STAGE_PREFIX,
   stalePaths,
 } from "../src/domain/offline.ts";
@@ -30,6 +34,14 @@ declare const VERSION: string;
 const STAGE = `${STAGE_PREFIX}${VERSION}`;
 const SCOPE = new URL(self.registration.scope);
 const SHELL = "index.html";
+/** How long a navigation to an unknown page waits for the network before the cached shell. */
+const NAVIGATION_TIMEOUT_MS = 4000;
+/**
+Tabs that loaded a page of a newer deploy from the network: their code expects the new data, so
+their requests skip this version's cache. Lost when the browser stops the idle worker, by which
+time the page has normally switched to the new worker.
+*/
+const freshClients = new Set<string>();
 
 const urlOf = (path: string): string => new URL(path, SCOPE).href;
 
@@ -37,12 +49,14 @@ type Known = {
   /** Every file of a document → all files of that document. */
   readonly docOf: ReadonlyMap<string, readonly string[]>;
   readonly manifest: OfflineManifest;
+  readonly pages: ReadonlySet<string>;
   readonly pathByUrl: ReadonlyMap<string, string>;
 };
 
 const index = (manifest: OfflineManifest): Known => ({
   docOf: new Map(manifest.docs.flatMap((doc) => doc.files.map((file) => [file, doc.files]))),
   manifest,
+  pages: knownPages(manifest),
   pathByUrl: new Map(Object.keys(manifest.files).map((path) => [urlOf(path), path])),
 });
 
@@ -233,6 +247,78 @@ const serveShell = async (request: Request): Promise<Response> => {
   }
 };
 
+const checkForUpdate = async (): Promise<void> => {
+  try {
+    await self.registration.update();
+  } catch {
+    // Offline: the page checks again later.
+  }
+};
+
+/**
+A page this version does not know: the network has it if it is a page of a newer deploy (GitHub
+Pages serves its own copy of the shell with 200, or a redirect to the address with a slash). Then
+the tab runs the new code, and the waiting worker is fetched at once. Anything else (offline, slow,
+`404.html`) → the cached shell, whose router handles old addresses and shows «not found».
+*/
+const serveUnknownPage = async (event: FetchEvent): Promise<Response> => {
+  try {
+    const response = await fetch(event.request.url, {
+      cache: "no-cache",
+      redirect: "manual",
+      signal: AbortSignal.timeout(NAVIGATION_TIMEOUT_MS),
+    });
+    if (response.ok || response.type === "opaqueredirect") {
+      if (response.ok && event.resultingClientId !== "") {
+        freshClients.add(event.resultingClientId);
+        event.waitUntil(checkForUpdate());
+      }
+      return response;
+    }
+  } catch {
+    // Offline or too slow.
+  }
+  return await serveShell(event.request);
+};
+
+const serveNavigation = async (event: FetchEvent): Promise<Response> => {
+  const state = await getKnown();
+  const page = pageOf(SCOPE.pathname, new URL(event.request.url).pathname);
+  return state === undefined || state.pages.has(page)
+    ? await serveShell(event.request)
+    : await serveUnknownPage(event);
+};
+
+/** Network first for a tab on a newer deploy; this version's cache only when offline. */
+const serveFresh = async (request: Request, key: string): Promise<Response> => {
+  try {
+    return await fetch(request, { cache: "no-cache" });
+  } catch {
+    return await serveFile(request, key);
+  }
+};
+
+const serveFileAndDoc = (event: FetchEvent, key: string): void => {
+  const served = serveFile(event.request, key);
+  event.respondWith(served);
+  if (isBackground(event.request)) {
+    // The background download asks for every file itself, one at a time.
+    return;
+  }
+  const complete = async (): Promise<void> => {
+    try {
+      await served;
+      await completeDoc(key);
+    } catch {
+      // Offline or a failed fetch: the document stays partly saved and does not count.
+    }
+  };
+  event.waitUntil(complete());
+};
+
+const isFreshRequest = (event: FetchEvent): boolean =>
+  freshClients.has(event.clientId) && !isBackground(event.request);
+
 self.addEventListener("install", (event) => {
   event.waitUntil(install());
 });
@@ -249,29 +335,26 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (request.mode === "navigate") {
-    event.respondWith(serveShell(request));
+    event.respondWith(serveNavigation(event));
     return;
   }
   const key = `${url.origin}${url.pathname}`;
-  const served = serveFile(request, key);
-  event.respondWith(served);
-  if (isBackground(request)) {
-    // The background download asks for every file itself, one at a time.
+  if (isFreshRequest(event)) {
+    event.respondWith(serveFresh(request, key));
     return;
   }
-  const complete = async (): Promise<void> => {
-    try {
-      await served;
-      await completeDoc(key);
-    } catch {
-      // Offline or a failed fetch: the document stays partly saved and does not count.
-    }
-  };
-  event.waitUntil(complete());
+  serveFileAndDoc(event, key);
 });
 
 self.addEventListener("message", (event) => {
-  if ((event.data as null | { readonly type?: unknown })?.type === "skip-waiting") {
+  const type = (event.data as null | { readonly type?: unknown })?.type;
+  if (type === "skip-waiting") {
     void self.skipWaiting();
+    return;
   }
+  if (type !== "is-fresh") {
+    return;
+  }
+  const source = event.source as Client | null;
+  event.ports[0]?.postMessage(source !== null && freshClients.has(source.id));
 });
