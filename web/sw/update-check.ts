@@ -25,15 +25,21 @@ export const hasNewerDeploy = async (): Promise<boolean> => {
   if (isNewerWorkerOut()) {
     return true;
   }
+  if (!navigator.onLine) {
+    return false;
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
       self.registration.update(),
       new Promise((_resolve, reject) => {
-        setTimeout(reject, UPDATE_CHECK_TIMEOUT_MS);
+        timer = setTimeout(reject, UPDATE_CHECK_TIMEOUT_MS);
       }),
     ]);
   } catch {
     return false;
+  } finally {
+    clearTimeout(timer);
   }
   return isNewerWorkerOut();
 };

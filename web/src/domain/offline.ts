@@ -119,6 +119,7 @@ deploy (or a 404): the worker asks the network first instead of serving its cach
 export const knownPages = (manifest: OfflineManifest): ReadonlySet<string> =>
   new Set([
     "",
+    "index.html",
     ...manifest.docs.map((doc) => doc.id.split("/", 1)[0] ?? ""),
     ...manifest.docs.map((doc) => doc.id),
   ]);

@@ -256,12 +256,18 @@ newer worker is fetched at once. Anything else (offline, slow, `404.html`) → t
 whose router handles old addresses and shows «not found».
 */
 const serveFromNetwork = async (event: FetchEvent): Promise<Response> => {
+  // The timeout covers the wait for the headers only: a long page may keep streaming after it.
+  const abort = new AbortController();
+  const timer = setTimeout(() => {
+    abort.abort();
+  }, NAVIGATION_TIMEOUT_MS);
   try {
     const response = await fetch(event.request.url, {
       cache: "no-cache",
       redirect: "manual",
-      signal: AbortSignal.timeout(NAVIGATION_TIMEOUT_MS),
+      signal: abort.signal,
     });
+    clearTimeout(timer);
     if (response.ok || response.type === "opaqueredirect") {
       if (response.ok && event.resultingClientId !== "") {
         freshClients.add(event.resultingClientId);
@@ -272,6 +278,7 @@ const serveFromNetwork = async (event: FetchEvent): Promise<Response> => {
   } catch {
     // Offline or too slow.
   }
+  clearTimeout(timer);
   return await serveShell(event.request);
 };
 

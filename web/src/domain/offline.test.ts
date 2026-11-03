@@ -106,6 +106,7 @@ describe("knownPages", () => {
       "a/01",
       "a/02",
       "a/glossary",
+      "index.html",
     ]);
   });
 });
