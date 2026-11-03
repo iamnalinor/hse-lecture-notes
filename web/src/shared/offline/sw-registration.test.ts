@@ -8,7 +8,9 @@ const settleQueue: (() => void)[] = [];
 vi.mock("./background-download.ts", () => ({
   whenPageSettled: (start: () => void) => {
     settleQueue.push(start);
-    return () => undefined;
+    return () => {
+      settleQueue.splice(settleQueue.indexOf(start) >>> 0, 1);
+    };
   },
 }));
 
@@ -159,6 +161,72 @@ describe("registerServiceWorker", () => {
     container.switchTo(new FakeWorker("activated"));
     await settle();
     expect(hasBanner()).toBe(true);
+  });
+});
+
+/** Whether `promise` has settled after the pending handlers ran. */
+const isSettled = async (promise: Promise<void>): Promise<boolean> => {
+  let isDone = false;
+  void (async () => {
+    await promise;
+    isDone = true;
+  })();
+  await settle();
+  return isDone;
+};
+
+describe("whenOnOwnWorker", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    settleQueue.length = 0;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("resolves at once on a page that is not fresh", async () => {
+    const { module } = await setup({ isFresh: false });
+    expect(await isSettled(module.whenOnOwnWorker({ hurry: false }))).toBe(true);
+  });
+
+  it("waits on a fresh page until it switched to the new worker", async () => {
+    const { container, module } = await setup({ isFresh: true });
+    const owned = module.whenOnOwnWorker({ hurry: false });
+    const next = new FakeWorker("installing");
+    container.registration.startInstall(next);
+    next.becomes("installed");
+    expect(await isSettled(owned)).toBe(false);
+    pageSettles();
+    container.switchTo(next);
+    expect(await isSettled(owned)).toBe(true);
+  });
+
+  it("switches at once on a click, before the page settles", async () => {
+    const { container, module } = await setup({ isFresh: true });
+    const owned = module.whenOnOwnWorker({ hurry: true });
+    const next = new FakeWorker("installing");
+    container.registration.startInstall(next);
+    next.becomes("installed");
+    await settle();
+    expect(next.posted).toStrictEqual(["skip-waiting"]);
+    pageSettles();
+    expect(next.posted).toStrictEqual(["skip-waiting"]);
+    container.switchTo(next);
+    expect(await isSettled(owned)).toBe(true);
+  });
+
+  it("stops waiting when the new worker is gone", async () => {
+    const { container, module } = await setup({ isFresh: true });
+    const owned = module.whenOnOwnWorker({ hurry: false });
+    const next = new FakeWorker("installing");
+    container.registration.startInstall(next);
+    next.becomes("installed");
+    await settle();
+    next.becomes("redundant");
+    expect(await isSettled(owned)).toBe(true);
+    pageSettles();
+    expect(next.posted).toStrictEqual([]);
   });
 });
 

@@ -11,6 +11,7 @@ import {
   waitTurn,
   whenPageSettled,
 } from "./background-download.ts";
+import { whenOnOwnWorker } from "./sw-registration.ts";
 
 /** Manifest versions whose background download finished or failed in this tab: never again. */
 const finishedVersions = new Set<string>();
@@ -39,6 +40,8 @@ export const useIsSavingInBackground = ({ isManual, manifest }: Options): boolea
         }
       },
       run: async (signal) => {
+        await whenOnOwnWorker({ hurry: false });
+        signal.throwIfAborted();
         await downloadAll(manifest, () => undefined, {
           signal,
           waitTurn: async () => {

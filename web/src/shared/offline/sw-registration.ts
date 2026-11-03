@@ -8,6 +8,8 @@ const UPDATE_CHECK_MS = 60_000;
 const FRESH_REPLY_MS = 1000;
 const SWITCH_TIMEOUT_MS = 3000;
 const REACHABLE_TIMEOUT_MS = 1500;
+/** A fresh page whose new worker never comes (its install failed) stops waiting for it. */
+const OWN_WORKER_TIMEOUT_MS = 30_000;
 
 /**
 `hasUpdate`: the site changed since this tab loaded — a new worker is waiting, or another tab
@@ -16,6 +18,14 @@ already switched to it and this page runs the old code under the new worker.
 const store: {
   /** The worker this page switches to quietly; its controller change shows no banner. */
   adopting: ServiceWorker | undefined;
+  /** A user action asked for the quiet switch to happen now (`whenOnOwnWorker`). */
+  hurry: () => void;
+  isHurried: boolean;
+  /**
+  Resolves once the page runs under the worker of its own version. Until then a fresh page is under
+  the old worker, which passes its requests to the network and saves nothing.
+  */
+  ownWorker: Promise<void>;
   /**
   The old worker loaded this page of a newer deploy from the network (`service-worker.ts`): its
   code is already new, so the first switch of worker needs no reload. Spent by that switch.
@@ -28,10 +38,16 @@ const store: {
 } = {
   adopting: undefined,
   fresh: Promise.resolve(false),
+  hurry: () => undefined,
+  isHurried: false,
+  ownWorker: Promise.resolve(),
   hasUpdate: false,
   registration: undefined,
   switching: false,
 };
+/** Settles `store.ownWorker` of a fresh page (`watchRegistration`). */
+const ownWorker = { resolve: (): void => undefined };
+
 const listeners = new Set<() => void>();
 /** Workers already handled: `updatefound` and the startup check may report the same one. */
 const handled = new WeakSet<ServiceWorker>();
@@ -64,18 +80,34 @@ const isFreshOnce = async (): Promise<boolean> => {
   return isFresh;
 };
 
-const adopt = (worker: ServiceWorker): void => {
+const adopt = (worker: ServiceWorker, onGiveUp: () => void): void => {
   store.adopting = worker;
-  worker.addEventListener("statechange", () => {
-    if (worker.state === "redundant" && store.adopting === worker) {
-      store.adopting = undefined;
+  let isPosted = false;
+  const switchNow = (): void => {
+    if (isPosted) {
+      return;
     }
-  });
-  // Not while the page still loads through the old worker: Chrome then stops that worker mid-request,
-  // the new one may never activate, and the next page load hangs. Once the page is idle the switch
-  // is like a press of «Обновить».
-  whenPageSettled(() => {
+
+    isPosted = true;
+    cancel();
     worker.postMessage({ type: "skip-waiting" });
+  };
+  // Not while the page still loads through the old worker: Chrome then stops that worker mid-request,
+  // the new one may never activate, and the next page load hangs. Once the page is idle (or the
+  // reader clicks «Скачать все») the switch is like a press of «Обновить».
+  const cancel = whenPageSettled(switchNow);
+  store.hurry = switchNow;
+  if (store.isHurried) {
+    switchNow();
+  }
+  worker.addEventListener("statechange", () => {
+    if (!(worker.state === "redundant" && store.adopting === worker)) {
+      return;
+    }
+
+    store.adopting = undefined;
+    cancel();
+    onGiveUp();
   });
 };
 
@@ -89,7 +121,7 @@ const onWaiting = async (worker: ServiceWorker): Promise<void> => {
   }
   handled.add(worker);
   if (await isFreshOnce()) {
-    adopt(worker);
+    adopt(worker, ownWorker.resolve);
     return;
   }
   markUpdate();
@@ -148,6 +180,8 @@ const watchControllerChange = (): void => {
     const isUpdate = previous !== null;
     const isAdopted = controller !== null && controller === store.adopting;
     previous = controller;
+    // Under the new worker now, whoever switched it on.
+    ownWorker.resolve();
     store.adopting = undefined;
     if (!isUpdate || isAdopted) {
       return;
@@ -169,6 +203,16 @@ const unregisterAll = async (): Promise<void> => {
 const watchRegistration = (registration: ServiceWorkerRegistration): void => {
   const { controller } = navigator.serviceWorker;
   store.fresh = controller === null ? Promise.resolve(false) : wasLoadedFresh(controller);
+  store.ownWorker = new Promise((resolve) => {
+    ownWorker.resolve = resolve;
+    setTimeout(resolve, OWN_WORKER_TIMEOUT_MS);
+    const freshness = store.fresh;
+    void (async () => {
+      if (!(await freshness)) {
+        resolve();
+      }
+    })();
+  });
   watchControllerChange();
   registration.addEventListener("updatefound", () => {
     if (registration.installing !== null) {
@@ -226,6 +270,18 @@ const switchWorker = (load: () => void): void => {
   navigator.serviceWorker.addEventListener("controllerchange", loadOnce, { once: true });
   setTimeout(loadOnce, SWITCH_TIMEOUT_MS);
   waiting.postMessage({ type: "skip-waiting" });
+};
+
+/**
+Resolves once downloads through the worker get saved: at once, except on a fresh page before its
+quiet switch. `hurry` (a click on «Скачать все»): the page is loaded, switch without waiting for idle.
+*/
+export const whenOnOwnWorker = async (options: { readonly hurry: boolean }): Promise<void> => {
+  if (options.hurry) {
+    store.isHurried = true;
+    store.hurry();
+  }
+  await store.ownWorker;
 };
 
 /** «Обновить»: switches to the waiting worker and reloads. */
