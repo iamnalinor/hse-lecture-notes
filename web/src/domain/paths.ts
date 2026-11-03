@@ -17,3 +17,13 @@ export const isDocumentPath = (pathname: string): boolean => {
   const parts = pathname.split("/").filter((part) => part !== "");
   return parts.length === 2 && parts[1] !== "glossary";
 };
+
+const trimSlashes = (pathname: string): string =>
+  pathname
+    .split("/")
+    .filter((part) => part !== "")
+    .join("/");
+
+/** Another page, not an anchor or a trailing slash on the same one. */
+export const isOtherPage = (from: string, to: string): boolean =>
+  trimSlashes(from) !== trimSlashes(to);

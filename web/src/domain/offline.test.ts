@@ -6,8 +6,10 @@ import {
   countSavedNotes,
   fileWeight,
   isDocFresh,
+  knownPages,
   missingDocFiles,
   type OfflineManifest,
+  pageOf,
   stalePaths,
 } from "./offline.ts";
 
@@ -93,5 +95,30 @@ describe("contentHash", () => {
   it("is a stable short SHA-256", async () => {
     const hash = await contentHash(new TextEncoder().encode("abc"));
     expect(hash).toBe("ba7816bf8f01cfea");
+  });
+});
+
+describe("knownPages", () => {
+  it("lists the home page, the courses and every document", () => {
+    expect([...knownPages(MANIFEST)].toSorted((a, b) => a.localeCompare(b))).toStrictEqual([
+      "",
+      "a",
+      "a/01",
+      "a/02",
+      "a/glossary",
+      "index.html",
+    ]);
+  });
+});
+
+describe("pageOf", () => {
+  it.each([
+    ["/", "/", ""],
+    ["/base/", "/base/", ""],
+    ["/base/", "/base/a/01", "a/01"],
+    ["/base/", "/base/a/theory/", "a/theory"],
+    ["/", "/a/", "a"],
+  ])("scope %s, path %s → %s", (scope, pathname, page) => {
+    expect(pageOf(scope, pathname)).toBe(page);
   });
 });
