@@ -4,5 +4,5 @@
     "lib": ["ESNext", "WebWorker"],
     "types": []
   },
-  "include": ["service-worker.ts", "../src/domain/offline.ts"]
+  "include": ["service-worker.ts", "update-check.ts", "../src/domain/offline.ts"]
 }

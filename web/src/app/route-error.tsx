@@ -4,6 +4,7 @@ import { paths } from "#web/domain/paths.ts";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
 import { applyUpdate, useHasUpdate } from "#web/shared/offline/sw-registration.ts";
+import { useUpdateOnNavigation } from "#web/shared/offline/update-on-navigation.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
 import { isNotFound } from "./not-found.ts";
@@ -26,6 +27,8 @@ export const RouteError = () => {
   const isMissing = isNotFound(error);
   // A tab still on the previous version may ask for files the new one renamed (a lecture slug).
   const hasUpdate = useHasUpdate();
+  // Rendered instead of `AppShell`: links from here open the new version too.
+  useUpdateOnNavigation();
   useDocumentTitle(isMissing ? "Страница не найдена" : "Ошибка");
 
   return (

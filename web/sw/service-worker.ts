@@ -7,9 +7,10 @@ minute stays tiny). Any change of any file changes VERSION → the page offers t
 - install: fetch the manifest of this version; download the shell and shared data whose content
   changed since the cached copy into a staging cache (the old worker keeps serving meanwhile);
 - activate: drop cached files whose content changed or that are gone, move the staged files in;
-- fetch: navigations to a page this version knows get the cached app shell; a page it does not know
-  (a new lecture of a newer deploy) is asked from the network first, and that tab gets everything
-  from the network until the page adopts the new worker (`sw-registration.ts`); known files are served from the cache and cached
+- fetch: navigations to a page this version knows get the cached app shell, unless `sw.js` on the
+  network has changed (checked for up to 1.5 s); then, and for a page this version does not know (a
+  new lecture), the page comes from the network, and that tab gets everything from the network
+  until it adopts the new worker (`sw-registration.ts`); known files are served from the cache and cached
   on first use (lecture notes are never downloaded until opened, or until the page downloads all of
   them: «Скачать все» or the background download on Wi-Fi, whose requests carry BACKGROUND_HEADER
   and go to the network at low priority); PDFs and the rest go to network.
@@ -27,6 +28,7 @@ import {
   STAGE_PREFIX,
   stalePaths,
 } from "../src/domain/offline.ts";
+import { checkForUpdate, hasNewerDeploy } from "./update-check.ts";
 
 declare const self: ServiceWorkerGlobalScope;
 declare const VERSION: string;
@@ -34,7 +36,7 @@ declare const VERSION: string;
 const STAGE = `${STAGE_PREFIX}${VERSION}`;
 const SCOPE = new URL(self.registration.scope);
 const SHELL = "index.html";
-/** How long a navigation to an unknown page waits for the network before the cached shell. */
+/** How long a navigation waits for the page from the network before the cached shell. */
 const NAVIGATION_TIMEOUT_MS = 4000;
 /**
 Tabs that loaded a page of a newer deploy from the network: their code expects the new data, so
@@ -247,21 +249,13 @@ const serveShell = async (request: Request): Promise<Response> => {
   }
 };
 
-const checkForUpdate = async (): Promise<void> => {
-  try {
-    await self.registration.update();
-  } catch {
-    // Offline: the page checks again later.
-  }
-};
-
 /**
-A page this version does not know: the network has it if it is a page of a newer deploy (GitHub
-Pages serves its own copy of the shell with 200, or a redirect to the address with a slash). Then
-the tab runs the new code, and the waiting worker is fetched at once. Anything else (offline, slow,
-`404.html`) → the cached shell, whose router handles old addresses and shows «not found».
+The page from the network, for a page of a newer deploy (GitHub Pages serves its own copy of the
+shell with 200, or a redirect to the address with a slash). Then the tab runs the new code, and the
+newer worker is fetched at once. Anything else (offline, slow, `404.html`) → the cached shell,
+whose router handles old addresses and shows «not found».
 */
-const serveUnknownPage = async (event: FetchEvent): Promise<Response> => {
+const serveFromNetwork = async (event: FetchEvent): Promise<Response> => {
   try {
     const response = await fetch(event.request.url, {
       cache: "no-cache",
@@ -281,12 +275,18 @@ const serveUnknownPage = async (event: FetchEvent): Promise<Response> => {
   return await serveShell(event.request);
 };
 
+/**
+A page this version knows → the cached shell, unless a newer deploy is out: then the new version
+from the network. A page it does not know (a new lecture) → the network first.
+*/
 const serveNavigation = async (event: FetchEvent): Promise<Response> => {
   const state = await getKnown();
+  if (state === undefined) {
+    return await serveShell(event.request);
+  }
   const page = pageOf(SCOPE.pathname, new URL(event.request.url).pathname);
-  return state === undefined || state.pages.has(page)
-    ? await serveShell(event.request)
-    : await serveUnknownPage(event);
+  const isCurrent = state.pages.has(page) && !(await hasNewerDeploy());
+  return isCurrent ? await serveShell(event.request) : await serveFromNetwork(event);
 };
 
 /** Network first for a tab on a newer deploy; this version's cache only when offline. */

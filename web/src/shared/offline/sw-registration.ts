@@ -4,6 +4,7 @@ import { isOfflineSupported } from "#web/api/offline-cache.ts";
 
 const UPDATE_CHECK_MS = 60_000;
 const FRESH_REPLY_MS = 1000;
+const SWITCH_TIMEOUT_MS = 3000;
 
 /**
 `hasUpdate`: the site changed since this tab loaded — a new worker is waiting, or another tab
@@ -155,20 +156,41 @@ export const registerServiceWorker = async (): Promise<void> => {
   watchForUpdates(registration);
 };
 
-/** Switches to the waiting worker and reloads once it controls the page. */
-export const applyUpdate = (): void => {
+/**
+Switches to the waiting worker, then loads the page with `load` once the new worker controls it
+(or after `SWITCH_TIMEOUT_MS`, if the switch does not happen: never leave a click hanging).
+*/
+const switchWorker = (load: () => void): void => {
   // Read at the click: another tab may have activated the worker this banner was shown for.
   const waiting = store.registration?.waiting ?? null;
   if (waiting === null) {
-    globalThis.location.reload();
+    load();
     return;
   }
-  navigator.serviceWorker.addEventListener(
-    "controllerchange",
-    () => {
-      globalThis.location.reload();
-    },
-    { once: true },
-  );
+  let isLoading = false;
+  const loadOnce = (): void => {
+    if (isLoading) {
+      return;
+    }
+
+    isLoading = true;
+    load();
+  };
+  navigator.serviceWorker.addEventListener("controllerchange", loadOnce, { once: true });
+  setTimeout(loadOnce, SWITCH_TIMEOUT_MS);
   waiting.postMessage({ type: "skip-waiting" });
+};
+
+/** «Обновить»: switches to the waiting worker and reloads. */
+export const applyUpdate = (): void => {
+  switchWorker(() => {
+    globalThis.location.reload();
+  });
+};
+
+/** A link followed while an update is pending: the new version of the site opens at `href`. */
+export const openUpdated = (href: string): void => {
+  switchWorker(() => {
+    globalThis.location.assign(href);
+  });
 };
