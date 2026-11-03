@@ -30,7 +30,7 @@ export const Reveal = ({
         aria-controls={panelId}
         aria-expanded={open}
         aria-label={accessibleName}
-        className="group/reveal inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md border border-rule bg-card px-3.5 text-footnote font-semibold text-ink transition-colors hover:bg-wash"
+        className="group/reveal inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md border border-rule bg-card px-3.5 text-footnote font-semibold text-ink hover:bg-wash"
         onClick={() => {
           setOpen((value) => !value);
         }}

@@ -33,7 +33,7 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
       </thead>
       <tbody>
         {lectures.map((lecture) => (
-          <tr className="transition-colors hover:bg-wash/60" key={lecture.weekId}>
+          <tr className="hover:bg-wash/60" key={lecture.weekId}>
             <td
               className={`${CELL} w-11 font-semibold tabular-nums ${lecture.weekId === current ? "text-def" : "text-muted"}`}
             >

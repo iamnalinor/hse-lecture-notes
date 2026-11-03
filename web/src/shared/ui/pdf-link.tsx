@@ -18,7 +18,7 @@ export const PdfLink = ({ course, docId, label = "PDF", variant }: Props) => (
     className={
       variant === "button"
         ? BUTTON_SECONDARY
-        : "inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-footnote text-muted no-underline transition-colors hover:bg-wash hover:text-ink"
+        : "inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-footnote text-muted no-underline hover:bg-wash hover:text-ink"
     }
     download
     href={pdfUrl(course, docId)}
