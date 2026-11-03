@@ -26,9 +26,6 @@ export const ProblemFooter = ({ answer, hideAnswer = false, solution }: Props) =
           <div>{solution}</div>
         </Reveal>
       )}
-      {solution !== undefined && (
-        <span className="text-footnote text-muted">Решение — после своей попытки</span>
-      )}
     </div>
   );
 };

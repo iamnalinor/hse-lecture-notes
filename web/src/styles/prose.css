@@ -5,6 +5,18 @@
   overflow-wrap: break-word;
 }
 
+/*
+A lecture or a test prep is tens of thousands of KaTeX nodes. Opening an answer changes the height of
+one block, and without this the browser re-renders the whole document: 100–250 ms on a phone before
+the answer shows. The blocks and paragraphs off screen are skipped; `auto` remembers each one's real
+height once it has been drawn, so the page does not jump when scrolling back. Find-in-page and
+anchors still reach skipped content.
+*/
+.prose-notes section > :not(section) {
+  contain-intrinsic-size: auto 150px;
+  content-visibility: auto;
+}
+
 .prose-notes p {
   margin: 0 0 0.85em;
   hyphens: auto;
