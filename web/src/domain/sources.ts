@@ -113,4 +113,15 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
     },
     { note: "подготовка к КР-1", title: "КР-1 2025/26" },
   ],
+  aiya: [
+    {
+      author: "А. А. Белеванцев",
+      note: "лекции и слайды",
+      title: "Лекции по алгоритмам и алгоритмическим языкам, ПИ 2026/27",
+    },
+    {
+      title: "Страница курса 2026/27",
+      url: "https://www.hse.ru/ba/se/courses/1189303730.html",
+    },
+  ],
 };

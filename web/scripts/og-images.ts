@@ -39,7 +39,7 @@ body {
   width: 64px; height: 64px; border-radius: 14px; background: #0f2d69; color: #fff;
   display: grid; place-items: center; font-size: 28px; font-weight: 900;
 }
-.symbol { position: absolute; top: 58px; right: 72px; font-size: 54px; color: #8c867b; }
+.symbol { position: absolute; top: 58px; right: 72px; color: #8c867b; }
 .kicker { margin-top: auto; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b665e; }
 h1 { margin-top: 18px; max-width: 900px; font-size: 92px; line-height: 1; font-weight: 900; }
 .note { margin-top: 26px; font-size: 34px; color: #6b665e; }
@@ -56,16 +56,18 @@ type Card = {
   readonly kicker: string;
   readonly note: string;
   readonly symbol: string;
+  /** Font size of the symbol in px: the site card fits every course's symbol beside the brand. */
+  readonly symbolSize?: number;
   readonly title: string;
 };
 
-const html = ({ kicker, note, symbol, title }: Card): string => `<!doctype html>
+const html = ({ kicker, note, symbol, symbolSize = 54, title }: Card): string => `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <link rel="stylesheet" href="${fileUrl("../node_modules/katex/dist/katex.min.css")}">
 <style>${STYLE}</style></head>
 <body>
   <div class="brand"><span class="logo">ПИ</span>${SITE_NAME} ВШЭ</div>
-  <div class="symbol">${symbol}</div>
+  <div class="symbol" style="font-size: ${String(symbolSize)}px">${symbol}</div>
   <div class="kicker">${kicker}</div>
   <h1>${title}</h1>
   <p class="note">${note}</p>
@@ -81,8 +83,9 @@ const courseCard = (course: CourseInfo): Card => ({
 
 const siteCard: Card = {
   kicker: "1 курс · 2026/27",
-  note: "Алгебра · Математический анализ · Дискретная математика",
+  note: COURSES.map((course) => course.name).join(" · "),
   symbol: tex(COURSES.map((course) => course.symbol).join(String.raw`\quad `)),
+  symbolSize: 38,
   title: "Конспекты лекций",
 };
 
