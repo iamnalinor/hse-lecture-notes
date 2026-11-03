@@ -52,7 +52,7 @@ export const Component = () => {
           <nav aria-label="Материалы курса" className="contents">
             {current !== undefined && (
               <Link className={BUTTON_PRIMARY} to={paths.lecture(info.id, current.weekId)}>
-                Читать лекцию {current.lecture}
+                Читать лекцию {current.lecture}{" "}
                 <span className="font-normal opacity-75">· {dayMonth(current.date)}</span>
               </Link>
             )}

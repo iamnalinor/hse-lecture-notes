@@ -25,14 +25,30 @@ export const tocItems = (toc: readonly TocItem[]): readonly TocItem[] =>
 /** From this width the table of contents is a sticky side column; below it, a sheet (`TocSheet`). */
 export const WIDE_QUERY = "(min-width: 1100px)";
 
-export const DocToc = ({ caption, minutes, onNavigate, toc }: Props) => {
-  const items = tocItems(toc);
-  const active = useActiveSection(items.map((item) => item.id));
+type State = {
+  /** Id of the section being read (`useActiveSection`). */
+  readonly active: string | undefined;
+  /** Scroll position of the page, 0…1. */
+  readonly progress: number;
+};
+
+/**
+The side column: tracks the section being read itself. Only one table of contents per page may call
+`useActiveSection` — the first one to see a jump pins its target, the others would miss it — so the
+phone sheet renders `TocList` with its own state instead of mounting a second `DocToc`.
+*/
+export const DocToc = (props: Props) => {
+  const active = useActiveSection(tocItems(props.toc).map((item) => item.id));
   const progress = useReadingProgress();
+  return <TocList {...props} active={active} progress={progress} />;
+};
+
+export const TocList = ({ active, caption, minutes, onNavigate, progress, toc }: Props & State) => {
+  const items = tocItems(toc);
   const percent = Math.round(progress * 100);
   const ref = useRef<HTMLElement>(null);
 
-  // A long list (a test prep) scrolls in its sticky column: keep the active item in view.
+  // A long list (a test prep) scrolls in its column or sheet: keep the active item in view.
   useEffect(() => {
     ref.current?.querySelector('[aria-current="location"]')?.scrollIntoView({ block: "nearest" });
   }, [active]);

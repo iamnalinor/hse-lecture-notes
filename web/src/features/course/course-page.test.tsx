@@ -72,7 +72,7 @@ describe("course page", () => {
       "/calculus/08_oct23_continuity",
     );
     expect(navLinks("Материалы курса")).toStrictEqual([
-      "Читать лекцию 8· 23 окт",
+      "Читать лекцию 8 · 23 окт",
       "Теория",
       "Глоссарий",
     ]);

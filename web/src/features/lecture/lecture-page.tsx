@@ -58,7 +58,7 @@ const LecturePage = ({ entry, info, lectures }: LectureProps) => {
       <div className="sticky top-6 hidden max-h-[calc(100vh-3rem)] self-start overflow-y-auto pt-14 min-[1100px]:block">
         {isWide && <DocToc caption={caption} minutes={minutes} toc={meta.toc} />}
       </div>
-      <div className="min-w-0 max-[1099px]:pb-16">
+      <div className="min-w-0">
         <LectureHeader
           course={info.id}
           courseName={info.name}

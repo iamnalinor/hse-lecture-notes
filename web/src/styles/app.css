@@ -97,7 +97,7 @@ stray `text-sm` does nothing instead of adding an eleventh size.
   --text-display: 56px;
   --text-display--line-height: 58px;
 
-  /* Four radii: hairline details (kbd, highlight), controls, cards, large surfaces. */
+  /* Radii: hairline details (xs, sm: kbd, highlight), controls (md), cards (lg), large surfaces (xl). */
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -218,6 +218,11 @@ stray `text-sm` does nothing instead of adding an eleventh size.
     animation: none;
     box-shadow: 0 0 0 3px var(--flash);
   }
+}
+
+/* Room under the footer for the floating table-of-contents pill, so it never covers the footer links. */
+body:has([data-toc-pill]) footer {
+  padding-bottom: 4.5rem;
 }
 
 /* The floating table-of-contents pill gives way to the back bar: both sit at the bottom edge. */
