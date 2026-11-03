@@ -18,6 +18,12 @@
       "name_en": "Discrete mathematics",
       "weekday": 4,
       "has_practice": true
+    },
+    "aiya": {
+      "name": "Алгоритмы и алгоритмические языки",
+      "name_en": "Algorithms and algorithmic languages",
+      "weekday": 1,
+      "has_practice": true
     }
   },
   "date_exceptions": {

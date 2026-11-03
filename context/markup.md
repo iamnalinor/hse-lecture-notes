@@ -8,7 +8,7 @@
 
 ```yaml
 ---
-course: algebra                 # algebra | calculus | discrete (= папка)
+course: algebra                 # algebra | calculus | discrete | aiya (= папка)
 lecture: 4                      # номер лекции = NN в имени файла
 date: 2026-09-23                # день ЛЕКЦИИ (не семинара), YYYY-MM-DD
 title: Свойства определителя. Миноры. Разложение Лапласа

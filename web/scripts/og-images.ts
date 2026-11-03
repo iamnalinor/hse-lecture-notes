@@ -14,7 +14,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright-core";
 
-import { type CourseInfo, COURSES } from "../src/domain/courses.ts";
+import { type CourseId, type CourseInfo, COURSES } from "../src/domain/courses.ts";
 import { OG_IMAGE_SIZE, type OgImageId, ogImagePath, SITE_NAME } from "../src/domain/seo.ts";
 
 const fileUrl = (relative: string): string =>
@@ -39,9 +39,9 @@ body {
   width: 64px; height: 64px; border-radius: 14px; background: #0f2d69; color: #fff;
   display: grid; place-items: center; font-size: 28px; font-weight: 900;
 }
-.symbol { position: absolute; top: 58px; right: 72px; font-size: 54px; color: #8c867b; }
+.symbol { position: absolute; top: 58px; right: 72px; color: #8c867b; }
 .kicker { margin-top: auto; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b665e; }
-h1 { margin-top: 18px; max-width: 900px; font-size: 92px; line-height: 1; font-weight: 900; }
+h1 { margin-top: 18px; max-width: 900px; line-height: 1; font-weight: 900; }
 .note { margin-top: 26px; font-size: 34px; color: #6b665e; }
 footer {
   margin-top: 48px; padding-top: 26px; border-top: 2px solid #e3ded3;
@@ -55,34 +55,65 @@ const tex = (source: string): string => renderToString(source, { throwOnError: t
 type Card = {
   readonly kicker: string;
   readonly note: string;
+  /** What the site has for the card's course (or for all of them): the footer line. */
+  readonly offer: string;
   readonly symbol: string;
+  /** Font size of the symbol in px: the site card fits every course's symbol beside the brand. */
+  readonly symbolSize?: number;
   readonly title: string;
+  /** Font size of the title in px: a long course name must fit in two lines. */
+  readonly titleSize?: number;
 };
 
-const html = ({ kicker, note, symbol, title }: Card): string => `<!doctype html>
+const html = ({
+  kicker,
+  note,
+  offer,
+  symbol,
+  symbolSize = 54,
+  title,
+  titleSize = 92,
+}: Card): string => `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <link rel="stylesheet" href="${fileUrl("../node_modules/katex/dist/katex.min.css")}">
 <style>${STYLE}</style></head>
 <body>
   <div class="brand"><span class="logo">ПИ</span>${SITE_NAME} ВШЭ</div>
-  <div class="symbol">${symbol}</div>
+  <div class="symbol" style="font-size: ${String(symbolSize)}px">${symbol}</div>
   <div class="kicker">${kicker}</div>
-  <h1>${title}</h1>
+  <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
   <p class="note">${note}</p>
-  <footer><b>hse.nalinor.dev</b><span>Теория · глоссарий · подготовка к КР и коллоквиумам</span></footer>
+  <footer><b>hse.nalinor.dev</b><span>${offer}</span></footer>
 </body></html>`;
+
+/**
+What each course has on the site besides lectures, for the footer of its card. Written by hand, not
+collected from the data: update it and rerun this script when a course gets its first preparation
+page for a test or colloquium (`context/site.md` reminds of this too).
+*/
+const OFFER: Readonly<Record<CourseId, string>> = {
+  aiya: "Теория · глоссарий · ПУД",
+  algebra: "Теория · глоссарий · ПУД · подготовка к КР",
+  calculus: "Теория · глоссарий · ПУД · подготовка к КР и коллоквиуму",
+  discrete: "Теория · глоссарий · ПУД · подготовка к КР",
+};
 
 const courseCard = (course: CourseInfo): Card => ({
   kicker: "Конспекты лекций · 2026/27",
   note: `Лектор — ${course.lecturer}`,
+  offer: OFFER[course.id],
   symbol: tex(course.symbol),
   title: course.name,
+  // At 92px a title longer than ~25 characters takes three lines and pushes the footer off the card.
+  titleSize: course.name.length > 25 ? 72 : 92,
 });
 
 const siteCard: Card = {
   kicker: "1 курс · 2026/27",
-  note: "Алгебра · Математический анализ · Дискретная математика",
+  note: COURSES.map((course) => course.name).join(" · "),
+  offer: "Теория · глоссарий · ПУД · подготовка к КР и коллоквиумам",
   symbol: tex(COURSES.map((course) => course.symbol).join(String.raw`\quad `)),
+  symbolSize: 38,
   title: "Конспекты лекций",
 };
 

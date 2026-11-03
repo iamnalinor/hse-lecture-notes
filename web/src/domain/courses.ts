@@ -1,4 +1,4 @@
-export type CourseId = "algebra" | "calculus" | "discrete";
+export type CourseId = "aiya" | "algebra" | "calculus" | "discrete";
 
 export type CourseInfo = {
   readonly id: CourseId;
@@ -51,6 +51,18 @@ export const COURSES: readonly CourseInfo[] = [
     symbol: String.raw`a \mid b`,
     weekday: "Пятница",
     weekdayDative: "пятницам",
+  },
+  {
+    id: "aiya",
+    lecturer: "Белеванцев А. А.",
+    lecturerUrl: "https://www.hse.ru/org/persons/501143275",
+    name: "Алгоритмы и алгоритмические языки",
+    short: "АиАЯ",
+    summary:
+      "Теория алгоритмов: машина Тьюринга, универсальная машина, алгоритмическая неразрешимость; язык C изнутри; базовые структуры данных и алгоритмы: списки, деревья, хеш-таблицы, сортировка и поиск.",
+    symbol: String.raw`\texttt{*p++}`,
+    weekday: "Вторник",
+    weekdayDative: "вторникам",
   },
 ];
 

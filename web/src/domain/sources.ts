@@ -113,4 +113,26 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
     },
     { note: "подготовка к КР-1", title: "КР-1 2025/26" },
   ],
+  aiya: [
+    {
+      author: "А. А. Белеванцев",
+      note: "лекции и слайды",
+      title: "Лекции по алгоритмам и алгоритмическим языкам, ПИ 2026/27",
+    },
+    {
+      title: "Страница курса 2026/27",
+      url: "https://www.hse.ru/ba/se/courses/1189303730.html",
+    },
+    {
+      author: "А. А. Белеванцев",
+      note: "тот же курс на ВМК МГУ: видео 25 лекций с таймкодами по темам",
+      title: "Алгоритмы и алгоритмические языки, ВМК МГУ, 2019",
+      url: "https://teach-in.ru/course/algorithms",
+    },
+    {
+      note: "слайды всех лекций, задачи коллоквиумов и экзаменов",
+      title: "Сайт курса АиАЯ на ВМК МГУ",
+      url: "https://algcourse.cs.msu.su/",
+    },
+  ],
 };
