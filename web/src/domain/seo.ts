@@ -9,7 +9,7 @@ import { type CourseId, findCourse } from "./courses.ts";
 export const SITE_NAME = "Конспекты ПИ ФКН";
 /** The same text is in `index.html`: the shell of the home page. */
 export const SITE_DESCRIPTION =
-  "Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика. Теория, глоссарий, подготовка к контрольным и коллоквиумам, PDF.";
+  "Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика, алгоритмы и алгоритмические языки. Теория, глоссарий, подготовка к контрольным и коллоквиумам, PDF.";
 /**
 The address search engines keep: always the production domain, also in PR previews (they must not
 compete with the site) and on a `<owner>.github.io/<repo>` deploy.

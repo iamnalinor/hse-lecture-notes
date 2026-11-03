@@ -16,7 +16,7 @@ export const CoursesSection = ({ lectures, preps, today }: Props) => (
     <div className="mb-7">
       <SectionTitle>Курсы</SectionTitle>
     </div>
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-5 sm:grid-cols-2">
       {COURSES.map((course) => (
         <CourseCard
           course={course}

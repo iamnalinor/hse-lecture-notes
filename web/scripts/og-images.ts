@@ -41,7 +41,7 @@ body {
 }
 .symbol { position: absolute; top: 58px; right: 72px; color: #8c867b; }
 .kicker { margin-top: auto; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b665e; }
-h1 { margin-top: 18px; max-width: 900px; font-size: 92px; line-height: 1; font-weight: 900; }
+h1 { margin-top: 18px; max-width: 900px; line-height: 1; font-weight: 900; }
 .note { margin-top: 26px; font-size: 34px; color: #6b665e; }
 footer {
   margin-top: 48px; padding-top: 26px; border-top: 2px solid #e3ded3;
@@ -59,9 +59,18 @@ type Card = {
   /** Font size of the symbol in px: the site card fits every course's symbol beside the brand. */
   readonly symbolSize?: number;
   readonly title: string;
+  /** Font size of the title in px: a long course name must fit in two lines. */
+  readonly titleSize?: number;
 };
 
-const html = ({ kicker, note, symbol, symbolSize = 54, title }: Card): string => `<!doctype html>
+const html = ({
+  kicker,
+  note,
+  symbol,
+  symbolSize = 54,
+  title,
+  titleSize = 92,
+}: Card): string => `<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <link rel="stylesheet" href="${fileUrl("../node_modules/katex/dist/katex.min.css")}">
 <style>${STYLE}</style></head>
@@ -69,7 +78,7 @@ const html = ({ kicker, note, symbol, symbolSize = 54, title }: Card): string =>
   <div class="brand"><span class="logo">ПИ</span>${SITE_NAME} ВШЭ</div>
   <div class="symbol" style="font-size: ${String(symbolSize)}px">${symbol}</div>
   <div class="kicker">${kicker}</div>
-  <h1>${title}</h1>
+  <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
   <p class="note">${note}</p>
   <footer><b>hse.nalinor.dev</b><span>Теория · глоссарий · подготовка к КР и коллоквиумам</span></footer>
 </body></html>`;
@@ -79,6 +88,8 @@ const courseCard = (course: CourseInfo): Card => ({
   note: `Лектор — ${course.lecturer}`,
   symbol: tex(course.symbol),
   title: course.name,
+  // At 92px a title longer than ~25 characters takes three lines and pushes the footer off the card.
+  titleSize: course.name.length > 25 ? 72 : 92,
 });
 
 const siteCard: Card = {
