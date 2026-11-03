@@ -5,22 +5,22 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Palette from the design (light = «Учебник», dark = the night-before-the-exam variant). */
+/* Palette «Тихая бумага»: near-white neutral paper, graphite at night; the warm hue is left to theorems. */
 :root {
   color-scheme: light;
-  --paper: #fcfbf7;
+  --paper: #fafaf8;
   --card: #fff;
-  --ink: #1d1b18;
-  --muted: #6b665e;
-  --faint: #756f65;
-  --rule: #e3ded3;
-  --wash: #f3f0e8;
+  --ink: #1c1c1e;
+  --muted: #5f5f63;
+  --faint: #727276;
+  --rule: #e4e4e1;
+  --wash: #f1f1ee;
   --brand: #0f2d69;
-  --def: #2b5797;
-  --thm: #9c4f12;
-  --ex: #2e7d4f;
-  --rem: #6e6e6e;
-  --prob: #6a3d9a;
+  --def: #2a58a6;
+  --thm: #a14e17;
+  --ex: #2f7350;
+  --rem: #6b6b70;
+  --prob: #5e4a96;
   --red: #b03a2e;
   --org: #c76a00;
   --flash: #d6aa28;
@@ -28,19 +28,19 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #1a1916;
-  --card: #221f1b;
-  --ink: #ece7dd;
-  --muted: #a49e92;
-  --faint: #9a9488;
-  --rule: #36332d;
-  --wash: #2a2722;
+  --paper: #141415;
+  --card: #1c1c1e;
+  --ink: #ececee;
+  --muted: #a3a3a8;
+  --faint: #8e8e93;
+  --rule: #2c2c2e;
+  --wash: #232325;
   --brand: #2e4f94;
-  --def: #86aee6;
-  --thm: #e09a5f;
-  --ex: #73c694;
-  --rem: #a49e92;
-  --prob: #b99be0;
+  --def: #8db6f2;
+  --thm: #e5a370;
+  --ex: #7cc79c;
+  --rem: #a3a3a8;
+  --prob: #b8a6e6;
   --red: #ec8a7d;
   --org: #e8a24e;
   --flash: #e8c65e;
