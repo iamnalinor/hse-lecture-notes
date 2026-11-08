@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { TicketBank, TicketQuestion } from "./schemas.ts";
 
-import { drawTicket } from "./tickets.ts";
+import { drawTicket, refsWithProof } from "./tickets.ts";
 
 const question = (id: string, kind: string, topic: string): TicketQuestion => ({
   answer: "",
@@ -116,5 +116,28 @@ describe("drawTicket", () => {
     );
     expect(variants).toStrictEqual(new Set(["c1,d1", "p1"]));
     expect(drawTicket(choice, () => 0.99).map((part) => part.title)).toStrictEqual(["Задача"]);
+  });
+});
+
+const ref = (doc: string, id: string) => ({ doc, id });
+
+describe("refsWithProof", () => {
+  it("drops the lecture proof of a statement the page outlines", () => {
+    const refs = [ref("04_x", "prop:lec04:transpose"), ref("kr1", "rem:kr1:proof-det-transpose")];
+    expect([...refsWithProof(refs, "kr1")]).toEqual([]);
+  });
+
+  it("keeps the proof of a statement after the last outline", () => {
+    const refs = [
+      ref("05_x", "thm:lec05:weierstrass"),
+      ref("colloq1", "rem:colloq1:proof-weierstrass"),
+      ref("05_x", "prop:lec05:monotone-infinite"),
+    ];
+    expect([...refsWithProof(refs, "colloq1")]).toEqual(["prop:lec05:monotone-infinite"]);
+  });
+
+  it("keeps every proof when the page has no outline", () => {
+    const refs = [ref("06_x", "thm:lec06:bw"), ref("colloq1", "rem:colloq1:bw-trap")];
+    expect([...refsWithProof(refs, "colloq1")]).toEqual(["thm:lec06:bw", "rem:colloq1:bw-trap"]);
   });
 });

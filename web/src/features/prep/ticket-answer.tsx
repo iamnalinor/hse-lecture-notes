@@ -1,11 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Link } from "react-router";
 
 import type { TicketRef } from "#web/domain/schemas.ts";
 
 import { fragmentQuery, useLabelIndex } from "#web/api/queries.ts";
 import { paths } from "#web/domain/paths.ts";
-import { extractBlock } from "#web/shared/reader/extract-preview.ts";
+import { refsWithProof } from "#web/domain/tickets.ts";
+import { type AnswerPart, extractAnswerPart } from "#web/shared/reader/extract-preview.ts";
 import { FragmentView } from "#web/shared/reader/fragment-view.tsx";
 
 type Props = {
@@ -21,65 +22,90 @@ type Props = {
 
 const LINK = "text-footnote font-semibold text-def no-underline hover:underline";
 
-type Ref = { readonly course: string; readonly blockRef: TicketRef };
-
-/** One block of the answer, cut out of its document (a lecture or this page) and drawn in place. */
-const AnswerBlock = ({
+/** Where a referenced block lives: this page (by anchor) or its lecture. */
+const SourceLink = ({
   blockRef,
   course,
+  lecture,
+  name,
   prepId,
-  withProofs,
-}: Pick<Props, "prepId" | "withProofs"> & Ref) => {
-  const target = useLabelIndex()[course]?.[blockRef.id];
-  const { data: html, isPending } = useQuery({
-    ...fragmentQuery(course, blockRef.doc),
-    select: (fragment) => extractBlock(fragment, blockRef.id, withProofs),
-  });
-
-  if (isPending) {
-    return <p className="text-body text-muted">Загрузка…</p>;
+}: {
+  readonly blockRef: TicketRef;
+  readonly course: string;
+  readonly lecture: number | undefined;
+  readonly name: string;
+  readonly prepId: string;
+}) => {
+  if (blockRef.doc === prepId) {
+    return (
+      <Link className={LINK} to={{ hash: `#${blockRef.id}` }}>
+        {name} ↑
+      </Link>
+    );
   }
   return (
-    <div>
-      {html === undefined ? (
-        <p className="text-body text-muted">Не удалось загрузить ответ.</p>
-      ) : (
+    <Link className={LINK} to={paths.lecture(course, blockRef.doc, blockRef.id)}>
+      {name}
+      {lecture === undefined ? "" : `, лекция ${String(lecture)}`} →
+    </Link>
+  );
+};
+
+/**
+«Показать ответ»: one answer, written out. The own answer comes first, then the content of each
+referenced block without its card — a statement with its proof, a problem's answer and solution — so
+the parts read as one text; where the blocks live is only a row of links under it. A lecture proof is
+left out where the page gives its own outline of it (`refsWithProof`).
+*/
+export const TicketAnswer = ({ answer, course, prepId, refs, withProofs }: Props) => {
+  const labels = useLabelIndex()[course];
+  const proved = refsWithProof(refs, prepId);
+  const parts = useQueries({
+    queries: refs.map((ref) => ({
+      ...fragmentQuery(course, ref.doc),
+      select: (fragment: string) =>
+        extractAnswerPart(fragment, ref.id, withProofs && proved.has(ref.id)),
+    })),
+  });
+
+  if (parts.some((part) => part.isPending)) {
+    return <p className="mt-2 text-body text-muted">Загрузка…</p>;
+  }
+  const found = refs
+    .map((ref, index) => ({ part: parts[index]?.data, ref }))
+    .filter((item): item is { part: AnswerPart; ref: TicketRef } => item.part !== undefined);
+  return (
+    <div className="mt-2">
+      {answer !== "" && (
+        <FragmentView course={course} docId={prepId} html={answer} lecture={undefined} />
+      )}
+      {found.map(({ part, ref }) => (
         <FragmentView
           course={course}
-          docId={blockRef.doc}
-          html={html}
-          lecture={target?.lecture}
+          docId={ref.doc}
+          html={part.html}
+          key={ref.id}
+          lecture={labels?.[ref.id]?.lecture}
           variant="notes"
         />
+      ))}
+      {found.length < refs.length && (
+        <p className="text-body text-muted">Часть ответа не удалось загрузить.</p>
       )}
-      <div className="-mt-4 mb-5 text-right">
-        {blockRef.doc === prepId ? (
-          <Link className={LINK} to={{ hash: `#${blockRef.id}` }}>
-            На этой странице ↑
-          </Link>
-        ) : (
-          <Link className={LINK} to={paths.lecture(course, blockRef.doc, blockRef.id)}>
-            {target === undefined ? "В конспекте" : `Лекция ${String(target.lecture)}`} →
-          </Link>
-        )}
-      </div>
+      {found.length > 0 && (
+        <p className="mb-5 flex flex-wrap gap-x-4 gap-y-1">
+          {found.map(({ part, ref }) => (
+            <SourceLink
+              blockRef={ref}
+              course={course}
+              key={ref.id}
+              lecture={labels?.[ref.id]?.lecture}
+              name={part.name}
+              prepId={prepId}
+            />
+          ))}
+        </p>
+      )}
     </div>
   );
 };
-/** «Показать ответ»: the own answer, then each referenced block with a link to where it lives. */
-export const TicketAnswer = ({ answer, course, prepId, refs, withProofs }: Props) => (
-  <div className="mt-2">
-    {answer !== "" && (
-      <FragmentView course={course} docId={prepId} html={answer} lecture={undefined} />
-    )}
-    {refs.map((ref) => (
-      <AnswerBlock
-        blockRef={ref}
-        course={course}
-        key={ref.id}
-        prepId={prepId}
-        withProofs={withProofs}
-      />
-    ))}
-  </div>
-);

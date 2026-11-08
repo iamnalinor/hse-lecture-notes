@@ -78,20 +78,57 @@ const attachedTo = (element: Element): readonly Element[] => {
   return parts;
 };
 
+/** One referenced block of a ticket answer, written as plain text: no card, no folding. */
+export type AnswerPart = {
+  /** The block's content: the statement (and its proof), a problem's answer and solution. */
+  readonly html: string;
+  /** What the link under the answer is called: «Теорема 6.26 (критерий обратимости)». */
+  readonly name: string;
+};
+
+const contentOf = (parts: readonly Element[]): string =>
+  parts
+    .flatMap((part) => [...part.children])
+    .map((child) => withoutIds(child))
+    .join("");
+
+const nameOf = (element: Element): string => {
+  const name = element.querySelector(":scope > .nb-head .nb-name")?.textContent;
+  if (name !== undefined) {
+    return name.replaceAll(/\s+/gu, " ").trim();
+  }
+  const { number } = (element as HTMLElement).dataset;
+  return number === undefined ? "В конспекте" : `Формула (${number})`;
+};
+
+const bodyOf = (element: Element): readonly Element[] => {
+  const body = element.querySelector(":scope > .nb-body");
+  return body === null ? [] : [body];
+};
+
 /**
-A whole block (a problem — with its answer and solution; with `shouldAttachProof` — a statement with its
-proof) as HTML, to be shown away from its page: ids are dropped so that the copy neither duplicates
-the anchor nor steals a jump to it.
+A block as part of a ticket answer: its content without the card around it, so that several blocks
+read as one answer. A statement gives its text (with `shouldAttachProof` — and the proof that follows
+it); a problem gives its answer and solution, since the question already says what to do; a formula
+or a figure is taken whole. Ids are dropped, as in every copy of a block away from its page.
 */
-export const extractBlock = (
+export const extractAnswerPart = (
   fragment: string,
   id: string,
   shouldAttachProof = false,
-): string | undefined => {
+): AnswerPart | undefined => {
   const element = findById(new DOMParser().parseFromString(fragment, "text/html"), id);
   if (element === null) {
     return undefined;
   }
-  const proof = shouldAttachProof && element.classList.contains("nb") ? proofOf(element) : [];
-  return [element, ...attachedTo(element), ...proof].map((part) => withoutIds(part)).join("");
+  const name = nameOf(element);
+  if (!element.classList.contains("nb")) {
+    return { html: withoutIds(element), name };
+  }
+  const attached = attachedTo(element);
+  if (element.classList.contains("nb-problem") && attached.length > 0) {
+    return { html: contentOf(attached), name };
+  }
+  const proof = shouldAttachProof ? proofOf(element) : [];
+  return { html: contentOf([...bodyOf(element), ...proof]), name };
 };

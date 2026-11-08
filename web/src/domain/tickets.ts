@@ -1,4 +1,4 @@
-import type { TicketBank, TicketQuestion } from "./schemas.ts";
+import type { TicketBank, TicketQuestion, TicketRef } from "./schemas.ts";
 
 /**
 A random ticket from the bank of a preparation page (`prep/<course>/<prep>-bank.yaml`): its parts go
@@ -66,3 +66,17 @@ const drawParts = (draw: Draw, entries: TicketBank["ticket"]): readonly TicketPa
 
 export const drawTicket = (bank: TicketBank, random: Random = Math.random): readonly TicketPart[] =>
   drawParts({ bank, random, taken: [] }, bank.ticket);
+
+/** A proof outline of the page itself: `rem:<prep>:proof-…` («ход доказательства»). */
+const isOwnOutline = (ref: TicketRef, prepId: string): boolean =>
+  ref.doc === prepId && ref.id.startsWith(`rem:${prepId}:proof-`);
+
+/**
+Which referenced statements bring their lecture proof into an answer that wants proofs. A proof
+outline of the page covers the statements listed before it, and showing the lecture's full proof
+as well would give the same proof twice; a statement after the last outline keeps its proof.
+*/
+export const refsWithProof = (refs: readonly TicketRef[], prepId: string): ReadonlySet<string> => {
+  const lastOutline = refs.findLastIndex((ref) => isOwnOutline(ref, prepId));
+  return new Set(refs.slice(lastOutline + 1).map((ref) => ref.id));
+};
