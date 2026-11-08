@@ -14,6 +14,8 @@ title: "Теория: математический анализ"
 - Бесконечно большая — это стремление к $\infty$ без знака: $(-1)^n n \to \infty$, но не к $\pm\infty$ [-@rem:lec04:infinity-symbol].
 - Показательная функция, $\ln x$ и степени $x^\alpha$ с вещественным показателем до строгого определения используются со школьными свойствами, а их непрерывность (предел равен значению) принимается на веру [-@rem:lec08:elementary]; в лекции 11 они определены строго ($a^x$ — через супремум рациональных степеней, [-@def:lec11:exp]) и их непрерывность доказана, алгебраические правила $a^{x+y} = a^x a^y$, $(a^x)^y = a^{xy}$ приняты без доказательства.
 - $\arcsin$, $\arccos$, $\operatorname{arctg}$, $\operatorname{arcctg}$ — обратные к $\sin$ на $\left[-\frac\pi2;\ \frac\pi2\right]$, $\cos$ на $[0;\ \pi]$, $\operatorname{tg}$ на $\left(-\frac\pi2;\ \frac\pi2\right)$, $\operatorname{ctg}$ на $(0;\ \pi)$; обозначения $\operatorname{tg}$, $\operatorname{ctg}$, $\operatorname{arctg}$ — русская традиция (в англоязычной литературе $\tan$, $\arctan$) [-@def:lec11:arc].
+- $f = o(g)$, $f = O(g)$ и $f \sim g$ определяются через отношение $\frac fg$, поэтому только для $g$, не обращающихся в ноль около точки [-@rem:lec09:g-nonzero].
+- Разрывы делятся на три непересекающихся класса: устранимый, первого рода (только скачок: односторонние пределы конечны и различны) и второго рода; во многих учебниках устранимые разрывы тоже относят к первому роду [-@rem:lec09:first-kind].
 - Производная — только конечный предел разностного отношения; «бесконечная производная» производной не считается [-@rem:lec11:infinite].
 
 # Лекция 1 — Высказывания, предикаты, кванторы. Метод математической индукции. Неравенство Бернулли
@@ -492,34 +494,14 @@ $\frac{(1 + x)^\alpha - 1}{x} \to \alpha$ при $x \to 0$, $\alpha \in \R$. *И
 $\sqrt x \to \sqrt{x_0}$ при $x \to x_0 > 0$; $\sqrt[3]{x} \to \sqrt[3]{x_0}$ при любом $x_0$. *Идея:* $|\sqrt x - \sqrt{x_0}| \le \frac{|x - x_0|}{\sqrt{x_0}}$; для кубического корня $a^2 + ab + b^2 \ge \frac34 b^2$.
 :::
 
-# Лекция 9 — Односторонние пределы и асимптоты. О-символика, эквивалентность
-
-::: {.definition ref="def:lec09:one-sided"}
-$\lim\limits_{x \to x_0 - 0} f(x) = A$ ($f(x_0 - 0) = A$): $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in (x_0 - \delta;\ x_0)\colon |f(x) - A| < \varepsilon$. Предел справа $f(x_0 + 0)$ — то же с $x \in (x_0;\ x_0 + \delta)$. Добавляет к местам $a$ ещё $x_0 \pm 0$.
-:::
-
-::: {.theorem ref="thm:lec09:one-sided" status="доказано в лекции 9"}
-Если $f$ определена в $\mathring{U}_r(x_0)$, то $\lim_{x \to x_0} f(x) = A \Leftrightarrow f(x_0 - 0) = f(x_0 + 0) = A$. *Идея:* «$\Leftarrow$» — $\delta = \min(\delta_1, \delta_2)$.
-:::
-
-::: {.definition ref="def:lec09:asymptotes"}
-$x = x_0$ — вертикальная асимптота, если хотя бы один из $\lim_{x \to x_0 \pm 0} f(x)$ равен $+\infty$, $-\infty$ или $\infty$. $y = kx + b$ — наклонная асимптота при $x \to +\infty$ (при $x \to -\infty$), если $f(x) - (kx + b) \to 0$; при $k = 0$ — горизонтальная.
-:::
-
-::: {.theorem ref="thm:lec09:oblique" status="доказано в лекции 9; требуется на коллоквиуме"}
-$y = kx + b$ — наклонная асимптота при $x \to +\infty$ $\Leftrightarrow$ существуют конечные $k = \lim_{x \to +\infty} \frac{f(x)}{x}$ и $b = \lim_{x \to +\infty}(f(x) - kx)$. *Идея:* «$\Rightarrow$» — $\frac{f(x)}{x} - k = (f(x) - kx) \cdot \frac1x \to b \cdot 0$; «$\Leftarrow$» — определение.
-:::
-
-::: {.corollary ref="cor:lec09:unique" status="доказано в лекции 9"}
-При $x \to +\infty$ (и при $x \to -\infty$) наклонная асимптота не более чем одна. *Идея:* $k$ и $b$ — пределы, а предел единствен.
-:::
+# Лекция 9 — О-символика, эквивалентность. Непрерывность, односторонние пределы, точки разрыва. Асимптоты
 
 ::: {.definition ref="def:lec09:o"}
-При $g \ne 0$ около $a$: $f = o(g)$ при $x \to a$, если $\frac fg \to 0$; $f = O(g)$, если $\frac fg$ ограничена в некоторой окрестности $a$. $o(1)$ — бесконечно малая, $O(1)$ — ограниченная около $a$.
+При $g \ne 0$ около $a$: $f = o(g)$ при $x \to a$, если $\frac fg \to 0$; $f = O(g)$, если $\frac fg$ ограничена в некоторой окрестности $a$: $\exists C > 0\ \exists \delta_0 > 0\ \forall x \in \mathring{U}_{\delta_0}(x_0)\colon \left|\frac{f(x)}{g(x)}\right| \le C$ (при $a = +\infty$ — $\forall x > M_0$). $o(1)$ — бесконечно малая, $O(1)$ — ограниченная около $a$.
 :::
 
-::: {.proposition ref="prop:lec09:o-rules" status="доказано в лекции 9"}
-$o(g) \pm o(g) = o(g)$, $c \cdot o(g) = o(g)$, $o(g) = O(g)$, $h \cdot o(g) = o(hg)$, $O(g) \cdot o(h) = o(gh)$, $O(g) \cdot O(h) = O(gh)$, $o(O(g)) = O(o(g)) = o(g)$; при $x \to 0$ для целых $0 \le m < n$: $o(x^n) = o(x^m)$, $x^m \cdot o(x^n) = o(x^{m+n})$. Равенства читаются слева направо. *Идея:* отношения и арифметика предела, «ограниченная · б.м. = б.м.».
+::: {.proposition ref="prop:lec09:o-rules" status="п. 1 доказан в лекции 9; остальные — в конспекте лекции 9 (на лекции не доказывались)"}
+При $x \to a$ (одно и то же $a$): $o(g) \pm o(g) = o(g)$, $c \cdot o(g) = o(g)$; $O(g) \pm O(g) = O(g)$; $o(g) = O(g)$ (обратное неверно); $o(g) \cdot O(h) = o(gh)$, $O(g) \cdot O(h) = O(gh)$, $h \cdot o(g) = o(hg)$; $|o(g)|^\alpha = o(|g|^\alpha)$, $|O(g)|^\alpha = O(|g|^\alpha)$ при $\alpha > 0$; $o(O(g)) = O(o(g)) = o(g)$; при $x \to 0$ для целых $0 \le m < n$: $o(x^n) = o(x^m)$, $x^m \cdot o(x^n) = o(x^{m+n})$. Равенства читаются слева направо. *Идея:* отношения и арифметика предела, «ограниченная · б.м. = б.м.».
 :::
 
 ::: {.definition ref="def:lec09:equivalent"}
@@ -527,22 +509,14 @@ $o(g) \pm o(g) = o(g)$, $c \cdot o(g) = o(g)$, $o(g) = O(g)$, $h \cdot o(g) = o(
 :::
 
 ::: {.proposition ref="prop:lec09:equiv-props" status="доказано в лекции 9"}
-$\sim$ рефлексивно, симметрично, транзитивно; если $f \sim f_1$, $g \sim g_1$, то $fg \sim f_1 g_1$, $\frac fg \sim \frac{f_1}{g_1}$. *Идея:* симметричность — $\frac fg \to 1$ отделима от нуля около $a$.
+$\sim$ рефлексивно, симметрично, транзитивно; если $f_1 \sim f_2$, то $f_1 g \sim f_2 g$ и $\frac{g}{f_1} \sim \frac{g}{f_2}$; если $f \sim f_1$, $g \sim g_1$, то $fg \sim f_1 g_1$, $\frac fg \sim \frac{f_1}{g_1}$. *Идея:* в отношении $\frac{f_1 g}{f_2 g}$ множитель $g$ сокращается; транзитивность — $\frac fh = \frac fg \cdot \frac gh$.
 :::
 
-::: {.theorem ref="thm:lec09:equiv-o" status="доказано в лекции 9"}
-$f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg - 1$.
+::: {.theorem ref="thm:lec09:replacement" status="доказано в лекции 9"}
+Если $f \sim f_1$ при $x \to a$, то $\lim f$ и $\lim f_1$ (конечные или бесконечные) существуют одновременно и равны; то же для $\lim f h$ и $\lim f_1 h$, $\lim \frac hf$ и $\lim \frac h{f_1}$. В суммах заменять слагаемые на эквивалентные нельзя. *Идея:* $f = \frac{f}{f_1} \cdot f_1$, $\frac{f}{f_1} \to 1$.
 :::
 
-::: {.corollary ref="cor:lec09:main-part" status="доказано в лекции 9"}
-Если $h = o(f)$, то $f + h \sim f$.
-:::
-
-::: {.definition ref="def:lec09:main-part"}
-Главная часть $f$ при $x \to 0$ — функция $c x^k$, $c \ne 0$, с $f \sim c x^k$ (при $x \to x_0$ — $c(x - x_0)^k$, при $x \to +\infty$, $x \to -\infty$, $x \to \infty$ — $c x^k$); она единственна.
-:::
-
-::: {.proposition ref="prop:lec09:table" status="доказано в лекции 9 (непрерывность $\ln$, $e^x$, $u^\alpha$ принята на веру)"}
+::: {.proposition ref="prop:lec09:table" status="следует из лекции 8 (непрерывность $\ln$, $e^x$, $u^\alpha$ принята на веру)"}
 При $x \to 0$: $\sin x \sim x$, $\operatorname{tg} x \sim x$, $1 - \cos x \sim \frac{x^2}{2}$, $\ln(1 + x) \sim x$, $e^x - 1 \sim x$, $(1 + x)^\alpha - 1 \sim \alpha x$ ($\alpha \ne 0$; в частности $\sqrt{1 + x} - 1 \sim \frac x2$, $\sqrt[3]{1 + x} - 1 \sim \frac x3$, $(1 + x)^n - 1 \sim nx$). *Идея:* замечательные и классические пределы лекции 8; для корней и $n$ — сопряжённое, неполный квадрат, бином.
 :::
 
@@ -550,19 +524,55 @@ $f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg
 Если $u(x) \to 0$ при $x \to a$ и $u \ne 0$ около $a$, то из $f(y) \sim g(y)$ при $y \to 0$ следует $f(u(x)) \sim g(u(x))$, из $h(y) = o(y^k)$ — $h(u(x)) = o(u(x)^k)$. *Идея:* теорема о пределе сложной функции, условие 2.
 :::
 
-::: {.theorem ref="thm:lec09:replacement" status="доказано в лекции 9"}
-Если $f \sim f_1$ при $x \to a$, то $\lim f h$ и $\lim f_1 h$, а также $\lim \frac hf$ и $\lim \frac h{f_1}$, существуют (конечные или бесконечные) одновременно и равны. В суммах заменять слагаемые на эквивалентные нельзя. *Идея:* $fh = \frac{f}{f_1} \cdot f_1 h$, $\frac{f}{f_1} \to 1$.
+::: {.theorem ref="thm:lec09:equiv-o" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+$f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg - 1$.
 :::
 
-# Лекция 10 — Непрерывность функции. Функции, непрерывные на отрезке. Обратная функция
+::: {.corollary ref="cor:lec09:main-part" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+Если $h = o(f)$, то $f + h \sim f$.
+:::
 
-::: {.definition ref="def:lec10:continuous"}
+::: {.definition ref="def:lec09:main-part"}
+Главная часть $f$ при $x \to 0$ — функция $c x^k$, $c \ne 0$, с $f \sim c x^k$ (при $x \to x_0$ — $c(x - x_0)^k$, при $x \to +\infty$, $x \to -\infty$, $x \to \infty$ — $c x^k$); она единственна.
+:::
+
+::: {.definition ref="def:lec09:continuous"}
 $f$, определённая в окрестности $x_0$, непрерывна в $x_0$, если $\lim_{x \to x_0} f(x) = f(x_0)$: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon$ (окрестность не проколотая).
 :::
 
-::: {.proposition ref="prop:lec10:heine" status="доказано в лекции 10"}
+::: {.proposition ref="prop:lec09:heine" status="в лекции 9 — без доказательства; доказательство — в конспекте лекции 9"}
 $f$ непрерывна в $x_0$ $\Leftrightarrow$ $f(x_n) \to f(x_0)$ для любой последовательности $x_n \to x_0$ из окрестности (равенство $x_n = x_0$ разрешено). *Идея:* «$\Rightarrow$» — из определения по $\delta$ находим номер; «$\Leftarrow$» — частный случай: последовательности Гейне и теорема Коши–Гейне.
 :::
+
+::: {.definition ref="def:lec09:one-sided"}
+$\lim\limits_{x \to x_0 - 0} f(x) = A$ ($f(x_0 - 0) = A$): $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in (x_0 - \delta;\ x_0)\colon |f(x) - A| < \varepsilon$. Предел справа $f(x_0 + 0)$ — то же с $x \in (x_0;\ x_0 + \delta)$. Добавляет к местам $a$ ещё $x_0 \pm 0$.
+:::
+
+::: {.theorem ref="thm:lec09:one-sided" status="в лекции 9 — без доказательства (упражнение); доказательство — в конспекте лекции 9"}
+Если $f$ определена в $\mathring{U}_r(x_0)$, то $\lim_{x \to x_0} f(x) = A \Leftrightarrow f(x_0 - 0) = f(x_0 + 0) = A$. *Идея:* «$\Leftarrow$» — $\delta = \min(\delta_1, \delta_2)$.
+:::
+
+::: {.definition ref="def:lec09:discontinuity"}
+$x_0$ — точка разрыва $f$, если $f$ определена в проколотой окрестности $x_0$ и не непрерывна в $x_0$ (в том числе не определена в ней).
+:::
+
+::: {.definition ref="def:lec09:kinds"}
+Устранимый разрыв: $\lim_{x \to x_0} f(x)$ конечен, но $\ne f(x_0)$ или $f(x_0)$ нет (доопределение по непрерывности). Разрыв первого рода (скачок): $f(x_0 \pm 0)$ конечны и различны. Разрыв второго рода — всё остальное: хотя бы один односторонний предел не существует или бесконечен.
+:::
+
+::: {.definition ref="def:lec09:asymptotes"}
+$x = x_0$ — вертикальная асимптота, если хотя бы один из $\lim_{x \to x_0 \pm 0} f(x)$ равен $+\infty$, $-\infty$ или $\infty$. $y = kx + b$ — наклонная асимптота при $x \to +\infty$ (при $x \to -\infty$), если $f(x) - (kx + b) \to 0$; при $k = 0$ — горизонтальная.
+:::
+
+::: {.theorem ref="thm:lec09:oblique" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+$y = kx + b$ — наклонная асимптота при $x \to +\infty$ $\Leftrightarrow$ существуют конечные $k = \lim_{x \to +\infty} \frac{f(x)}{x}$ и $b = \lim_{x \to +\infty}(f(x) - kx)$. *Идея:* «$\Rightarrow$» — $\frac{f(x)}{x} - k = (f(x) - kx) \cdot \frac1x \to b \cdot 0$; «$\Leftarrow$» — определение.
+:::
+
+::: {.corollary ref="cor:lec09:unique" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+При $x \to +\infty$ (и при $x \to -\infty$) наклонная асимптота не более чем одна. *Идея:* $k$ и $b$ — пределы, а предел единствен.
+:::
+
+# Лекция 10 — Свойства непрерывных функций. Функции, непрерывные на отрезке. Обратная функция
 
 ::: {.definition ref="def:lec10:one-sided"}
 $f$ непрерывна справа (слева) в $x_0$, если $f(x_0 + 0) = f(x_0)$ (соответственно $f(x_0 - 0) = f(x_0)$).
@@ -584,14 +594,6 @@ $f$ непрерывна на $[a;\ b]$, если непрерывна в каж
 
 ::: {.proposition ref="prop:lec10:elementary" status="доказано в лекции 10"}
 Многочлены, рациональные функции, $\sin$, $\cos$, $\operatorname{tg}$, $\sqrt x$ (в нуле — справа), $\sqrt[3]{x}$, $|x|$ непрерывны на области определения. Составленная из них функция непрерывна в $x_0$, если каждое промежуточное значение лежит внутри области определения применяемой к нему функции; граничные случаи — односторонним вариантом теоремы о композиции. *Идея:* пределы $\sin$, $\cos$ и корней из лекции 8, $\sqrt x$ справа в нуле — лекция 9 ($\delta = \varepsilon^2$); затем две предыдущие теоремы по шагам построения формулы.
-:::
-
-::: {.definition ref="def:lec10:discontinuity"}
-$x_0$ — точка разрыва $f$, если $f$ определена в проколотой окрестности $x_0$ и не непрерывна в $x_0$ (в том числе не определена в ней).
-:::
-
-::: {.definition ref="def:lec10:kinds"}
-Устранимый разрыв: $\lim_{x \to x_0} f(x)$ конечен, но $\ne f(x_0)$ или $f(x_0)$ нет (доопределение по непрерывности). Скачок: $f(x_0 \pm 0)$ конечны и различны. Устранимые и скачки — разрывы первого рода. Второй род: хотя бы один односторонний предел не существует или бесконечен.
 :::
 
 ::: {.theorem ref="thm:lec10:bolzano-cauchy" status="доказано в лекции 10"}
