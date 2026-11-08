@@ -142,8 +142,8 @@ describe("TicketGenerator", () => {
       "/algebra/colloq1#rem:colloq1:proof-laplace",
     );
     expect(document.querySelector('[id="thm:lec04:laplace"]')).toBeNull();
-    // a theorem with proof: the proof that follows the statement comes along
-    expect(within(proof).getByText(/Индукция по n/u)).toBeInTheDocument();
+    // the page outlines the proof, so the lecture's own proof is not shown a second time
+    expect(within(proof).queryByText(/Индукция по n/u)).toBeNull();
     expect(within(proof).queryByText(/пара слов/u)).toBeNull();
   });
 

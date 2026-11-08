@@ -5,6 +5,7 @@ import type { TicketRef } from "#web/domain/schemas.ts";
 
 import { fragmentQuery, useLabelIndex } from "#web/api/queries.ts";
 import { paths } from "#web/domain/paths.ts";
+import { refsWithProof } from "#web/domain/tickets.ts";
 import { extractBlock } from "#web/shared/reader/extract-preview.ts";
 import { FragmentView } from "#web/shared/reader/fragment-view.tsx";
 
@@ -66,20 +67,26 @@ const AnswerBlock = ({
     </div>
   );
 };
-/** «Показать ответ»: the own answer, then each referenced block with a link to where it lives. */
-export const TicketAnswer = ({ answer, course, prepId, refs, withProofs }: Props) => (
-  <div className="mt-2">
-    {answer !== "" && (
-      <FragmentView course={course} docId={prepId} html={answer} lecture={undefined} />
-    )}
-    {refs.map((ref) => (
-      <AnswerBlock
-        blockRef={ref}
-        course={course}
-        key={ref.id}
-        prepId={prepId}
-        withProofs={withProofs}
-      />
-    ))}
-  </div>
-);
+/**
+«Показать ответ»: the own answer, then each referenced block with a link to where it lives. A lecture
+proof is left out where the page gives its own outline of it (`refsWithProof`).
+*/
+export const TicketAnswer = ({ answer, course, prepId, refs, withProofs }: Props) => {
+  const proved = refsWithProof(refs, prepId);
+  return (
+    <div className="mt-2">
+      {answer !== "" && (
+        <FragmentView course={course} docId={prepId} html={answer} lecture={undefined} />
+      )}
+      {refs.map((ref) => (
+        <AnswerBlock
+          blockRef={ref}
+          course={course}
+          key={ref.id}
+          prepId={prepId}
+          withProofs={withProofs && proved.has(ref.id)}
+        />
+      ))}
+    </div>
+  );
+};

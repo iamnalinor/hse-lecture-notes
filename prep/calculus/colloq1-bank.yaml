@@ -412,8 +412,6 @@ questions:
     kind: disprove
     topic: classes
     text: Если $x_n \to +\infty$, а $(y_n)$ ограничена сверху, то $x_n + y_n \to +\infty$.
-    answer: >-
-      Неверно: $x_n = n$, $y_n = -n$, сумма равна $0$. Верно, если $(y_n)$ ограничена снизу.
     refs: [prob:colloq1:plus-infinity]
   - id: dis-divergent-sum
     kind: disprove
@@ -488,9 +486,7 @@ questions:
     text: Если подпоследовательности $(a_{2k})$ и $(a_{2k-1})$ сходятся, то $(a_n)$ сходится.
     answer: >-
       Неверно: $(-1)^n$ — у неё $a_{2k} \to 1$, $a_{2k-1} \to -1$. Верно, если обе подпоследовательности
-      сходятся к *одному* числу $a$: для $\varepsilon > 0$ возьмём $K_1$, $K_2$, после которых
-      $|a_{2k} - a| < \varepsilon$ и $|a_{2k-1} - a| < \varepsilon$; при $n > \max(2K_1, 2K_2)$ член $a_n$ —
-      это $a_{2k}$ или $a_{2k-1}$ с $k > K_1$ или $k > K_2$ соответственно, и $|a_n - a| < \varepsilon$.
+      сходятся к *одному* числу $a$ — задача ниже, пункт (a).
     refs: [prob:lec05:even-odd]
   - id: dis-unbounded-infinite
     kind: disprove
