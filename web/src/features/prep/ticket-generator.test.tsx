@@ -118,7 +118,7 @@ describe("TicketGenerator", () => {
     );
   });
 
-  it("reveals the referenced blocks in place, without their ids", async () => {
+  it("writes the answer out as one text, with the sources as links under it", async () => {
     view();
     await newTicket();
     const [proof] = screen.getAllByRole("listitem");
@@ -131,16 +131,16 @@ describe("TicketGenerator", () => {
       within(proof).getByRole("button", { name: "Показать ответ на вопрос 1" }),
     );
     expect(await within(proof).findByText("Определитель равен сумме по строке.")).toBeVisible();
-    expect(await within(proof).findByText("Индукция по порядку.")).toBeVisible();
-    expect(within(proof).getByText("Теорема 4.3")).toBeInTheDocument();
-    expect(within(proof).getByRole("link", { name: "Лекция 4 →" })).toHaveAttribute(
-      "href",
-      `/algebra/${LECTURE}#thm:lec04:laplace`,
-    );
-    expect(within(proof).getByRole("link", { name: "На этой странице ↑" })).toHaveAttribute(
-      "href",
-      "/algebra/colloq1#rem:colloq1:proof-laplace",
-    );
+    expect(within(proof).getByText("Индукция по порядку.")).toBeVisible();
+    // no cards: the blocks' headers are not drawn, only named in the links
+    expect(within(proof).queryByText("Теорема 4.3")).toBeNull();
+    expect(proof.querySelector(".nb")).toBeNull();
+    expect(
+      within(proof).getByRole("link", { name: "Теорема 4.3 (разложение Лапласа), лекция 4 →" }),
+    ).toHaveAttribute("href", `/algebra/${LECTURE}#thm:lec04:laplace`);
+    expect(
+      within(proof).getByRole("link", { name: "Замечание 7 (ход доказательства) ↑" }),
+    ).toHaveAttribute("href", "/algebra/colloq1#rem:colloq1:proof-laplace");
     expect(document.querySelector('[id="thm:lec04:laplace"]')).toBeNull();
     // the page outlines the proof, so the lecture's own proof is not shown a second time
     expect(within(proof).queryByText(/Индукция по n/u)).toBeNull();
