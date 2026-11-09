@@ -76,6 +76,33 @@ anchors still reach skipped content.
   margin: 0.15em 0 0;
 }
 
+/*
+The end-of-proof mark: an outlined square, as «□» in the PDF. After a closing paragraph it follows
+the last word on the same line; after a list or a display formula it gets a line of its own.
+*/
+.proof-content > p:last-child::after,
+.proof-qed-block {
+  border: 1.5px solid var(--muted);
+  box-sizing: border-box;
+  content: "";
+  height: 0.6em;
+  width: 0.6em;
+}
+
+.proof-content > p:last-child::after {
+  display: inline-block;
+  margin-left: 0.4em;
+  vertical-align: -0.02em;
+}
+
+.proof-qed-block {
+  margin: 0 0 0.85em;
+}
+
+.proof-content:has(> p:last-child) + .proof-qed-block {
+  display: none;
+}
+
 /* The answers list of a self-check: the same disclosure as a proof — a label and a turning chevron. */
 .prose-notes details.nb-answers {
   border-top: 1px solid var(--rule);

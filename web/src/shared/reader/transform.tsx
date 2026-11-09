@@ -14,7 +14,7 @@ import { splitBlockName } from "./block-name.ts";
 import { Block } from "./block.tsx";
 import { adjacentElement, childWithClass, hasClass, textOf } from "./dom-utils.ts";
 import { ProblemFooter } from "./problem-footer.tsx";
-import { Proof } from "./proof.tsx";
+import { Proof, ShortProof } from "./proof.tsx";
 import { RefLink } from "./ref-link.tsx";
 import { columnLabel, headerLabels } from "./table-labels.ts";
 import { TexMath } from "./tex-math.tsx";
@@ -39,7 +39,8 @@ type Handler = (
   replace: Replace,
 ) => ReactElement | undefined;
 
-const LONG_PROOF_CHARS = 700;
+/** A proof up to a few lines reads inline, as in the PDF; a longer one gets a frame and a toggle. */
+const SHORT_PROOF_CHARS = 300;
 const PART_HEADING =
   "mt-13 mb-1.5 flex items-center gap-3.5 text-subhead font-semibold text-muted after:h-px after:flex-1 after:bg-rule after:content-['']";
 const TITLE_HEADING = "mt-11 mb-3 text-title2 leading-tight font-bold";
@@ -136,7 +137,12 @@ const proofLead = (proofNode: Element): Element | undefined => {
     : undefined;
 };
 
+const isShortProof = (proofNode: Element): boolean => textOf(proofNode).length <= SHORT_PROOF_CHARS;
+
 const proof: Handler = (node, _options, replace) => {
+  if (isShortProof(node)) {
+    return <ShortProof>{domToReact(node.children as DOMNode[], { replace })}</ShortProof>;
+  }
   const lead = proofLead(node);
   const paragraph = lead?.parent;
   // A proof that opens with a list or display math has a paragraph of the lead alone: drop it whole.
@@ -144,7 +150,6 @@ const proof: Handler = (node, _options, replace) => {
   const body = (node.children as DOMNode[]).filter((child) => !isLeadOnly || child !== paragraph);
   return (
     <Proof
-      collapsed={textOf(node).length > LONG_PROOF_CHARS}
       // Plain text: a reference in the title would turn a tap on the summary into a link or a preview.
       label={lead === undefined ? undefined : textOf(lead)}
     >
@@ -155,7 +160,8 @@ const proof: Handler = (node, _options, replace) => {
 
 const proofLabel: Handler = (node) => {
   const proofNode = node.parent?.parent;
-  const isLead = proofNode instanceof Element && hasClass(proofNode, "nb-proof");
+  const isLead =
+    proofNode instanceof Element && hasClass(proofNode, "nb-proof") && !isShortProof(proofNode);
   return isLead && proofLead(proofNode) === node ? <span hidden /> : undefined;
 };
 

@@ -318,6 +318,8 @@ export default defineConfig([
             "^math-inline$",
             "^flash$",
             "^table-cards$",
+            "^proof-content$",
+            "^proof-qed-block$",
           ],
         },
       ],

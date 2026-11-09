@@ -59,12 +59,12 @@ describe("FragmentView references and math", () => {
 });
 
 describe("FragmentView proofs and problems", () => {
-  it("collapses long proofs and keeps short ones open", () => {
-    const long = `<div class="nb-proof"><p>${"слово ".repeat(200)}</p></div>`;
-    view(`${long}<div class="nb-proof"><p>Коротко.</p></div>`);
-    const [first, second] = [...document.querySelectorAll("details")];
-    expect(first?.open).toBe(false);
-    expect(second?.open).toBe(true);
+  it("frames long proofs open and leaves short ones inline", () => {
+    const long = `<div class="nb-proof"><p><em>Доказательство.</em> ${"слово ".repeat(200)}</p></div>`;
+    view(`${long}<div class="nb-proof"><p><em>Доказательство.</em> Коротко.</p></div>`);
+    const proofs = [...document.querySelectorAll("details")];
+    expect(proofs.map((proof) => proof.open)).toEqual([true]);
+    expect(screen.getByText("Доказательство.", { selector: "em" })).toBeVisible();
   });
 
   it("shows the proof title in the summary, not in the body", () => {
@@ -72,19 +72,19 @@ describe("FragmentView proofs and problems", () => {
     view(`<div class="nb-proof"><p><em>Доказательство теоремы Лапласа.</em> ${body}</p></div>
       <div class="nb-proof"><p><em>Доказательство.</em> Коротко.</p></div>`);
     const summaries = [...document.querySelectorAll("summary")].map((s) => s.textContent);
+    expect(summaries).toHaveLength(1);
     expect(summaries[0]).toContain("Доказательство теоремы Лапласа.");
-    expect(summaries[1]).toContain("Доказательство.");
     const bodies = [...document.querySelectorAll("details > div")].map((d) => d.textContent);
     expect(bodies.join(" ")).not.toContain("Доказательство");
   });
 
   it("keeps a reference in the proof title as text and drops a lead-only paragraph", () => {
     view(`<div class="nb-proof"><p><em>Доказательство теоремы <a href="#thm:x" class="ref" data-ref="thm:x">6.2</a>.</em></p>
-      <span class="math display">x = 1</span></div>`);
+      <span class="math display">x = 1</span><p>${"слово ".repeat(60)}</p></div>`);
     const summary = document.querySelector("summary");
     expect(summary?.textContent).toContain("Доказательство теоремы 6.2.");
     expect(summary?.querySelector("a")).toBeNull();
-    expect(document.querySelector("details > div p")).toBeNull();
+    expect(document.querySelector(".proof-content > :first-child")?.tagName).not.toBe("P");
   });
 
   it("keeps the solution behind a button while the answer is open", async () => {
