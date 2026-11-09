@@ -77,22 +77,26 @@ anchors still reach skipped content.
 }
 
 /*
-The end-of-proof mark: an outlined square, as «□» in the PDF. After a closing paragraph it floats at
-the end of that paragraph's last line; after a list or a display formula it sits alone on the right.
+The end-of-proof mark: an outlined square, as «□» in the PDF. After a closing paragraph it follows
+the last word on the same line; after a list or a display formula it gets a line of its own.
 */
 .proof-content > p:last-child::after,
-.proof-qed-block::after {
-  border: 1.5px solid var(--muted, currentColor);
+.proof-qed-block {
+  border: 1.5px solid var(--muted);
   box-sizing: border-box;
   content: "";
-  float: right;
   height: 0.6em;
-  margin: 0.45em 0 0 0.75em;
   width: 0.6em;
 }
 
+.proof-content > p:last-child::after {
+  display: inline-block;
+  margin-left: 0.4em;
+  vertical-align: -0.02em;
+}
+
 .proof-qed-block {
-  overflow: hidden;
+  margin: 0 0 0.85em;
 }
 
 .proof-content:has(> p:last-child) + .proof-qed-block {

@@ -9,18 +9,24 @@ type Props = {
 };
 
 export const Proof = ({ children, label }: Props) => (
-  <details className="group -mt-1.5 mb-7" open>
-    <summary className="flex min-h-9 w-fit cursor-pointer list-none items-center gap-2 rounded-md py-0.5 pr-1.5 hover:bg-rule/40 [&::-webkit-details-marker]:hidden">
+  <details className="group mb-7 rounded-xl border border-rule" open>
+    <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-4 hover:bg-rule/40 [&::-webkit-details-marker]:hidden">
       <span className="italic">{label ?? "Доказательство."}</span>
-      <span className="flex size-6 items-center justify-center rounded-full border border-rule text-muted">
-        <span className="transition-transform duration-200 group-open:rotate-90">
-          <ChevronIcon size={14} />
-        </span>
+      <span className="ml-auto text-muted transition-transform duration-200 group-open:rotate-90">
+        <ChevronIcon size={16} />
       </span>
     </summary>
-    <div className="pt-2">
+    <div className="border-t border-rule px-4 pt-3">
       <div className="proof-content">{children}</div>
       <div aria-hidden="true" className="proof-qed-block" />
     </div>
   </details>
+);
+
+/** A short proof: the PDF's run-in «Доказательство.», no frame and nothing to fold. */
+export const ShortProof = ({ children }: Pick<Props, "children">) => (
+  <div className="mb-7">
+    <div className="proof-content">{children}</div>
+    <div aria-hidden="true" className="proof-qed-block" />
+  </div>
 );
