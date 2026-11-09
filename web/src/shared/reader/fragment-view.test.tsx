@@ -59,12 +59,11 @@ describe("FragmentView references and math", () => {
 });
 
 describe("FragmentView proofs and problems", () => {
-  it("collapses long proofs and keeps short ones open", () => {
+  it("keeps every proof open, long ones included", () => {
     const long = `<div class="nb-proof"><p>${"слово ".repeat(200)}</p></div>`;
     view(`${long}<div class="nb-proof"><p>Коротко.</p></div>`);
-    const [first, second] = [...document.querySelectorAll("details")];
-    expect(first?.open).toBe(false);
-    expect(second?.open).toBe(true);
+    const proofs = [...document.querySelectorAll("details")];
+    expect(proofs.map((proof) => proof.open)).toEqual([true, true]);
   });
 
   it("shows the proof title in the summary, not in the body", () => {

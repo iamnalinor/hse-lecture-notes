@@ -39,7 +39,6 @@ type Handler = (
   replace: Replace,
 ) => ReactElement | undefined;
 
-const LONG_PROOF_CHARS = 700;
 const PART_HEADING =
   "mt-13 mb-1.5 flex items-center gap-3.5 text-subhead font-semibold text-muted after:h-px after:flex-1 after:bg-rule after:content-['']";
 const TITLE_HEADING = "mt-11 mb-3 text-title2 leading-tight font-bold";
@@ -144,7 +143,6 @@ const proof: Handler = (node, _options, replace) => {
   const body = (node.children as DOMNode[]).filter((child) => !isLeadOnly || child !== paragraph);
   return (
     <Proof
-      collapsed={textOf(node).length > LONG_PROOF_CHARS}
       // Plain text: a reference in the title would turn a tap on the summary into a link or a preview.
       label={lead === undefined ? undefined : textOf(lead)}
     >
