@@ -161,7 +161,7 @@ $$\forall m < n\ (m \in X) \to n \in X,$$
 
 Доказательство — в разделе [-@sec:lec03:equiv] (теорема [-@thm:lec03:equiv]): ПСИ выводится из ПМИ. А пока — как им пользоваться.
 
-```{.tikz #fig:lec03:chains caption="Слева: ПМИ — каждое звено ведёт только от $n$ к $n + 1$, и разрыв одного звена (как при $n = 4$ в замечании [-@rem:lec03:both-parts]) обрывает цепочку. Справа: ПСИ — в $n$ ведут стрелки от всех меньших чисел; при $n = 0$ стрелок нет, и условие прогрессивности само требует $0 \in X$"}
+```{.tikz #fig:lec03:chains caption="Слева: ПМИ — каждое звено ведёт только от $n$ к $n + 1$, и разрыв одного звена (как при $n = 4$ в замечании [-@rem:lec03:both-parts]) обрывает цепочку. Справа: ПСИ — в каждое $n$ ведут стрелки от всех меньших чисел (в $1$ — от $0$, в $2$ — от $0$ и $1$ и так далее; стрелки в $4$ выделены); при $n = 0$ стрелок нет, и условие прогрессивности само требует $0 \in X$"}
 \begin{tikzpicture}[num/.style={circle, draw, thick, minimum size=6.5mm, inner sep=0pt}, ar/.style={-{Stealth}, thick, nbblue}]
   \foreach \i in {0,...,5} { \node[num] (a\i) at (\i*0.95,0) {$\i$}; }
   \node at (6.0,0) {$\dots$};
@@ -172,8 +172,9 @@ $$\forall m < n\ (m \in X) \to n \in X,$$
   \begin{scope}[xshift=7.4cm]
     \foreach \i in {0,...,4} { \node[num] (b\i) at (\i*1.05,0) {$\i$}; }
     \node at (5.15,0) {$\dots$};
-    \foreach \i in {0,...,3} { \draw[ar, nbgreen] (b\i) to[bend left=50] (b4); }
-    \node[nbgreen] at (2.1,1.45) {все $m < 4$ в $X$ $\Rightarrow$ $4 \in X$};
+    \foreach \j in {1,2,3} { \foreach \i in {0,...,\numexpr\j-1\relax} { \draw[-{Stealth}, gray!70] (b\i) to[bend left=45] (b\j); } }
+    \foreach \i in {0,...,3} { \draw[ar, nbgreen] (b\i) to[bend left=45] (b4); }
+    \node[nbgreen] at (2.1,1.55) {все $m < 4$ в $X$ $\Rightarrow$ $4 \in X$};
     \node at (2.1,-0.85) {ПСИ: $\forall m < n\ (m \in X) \to n \in X$};
   \end{scope}
 \end{tikzpicture}
