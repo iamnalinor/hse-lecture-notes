@@ -18,9 +18,8 @@ export const Proof = ({ children, collapsed, label }: Props) => (
       </span>
     </summary>
     <div className="pt-2">
-      {children}
-      <div className="float-right mt-[-1.6em]">∎</div>
-      <div className="clear-both" />
+      <div className="proof-content">{children}</div>
+      <div aria-hidden="true" className="proof-qed-block" />
     </div>
   </details>
 );
