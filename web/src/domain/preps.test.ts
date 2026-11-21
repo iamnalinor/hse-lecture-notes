@@ -5,12 +5,14 @@ import {
   isHighlighted,
   isPrepId,
   isUpcoming,
+  pastPreps,
   PREP_IDS,
   prepContents,
   prepDescription,
   prepGoal,
   prepName,
   prepWhen,
+  undatedPreps,
   upcomingPreps,
 } from "./preps.ts";
 
@@ -195,5 +197,24 @@ describe("test preparation pages", () => {
     expect(isHighlighted(colloq, "2026-12-07")).toBe(true);
     expect(isHighlighted(colloq, "2026-12-30")).toBe(true);
     expect(isHighlighted(colloq, "2026-12-31")).toBe(false);
+  });
+
+  it("keeps a prep without a date apart: never upcoming, highlighted or past", () => {
+    const undated = { cheatsheets: [], id: "kr2", title: "" };
+    const kr1 = {
+      activeUntil: "2026-10-23",
+      highlightFrom: "2026-10-09",
+      cheatsheets: [],
+      date: "2026-10-23",
+      id: "kr1",
+      title: "",
+    };
+    const preps = [undated, kr1];
+    expect(isUpcoming(undated, "2026-11-20")).toBe(false);
+    expect(isHighlighted(undated, "2026-11-20")).toBe(false);
+    expect(upcomingPreps(preps, "2026-10-01").map((prep) => prep.id)).toStrictEqual(["kr1"]);
+    expect(pastPreps(preps, "2026-11-20").map((prep) => prep.id)).toStrictEqual(["kr1"]);
+    expect(undatedPreps(preps).map((prep) => prep.id)).toStrictEqual(["kr2"]);
+    expect(prepWhen(undated)).toBe("дата не объявлена");
   });
 });

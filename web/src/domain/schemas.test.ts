@@ -39,9 +39,9 @@ describe("build data schemas", () => {
     expect(catalog.preps["calculus"]?.[0]?.id).toBe("kr1");
     expect(catalog.preps["calculus"]?.[0]?.cheatsheets).toStrictEqual([]);
     // without `active_until` the test stays active through its own day
-    expect(catalog.preps["calculus"]?.[0]?.activeUntil).toBe("2026-10-22");
+    expect(catalog.preps["calculus"]?.[0]).toMatchObject({ activeUntil: "2026-10-22" });
     // without `highlight_from` the accent starts two weeks before the test
-    expect(catalog.preps["calculus"]?.[0]?.highlightFrom).toBe("2026-10-08");
+    expect(catalog.preps["calculus"]?.[0]).toMatchObject({ highlightFrom: "2026-10-08" });
   });
 
   it("reads the first accented day of a prep", () => {
@@ -59,7 +59,7 @@ describe("build data schemas", () => {
         ],
       },
     });
-    expect(catalog.preps["calculus"]?.[0]?.highlightFrom).toBe("2026-12-07");
+    expect(catalog.preps["calculus"]?.[0]).toMatchObject({ highlightFrom: "2026-12-07" });
   });
 
   it("knows which preparation page has a ticket bank", () => {
@@ -112,7 +112,16 @@ describe("build data schemas", () => {
         calculus: [{ active_until: "2026-10-23", date: "2026-10-22", id: "kr1", title: "" }],
       },
     });
-    expect(catalog.preps["calculus"]?.[0]?.activeUntil).toBe("2026-10-23");
+    expect(catalog.preps["calculus"]?.[0]).toMatchObject({ activeUntil: "2026-10-23" });
+  });
+
+  it("reads a prep without a date: no active or accent days", () => {
+    const catalog = CatalogSchema.parse({
+      lectures: {},
+      preps: { discrete: [{ date: null, id: "kr2", title: "" }] },
+    });
+    const prep = catalog.preps["discrete"]?.[0] ?? {};
+    expect("date" in prep || "activeUntil" in prep || "highlightFrom" in prep).toBe(false);
   });
 
   it("reads the print variants of a test cheatsheet", () => {

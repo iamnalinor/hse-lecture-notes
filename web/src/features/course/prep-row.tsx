@@ -3,7 +3,14 @@ import { Link } from "react-router";
 import type { PrepEntry } from "#web/domain/schemas.ts";
 
 import { paths } from "#web/domain/paths.ts";
-import { isHighlighted, pastPreps, prepName, prepWhen, upcomingPreps } from "#web/domain/preps.ts";
+import {
+  isHighlighted,
+  pastPreps,
+  prepName,
+  prepWhen,
+  undatedPreps,
+  upcomingPreps,
+} from "#web/domain/preps.ts";
 import { BUTTON_SECONDARY, BUTTON_SIGNAL } from "#web/shared/ui/button.ts";
 
 type Props = {
@@ -14,7 +21,8 @@ type Props = {
 
 /**
 Every prep stays on the course page: those ahead first with their day (accented near the event),
-then past ones, quieter, for revision before the exam. The home page shows only those ahead.
+then those whose event has no day yet (neutral, to start early), then past ones, quieter, for
+revision before the exam. The home page shows only those ahead with a day.
 */
 export const PrepRow = ({ course, preps, today }: Props) =>
   preps.length === 0 ? null : (
@@ -33,6 +41,11 @@ export const PrepRow = ({ course, preps, today }: Props) =>
             to={paths.prep(course, prep.id)}
           >
             {prepName(prep.id)} <span className="font-normal">· {prepWhen(prep)}</span>
+          </Link>
+        ))}
+        {undatedPreps(preps).map((prep) => (
+          <Link className={BUTTON_SECONDARY} key={prep.id} to={paths.prep(course, prep.id)}>
+            {prepName(prep.id)}
           </Link>
         ))}
         {pastPreps(preps, today).map((prep) => (

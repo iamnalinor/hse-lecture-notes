@@ -408,6 +408,7 @@ def test_lint_theory_catches(demo: Path, old: str, new: str, expected: str):
             "date: 2026-11-07\nhighlight_from: 2026-11-08",
             "позже последнего дня КР 2026-11-07",
         ),
+        ("date: 2026-11-07", "highlight_from: 2026-11-01", "highlight_from без date"),
     ],
 )
 def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
@@ -437,6 +438,20 @@ def test_prep_active_until(demo: Path):
     assert courses["preps"]["algebra"][0]["active_until"] == "2026-11-08"
     # без highlight_from подготовка выделена цветом за две недели до date
     assert courses["preps"]["algebra"][0]["highlight_from"] == "2026-10-24"
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX для TikZ → SVG")
+def test_prep_without_date(demo: Path):
+    """Подготовка без date (событие не объявлено) проходит линтер; в courses.json — без дней активности."""
+    p = demo / "prep" / "algebra" / "kr1.md"
+    p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-11-07\n", "", 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    courses = json.loads((demo / "build" / "site-data" / "courses.json").read_text(encoding="utf-8"))
+    prep = courses["preps"]["algebra"][0]
+    assert prep["date"] is None and prep["active_until"] is None and prep["highlight_from"] is None
 
 
 @pytest.mark.skipif(not HAS_TEX, reason="нужен шрифт CMU из TeX Live")
