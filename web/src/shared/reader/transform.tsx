@@ -260,9 +260,7 @@ const heading: Handler = (node, options, replace) => {
     );
   }
   return (
-    <h4
-      className={`mt-8 mb-2 font-bold ${options.variant === "notes" ? "text-body" : "text-title3"}`}
-    >
+    <h4 className={`mt-8 mb-2 font-bold ${options.variant === "notes" ? "" : "text-title3"}`}>
       {children(node, replace)}
     </h4>
   );

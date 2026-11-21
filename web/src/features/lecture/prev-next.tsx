@@ -32,7 +32,7 @@ export const PrevNext = ({ course, next, prev }: Props) => (
       </Link>
     )}
     {next !== undefined && (
-      <Link className={`${CARD} text-right`} to={paths.lecture(course, next.weekId)}>
+      <Link className={`${CARD} sm:text-right`} to={paths.lecture(course, next.weekId)}>
         <Card dir="Следующая" lecture={next} />
         <span className="shrink-0 text-muted group-hover:text-ink">
           <ChevronIcon size={20} />

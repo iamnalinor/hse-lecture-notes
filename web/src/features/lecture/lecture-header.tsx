@@ -28,7 +28,10 @@ export const LectureHeader = ({ info, meta, minutes, next, prev, weekId }: Props
       className="flex items-center gap-3 pt-6 text-subhead text-muted lg:pt-12"
     >
       <p className="min-w-0 flex-1 text-pretty">
-        <Link className="text-muted no-underline hover:text-ink" to={paths.course(info.id)}>
+        <Link
+          className="-my-3 inline-block py-3 text-muted no-underline hover:text-ink"
+          to={paths.course(info.id)}
+        >
           {info.short}
         </Link>
         <span aria-hidden="true"> · </span>
@@ -42,7 +45,7 @@ export const LectureHeader = ({ info, meta, minutes, next, prev, weekId }: Props
         <Step course={info.id} dir="next" lecture={next} />
       </span>
     </nav>
-    <h1 className="my-4 text-title2/tight font-bold tracking-tight text-balance sm:mt-5 sm:text-title1">
+    <h1 className="my-4 text-headline font-bold tracking-tight text-balance sm:mt-5 sm:text-title1">
       {meta.title}
     </h1>
     <div className="flex items-center gap-4 text-footnote text-muted">
@@ -55,7 +58,7 @@ export const LectureHeader = ({ info, meta, minutes, next, prev, weekId }: Props
 );
 
 const STEP =
-  "flex h-10 min-w-12 items-center justify-center gap-1 px-2.5 text-subhead font-semibold tabular-nums no-underline";
+  "flex h-11 min-w-12 items-center justify-center gap-1 px-2.5 text-subhead font-semibold tabular-nums no-underline";
 
 /** One half of the switcher: an arrow and the neighbour's number, or a dimmed arrow at the ends. */
 function Step({

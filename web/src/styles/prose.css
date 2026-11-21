@@ -350,3 +350,8 @@ only push them off the centre.
 .ref-preview figcaption {
   margin-top: 8px;
 }
+
+/* the first part follows the lecture header directly: its rule replaces the header's, no double gap */
+.prose-notes > section:first-child > h2 {
+  margin-top: 1.75rem;
+}

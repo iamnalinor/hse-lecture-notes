@@ -19,7 +19,10 @@ then past ones, quieter, for revision before the exam. The home page shows only 
 export const PrepRow = ({ course, preps, today }: Props) =>
   preps.length === 0 ? null : (
     <div className="mt-4 flex flex-wrap items-center gap-2">
-      <h2 className="mr-1 text-footnote font-semibold text-muted" id="course-preps">
+      <h2
+        className="mr-1 basis-full text-footnote font-semibold text-muted sm:basis-auto"
+        id="course-preps"
+      >
         Подготовка
       </h2>
       <nav aria-labelledby="course-preps" className="contents">
@@ -29,7 +32,7 @@ export const PrepRow = ({ course, preps, today }: Props) =>
             key={prep.id}
             to={paths.prep(course, prep.id)}
           >
-            {prepName(prep.id)} <span className="font-normal opacity-75">· {prepWhen(prep)}</span>
+            {prepName(prep.id)} <span className="font-normal">· {prepWhen(prep)}</span>
           </Link>
         ))}
         {pastPreps(preps, today).map((prep) => (
