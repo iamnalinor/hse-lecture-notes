@@ -391,6 +391,7 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
 THEORY_HEADING = re.compile(r"(\d+)\. \S")
 THEORY_HEADING_MAX = 60
 THEORY_FIRST = "Соглашения курса"
+THEORY_BLOCKS = {"definition", "axiom", "theorem", "lemma", "proposition", "corollary"}
 THEORY_STATUSES = (
     "без доказательства",
     "доказательство — на семинаре",
@@ -430,6 +431,8 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
         elif b["t"] == "Div":
             classes, attrs = b["c"][0][1], dict(b["c"][0][2])
             ref = attrs.get("ref")
+            if not ref or not set(classes) & THEORY_BLOCKS:
+                rep.err(rel, f"блок {classes or attrs}: в теории только определения и утверждения с ref= — примеры и замечания живут в конспектах")
             if ref:
                 if ref not in course_labels:
                     rep.err(rel, f"ref={ref} не найден в конспектах курса")

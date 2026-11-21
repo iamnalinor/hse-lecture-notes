@@ -355,6 +355,7 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
         ('ref="thm:lec01:assoc"}', 'ref="thm:lec01:assoc" status="доказано в лекции 1"}', "status="),
         ("**Матрица** — таблица", "Таблица", "начинается с термина"),
         ("слева направо.", "слева направо [-@thm:lec01:assoc].", "без ссылок"),
+        ("# 2. Метод Гаусса", "::: remark\nЗамечание.\n:::\n\n# 2. Метод Гаусса", "в теории только"),
     ],
 )
 def test_lint_theory_catches(demo: Path, old: str, new: str, expected: str):

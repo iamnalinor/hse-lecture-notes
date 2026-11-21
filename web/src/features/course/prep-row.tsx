@@ -25,7 +25,7 @@ export const PrepRow = ({ course, preps, today }: Props) =>
       >
         Подготовка
       </h2>
-      <nav aria-labelledby="course-preps" className="contents">
+      <nav aria-labelledby="course-preps" className="flex flex-wrap items-center gap-2">
         {upcomingPreps(preps, today).map((prep) => (
           <Link
             className={isHighlighted(prep, today) ? BUTTON_SIGNAL : BUTTON_SECONDARY}

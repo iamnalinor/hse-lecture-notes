@@ -312,7 +312,7 @@ $\gcd(a, b) = \gcd(a + bq, b)$ для любых $a, b, q$. *Идея:* у дв�
 :::
 
 ::: {.corollary ref="cor:lec07:fermat"}
-Малая теорема Ферма: если $p$ простое и $p \nmid a$, то $a^{p-1} \equiv 1 \pmod p$. Обращение неверно, но верен критерий простоты (без доказательства): $m > 1$ простое тогда и только тогда, когда для некоторого $a$ выполнено $a^{m-1} \equiv 1 \pmod m$ и $a^{(m-1)/q} \not\equiv 1 \pmod m$ для каждого простого $q \mid m - 1$.
+Если $p$ простое и $p \nmid a$, то $a^{p-1} \equiv 1 \pmod p$. Обращение неверно, но верен критерий простоты (без доказательства): $m > 1$ простое тогда и только тогда, когда для некоторого $a$ выполнено $a^{m-1} \equiv 1 \pmod m$ и $a^{(m-1)/q} \not\equiv 1 \pmod m$ для каждого простого $q \mid m - 1$.
 :::
 
 ::: {.proposition ref="prop:lec07:fermat-alt"}
@@ -410,7 +410,7 @@ $r_k = a u_k + b v_k$ для всех $k$; в частности, $\gcd(a, b) = 
 :::
 
 ::: {.theorem ref="thm:lec08:crt"}
-Китайская теорема об остатках: если $m_1, \dots, m_n > 1$ попарно взаимно просты, то для любых $a_1, \dots, a_n$ система $x \equiv a_i \pmod{m_i}$ имеет единственное решение $x$ с $0 \le x < m_1 \cdots m_n$. *Идея:* единственность — НОК модулей равен произведению; существование — индукция по $n$: первые $n$ сравнений сворачиваются в $x \equiv x_0 \pmod \mu$, и при $\mu u + mv = 1$ число $x_1 = a\mu u + x_0 mv$ решает пару $x \equiv x_0 \pmod \mu$, $x \equiv a \pmod m$.
+Если $m_1, \dots, m_n > 1$ попарно взаимно просты, то для любых $a_1, \dots, a_n$ система $x \equiv a_i \pmod{m_i}$ имеет единственное решение $x$ с $0 \le x < m_1 \cdots m_n$. *Идея:* единственность — НОК модулей равен произведению; существование — индукция по $n$: первые $n$ сравнений сворачиваются в $x \equiv x_0 \pmod \mu$, и при $\mu u + mv = 1$ число $x_1 = a\mu u + x_0 mv$ решает пару $x \equiv x_0 \pmod \mu$, $x \equiv a \pmod m$.
 :::
 
 # 9. Множества и булеан
@@ -686,7 +686,7 @@ $A \sim A$; $A \sim B \Rightarrow B \sim A$; $A \sim B \wedge B \sim C \Rightarr
 :::
 
 ::: {.proposition ref="prop:lec14:glue"}
-Склейка биекций: если $A \cap C = \varnothing$, $B \cap D = \varnothing$, $A \sim_f B$ и $C \sim_g D$, то $A \cup C \sim_{f \cup g} B \cup D$. *Идея:* $f \cup g$ — функция, так как области не пересекаются; инъективность внутри куска — от $f$ или $g$, между кусками — из $B \cap D = \varnothing$.
+Если $A \cap C = \varnothing$, $B \cap D = \varnothing$, $A \sim_f B$ и $C \sim_g D$, то $A \cup C \sim_{f \cup g} B \cup D$. *Идея:* $f \cup g$ — функция, так как области не пересекаются; инъективность внутри куска — от $f$ или $g$, между кусками — из $B \cap D = \varnothing$.
 :::
 
 ::: {.theorem ref="thm:lec14:cantor"}
@@ -732,7 +732,7 @@ $A \lesssim A$; $A \lesssim B \wedge B \lesssim C \Rightarrow A \lesssim C$; $A 
 :::
 
 ::: {.theorem ref="thm:lec15:csb" status="без доказательства"}
-Кантор — Шрёдер — Бернштейн: если $A \lesssim B$ и $B \lesssim A$, то $A \sim B$.
+Если $A \lesssim B$ и $B \lesssim A$, то $A \sim B$.
 :::
 
 ::: {.corollary ref="cor:lec15:powerset-not-embed"}
@@ -856,7 +856,7 @@ $|\mathcal{P}(A)| = 2^{|A|}$.
 # 17. Размещения и сочетания
 
 ::: {.definition ref="def:lec17:inj"}
-**Множество инъекций**: $\mathrm{Inj}(A, B)$ — множество инъекций из $A$ в $B$.
+**Обозначение** $\mathrm{Inj}(A, B)$ — множество всех инъекций из $A$ в $B$.
 :::
 
 ::: {.lemma ref="lem:lec17:only-size"}
@@ -922,7 +922,7 @@ $(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$ для $a, b \in \R$, $n \in \N
 :::
 
 ::: {.proposition ref="prop:lec18:multinomial-thm" status="без доказательства"}
-Полиномиальная формула: $(x_1 + \dots + x_k)^n = \sum_{a_1 + \dots + a_k = n} P(n; a_1, \dots, a_k)\, x_1^{a_1} \cdots x_k^{a_k}$ для $x_i \in \R$, $n \in \N$; сумма — по всем $(a_1, \dots, a_k) \in \N^k$ с $a_1 + \dots + a_k = n$.
+$(x_1 + \dots + x_k)^n = \sum_{a_1 + \dots + a_k = n} P(n; a_1, \dots, a_k)\, x_1^{a_1} \cdots x_k^{a_k}$ для $x_i \in \R$, $n \in \N$; сумма — по всем $(a_1, \dots, a_k) \in \N^k$ с $a_1 + \dots + a_k = n$.
 :::
 
 ::: {.lemma ref="lem:lec18:sum-indicator"}
@@ -934,7 +934,7 @@ $|A_1 \cup \dots \cup A_n| = \sum_{\varnothing \ne I \subseteq \{1, \dots, n\}} 
 :::
 
 ::: {.corollary ref="cor:lec18:symmetric"}
-Симметричный случай: если $X$ конечно, $A_1, \dots, A_n \subseteq X$, $|A_I| = a_k$ для всех $I$ с $|I| = k$ и $a_0 = |X|$, то $|X \setminus (A_1 \cup \dots \cup A_n)| = \sum_{k = 0}^n (-1)^k C_n^k a_k$. *Идея:* наборов $I$ размера $k$ ровно $C_n^k$; вычесть формулу включений-исключений из $|X|$.
+Если $X$ конечно, $A_1, \dots, A_n \subseteq X$, $|A_I| = a_k$ для всех $I$ с $|I| = k$ и $a_0 = |X|$, то $|X \setminus (A_1 \cup \dots \cup A_n)| = \sum_{k = 0}^n (-1)^k C_n^k a_k$. *Идея:* наборов $I$ размера $k$ ровно $C_n^k$; вычесть формулу включений-исключений из $|X|$.
 :::
 
 ::: {.proposition ref="prop:lec18:totient"}
@@ -1112,7 +1112,7 @@ $(n, m)$-граф существует $\iff$ $m \le C_n^2$ ($n \ge 1$). *Иде
 :::
 
 ::: {.lemma ref="lem:lec21:handshake"}
-О рукопожатиях: $\sum_{v \in V} d(v) = 2m$. *Идея:* правило зависимого произведения для $E \subseteq V \times V$ с $E[\{v\}] = N(v)$.
+$\sum_{v \in V} d(v) = 2m$. *Идея:* правило зависимого произведения для $E \subseteq V \times V$ с $E[\{v\}] = N(v)$.
 :::
 
 ::: {.corollary ref="cor:lec21:odd"}

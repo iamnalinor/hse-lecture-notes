@@ -142,7 +142,7 @@ $(a_n)$ ограничена $\Leftrightarrow \exists C > 0\ \forall n\colon |a_
 :::
 
 ::: {.definition ref="def:lec03:convergent"}
-**Сходящаяся** — имеет предел-число; расходящаяся — не имеет: $\forall a\ \exists \varepsilon > 0\ \forall N\ \exists n > N\colon |a_n - a| \ge \varepsilon$.
+**Сходящаяся последовательность** — та, у которой есть конечный предел; расходящаяся — та, у которой его нет: $\forall a\ \exists \varepsilon > 0\ \forall N\ \exists n > N\colon |a_n - a| \ge \varepsilon$.
 :::
 
 ::: {.proposition ref="prop:lec03:finitely-many" status="доказательство — на семинаре"}
@@ -170,7 +170,7 @@ $|x + y| \le |x| + |y|$; равносильная форма $|u - v| \le |u - w
 :::
 
 ::: {.theorem ref="thm:lec03:sum"}
-Арифметика предела: если $a_n \to a$, $b_n \to b$, то (1) $a_n \pm b_n \to a \pm b$; (2) $a_n b_n \to ab$; (3) $\frac{a_n}{b_n} \to \frac ab$ при $b_n \ne 0$, $b \ne 0$. Пункт 1 доказан в лекции 3, пункты 2–3 — в лекции 4. *Идея* (1): $|(a_n + b_n) - (a + b)| \le |a_n - a| + |b_n - b|$, номера для $\frac\varepsilon2$, $N = \max(N_1, N_2)$.
+Если $a_n \to a$, $b_n \to b$, то (1) $a_n \pm b_n \to a \pm b$; (2) $a_n b_n \to ab$; (3) $\frac{a_n}{b_n} \to \frac ab$ при $b_n \ne 0$, $b \ne 0$. Пункт 1 доказан в лекции 3, пункты 2–3 — в лекции 4. *Идея* (1): $|(a_n + b_n) - (a + b)| \le |a_n - a| + |b_n - b|$, номера для $\frac\varepsilon2$, $N = \max(N_1, N_2)$.
 :::
 
 # 4. Бесконечно малые и арифметика предела

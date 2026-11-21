@@ -37,7 +37,7 @@ export const LectureHeader = ({ info, meta, minutes, next, prev, weekId }: Props
         <span aria-hidden="true"> · </span>
         <span className="font-semibold text-ink">Лекция {meta.lecture}</span>
         <span aria-hidden="true"> · </span>
-        {meta.dateRu}
+        <span className="whitespace-nowrap">{meta.dateRu}</span>
       </p>
       <span className="flex shrink-0 overflow-hidden rounded-lg border border-rule bg-card">
         <Step course={info.id} dir="prev" lecture={prev} />
