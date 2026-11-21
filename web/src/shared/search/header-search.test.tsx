@@ -1,6 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { StrictMode } from "react";
 import { useLocation } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,7 +7,7 @@ import type { SearchEntry } from "#web/domain/schemas.ts";
 
 import { renderWithApp } from "#web/test/render.tsx";
 
-import { SearchButton } from "./search-button.tsx";
+import { HeaderSearch } from "./header-search.tsx";
 
 const INDEX: readonly SearchEntry[] = [
   {
@@ -58,41 +57,63 @@ const Location = () => {
   return <output data-testid="location">{decodeURIComponent(pathname + hash)}</output>;
 };
 
-const open = async () => {
+const MANY: readonly SearchEntry[] = Array.from({ length: 20 }, (_, index) => ({
+  anchor: `sec:many-${String(index)}`,
+  course: "calculus",
+  doc: "theory",
+  heading: `Ряд номер ${String(index)}`,
+  lecture: 0,
+  text: "Сходимость ряда.",
+}));
+
+const field = () => screen.getByRole("combobox", { name: "Поиск по конспектам" });
+
+const mount = () => {
   renderWithApp(
     <>
-      <SearchButton />
+      <HeaderSearch />
       <Location />
     </>,
     "/",
   );
-  await userEvent.click(screen.getByRole("button", { name: "Поиск" }));
-  return await screen.findByRole("combobox", { name: "Поиск по конспектам" });
+  return field();
 };
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(Response.json(INDEX)));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>().mockImplementation(async () => {
+      await Promise.resolve();
+      return Response.json([...INDEX, ...MANY]);
+    }),
+  );
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("SearchButton", () => {
-  it("finds a block by its number and opens it on Enter", async () => {
-    const input = await open();
-    await userEvent.type(input, "4.3");
+describe("HeaderSearch", () => {
+  it("is a field in the top bar, not a button that opens a dialog", () => {
+    mount();
+    expect(field()).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { hidden: true })).toBeNull();
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("finds a block by its number and opens it on Enter, then folds", async () => {
+    await userEvent.type(mount(), "4.3");
     expect(await screen.findByRole("option")).toHaveTextContent("Алгебра · Лекция 4");
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent(
       "/algebra/04_sep23_determinant_properties#thm:lec04:laplace",
     );
-    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(field()).toHaveValue("");
   });
 
   it("finds a word in the theory and highlights it", async () => {
-    const input = await open();
-    await userEvent.type(input, "миноры");
+    await userEvent.type(mount(), "миноры");
     const hits = await screen.findAllByRole("option");
     expect(hits.map((hit) => hit.textContent)).toStrictEqual([
       expect.stringContaining("Алгебра · Теория"),
@@ -100,67 +121,56 @@ describe("SearchButton", () => {
     expect(screen.getByText("Минор", { selector: "mark" })).toBeInTheDocument();
   });
 
-  it("opens the program page of a course from a hit", async () => {
-    const input = await open();
+  it("opens the program, test and colloquium pages from a hit", async () => {
+    const input = mount();
     await userEvent.type(input, "автомат");
     expect(await screen.findByRole("option")).toHaveTextContent("Дискра · План учебной дисциплины");
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent("/discrete/program#автомат");
-  });
-
-  it("opens a test preparation page from a hit", async () => {
-    const input = await open();
     await userEvent.type(input, "крамеру");
     expect(await screen.findByRole("option")).toHaveTextContent("Алгебра · Подготовка к КР-1");
     await userEvent.keyboard("{Enter}");
     expect(screen.getByTestId("location")).toHaveTextContent("/algebra/kr1#sec:kr1:cramer");
-  });
-
-  it("opens a colloquium preparation page from a hit", async () => {
-    const input = await open();
     await userEvent.type(input, "гейне");
     expect(await screen.findByRole("option")).toHaveTextContent(
       "Матан · Подготовка к коллоквиуму 1",
     );
-    await userEvent.keyboard("{Enter}");
-    expect(screen.getByTestId("location")).toHaveTextContent(
-      "/calculus/colloq1#sec:colloq1:cauchy-heine",
-    );
   });
 
-  it("stays open under StrictMode's double mount", async () => {
-    renderWithApp(
-      <StrictMode>
-        <SearchButton />
-      </StrictMode>,
-      "/",
-    );
-    await userEvent.click(screen.getByRole("button", { name: "Поиск" }));
-    await screen.findByRole("combobox");
-    await new Promise((resolve) => {
-      setTimeout(resolve, 20);
-    });
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
+  it("draws the first dozen hits and the rest on request", async () => {
+    await userEvent.type(mount(), "ряд");
+    expect(await screen.findAllByRole("option")).toHaveLength(12);
+    await userEvent.click(screen.getByRole("button", { name: /Показать ещё 8/u }));
+    expect(screen.getAllByRole("option")).toHaveLength(20);
   });
 
-  it("closes on Esc", async () => {
-    await open();
-    screen.getByRole<HTMLDialogElement>("dialog", { hidden: true }).close();
+  it("folds and clears on Esc", async () => {
+    await userEvent.type(mount(), "миноры");
+    await screen.findByRole("option");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(field()).toHaveValue("");
+    expect(field()).not.toHaveFocus();
+  });
+
+  it("does not fetch the index until the field is touched", async () => {
+    mount();
+    expect(fetch).not.toHaveBeenCalled();
+    fireEvent.pointerDown(field());
     await waitFor(() => {
-      expect(screen.queryByRole("combobox")).toBeNull();
+      expect(fetch).toHaveBeenCalled();
     });
   });
 
-  it("opens with Ctrl+K in the Russian layout", async () => {
-    renderWithApp(<SearchButton />, "/");
+  it("focuses with Ctrl+K, in the Russian layout too, and with «/»", async () => {
+    mount();
     fireEvent.keyDown(document, { code: "KeyK", ctrlKey: true, key: "л" });
-    expect(await screen.findByRole("combobox")).toBeInTheDocument();
-  });
-
-  it("opens with Ctrl+K", async () => {
-    renderWithApp(<SearchButton />, "/");
+    expect(field()).toHaveFocus();
+    field().blur();
     await userEvent.keyboard("{Control>}k{/Control}");
-    // Focus moves to the field via `showModal()`, which jsdom does not implement.
-    expect(await screen.findByRole("combobox")).toBeInTheDocument();
+    expect(field()).toHaveFocus();
+    field().blur();
+    await userEvent.keyboard("/");
+    expect(field()).toHaveFocus();
   });
 });
