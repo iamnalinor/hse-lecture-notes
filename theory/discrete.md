@@ -1240,8 +1240,3 @@ $\cong$ рефлексивно, симметрично и транзитивно
 ::: {.lemma ref="lem:lec22:bipartite-handshake" status="доказано в лекции 22"}
 В двудольном $(n, m)$-графе с долями $V_1$, $V_2$: $\sum_{v \in V_1} d(v) = \sum_{v \in V_2} d(v) = m$.
 :::
-
-# Глоссарий курса
-
-::: course-glossary
-:::

@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import type { TocItem } from "#web/domain/schemas.ts";
 
+import { TexText } from "#web/shared/reader/tex-text.tsx";
+
 import { tocItems, TocList, WIDE_QUERY } from "./doc-toc.tsx";
 import { MenuIcon } from "./icons.tsx";
 import { useActiveSection } from "./use-active-section.ts";
@@ -59,7 +61,9 @@ const Sheet = ({ caption, minutes, toc }: Props) => {
           type="button"
         >
           <MenuIcon size={16} />
-          <span className="truncate font-semibold">{current?.text ?? caption}</span>
+          <span className="truncate font-semibold">
+            <TexText text={current?.text ?? caption} />
+          </span>
           <span className="text-muted tabular-nums">{Math.round(progress * 100)}%</span>
         </button>
       </div>

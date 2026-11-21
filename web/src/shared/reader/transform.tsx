@@ -40,8 +40,10 @@ type Handler = (
 ) => ReactElement | undefined;
 
 const LONG_PROOF_CHARS = 700;
-const PART_HEADING =
-  "mt-13 mb-1.5 flex items-center gap-3.5 text-subhead font-semibold text-muted after:h-px after:flex-1 after:bg-rule after:content-['']";
+/** Parts of a lecture (Контекст, Теория, Практика, Итоги): a rule above and the second step of the scale. */
+const PART_HEADING = "mt-12 mb-4 border-t border-rule pt-7 text-title2 leading-tight font-bold";
+/** Numbered topics inside a part of a lecture: one step below the part. */
+const TOPIC_HEADING = "mt-11 mb-3 text-title3 leading-snug font-bold text-balance";
 const TITLE_HEADING = "mt-11 mb-3 text-title2 leading-tight font-bold";
 
 const children = (node: Element, replace: Replace): ReactNode =>
@@ -249,13 +251,21 @@ const heading: Handler = (node, options, replace) => {
   }
   if (node.name === "h2") {
     return (
-      <h3 className={TITLE_HEADING}>
-        {number !== undefined && <span className="mr-2.5 font-normal text-muted">{number}</span>}
+      <h3 className={options.variant === "notes" ? TOPIC_HEADING : TITLE_HEADING}>
+        {number !== undefined && (
+          <span className="mr-2 font-semibold text-muted tabular-nums">{number}</span>
+        )}
         {children(node, replace)}
       </h3>
     );
   }
-  return <h4 className="mt-8 mb-2 text-title3 font-bold">{children(node, replace)}</h4>;
+  return (
+    <h4
+      className={`mt-8 mb-2 font-bold ${options.variant === "notes" ? "text-body" : "text-title3"}`}
+    >
+      {children(node, replace)}
+    </h4>
+  );
 };
 
 const byTag: Readonly<Record<string, Handler>> = {

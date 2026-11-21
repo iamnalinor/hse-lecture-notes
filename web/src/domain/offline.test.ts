@@ -17,14 +17,12 @@ const MANIFEST: OfflineManifest = {
   docs: [
     { files: ["data/a/01/fragment.html", "data/a/01/meta.json"], id: "a/01", kind: "notes" },
     { files: ["data/a/02/fragment.html", "data/a/02/meta.json"], id: "a/02", kind: "notes" },
-    { files: ["data/a/glossary.json"], id: "a/glossary", kind: "glossary" },
   ],
   files: {
     "data/a/01/fragment.html": "h1",
     "data/a/01/meta.json": "m1",
     "data/a/02/fragment.html": "h2",
     "data/a/02/meta.json": "m2",
-    "data/a/glossary.json": "g",
     "index.html": "i",
   },
   precache: ["index.html"],
@@ -33,7 +31,6 @@ const MANIFEST: OfflineManifest = {
     "data/a/01/meta.json": 10,
     "data/a/02/fragment.html": 200,
     "data/a/02/meta.json": 20,
-    "data/a/glossary.json": 5,
   },
   version: "v",
 };
@@ -47,7 +44,6 @@ describe("offline documents", () => {
       "data/a/01/meta.json": "m1",
       "data/a/02/fragment.html": "old",
       "data/a/02/meta.json": "m2",
-      "data/a/glossary.json": "g",
     });
     expect(countSavedNotes(MANIFEST, state)).toEqual({ missingBytes: 200, saved: 1, total: 2 });
   });
@@ -74,7 +70,6 @@ describe("offline documents", () => {
     expect(missingDocFiles(MANIFEST, state)).toEqual([
       "data/a/02/fragment.html",
       "data/a/02/meta.json",
-      "data/a/glossary.json",
     ]);
   });
 });
@@ -105,7 +100,6 @@ describe("knownPages", () => {
       "a",
       "a/01",
       "a/02",
-      "a/glossary",
       "index.html",
     ]);
   });

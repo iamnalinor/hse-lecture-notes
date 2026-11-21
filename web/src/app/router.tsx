@@ -3,14 +3,17 @@ import { createBrowserRouter, type RouteObject } from "react-router";
 import { PREP_IDS } from "#web/domain/preps.ts";
 
 import { AppShell, ShellFallback } from "./app-shell.tsx";
-import { LegacyPdfRedirect, LegacyTheoryRedirect } from "./legacy-redirect.tsx";
+import {
+  LegacyGlossaryRedirect,
+  LegacyPdfRedirect,
+  LegacyTheoryRedirect,
+} from "./legacy-redirect.tsx";
 import { RouteError } from "./route-error.tsx";
 
 type Page = () => Promise<{ readonly Component: React.ComponentType }>;
 
 const PAGES = {
   course: async () => await import("#web/features/course/course-page.tsx"),
-  glossary: async () => await import("#web/features/glossary/glossary-page.tsx"),
   home: async () => await import("#web/features/home/home-page.tsx"),
   lecture: async () => await import("#web/features/lecture/lecture-page.tsx"),
   prep: async () => await import("#web/features/prep/prep-page.tsx"),
@@ -29,7 +32,7 @@ const routes: RouteObject[] = [
       page(":course/program", PAGES.program),
       { Component: LegacyTheoryRedirect, path: ":course/registry" },
       { Component: LegacyPdfRedirect, path: "pdf/:file" },
-      page(":course/glossary", PAGES.glossary),
+      { Component: LegacyGlossaryRedirect, path: ":course/glossary" },
       ...PREP_IDS.map((id) => page(`:course/${id}`, PAGES.prep)),
       page(":course/:weekId", PAGES.lecture),
     ],

@@ -60,11 +60,7 @@ def test_index_single_counter(demo: Path):
     assert labels["prob:lec01:product"]["number"] == "1.7"
     assert labels["def:lec02:elem"]["number"] == "2.1"
     assert "basis" not in labels["def:lec02:elem"]
-    assert {g["term"] for g in idx["glossary"]["algebra"]} == {
-        "Матрица",
-        "[A]_{ij}",
-        "Элементарное преобразование",
-    }
+    assert "glossary" not in idx
 
 
 FIGURE_CASES = """
@@ -129,7 +125,6 @@ def test_html_blocks_and_refs(demo: Path):
     assert "Замечание 1.5" in frag
     assert 'href="#eq:lec01:assoc"' in frag and "(1.4)" in frag
     assert "\\tag{1.4}" in frag
-    assert '<details class="nb-answers">' in frag
     meta = json.loads((site / "algebra" / "01_sep03_matrices" / "meta.json").read_text(encoding="utf-8"))
     assert meta["lecture"] == 1 and "basis" not in meta and "based_on" not in meta
     assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Лекция 1 · 3 сентября 2026"
@@ -141,18 +136,17 @@ def test_html_blocks_and_refs(demo: Path):
     frag2 = (site / "algebra" / "02_sep09_gauss" / "fragment.html").read_text(encoding="utf-8")
     assert 'href="../01_sep03_matrices/#thm:lec01:assoc"' in frag2
     assert "1.3 (лекция 1)" in frag2
+    # формулы в заголовках оглавления остаются формулами ($…$), а не сырым TeX
+    meta2 = json.loads((site / "algebra" / "02_sep09_gauss" / "meta.json").read_text(encoding="utf-8"))
+    assert "Ранг матрицы $A^T$ и строки $\\varepsilon$" in [t["text"] for t in meta2["toc"]]
+    # ссылка на раздел с формулой в заголовке: формула в ссылке тоже формула
+    ref = frag2.split('href="#sec:lec02:rank"', 1)[1].split("</a>", 1)[0]
+    assert "$A^T$" not in ref and "A^T" in ref and "math" in ref
     # теория курса берёт номера из конспектов
     reg = (site / "algebra" / "theory" / "fragment.html").read_text(encoding="utf-8")
     assert 'data-number="1.3"' in reg and "черновик" not in reg
-    # глоссарий курса в теории: сначала по лекциям, внутри по алфавиту
-    glossary_html = reg[reg.index("nb-course-glossary") :]
-    assert (
-        glossary_html.index("Лекция\u00a01")
-        < glossary_html.index("Матрица")
-        < glossary_html.index("Лекция\u00a02")
-    )
-    gl = json.loads((site / "algebra" / "glossary.json").read_text(encoding="utf-8"))
-    assert [g["term"] for g in gl] == ["[A]_{ij}", "Матрица", "Элементарное преобразование"]
+    assert "nb-course-glossary" not in reg and not (site / "algebra" / "glossary.json").exists()
+    assert "glossary" not in meta
     search = json.loads((site / "search.json").read_text(encoding="utf-8"))
     assoc = next(e for e in search if e["anchor"] == "thm:lec01:assoc")
     assert assoc["course"] == "algebra" and assoc["doc"] == "01_sep03_matrices"
@@ -330,7 +324,8 @@ def test_lint_demo_clean(demo: Path):
         ("Первая лекция курса", "По рекомендации Р4 первая лекция курса", "служебное слово"),
         ("#def:lec01:matrix", "#def:lec02:matrix", "номер лекции lec02"),
         ("#ex:lec01:matrix", "#thm:lec01:matrixex", "префикс ex:"),
-        ("::: answers\n1. Нет", "::: answer\n1. Нет", "нет блока ::: answers"),
+        ("# Итоги", "# Самопроверка\n\n1. Задача.\n\n# Итоги", "раздела «# Самопроверка» больше нет"),
+        ("# Итоги", "# Глоссарий\n\nТермин\n:   определение.\n\n# Итоги", "раздела «# Глоссарий» больше нет"),
         ("date: 2026-09-03", "date: 2026-09-04", "mmmDD в имени"),
         ("# Итоги", "# Выводы", "нет раздела «# Итоги»"),
         ("date: 2026-09-03", "date: 2026-09-03\nbasis: lecture", "поле basis больше не используется"),

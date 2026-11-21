@@ -4,7 +4,6 @@ import { offlineDocKind } from "./offline-kind.ts";
 
 describe("offlineDocKind", () => {
   it.each([
-    ["glossary", "glossary"],
     ["kr1", "prep"],
     ["colloq1", "prep"],
     ["theory", "theory"],

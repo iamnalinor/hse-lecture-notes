@@ -134,7 +134,7 @@ describe("useActiveSection", () => {
     fire("wheel");
     scroll(AT_SKEW);
     expect(result.current.active).toBe("skew");
-    // The glossary filter narrows the list: the URL still says #practice.
+    // A filter narrows the list: the URL still says #practice.
     rerender({ ids: ["context", "theory", "skew", "practice"] });
     expect(result.current.active).toBe("skew");
   });

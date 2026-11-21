@@ -949,8 +949,3 @@ $\int \frac{dx}{x^2 + a^2} = \frac1a\operatorname{arctg}\frac xa + C$; $\int \fr
 ::: {.theorem ref="thm:lec17:parts" status="доказано в лекции 17"}
 Если $u$, $v$ дифференцируемы на интервале и $u'v$ имеет первообразную, то $\int u v'\,dx = uv - \int u'v\,dx$ ($\int u\,dv = uv - \int v\,du$). *Идея:* $(uv)' = u'v + uv'$.
 :::
-
-# Глоссарий курса
-
-::: course-glossary
-:::

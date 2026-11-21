@@ -51,7 +51,7 @@ const LecturePage = ({ entry, info, lectures }: LectureProps) => {
 
   const isWide = useIsMatching(WIDE_QUERY);
   const minutes = readingMinutes(html);
-  const caption = `Лекция ${String(meta.lecture)}`;
+  const caption = "Содержание";
 
   return (
     <div className="mx-auto grid max-w-[1240px] justify-center gap-14 px-4 min-[1100px]:grid-cols-[230px_minmax(0,800px)] sm:px-8">
@@ -60,10 +60,11 @@ const LecturePage = ({ entry, info, lectures }: LectureProps) => {
       </div>
       <div className="min-w-0">
         <LectureHeader
-          course={info.id}
-          courseName={info.name}
+          info={info}
           meta={meta}
           minutes={minutes}
+          next={next}
+          prev={prev}
           weekId={entry.weekId}
         />
         <FragmentView

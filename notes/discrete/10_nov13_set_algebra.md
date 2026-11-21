@@ -269,7 +269,7 @@ $$A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C), \qquad A \setmi
 
 *Решение через тождества.* $C = A \cup C = A \cup (B \cup C) = (A \cup B) \cup C$, и по лемме [-@lem:lec10:subset-equiv] $A \cup B \subseteq C$.
 
-Итак, $A \cup B$ — наименьшее множество, содержащее и $A$, и $B$. Двойственное утверждение для пересечения — в самопроверке.
+Итак, $A \cup B$ — наименьшее множество, содержащее и $A$, и $B$. Двойственно, $A \cap B$ — наибольшее множество, содержащееся и в $A$, и в $B$.
 :::
 
 У включения есть ещё две полезные формы — через разность и через дополнения.
@@ -393,57 +393,3 @@ $\bigcup_{n \in \N_+} [\frac1n, 2] = \{x \in \R \mid 0 < x \le 2\}$, $\bigcap_{n
 - Любое тождество алгебры множеств проверяется таблицей принадлежности из $2^k$ строк, а строка, где части расходятся, даёт контрпример: $(A \cup B) \setminus B = A \setminus B$, а не $A$.
 - Включение $A \subseteq B$ можно заменить равенством ($A \cap B = A$, $A \cup B = B$, $A \setminus B = \varnothing$) и дальше работать тождествами, не разбирая элементов.
 - При вычитании объединения или пересечения операция меняется на двойственную: $A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C)$.
-
-# Глоссарий
-
-$\bigcup A$ (объединение семейства)
-:   множество элементов элементов $A$: $x \in \bigcup A \iff \exists \alpha\, (x \in \alpha \in A)$; [-@ax:lec10:union].
-
-$\bigcup_{i \in I} A_i$; $\bigcap A$ (пересечение семейства)
-:   $\bigcup\{A_i \mid i \in I\}$; $\bigcap A$ — элементы, лежащие во всех членах непустого семейства $A$; $\bigcap \varnothing$ не определено; [-@rem:lec10:indexed].
-
-$A \cup B$, $A \cap B$, $A \setminus B$; непересекающиеся множества
-:   объединение $\bigcup\{A, B\}$, пересечение $\{x \in A \mid x \in B\}$, разность $\{x \in A \mid x \notin B\}$; $A$ и $B$ не пересекаются, если $A \cap B = \varnothing$; [-@def:lec10:operations].
-
-Универсум $U$; дополнение $\bar A$
-:   объемлющее множество задачи; $\bar A = U \setminus A$; [-@def:lec10:complement].
-
-Диаграмма Эйлера
-:   множества — фигуры на плоскости; ничего не доказывает; [-@fig:lec10:euler].
-
-Законы де Моргана для разности
-:   $A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C)$, $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$; [-@rem:lec10:relative-demorgan].
-
-Таблица принадлежности
-:   проверка тождества по $2^k$ вариантам принадлежности; [-@ex:lec10:identity].
-
-$A \mathbin{\triangle} B$ (симметрическая разность)
-:   $(A \setminus B) \cup (B \setminus A)$ — элементы ровно одного из множеств; [-@prob:lec10:symdiff].
-
-# Самопроверка
-
-1. Найдите $\bigcup \{\{1, 2\}, \{2, 3\}, \varnothing\}$.
-2. Докажите, что не существует множества $S$, содержащего все двухэлементные множества.
-3. Докажите, что если $C \subseteq A$ и $C \subseteq B$, то $C \subseteq A \cap B$.
-4. Докажите или опровергните: $(A \cup B) \setminus C = A \cup (B \setminus C)$.
-5. Найдите $\bigcup\bigcup\{\{\{\varnothing\}\}, \{\varnothing, \{\varnothing\}\}\}$.
-6. Пусть $A$ — множество чётных натуральных чисел. Найдите $\bar A$, если универсум $U = \N$; если $U = \Z$.
-7. Найдите $\bigcup_{n \in \N} [0, n]$.
-8. Докажите или опровергните: $A \cup (B \cap C) = (A \cup B) \cap C$.
-9. Опровергните «закон де Моргана» $A \setminus (B \cap C) = (A \setminus B) \cap (A \setminus C)$. Как выглядит верный?
-10. Докажите без поэлементных рассуждений: если $A \subseteq B$, то $A \cap C \subseteq B \cap C$.
-11. Докажите таблицей принадлежности: $(A \setminus B) \setminus C = (A \setminus C) \setminus (B \setminus C)$.
-
-::: answers
-1. $\{1, 2, 3\}$: пустое множество ничего не добавляет.
-2. Тогда $\bigcup S$ содержало бы каждое множество $x$: при $x \ne \varnothing$ имеем $x \in \{x, \varnothing\} \in S$, а $\varnothing \in \{\varnothing, \{\varnothing\}\} \in S$ (у обоих множеств по два различных элемента). Это противоречит следствию [-@cor:lec09:no-universal].
-3. Пусть $x \in C$; тогда $x \in A$ и $x \in B$, то есть $x \in A \cap B$. Через тождества: $C = C \cap A$, $C = C \cap B$, откуда $C = C \cap (A \cap B)$, и по лемме [-@lem:lec10:subset-equiv] $C \subseteq A \cap B$.
-4. Неверно: при $A = C = \{1\}$, $B = \varnothing$ слева $\varnothing$, справа $\{1\}$ (строка $101$ таблицы принадлежности).
-5. $\{\varnothing\}$: $\bigcup$ первого уровня даёт $\{\{\varnothing\}\} \cup \{\varnothing, \{\varnothing\}\} = \{\varnothing, \{\varnothing\}\}$, второго — $\varnothing \cup \{\varnothing\} = \{\varnothing\}$.
-6. При $U = \N$: $\bar A$ — нечётные натуральные числа. При $U = \Z$: $\bar A = \Z \setminus A$ — все нечётные целые и все отрицательные чётные.
-7. $\{x \in \R \mid x \ge 0\}$: каждое $x \ge 0$ лежит в $[0, n]$ при натуральном $n \ge x$, а отрицательные числа не лежат ни в одном отрезке.
-8. Неверно: при $A = \{1\}$, $B = C = \varnothing$ слева $\{1\}$, справа $\varnothing$ (строка $100$).
-9. При $A = B = \{1\}$, $C = \varnothing$ слева $\{1\} \setminus \varnothing = \{1\}$, справа $\varnothing \cap \{1\} = \varnothing$. Верно $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$ (замечание [-@rem:lec10:relative-demorgan]).
-10. По лемме [-@lem:lec10:subset-equiv] $A \cap B = A$, поэтому $(A \cap C) \cap (B \cap C) = (A \cap B) \cap (C \cap C) = A \cap C$ (коммутативность, ассоциативность, идемпотентность), и по той же лемме $A \cap C \subseteq B \cap C$.
-11. Обе части равны $1$ ровно в строке $100$: левая требует $\alpha = 1$, $\beta = 0$, $\gamma = 0$; правая — $\alpha = 1$, $\gamma = 0$ и $x \notin B \setminus C$, а при $\gamma = 0$ это значит $\beta = 0$. Во всех остальных семи строках обе части равны $0$, поэтому тождество верно.
-:::

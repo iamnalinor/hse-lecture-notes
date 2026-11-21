@@ -1058,8 +1058,3 @@ $\operatorname{ord} g = |\langle g \rangle|$: при $\operatorname{ord} g = \in
 ::: {.proposition ref="prop:lec17:zn-order" status="доказано в лекции 17"}
 В $\Z_n$: $\operatorname{ord} \bar k = \frac{n}{\text{НОД}(k, n)}$; $\bar k$ порождает $\Z_n$ $\Leftrightarrow$ $\text{НОД}(k, n) = 1$. *Идея:* $n \mid qk \Leftrightarrow \frac{n}{d} \mid q$ при $d = \text{НОД}(k, n)$.
 :::
-
-# Глоссарий курса
-
-::: course-glossary
-:::

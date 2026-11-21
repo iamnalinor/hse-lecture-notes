@@ -42,7 +42,7 @@ PREFIX = {
     "remark": "rem",
     "problem": "prob",
 }
-AUX_DIVS = {"proof", "solution", "answer", "answers", "course-glossary"}
+AUX_DIVS = {"proof", "solution", "answer", "answers"}
 TAGS = {"корнер-кейс", "подводный камень", "частое заблуждение", "соглашение курса", "напоминание"}
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
@@ -233,7 +233,7 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
     required = ["Контекст", "После прочтения ты сможешь", "Теория"]
     if has_practice:
         required.append("Практика")
-    required += ["Итоги", "Глоссарий", "Самопроверка"]
+    required.append("Итоги")
     sections = split_sections(blocks)
     names = [s[0] for s in sections]
     for r in required:
@@ -242,6 +242,9 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
     order = [n for n in names if n in required]
     if order != [r for r in required if r in names]:
         rep.err(rel, f"разделы не в порядке скелета: {order}")
+    for gone in ("Глоссарий", "Самопроверка"):
+        if gone in names:
+            rep.err(rel, f"раздела «# {gone}» больше нет: термины находит поиск, себя проверяют задачами «Практики»")
     sec = dict(sections)
 
     if "Итоги" in sec:
@@ -249,37 +252,12 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
         n = len(lists[0]["c"]) if lists else 0
         if not 3 <= n <= 8:
             rep.warn(rel, f"в итогах {n} пунктов, нужно 3–8")
-    if "Глоссарий" in sec:
-        dls = [b for b in sec["Глоссарий"] if b["t"] == "DefinitionList"]
-        if not dls:
-            rep.err(rel, "глоссарий должен быть definition list (Термин\\n:   определение)")
-        for dl in dls:
-            for term, defs in dl["c"]:
-                cites = [n for n in iter_nodes(defs) if n["t"] == "Cite"]
-                if not cites:
-                    rep.warn(rel, f"в глоссарии у «{stringify(term)}» нет ссылки на номер определения")
     skills = 0
     if "После прочтения ты сможешь" in sec:
         lists = [b for b in sec["После прочтения ты сможешь"] if b["t"] in ("BulletList", "OrderedList")]
         skills = len(lists[0]["c"] if lists[0]["t"] == "BulletList" else lists[0]["c"][1]) if lists else 0
         if skills == 0:
             rep.err(rel, "«После прочтения ты сможешь» — нужен список навыков")
-    if "Самопроверка" in sec:
-        body = sec["Самопроверка"]
-        olists = [b for b in body if b["t"] == "OrderedList"]
-        answers = [b for b in body if b["t"] == "Div" and "answers" in b["c"][0][1]]
-        if not olists:
-            rep.err(rel, "в самопроверке нет нумерованного списка задач")
-        if not answers:
-            rep.err(rel, "в самопроверке нет блока ::: answers")
-        if olists and answers:
-            n_q = len(olists[0]["c"][1])
-            alists = [b for b in answers[0]["c"][1] if b["t"] == "OrderedList"]
-            n_a = len(alists[0]["c"][1]) if alists else 0
-            if n_q != n_a:
-                rep.err(rel, f"задач в самопроверке {n_q}, ответов {n_a}")
-            if n_q < skills:
-                rep.warn(rel, f"навыков {skills}, а задач самопроверки {n_q}: на каждый навык нужна задача")
     return sec
 
 

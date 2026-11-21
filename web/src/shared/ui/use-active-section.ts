@@ -12,7 +12,7 @@ const USER_SCROLL = ["wheel", "touchmove", "keydown"] as const;
 /**
 Navigations whose jump has been pinned already: the router keeps one location object per navigation.
 The URL keeps its hash after the reader scrolls away, so without this a re-run of the effect (the
-glossary filter changes the ids, the table of contents moves to the other slot at the 1100px
+list of ids changes, the table of contents moves to the other slot at the 1100px
 breakpoint) would pin the old target again.
 */
 const pinnedNavigations = new WeakSet<object>();
