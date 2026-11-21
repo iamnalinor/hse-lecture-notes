@@ -12,11 +12,12 @@ Information spec in 2014 and nobody ships it. What Chromium exposes (`navigator.
 
 Firefox and Safari have no `navigator.connection`.
 
-The rule is conservative: download in the background only when the browser positively says the
-link is Wi-Fi or Ethernet (unmetered in practice), the reader did not ask to save data and the
-link is not crawling. Anything unknown — no API, no `type` (desktop Chrome: a laptop on a phone
-hotspot looks the same as one at home), `cellular`, `bluetooth` (tethering), `wimax`, `mixed`,
-`other` — means «do not», and the «Скачать все» button stays the way to save everything.
+On a phone or tablet the rule is conservative: download in the background only when the browser
+positively says the link is Wi-Fi or Ethernet, the reader did not ask to save data and the link is
+not crawling; anything unknown means «do not». On a desktop (fine pointer with hover) the link is
+Wi-Fi or a cable nearly always, so an unknown link (desktop Chrome, Firefox, Safari) is fine; a link
+the browser names as cellular, data saving or a crawling link still stop it (owner's decision,
+November 2026). «Скачать все» stays the way to save everything by hand.
 */
 
 /** The part of `NetworkInformation` the rule reads; every field may be absent. */
@@ -36,8 +37,22 @@ const isUnmetered = (connection: ConnectionInfo): boolean =>
 const isSlow = (connection: ConnectionInfo): boolean =>
   connection.effectiveType !== undefined && SLOW_EFFECTIVE_TYPES.has(connection.effectiveType);
 
-export const canAutoDownload = (connection: ConnectionInfo | undefined): boolean =>
-  connection !== undefined &&
-  connection.saveData !== true &&
-  isUnmetered(connection) &&
-  !isSlow(connection);
+type Device = { readonly isDesktop?: boolean };
+
+export const canAutoDownload = (
+  connection: ConnectionInfo | undefined,
+  { isDesktop = false }: Device = {},
+): boolean => {
+  if (connection === undefined) {
+    return isDesktop;
+  }
+  if (connection.saveData === true || isSlow(connection)) {
+    return false;
+  }
+  return connection.type === undefined ? isDesktop : isUnmetered(connection);
+};
+
+/** A desktop or a laptop: the main pointer is precise and can hover (not a touch screen). */
+export const isDesktopDevice = (): boolean =>
+  typeof globalThis.matchMedia === "function" &&
+  globalThis.matchMedia("(hover: hover) and (pointer: fine)").matches;

@@ -3,7 +3,7 @@ import { useCallback, useDeferredValue, useEffect, useRef, useState } from "reac
 import { useNavigate } from "react-router";
 
 import { labelIndexQuery, searchIndexQuery } from "#web/api/queries.ts";
-import { canAutoDownload, type ConnectionInfo } from "#web/domain/connection.ts";
+import { canAutoDownload, type ConnectionInfo, isDesktopDevice } from "#web/domain/connection.ts";
 import { hitPath, prepareIndex, search, type SearchHit } from "#web/domain/search.ts";
 import { SearchIcon } from "#web/shared/ui/icons.tsx";
 
@@ -83,7 +83,7 @@ const PREFETCH_DELAY_MS = 3000;
 const usePrefetchWhenFree = (want: () => void): void => {
   useEffect(() => {
     const { connection } = navigator as Navigator & { readonly connection?: ConnectionInfo };
-    if (!canAutoDownload(connection)) {
+    if (!canAutoDownload(connection, { isDesktop: isDesktopDevice() })) {
       return;
     }
     const timer = setTimeout(want, PREFETCH_DELAY_MS);

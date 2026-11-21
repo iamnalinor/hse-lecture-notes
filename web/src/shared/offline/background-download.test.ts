@@ -27,7 +27,7 @@ class FakeConnection extends EventTarget {
 }
 
 /** A plan whose start, runs and phases the test drives and inspects. */
-const harness = (connection: FakeConnection | undefined) => {
+const harness = (connection: FakeConnection | undefined, isDesktop = false) => {
   type Run = {
     readonly finish: () => void;
     readonly signal: AbortSignal;
@@ -38,6 +38,7 @@ const harness = (connection: FakeConnection | undefined) => {
   const cancelSettled = vi.fn();
   const plan: BackgroundPlan = {
     connection,
+    isDesktop,
     onPhase: (phase) => {
       phases.push(phase);
     },
@@ -75,6 +76,14 @@ describe("scheduleBackgroundDownload", () => {
     scheduleBackgroundDownload(plan);
     settle();
     expect(runs).toHaveLength(0);
+  });
+
+  it("downloads on a desktop without the Network Information API", () => {
+    const { plan, runs, settle } = harness(undefined, true);
+    scheduleBackgroundDownload(plan);
+    expect(runs).toHaveLength(0);
+    settle();
+    expect(runs).toHaveLength(1);
   });
 
   it("waits until the page has settled, then downloads on Wi-Fi", () => {
