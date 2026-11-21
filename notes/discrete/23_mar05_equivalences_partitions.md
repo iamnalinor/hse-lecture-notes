@@ -552,7 +552,7 @@ c) $R_3$ — ядро функции $x \mapsto$ остаток $x^2$ при д�
 :::
 
 ::: solution
-$R^{-1} = R$ по симметричности (лемма [-@lem:lec22:algebraic]). Для $R \cap Q$: $\mathrm{id}_A \subseteq R \cap Q$; $(R \cap Q)^{-1} = R^{-1} \cap Q^{-1} = R \cap Q$ (лемма [-@lem:lec15:converse-props]); транзитивность пересечения — замечание [-@rem:lec22:union-trans]. Классы: $z \in [x]_{R \cap Q} \iff xRz \wedge xQz \iff z \in [x]_R \cap [x]_Q$. Например, $\equiv_2 \cap \equiv_3$ связывает числа с одинаковыми остатками и по $2$, и по $3$, то есть (по КТО, теорема [-@thm:lec10:crt]) по $6$: ${\equiv_2} \cap {\equiv_3} = {\equiv_6}$.
+$R^{-1} = R$ по симметричности (лемма [-@lem:lec22:algebraic]). Для $R \cap Q$: $\mathrm{id}_A \subseteq R \cap Q$; $(R \cap Q)^{-1} = R^{-1} \cap Q^{-1} = R \cap Q$ (лемма [-@lem:lec15:converse-props]); транзитивность пересечения — замечание [-@rem:lec22:union-trans]. Классы: $z \in [x]_{R \cap Q} \iff xRz \wedge xQz \iff z \in [x]_R \cap [x]_Q$. Например, $\equiv_2 \cap \equiv_3$ связывает числа с одинаковыми остатками и по $2$, и по $3$, то есть (по КТО, теорема [-@thm:lec11:crt]) по $6$: ${\equiv_2} \cap {\equiv_3} = {\equiv_6}$.
 
 *Ключ* к контрпримеру — как в задаче [-@prob:lec23:check] a): объединение нарушает транзитивность. На $\{0, 1, 2\}$ возьмём $R$ с классами $\{0, 1\}, \{2\}$ и $Q$ с классами $\{0\}, \{1, 2\}$. В $R \cup Q$ есть $(0, 1)$ и $(1, 2)$, но нет $(0, 2)$.
 

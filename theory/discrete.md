@@ -71,15 +71,15 @@ $[A \wedge B] = \min = [A][B]$, $[A \vee B] = \max$, $[\neg A] = 1 - [A]$, $[A \
 $F$ выполнима $\iff$ $\neg F$ не тавтология; $F$ — тавтология $\iff$ $\neg F$ невыполнима $\iff$ $F \equiv T$ для тавтологии $T$; $F \equiv G \iff F \leftrightarrow G$ — тавтология. *Идея:* отрицание меняет «при всех наборах» на «при некотором наборе».
 :::
 
-::: {.definition ref="def:lec01:valid"}
+# 2. Рассуждения, предикаты и кванторы
+
+::: {.definition ref="def:lec02:valid"}
 **Корректное рассуждение**: рассуждение «$A_1, \dots, A_n$; следовательно, $C$» корректно, если не бывает истинных посылок при ложном выводе.
 :::
 
-::: {.proposition ref="prop:lec01:valid-taut"}
+::: {.proposition ref="prop:lec02:valid-taut"}
 Если $(A_1 \wedge \ldots \wedge A_n) \to C$ — тавтология, рассуждение корректно; обратное неверно (опровергающий набор значений может не реализовываться ни в какой ситуации). *Идея:* при истинных посылках истинная импликация даёт истинный вывод.
 :::
-
-# 2. Предикаты и кванторы
 
 ::: {.definition ref="def:lec02:predicate"}
 **$n$-местный предикат** — выражение с переменными $x_1, \dots, x_n$, которое становится высказыванием после подстановки подходящих объектов вместо всех переменных; высказывание — нульместный предикат.
@@ -109,11 +109,11 @@ $\exists x\, A \equiv \neg\forall x\, \neg A$, $\forall x\, A \equiv \neg\exists
 $\exists y\, \forall x\, A(x, y)$ влечёт $\forall x\, \exists y\, A(x, y)$; обратное неверно. *Идея:* один свидетель $y_0$ годится для всех $x$; контрпример к обратному — $\forall x\, \exists y\, (y > x)$ в $\N$.
 :::
 
-::: {.definition ref="def:lec02:vacuous"}
+# 3. Пустая истина и принцип индукции
+
+::: {.definition ref="def:lec03:vacuous"}
 **Пустая истина** — $\forall x\, (A(x) \to B(x))$, истинное потому, что $A(x)$ ложно для всех $x$.
 :::
-
-# 3. Индукция
 
 ::: {.axiom ref="ax:lec03:induction"}
 ПМИ: $\varphi(0) \wedge \forall n \in \N\, (\varphi(n) \to \varphi(n + 1)) \to \forall n \in \N\ \varphi(n)$; для множеств: если $X \subseteq \N$, $0 \in X$ и $n \in X \Rightarrow n + 1 \in X$ при всех $n$, то $X = \N$.
@@ -123,23 +123,27 @@ $\exists y\, \forall x\, A(x, y)$ влечёт $\forall x\, \exists y\, A(x, y)$
 Если $\varphi(n_0)$ и $\varphi(n) \to \varphi(n + 1)$ при всех $n \ge n_0$, то $\varphi(n)$ при всех $n \ge n_0$. *Идея:* ПМИ для $\psi(n) := (n \ge n_0 \to \varphi(n))$; при $n < n_0$ — пустая истина.
 :::
 
-::: {.definition ref="def:lec03:progressive"}
+# 4. Сильная индукция и принцип наименьшего числа
+
+::: {.definition ref="def:lec04:progressive"}
 **Прогрессивное** множество: $X \subseteq \N$ прогрессивно, $\mathrm{Prog}(X)$, если $\forall n\, \bigl(\forall m < n\ (m \in X) \to n \in X\bigr)$.
 :::
 
-::: {.proposition ref="prop:lec03:strong"}
+::: {.proposition ref="prop:lec04:strong"}
 ПСИ: всякое прогрессивное $X \subseteq \N$ равно $\N$.
 :::
 
-::: {.lemma ref="lem:lec03:prog-zero"}
+::: {.lemma ref="lem:lec04:prog-zero"}
 Если $\mathrm{Prog}(X)$, то $0 \in X$. *Идея:* при $n = 0$ посылка $\forall m < 0\ (m \in X)$ — пустая истина.
 :::
 
-::: {.proposition ref="prop:lec03:lnp"}
+::: {.proposition ref="prop:lec04:lnp"}
 ПНЧ: всякое непустое $X \subseteq \N$ имеет наименьший элемент $\min X$. Для $\Z$ и для $\{x \in \Q \mid x > 0\}$ неверно.
 :::
 
-::: {.theorem ref="thm:lec03:equiv"}
+# 5. Равносильность принципов индукции
+
+::: {.theorem ref="thm:lec05:equiv"}
 ПСИ, ПНЧ и ПМИ равносильны. *Идея:* ПСИ $\Rightarrow$ ПНЧ — если у $X$ нет минимума, то $\overline{X}$ прогрессивно; ПНЧ $\Rightarrow$ ПМИ — $n = \min \overline{X} = m + 1$ с $m \in X$; ПМИ $\Rightarrow$ ПСИ — индукция для $Y = \{n \mid \forall m < n\ (m \in X)\}$.
 :::
 
@@ -335,7 +339,7 @@ $\gcd(a, b) = \gcd(a + bq, b)$ для любых $a, b, q$. *Идея:* у дв�
 Если $m > 1$, $\gcd(a, m) = 1$, $x, y \in \Z$ и $\varphi(m) \mid x - y$, то $a^x \equiv a^y \pmod m$.
 :::
 
-# 10. Линейные сравнения и КТО
+# 10. Алгоритм Евклида и диофантовы уравнения
 
 ::: {.definition ref="def:lec10:euclid"}
 **Алгоритм Евклида** для $a$ и $b \ne 0$: $r_0 = a$, $r_1 = b$, $r_k = r_{k+1} q_{k+1} + r_{k+2}$ с $0 \le r_{k+2} < |r_{k+1}|$, пока очередной остаток не равен $0$; $r_s$ — последний ненулевой остаток.
@@ -361,55 +365,57 @@ $r_k = a u_k + b v_k$ для всех $k$; в частности, $\gcd(a, b) = 
 При $a, b \ne 0$ уравнение $ax + by = c$ разрешимо в целых числах тогда и только тогда, когда $d = \gcd(a, b) \mid c$; тогда все решения — $(x_0 - b't, y_0 + a't)$, $t \in \Z$, где $a' = \frac{a}{d}$, $b' = \frac{b}{d}$, $(x_0, y_0)$ — любое решение. *Идея:* сократить на $d$; частное решение — Безу, умноженное на $\frac{c}{d}$; из $a'(x_0 - x) = b'(y - y_0)$ и $\gcd(a', b') = 1$ следует $b' \mid x_0 - x$.
 :::
 
-::: {.definition ref="def:lec10:congruence-solution"}
+# 11. Линейные сравнения и КТО
+
+::: {.definition ref="def:lec11:congruence-solution"}
 **Решение сравнения** $ax \equiv c \pmod m$ ($m > 1$) — число $x_0$ с $ax_0 \equiv c \pmod m$ и $0 \le x_0 < m$.
 :::
 
-::: {.theorem ref="thm:lec10:linear-congruence"}
+::: {.theorem ref="thm:lec11:linear-congruence"}
 При $a \ne 0$, $m > 1$, $d = \gcd(a, m)$ сравнение $ax \equiv c \pmod m$ разрешимо тогда и только тогда, когда $d \mid c$; тогда у него ровно $d$ решений $x_0, x_0 + m', \dots, x_0 + (d - 1)m'$, где $m' = \frac{m}{d}$, а $x_0$ — единственное число из $[0, m')$ с $m' \mid \frac{a}{d} x_0 - \frac{c}{d}$. *Идея:* сравнение — уравнение $ax - my = c$; после сокращения на $d$ решение по модулю $m'$ единственно (сокращение на $a'$, взаимно простое с $m'$), а в $[0, m)$ лежат $d$ сравнимых с ним чисел.
 :::
 
-::: {.proposition ref="prop:lec10:pouring"}
+::: {.proposition ref="prop:lec11:pouring"}
 Сосудами на $a$ и $b$ литров ($a, b \in \N_+$) можно отмерить $c$ литров тогда и только тогда, когда $\gcd(a, b) \mid c$ и $0 \le c \le \max(a, b)$. *Идея:* все объёмы всегда имеют вид $ax + by$; при $a \le b$ переливание малого сосуда в большой даёт в большом остатки чисел $ka$ по модулю $b$, а $ak \equiv c \pmod b$ разрешимо при $\gcd(a, b) \mid c$.
 :::
 
-::: {.proposition ref="prop:lec10:brute-force"}
+::: {.proposition ref="prop:lec11:brute-force"}
 Значение многочлена с целыми коэффициентами по модулю $m$ зависит только от остатков аргументов; поэтому все решения полиномиального сравнения находятся перебором кортежей остатков $0, \dots, m - 1$.
 :::
 
-::: {.definition ref="def:lec10:lcm-many"}
+::: {.definition ref="def:lec11:lcm-many"}
 **НОК** нескольких чисел: $\mu = \operatorname{lcm}(c_1, \dots, c_n)$, если $\mu \in \N$, все $c_i \mid \mu$ и $\mu$ делит каждое общее кратное $c_1, \dots, c_n$.
 :::
 
-::: {.lemma ref="lem:lec10:lcm-many"}
+::: {.lemma ref="lem:lec11:lcm-many"}
 НОК нескольких чисел существует и единственно; равен $0$, если некоторое $c_i = 0$, и $\prod_j p_j^{\max_i \gamma_{ij}}$ для ненулевых $c_i = \pm \prod_j p_j^{\gamma_{ij}}$.
 :::
 
-::: {.corollary ref="cor:lec10:mod-lcm"}
+::: {.corollary ref="cor:lec11:mod-lcm"}
 При $m_1, \dots, m_n > 1$: $x \equiv y \pmod{m_i}$ для всех $i$ тогда и только тогда, когда $x \equiv y \pmod{\operatorname{lcm}(m_1, \dots, m_n)}$.
 :::
 
-::: {.definition ref="def:lec10:system"}
+::: {.definition ref="def:lec11:system"}
 **Решение системы сравнений** $P_i(x_1, \dots, x_k) \equiv 0 \pmod{m_i}$, $i = 1, \dots, n$, — кортеж, удовлетворяющий всем сравнениям, с $0 \le x_j < \mu = \operatorname{lcm}(m_1, \dots, m_n)$.
 :::
 
-::: {.lemma ref="lem:lec10:system-reduce"}
+::: {.lemma ref="lem:lec11:system-reduce"}
 Целый кортеж удовлетворяет системе тогда и только тогда, когда он покомпонентно сравним по модулю $\mu$ с некоторым решением. *Идея:* взять остатки по модулю $\mu$; так как $m_i \mid \mu$, значения многочленов по модулю $m_i$ не меняются.
 :::
 
-::: {.corollary ref="cor:lec10:system-disjunction"}
+::: {.corollary ref="cor:lec11:system-disjunction"}
 Система с одной переменной $x$ и решениями $z_1, \dots, z_s$ равносильна совокупности $x \equiv z_1 \pmod \mu$ или … или $x \equiv z_s \pmod \mu$.
 :::
 
-::: {.definition ref="def:lec10:pairwise"}
+::: {.definition ref="def:lec11:pairwise"}
 **Попарно взаимно простые** числа: $c_1, \dots, c_n$ попарно взаимно просты, если $\gcd(c_i, c_j) = 1$ при всех $i \ne j$.
 :::
 
-::: {.lemma ref="lem:lec10:lcm-coprime"}
+::: {.lemma ref="lem:lec11:lcm-coprime"}
 Для попарно взаимно простых $c_1, \dots, c_n$: $\operatorname{lcm}(c_1, \dots, c_n) = |c_1 \cdots c_n|$. *Идея:* у каждого простого положительна степень не более чем в одном $c_i$, поэтому сумма степеней равна максимуму.
 :::
 
-::: {.theorem ref="thm:lec10:crt"}
+::: {.theorem ref="thm:lec11:crt"}
 Если $m_1, \dots, m_n > 1$ попарно взаимно просты, то для любых $a_1, \dots, a_n$ система $x \equiv a_i \pmod{m_i}$ имеет единственное решение $x$ с $0 \le x < m_1 \cdots m_n$. *Идея:* единственность — НОК модулей равен произведению; существование — индукция по $n$: первые $n$ сравнений сворачиваются в $x \equiv x_0 \pmod \mu$, и при $\mu u + mv = 1$ число $x_1 = a\mu u + x_0 mv$ решает пару $x \equiv x_0 \pmod \mu$, $x \equiv a \pmod m$.
 :::
 
