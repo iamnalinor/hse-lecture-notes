@@ -124,7 +124,7 @@ const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint focus-within:border-ink/40 focus-within:text-ink lg:h-10 lg:w-72 lg:focus-within:w-104">
+  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-72 lg:focus-within:w-104">
     <SearchIcon size={16} />
     <input
       aria-activedescendant={hasPanel ? resultId(active) : undefined}
@@ -147,7 +147,7 @@ const SearchField = ({
       value={query}
     />
     {query === "" ? (
-      <kbd className="hidden rounded-sm border border-rule px-1.5 py-px text-caption lg:inline">
+      <kbd className="hidden rounded-sm border border-rule px-1.5 py-px text-caption whitespace-nowrap lg:inline">
         {isMac() ? "⌘K" : "Ctrl K"}
       </kbd>
     ) : (
@@ -199,6 +199,49 @@ const SearchPanel = ({ active, hits, limit, onHover, onMore, onPick, status }: P
   </div>
 );
 
+type PhoneProps = {
+  readonly children: React.ReactNode;
+  readonly isOpen: boolean;
+  readonly onCancel: () => void;
+  readonly onOpen: () => void;
+};
+
+/**
+On a phone the bar keeps one row: a magnifier button sits next to the courses, and a tap unfolds the
+field over that row with «Отмена» to fold it back. Folded, the field is `sr-only`, not
+`hidden`: the tap focuses it right away, so iOS raises the keyboard. From `md` up the field is always in the bar.
+*/
+const PhoneFold = ({ children, isOpen, onCancel, onOpen }: PhoneProps) => (
+  <>
+    <button
+      aria-label="Поиск"
+      className={`size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink md:hidden ${isOpen ? "hidden" : "flex"}`}
+      onClick={onOpen}
+      type="button"
+    >
+      <SearchIcon size={20} />
+    </button>
+    <div
+      className={
+        isOpen
+          ? "max-md:absolute max-md:inset-0 max-md:z-30 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4"
+          : "max-md:sr-only"
+      }
+    >
+      {children}
+      {isOpen && (
+        <button
+          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink md:hidden"
+          onClick={onCancel}
+          type="button"
+        >
+          Отмена
+        </button>
+      )}
+    </div>
+  </>
+);
+
 /**
 Search lives in the top bar itself: a field that widens on focus, results unfold right under the bar
 (full width on a phone), no modal. Enter or a tap opens a hit and folds the panel; Esc folds it too.
@@ -243,39 +286,43 @@ export const HeaderSearch = () => {
 
   const hasPanel = state.isOpen && state.query.trim() !== "";
   return (
-    <div className="min-w-0 flex-1 lg:flex-none" ref={boxRef}>
-      <SearchField
-        active={state.active}
-        fieldRef={fieldRef}
-        hasPanel={hasPanel && shown > 0}
-        onClear={() => {
-          setState((old) => ({ ...old, active: 0, limit: FIRST_HITS, query: "" }));
-          fieldRef.current?.focus();
-        }}
-        onFocus={() => {
-          setState((old) => ({ ...old, isOpen: true, isWanted: true }));
-        }}
-        onKeyDown={onKeyDown}
-        onQuery={(query) => {
-          setState((old) => ({ ...old, active: 0, isOpen: true, limit: FIRST_HITS, query }));
-        }}
-        query={state.query}
-      />
-      {hasPanel && (
-        <SearchPanel
-          active={state.active}
-          hits={hits}
-          limit={state.limit}
-          onHover={(active) => {
-            setState((old) => ({ ...old, active }));
-          }}
-          onMore={() => {
-            setState((old) => ({ ...old, limit: hits.length }));
-          }}
-          onPick={fold}
-          status={status}
-        />
-      )}
+    <div className="md:min-w-0 md:flex-none" ref={boxRef}>
+      <PhoneFold isOpen={state.isOpen} onCancel={fold} onOpen={() => fieldRef.current?.focus()}>
+        <div className="min-w-0 flex-1">
+          <SearchField
+            active={state.active}
+            fieldRef={fieldRef}
+            hasPanel={hasPanel && shown > 0}
+            onClear={() => {
+              setState((old) => ({ ...old, active: 0, limit: FIRST_HITS, query: "" }));
+              fieldRef.current?.focus();
+            }}
+            onFocus={() => {
+              setState((old) => ({ ...old, isOpen: true, isWanted: true }));
+            }}
+            onKeyDown={onKeyDown}
+            onQuery={(query) => {
+              setState((old) => ({ ...old, active: 0, isOpen: true, limit: FIRST_HITS, query }));
+            }}
+            query={state.query}
+          />
+        </div>
+        {hasPanel && (
+          <SearchPanel
+            active={state.active}
+            hits={hits}
+            limit={state.limit}
+            onHover={(active) => {
+              setState((old) => ({ ...old, active }));
+            }}
+            onMore={() => {
+              setState((old) => ({ ...old, limit: hits.length }));
+            }}
+            onPick={fold}
+            status={status}
+          />
+        )}
+      </PhoneFold>
     </div>
   );
 };

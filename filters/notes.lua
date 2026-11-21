@@ -478,19 +478,26 @@ local function render_theory_block(div)
   local parts = header_parts({ tag = entry.tag, title = div.attributes['title'] or entry.title })
   local note = pandoc.Inlines {}
   local status = div.attributes['status']
-  local href = ref_href(entry, false)
-  local where = pandoc.Inlines { pandoc.Str('Лекция\u{00A0}' .. int_str(entry.lecture)) }
-  if href then
-    note:insert(pandoc.Link(where, href, '', { class = 'ref', ['data-ref'] = ref }))
-  else
-    note:extend(where)
+  -- теория курса — справочник: лекцию видно по разделу «N. Тема», ссылки в конспект нет;
+  -- подготовка к КР ведёт из блока в лекцию
+  if S.kind ~= 'theory' then
+    local href = ref_href(entry, false)
+    local where = pandoc.Inlines { pandoc.Str('Лекция\u{00A0}' .. int_str(entry.lecture)) }
+    if href then
+      note:insert(pandoc.Link(where, href, '', { class = 'ref', ['data-ref'] = ref }))
+    else
+      note:extend(where)
+    end
   end
   if status and status ~= '' then
-    note:insert(pandoc.Str(';'))
-    note:insert(pandoc.Space())
+    if #note > 0 then
+      note:insert(pandoc.Str(';'))
+      note:insert(pandoc.Space())
+    end
     note:extend(md_inlines(status))
   end
-  local extra = { note = pandoc.Inlines { pandoc.Emph(note) }, ref = ref }
+  local extra = { ref = ref }
+  if #note > 0 then extra.note = pandoc.Inlines { pandoc.Emph(note) } end
   -- префикс reg- остался с тех пор, как теория курса звалась реестром: на эти якоря ведут
   -- сохранённые ссылки (и редирект со старого /<course>/registry), не переименовывать
   -- один и тот же блок может повторяться (подготовка к КР: в теме и в теоретической части) —
@@ -499,6 +506,11 @@ local function render_theory_block(div)
   local n = (S.reg_seen[ref] or 0) + 1
   S.reg_seen[ref] = n
   div.identifier = 'reg-' .. ref .. (n > 1 and ('-' .. n) or '')
+  -- определение в теории — обычный абзац «**Термин** — …», без плашки и номера
+  if S.kind == 'theory' and t == 'definition' then
+    if FORMAT_LATEX then return div.content end
+    return pandoc.Div(div.content, pandoc.Attr(div.identifier, { 'nb-def' }, { { 'data-ref', ref } }))
+  end
   div.attributes['tag'] = entry.tag
   return render_box(div, t, entry.number, parts, extra)
 end

@@ -71,7 +71,7 @@ const blockHeading = (nameNode: Element, tag: RemarkTag | undefined, replace: Re
   };
 };
 
-const block: Handler = (node, _options, replace) => {
+const block: Handler = (node, options, replace) => {
   const kind = blockStyle(node.attribs["data-type"]);
   const nameNode = childWithClass(childWithClass(node, "nb-head") ?? node, "nb-name");
   const body = childWithClass(node, "nb-body");
@@ -88,6 +88,7 @@ const block: Handler = (node, _options, replace) => {
     <Block
       footer={kind === "problem" ? <ProblemFooter solution={solution} /> : undefined}
       id={node.attribs["id"]}
+      isFlat={options.variant === "theory"}
       kind={kind}
       name={name}
       number={node.attribs["data-number"]}

@@ -85,7 +85,7 @@ uv run scripts/render_pages.py build/pdf/<course>/<week_id>.pdf --dpi 90
 ## 7. Чеклист, теория курса, план
 
 1. Пройди чеклист из конца `context/recommendations.md`. Невыполненный пункт означает переписать место, а не оговорку в конце.
-2. Обнови `theory/<course>.md` по `context/prompts/theory.md`: добавь или замени раздел «Лекция N — тема».
+2. Обнови `theory/<course>.md` по `context/prompts/theory.md`: добавь или замени раздел «N. Тема».
 3. В `context/courses/<course>.md` поставь статус «написан, ждёт ревью».
 
 ## 8. Ревью

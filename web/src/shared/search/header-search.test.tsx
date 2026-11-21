@@ -153,6 +153,19 @@ describe("HeaderSearch", () => {
     expect(field()).not.toHaveFocus();
   });
 
+  it("on a phone unfolds from the magnifier over the bar and folds with «Отмена»", async () => {
+    mount();
+    expect(screen.queryByRole("button", { name: "Отмена" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Поиск" }));
+    expect(field()).toHaveFocus();
+    await userEvent.type(field(), "миноры");
+    await screen.findByRole("option");
+    await userEvent.click(screen.getByRole("button", { name: "Отмена" }));
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Отмена" })).toBeNull();
+    expect(field()).not.toHaveFocus();
+  });
+
   it("does not fetch the index until the field is touched", async () => {
     mount();
     expect(fetch).not.toHaveBeenCalled();

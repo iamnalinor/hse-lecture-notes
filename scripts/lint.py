@@ -383,25 +383,66 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
         check_practice(rep, rel, sec["Практика"])
 
 
+# Теория курса — справочник для повторения (context/prompts/theory.md): разделы «# N. Тема» по
+# лекциям, определения абзацем с термином в начале, без ссылок в конспекты и «доказано в лекции N»
+THEORY_HEADING = re.compile(r"(\d+)\. \S")
+THEORY_HEADING_MAX = 60
+THEORY_FIRST = "Соглашения курса"
+THEORY_STATUSES = (
+    "без доказательства",
+    "доказательство — на семинаре",
+    "на лекции не доказывалось",
+    "на лекции — только идея",
+    "набросок доказательства",
+)
+
+
 def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
     meta = build.read_front_matter(path)
     course = path.stem
     if meta.get("course") != course:
         rep.err(rel, f"course={meta.get('course')!r}, а файл theory/{course}.md")
     doc = ast_of(path)
+    course_labels = labels.get(course, {})
+    lecture = None  # номер из заголовка «# N. Тема», под которым идут блоки
 
     def on_node(n):
-        if n["t"] == "Div":
-            attrs = dict(n["c"][0][2])
-            ref = attrs.get("ref")
-            if ref and ref not in labels.get(course, {}):
-                rep.err(rel, f"ref={ref} не найден в конспектах курса")
-        elif n["t"] == "Cite":
-            check_cite(rep, rel, n, labels.get(course, {}))
+        if n["t"] == "Cite":
+            rep.err(rel, "теория — без ссылок: номер блока уже совпадает с конспектом, лекцию видно по разделу")
         elif n["t"] == "Math":
             check_math(rep, rel, n["c"][1])
 
-    walk(doc["blocks"], on_node)
+    for b in doc["blocks"]:
+        if b["t"] == "Header" and b["c"][0] == 1:
+            title = stringify(b["c"][2])
+            m = THEORY_HEADING.match(title)
+            if title == THEORY_FIRST:
+                lecture = None
+            elif not m:
+                rep.err(rel, f"заголовок теории «{title}»: нужен вид «N. Тема», N — номер лекции")
+            else:
+                lecture = int(m.group(1))
+                if len(title) > THEORY_HEADING_MAX:
+                    rep.err(rel, f"заголовок «{title}» длиннее {THEORY_HEADING_MAX} символов: тема, а не оглавление лекции")
+        elif b["t"] == "Div":
+            classes, attrs = b["c"][0][1], dict(b["c"][0][2])
+            ref = attrs.get("ref")
+            if ref:
+                if ref not in course_labels:
+                    rep.err(rel, f"ref={ref} не найден в конспектах курса")
+                m = re.search(r":lec(\d+):", ref)
+                if m and lecture is not None and int(m.group(1)) != lecture:
+                    rep.err(rel, f"ref={ref} из лекции {int(m.group(1))} стоит в разделе «{lecture}. …»")
+                status = attrs.get("status")
+                if status is not None and status not in THEORY_STATUSES:
+                    allowed = ", ".join(f"«{x}»" for x in THEORY_STATUSES)
+                    rep.err(rel, f"{ref}: status=«{status}» — доказано на лекции пишется без status=, иначе одно из: {allowed}")
+                if "definition" in classes:
+                    first = b["c"][1][0] if b["c"][1] else None
+                    inl = first["c"] if first and first["t"] in ("Para", "Plain") else []
+                    if not inl or inl[0]["t"] != "Strong":
+                        rep.err(rel, f"{ref}: определение начинается с термина жирным: «**Термин** — …»")
+        walk(b, on_node)
 
 
 PROGRAM_META = {"course", "title"}

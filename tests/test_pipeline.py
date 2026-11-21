@@ -145,6 +145,10 @@ def test_html_blocks_and_refs(demo: Path):
     # теория курса берёт номера из конспектов
     reg = (site / "algebra" / "theory" / "fragment.html").read_text(encoding="utf-8")
     assert 'data-number="1.3"' in reg and "черновик" not in reg
+    # теория — справочник: определения без плашек, у теорем нет ссылки «Лекция N» в конспект
+    assert 'id="reg-def:lec01:matrix" class="nb-def"' in reg
+    assert 'data-type="definition"' not in reg
+    assert "01_sep03_matrices/" not in reg and "Лекция" not in reg
     assert "nb-course-glossary" not in reg and not (site / "algebra" / "glossary.json").exists()
     assert "glossary" not in meta
     search = json.loads((site / "search.json").read_text(encoding="utf-8"))
@@ -334,6 +338,27 @@ def test_lint_demo_clean(demo: Path):
 )
 def test_lint_catches(demo: Path, old: str, new: str, expected: str):
     p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("# 1. Матрицы", "# Лекция 1 — Матрицы", "заголовок теории"),
+        ("# 2. Метод Гаусса", "# 3. Метод Гаусса", "из лекции 2"),
+        ("# 1. Матрицы", "# 1. " + "Очень " * 12 + "длинно", "длиннее"),
+        ('ref="thm:lec01:assoc"}', 'ref="thm:lec01:assoc" status="доказано в лекции 1"}', "status="),
+        ("**Матрица** — таблица", "Таблица", "начинается с термина"),
+        ("слева направо.", "слева направо [-@thm:lec01:assoc].", "без ссылок"),
+    ],
+)
+def test_lint_theory_catches(demo: Path, old: str, new: str, expected: str):
+    p = demo / "theory" / "algebra.md"
     text = p.read_text(encoding="utf-8")
     assert old in text
     p.write_text(text.replace(old, new, 1), encoding="utf-8")
