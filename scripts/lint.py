@@ -552,6 +552,9 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
         rep.warn(rel, "в программе нет ни одной таблицы: веса элементов контроля удобнее читать таблицей")
 
 
+PREP_GONE = re.compile(r"(Вопросы для самопроверки|Самопроверка|Блиц)", re.I)
+
+
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
     """Подготовка к КР или коллоквиуму (prep/<course>/krN.md, colloqN.md).
 
@@ -671,6 +674,10 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     if not h1 or h1[0] != first:
         rep.err(rel, f"первый раздел — «# {first}»")
     h2 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 2]
+    # себя проверяют генератором билетов (context/prompts/prep.md → «На странице нет»)
+    for title in h1 + h2:
+        if PREP_GONE.match(title):
+            rep.err(rel, f"раздела «{title}» на странице подготовки нет: тренируются генератором билетов")
     # коллоквиум — устная теория: задачи по желанию, обязательны разделы «Что нужно знать»
     need = "Что нужно знать" if colloq else "Прототипы"
     if need not in h2:

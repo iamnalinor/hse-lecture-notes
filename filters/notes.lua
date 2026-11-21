@@ -401,7 +401,10 @@ local function render_box(div, t, number, parts, extra)
   if FORMAT_LATEX then
     local head_raw = pandoc.RawInline('latex', '\\nbhead{' .. inlines_to('latex', head) .. '}')
     local first = body[1]
-    if first and (first.t == 'Para' or first.t == 'Plain') then
+    -- текст, начатый формулой, не продолжает строку заголовка: длинная формула за ним не умещается
+    local starts_with_math = first and (first.t == 'Para' or first.t == 'Plain')
+      and first.content[1] and first.content[1].t == 'Math'
+    if first and (first.t == 'Para' or first.t == 'Plain') and not starts_with_math then
       local inl = pandoc.Inlines { head_raw }
       inl:extend(first.content)
       body[1] = pandoc.Para(inl)
