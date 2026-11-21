@@ -16,6 +16,12 @@ export const LegacyTheoryRedirect = () => {
   return <Navigate replace to={{ hash, pathname: paths.theory(course), search }} />;
 };
 
+/** The course glossary page is gone (search covers it): its old links lead to the course page. */
+export const LegacyGlossaryRedirect = () => {
+  const { course = "" } = useParams();
+  return <Navigate replace to={paths.course(course)} />;
+};
+
 const LECTURE_PDF = /^(?<course>[a-z]+)-(?<doc>\d{2}_[a-z0-9_]+)\.pdf$/u;
 
 /**

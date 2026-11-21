@@ -40,8 +40,10 @@ type Handler = (
 ) => ReactElement | undefined;
 
 const LONG_PROOF_CHARS = 700;
-const PART_HEADING =
-  "mt-13 mb-1.5 flex items-center gap-3.5 text-subhead font-semibold text-muted after:h-px after:flex-1 after:bg-rule after:content-['']";
+/** Parts of a lecture (Контекст, Теория, Практика, Итоги): a rule above and the second step of the scale. */
+const PART_HEADING = "mt-12 mb-4 border-t border-rule pt-7 text-title2 leading-tight font-bold";
+/** Numbered topics inside a part of a lecture: one step below the part. */
+const TOPIC_HEADING = "mt-11 mb-3 text-title3 leading-snug font-bold text-balance";
 const TITLE_HEADING = "mt-11 mb-3 text-title2 leading-tight font-bold";
 
 const children = (node: Element, replace: Replace): ReactNode =>
@@ -53,16 +55,10 @@ const reference: Handler = (node, _options, replace) => (
   <RefLink refId={node.attribs["data-ref"] ?? ""}>{children(node, replace)}</RefLink>
 );
 
-const answerParts = (node: Element, replace: Replace): Record<string, ReactNode> => {
+/** The solution that follows a problem (its answer is the solution's last line). */
+const solutionOf = (node: Element, replace: Replace): ReactNode => {
   const next = adjacentElement(node, "next");
-  const siblings = [next, next === undefined ? undefined : adjacentElement(next, "next")].filter(
-    (sibling): sibling is Element => sibling !== undefined,
-  );
-  const part = (name: string): ReactNode => {
-    const found = siblings.find((sibling) => hasClass(sibling, name));
-    return found === undefined ? undefined : children(found, replace);
-  };
-  return { answer: part("nb-answer"), solution: part("nb-solution") };
+  return next !== undefined && hasClass(next, "nb-solution") ? children(next, replace) : undefined;
 };
 
 const blockHeading = (nameNode: Element, tag: RemarkTag | undefined, replace: Replace) => {
@@ -86,20 +82,13 @@ const block: Handler = (node, options, replace) => {
   const rawTag = node.attribs["data-tag"];
   const tag = isRemarkTag(rawTag) ? rawTag : undefined;
   const name = blockHeading(nameNode, tag, replace);
-  const { answer, solution } = kind === "problem" ? answerParts(node, replace) : {};
+  const solution = kind === "problem" ? solutionOf(node, replace) : undefined;
 
   return (
     <Block
-      footer={
-        kind === "problem" ? (
-          <ProblemFooter
-            answer={answer}
-            hideAnswer={options.variant === "prep"}
-            solution={solution}
-          />
-        ) : undefined
-      }
+      footer={kind === "problem" ? <ProblemFooter solution={solution} /> : undefined}
       id={node.attribs["id"]}
+      isFlat={options.variant === "theory"}
       kind={kind}
       name={name}
       number={node.attribs["data-number"]}
@@ -110,14 +99,10 @@ const block: Handler = (node, options, replace) => {
   );
 };
 
-/** Answers and solutions are drawn inside the problem card, not after it. */
-const absorbedAnswer: Handler = (node) => {
+/** A solution is drawn inside the problem card, not after it. */
+const absorbedSolution: Handler = (node) => {
   const previous = adjacentElement(node, "prev");
-  const isAbsorbed =
-    previous !== undefined &&
-    (hasClass(previous, "nb-problem") ||
-      hasClass(previous, "nb-answer") ||
-      hasClass(previous, "nb-solution"));
+  const isAbsorbed = previous !== undefined && hasClass(previous, "nb-problem");
   return isAbsorbed ? <span hidden /> : undefined;
 };
 
@@ -249,13 +234,19 @@ const heading: Handler = (node, options, replace) => {
   }
   if (node.name === "h2") {
     return (
-      <h3 className={TITLE_HEADING}>
-        {number !== undefined && <span className="mr-2.5 font-normal text-muted">{number}</span>}
+      <h3 className={options.variant === "notes" ? TOPIC_HEADING : TITLE_HEADING}>
+        {number !== undefined && (
+          <span className="mr-2 font-semibold text-muted tabular-nums">{number}</span>
+        )}
         {children(node, replace)}
       </h3>
     );
   }
-  return <h4 className="mt-8 mb-2 text-title3 font-bold">{children(node, replace)}</h4>;
+  return (
+    <h4 className={`mt-8 mb-2 font-bold ${options.variant === "notes" ? "" : "text-title3"}`}>
+      {children(node, replace)}
+    </h4>
+  );
 };
 
 const byTag: Readonly<Record<string, Handler>> = {
@@ -276,8 +267,7 @@ const byClass: readonly (readonly [string, Handler])[] = [
   ["math", math],
   ["nb", block],
   ["nb-proof", proof],
-  ["nb-answer", absorbedAnswer],
-  ["nb-solution", absorbedAnswer],
+  ["nb-solution", absorbedSolution],
 ];
 
 const handlerFor = (node: Element): Handler | undefined => {

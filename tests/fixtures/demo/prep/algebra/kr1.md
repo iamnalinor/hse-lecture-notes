@@ -31,12 +31,10 @@ $(AB)C = A(BC)$.
 Найдите $A^2$ для $A = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$.
 :::
 
-::: answer
-$\begin{pmatrix} 1 & 2 \\ 0 & 1 \end{pmatrix}$.
-:::
-
 ::: solution
 Перемножаем строки на столбцы. *Ключ:* правый верхний элемент $1 \cdot 1 + 1 \cdot 1 = 2$.
+
+*Ответ:* $\begin{pmatrix} 1 & 2 \\ 0 & 1 \end{pmatrix}$.
 :::
 
 Ещё задачи: [-@prob:lec01:product]; к теме «@sec:kr1:product» вернёмся в @prob:kr1:square.

@@ -142,16 +142,6 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
       });
     }
   }
-  if (await isPresent(`data/${course}/glossary.json`)) {
-    docs.push({
-      ...inCourse,
-      description: `${name}: термины курса по лекциям`,
-      name: `${name}: глоссарий`,
-      pdf: undefined,
-      route: `${course}/glossary`,
-      source: undefined,
-    });
-  }
   const preps = (catalog.preps[course] ?? []).map(({ id, title }) => ({
     ...inCourse,
     description: `${name}: ${prepDescription(id)}`,

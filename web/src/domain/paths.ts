@@ -3,7 +3,6 @@ const withHash = (path: string, hash: string | undefined): string =>
 
 export const paths = {
   course: (course: string): string => `/${course}`,
-  glossary: (course: string): string => `/${course}/glossary`,
   home: (): string => "/",
   lecture: (course: string, weekId: string, hash?: string): string =>
     withHash(`/${course}/${weekId}`, hash),
@@ -15,7 +14,7 @@ export const paths = {
 /** Lecture, theory, program and prep pages read a document (TOC + text); the rest are lists. */
 export const isDocumentPath = (pathname: string): boolean => {
   const parts = pathname.split("/").filter((part) => part !== "");
-  return parts.length === 2 && parts[1] !== "glossary";
+  return parts.length === 2;
 };
 
 const trimSlashes = (pathname: string): string =>

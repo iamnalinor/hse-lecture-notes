@@ -8,14 +8,14 @@ import { COURSE_DOC_BUTTONS } from "#web/domain/course-docs.ts";
 import { dayMonth } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
-import { isHighlighted, prepGoal, upcomingPreps } from "#web/domain/preps.ts";
 import { labelStats } from "#web/domain/stats.ts";
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, BUTTON_SIGNAL } from "#web/shared/ui/button.ts";
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "#web/shared/ui/button.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
 
 import { CourseSources, TEXT_LINK } from "./course-sources.tsx";
 import { LectureTable } from "./lecture-table.tsx";
+import { PrepRow } from "./prep-row.tsx";
 
 export const Component = () => {
   const { course: courseId } = useParams();
@@ -23,7 +23,6 @@ export const Component = () => {
   const stats = labelStats(Object.values(useLabelIndex()[info.id] ?? {}));
   const today = useToday();
   const current = latestLecture(lectures, today);
-  const upcoming = upcomingPreps(preps, today);
   useDocumentTitle(info.name);
 
   return (
@@ -47,41 +46,23 @@ export const Component = () => {
             <b className="font-semibold text-ink">{stats.theorems}</b> теорем
           </span>
         </div>
-        {/* One row of buttons, two lists: what every course has, then preps still ahead (signal fill only near the event). */}
-        <div className="mt-6 flex flex-wrap gap-2">
-          <nav aria-label="Материалы курса" className="contents">
-            {current !== undefined && (
-              <Link className={BUTTON_PRIMARY} to={paths.lecture(info.id, current.weekId)}>
-                Читать лекцию {current.lecture}{" "}
-                <span className="font-normal opacity-75">· {dayMonth(current.date)}</span>
-              </Link>
-            )}
-            <Link className={BUTTON_SECONDARY} to={paths.theory(info.id)}>
-              Теория
+        <nav aria-label="Материалы курса" className="mt-6 flex flex-wrap gap-2">
+          {current !== undefined && (
+            <Link className={BUTTON_PRIMARY} to={paths.lecture(info.id, current.weekId)}>
+              Читать лекцию {current.lecture}{" "}
+              <span className="font-normal opacity-75">· {dayMonth(current.date)}</span>
             </Link>
-            <Link className={BUTTON_SECONDARY} to={paths.glossary(info.id)}>
-              Глоссарий
-            </Link>
-            {hasProgram && (
-              <Link className={BUTTON_SECONDARY} to={paths.program(info.id)}>
-                {COURSE_DOC_BUTTONS.program}
-              </Link>
-            )}
-          </nav>
-          {upcoming.length > 0 && (
-            <nav aria-label="Подготовка к контрольным" className="contents">
-              {upcoming.map((prep) => (
-                <Link
-                  className={isHighlighted(prep, today) ? BUTTON_SIGNAL : BUTTON_SECONDARY}
-                  key={prep.id}
-                  to={paths.prep(info.id, prep.id)}
-                >
-                  {prepGoal(prep.id)}
-                </Link>
-              ))}
-            </nav>
           )}
-        </div>
+          <Link className={BUTTON_SECONDARY} to={paths.theory(info.id)}>
+            Теория
+          </Link>
+          {hasProgram && (
+            <Link className={BUTTON_SECONDARY} to={paths.program(info.id)}>
+              {COURSE_DOC_BUTTONS.program}
+            </Link>
+          )}
+        </nav>
+        <PrepRow course={info.id} preps={preps} today={today} />
       </section>
       <section className="py-9">
         <h2 className="mb-2 text-title3 font-semibold">Лекции</h2>

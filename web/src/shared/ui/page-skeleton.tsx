@@ -45,7 +45,7 @@ export const DocSkeleton = () => (
   </div>
 );
 
-/** Home, course and glossary pages. */
+/** Home and course pages. */
 export const PageSkeleton = () => (
   <div
     aria-busy="true"

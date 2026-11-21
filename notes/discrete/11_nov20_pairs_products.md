@@ -65,7 +65,7 @@ $$(a, b) := \{\{a\}, \{a, b\}\}.$$
 ::: {.example #ex:lec11:components}
 Компоненты пары восстанавливаются по ней как по множеству операциями из лекции 10: $\bigcup (a, b) = \{a\} \cup \{a, b\} = \{a, b\}$ и $\bigcap (a, b) = \{a\} \cap \{a, b\} = \{a\}$. Значит, первая компонента — единственный элемент $\bigcap (a, b)$, а вторая — элемент $\bigcup (a, b)$, отличный от первой, или сама первая, если $\bigcup (a, b)$ одноэлементно.
 
-*На примере:* дано $z = \{\{\varnothing\}, \{\varnothing, \{\{\varnothing\}\}\}\}$; является ли $z$ парой и каковы её компоненты? *Ответ:* $z = (\varnothing, \{\{\varnothing\}\})$. *Решение.* $\bigcap z = \{\varnothing\}$, поэтому первая компонента $a = \varnothing$; $\bigcup z = \{\varnothing, \{\{\varnothing\}\}\}$, и отличный от $\varnothing$ элемент — $b = \{\{\varnothing\}\}$. Проверка: $(\varnothing, \{\{\varnothing\}\}) = \{\{\varnothing\}, \{\varnothing, \{\{\varnothing\}\}\}\} = z$.
+*На примере:* дано $z = \{\{\varnothing\}, \{\varnothing, \{\{\varnothing\}\}\}\}$; является ли $z$ парой и каковы её компоненты? $\bigcap z = \{\varnothing\}$, поэтому первая компонента $a = \varnothing$; $\bigcup z = \{\varnothing, \{\{\varnothing\}\}\}$, и отличный от $\varnothing$ элемент — $b = \{\{\varnothing\}\}$. Проверка: $(\varnothing, \{\{\varnothing\}\}) = \{\{\varnothing\}, \{\varnothing, \{\{\varnothing\}\}\}\} = z$, то есть $z$ — пара $(\varnothing, \{\{\varnothing\}\})$.
 
 Это понадобится в лекции 12: по множеству пар $R$ множество всех компонент — это $\bigcup\bigcup R$.
 :::
@@ -229,22 +229,16 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 Может ли быть так, что $R \subseteq A \times B$ и одновременно $R \in A \times B$?
 :::
 
-::: answer
-Да. Например, $A = B = \{\varnothing, \{\varnothing\}\}$ и $R = (\{\varnothing\}, \{\varnothing\}) = \{\{\{\varnothing\}\}\}$.
-:::
-
 ::: solution
 *Ключ:* разобрать, как устроено $R$. Из $R \in A \times B$ следует $R = (a, b) = \{\{a\}, \{a, b\}\}$ с $a \in A$, $b \in B$. Чтобы было $R \subseteq A \times B$, элементы $\{a\}$ и $\{a, b\}$ должны быть парами. Одноэлементная пара — это $(c, c) = \{\{c\}\}$ (вырожденный случай после определения [-@def:lec11:pair]), поэтому $a = \{c\}$. Проще всего взять $b = a$ и $c = \varnothing$: тогда $a = b = \{\varnothing\}$ и $R = (a, a) = \{\{a\}\} = \{\{\{\varnothing\}\}\}$.
 
 Проверка для $A = B = \{\varnothing, \{\varnothing\}\}$. $R \in A \times B$, так как $R = (\{\varnothing\}, \{\varnothing\})$ и $\{\varnothing\} \in A$, $\{\varnothing\} \in B$. $R \subseteq A \times B$, так как единственный элемент $R$ — множество $\{\{\varnothing\}\} = (\varnothing, \varnothing)$, а $\varnothing \in A$, $\varnothing \in B$. Пример показывает, что «пара» — не особый тип объекта, а обычное множество, которое может одновременно быть и элементом, и подмножеством произведения.
+
+*Ответ:* Да. Например, $A = B = \{\varnothing, \{\varnothing\}\}$ и $R = (\{\varnothing\}, \{\varnothing\}) = \{\{\{\varnothing\}\}\}$.
 :::
 
 ::: {.problem #prob:lec11:product-union}
 Докажите, что $(A \cup B) \times C = (A \times C) \cup (B \times C)$.
-:::
-
-::: answer
-Верно; два включения через произвольный элемент, в каждом — разбор случаев $x \in A$ / $x \in B$.
 :::
 
 ::: solution
@@ -253,40 +247,34 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 «$\supseteq$»: пусть $z \in A \times C$ (случай $z \in B \times C$ симметричен). Тогда $z = (x, c)$ с $x \in A \subseteq A \cup B$ и $c \in C$, значит, $z \in (A \cup B) \times C$.
 
 *Ключ:* в отличие от замечания [-@rem:lec11:product-union], «$\cup$» стоит только в одном множителе: на рис. [-@fig:lec11:product] (где роль $C$ задачи играет отрезок $B$, а роль $B$ задачи — отрезок $C$) это квадраты $A \times B$ и $C \times B$: они стоят в одном ряду и вместе дают полосу $(A \cup C) \times B$, «перекрёстных» квадратов нет.
+
+*Ответ:* Верно; два включения через произвольный элемент, в каждом — разбор случаев $x \in A$ / $x \in B$.
 :::
 
 ::: {.problem #prob:lec11:loop-pair}
 Существуют ли множества $x$ и $y$, для которых $(x, \{x\}) = (\{y\}, y)$?
 :::
 
-::: answer
-Нет.
-:::
-
 ::: solution
 По лемме [-@lem:lec11:pair] равенство пар означает $x = \{y\}$ и $\{x\} = y$. *Ключ:* подставить одно в другое и получить «петлю» по $\in$. Тогда $x = \{y\} = \{\{x\}\}$, поэтому $\{x\} \in x$, а $x \in \{x\}$. Получаем бесконечную цепочку $x \ni \{x\} \ni x \ni \{x\} \ni \dots$, запрещённую аксиомой [-@ax:lec09:foundation].
+
+*Ответ:* Нет.
 :::
 
 ::: {.problem #prob:lec11:commute}
 Докажите, что $A \times B = B \times A$ тогда и только тогда, когда $A = B$, или $A = \varnothing$, или $B = \varnothing$.
 :::
 
-::: answer
-Верно.
-:::
-
 ::: solution
 «$\Leftarrow$»: при $A = B$ обе части совпадают по принципу замены; если один из множителей пуст, обе части равны $\varnothing$ (пример [-@ex:lec11:product-empty]).
 
 «$\Rightarrow$»: пусть $A \times B = B \times A$, $A \ne \varnothing$ и $B \ne \varnothing$; докажем $A \subseteq B$. Возьмём $a \in A$. *Ключ:* непустота $B$ нужна, чтобы составить пару: возьмём $b \in B$; тогда $(a, b) \in A \times B = B \times A$, и по замечанию [-@rem:lec11:product-coord] $a \in B$. Включение $B \subseteq A$ — так же, с парой $(b, a)$, $a \in A$. Без условия непустоты вывод неверен: $\{1\} \times \varnothing = \varnothing = \varnothing \times \{1\}$, хотя $\{1\} \ne \varnothing$.
+
+*Ответ:* Верно.
 :::
 
 ::: {.problem #prob:lec11:minus}
 Докажите, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найдите $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и опишите его как фигуру на плоскости.
-:::
-
-::: answer
-Тождество верно. Искомое множество — $[0, 2] \times [0, \frac12)$, прямоугольник без верхней стороны.
 :::
 
 ::: solution
@@ -295,20 +283,20 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 «$\supseteq$»: пусть $z \in A \times B$ и $z \notin A \times C$. Тогда $z = (a, x)$ с $a \in A$, $x \in B$. *Ключ:* $x \notin C$, иначе $(a, x) \in A \times C$. Поэтому $x \in B \setminus C$ и $z \in A \times (B \setminus C)$.
 
 По тождеству с $A = [0, 2]$, $B = [0, 1]$, $C = [\frac12, 3]$ получаем $[0, 2] \times ([0, 1] \setminus [\frac12, 3]) = [0, 2] \times [0, \frac12)$: из прямоугольника $[0, 2] \times [0, 1]$ вырезана верхняя половина вместе с отрезком на высоте $\frac12$.
+
+*Ответ:* Тождество верно. Искомое множество — $[0, 2] \times [0, \frac12)$, прямоугольник без верхней стороны.
 :::
 
 ::: {.problem #prob:lec11:union-union}
 Докажите, что $\bigcup\bigcup (A \times B) \subseteq A \cup B$ для любых $A$, $B$. Когда включение обращается в равенство?
 :::
 
-::: answer
-Равенство выполнено тогда и только тогда, когда $A$ и $B$ либо оба пусты, либо оба непусты.
-:::
-
 ::: solution
 *Ключ:* спускаться по уровням вложенности, как в замечании [-@rem:lec10:union-level]. Элементы $A \times B$ — пары $(a, b) = \{\{a\}, \{a, b\}\}$ с $a \in A$, $b \in B$, поэтому элементы $\bigcup (A \times B)$ — множества $\{a\}$ и $\{a, b\}$ для таких $a$, $b$, а элементы $\bigcup\bigcup (A \times B)$ — элементы этих множеств, то есть $a$ или $b$. Значит, каждый элемент $\bigcup\bigcup(A \times B)$ лежит в $A$ или в $B$.
 
 Если $A \ne \varnothing$ и $B \ne \varnothing$, верно и обратное: для $a \in A$ возьмём любое $b \in B$; тогда $a \in \{a\} \in (a, b) \in A \times B$, и $a \in \bigcup\bigcup (A \times B)$; так же для $b \in B$ с любым $a \in A$. Если оба пусты, обе части равны $\varnothing$. Если пусто ровно одно из них, то $A \times B = \varnothing$ и $\bigcup\bigcup \varnothing = \varnothing$, а $A \cup B \ne \varnothing$: например, $\bigcup\bigcup(\{1\} \times \varnothing) = \varnothing \ne \{1\}$.
+
+*Ответ:* Равенство выполнено тогда и только тогда, когда $A$ и $B$ либо оба пусты, либо оба непусты.
 :::
 
 # Итоги
@@ -319,50 +307,3 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 - С пересечением и разностью произведение дружит покомпонентно, $(A \times B) \cap (C \times D) = (A \cap C) \times (B \cap D)$, а объединение произведений, вообще говоря, меньше произведения объединений.
 - Скобки в $A_1 \times \ldots \times A_n$ и в кортежах ставятся слева: $\R^3 = \R^2 \times \R$, и произведение плоской фигуры на отрезок — тело в пространстве.
 - Декартова степень $A^n$ состоит из кортежей длины $n$; два кортежа равны тогда и только тогда, когда равны их соответствующие компоненты; $A^0 = \{\varnothing\}$ даже при $A = \varnothing$.
-
-# Глоссарий
-
-$(a, b)$ (упорядоченная пара по Куратовскому)
-:   $\{\{a\}, \{a, b\}\}$; $(a, b) = (c, d) \iff a = c \wedge b = d$; [-@def:lec11:pair].
-
-$A \times B$ (декартово произведение)
-:   множество всех пар $(a, b)$ с $a \in A$, $b \in B$; $A_1 \times \ldots \times A_n$ — скобки слева; [-@def:lec11:product].
-
-$A^n$ (декартова степень)
-:   $A^0 = \{\varnothing\}$, $A^1 = A$, $A^n = A \times \ldots \times A$ ($n$ раз, скобки слева); [-@def:lec11:power].
-
-$(a_1, \dots, a_n)$ (кортеж, упорядоченный набор)
-:   $((\dots(a_1, a_2), \dots), a_n)$; $a_i$ — компоненты (координаты); [-@def:lec11:tuple].
-
-$\R^2$, $\R^3$
-:   координатные плоскость и пространство: $\R^2 = \R \times \R$, $\R^3 = \R^2 \times \R$, точка $(x, y, z) = ((x, y), z)$; [-@rem:lec11:r3].
-
-# Самопроверка
-
-1. Равны ли пары $(\varnothing, \{\varnothing\})$ и $(\{\varnothing\}, \varnothing)$? Запишите пару $(\varnothing, \varnothing)$ как множество, построенное из $\varnothing$ и фигурных скобок.
-2. Докажите, что $A \times B = \varnothing$ тогда и только тогда, когда $A = \varnothing$ или $B = \varnothing$.
-3. Выпишите все элементы множества $\{1, 2\} \times \{1, 2, 3\}$. Равно ли оно $\{1, 2, 3\} \times \{1, 2\}$?
-4. Запишите кортеж $(a, b, c)$ через фигурные скобки и $a$, $b$, $c$, раскрыв все пары.
-5. Докажите, что из $A \times A = B \times B$ следует $A = B$. Почему здесь, в отличие от примера [-@ex:lec11:cancel], не нужно условие непустоты?
-6. Верно ли, что из $A \times B \subseteq C \times D$ всегда следует $A \subseteq C$?
-7. Сколько элементов у множества $(\{1, 2, 3\} \times \{1, 2\}) \cap (\{1, 2\} \times \{1, 2, 3\})$?
-8. Какая фигура в $\R^3 = \R^2 \times \R$ — множество $L \times \R$, где $L = \{(x, y) \in \R^2 \mid y = x\}$?
-9. Почему $A^1$ задаётся отдельно, а не формулой $A^{n+1} = A^n \times A$ при $n = 0$? Чему равны $\varnothing^0$ и $\varnothing^2$?
-10. Является ли множество $\{\{\{\varnothing\}\}, \{\{\varnothing\}, \varnothing\}\}$ упорядоченной парой? Если да, найдите её компоненты.
-11. Может ли быть $(a, b) \in a$?
-12. При каких $x$, $y$ выполнено $(x, 1, y) = (2, y, x)$?
-
-::: answers
-1. Нет, по следствию [-@cor:lec11:pair-swap], так как $\varnothing \ne \{\varnothing\}$. $(\varnothing, \varnothing) = \{\{\varnothing\}, \{\varnothing, \varnothing\}\} = \{\{\varnothing\}\}$.
-2. «$\Leftarrow$» — пример [-@ex:lec11:product-empty]. «$\Rightarrow$» — контрапозиция: если $a \in A$ и $b \in B$, то $(a, b) \in A \times B$, и произведение непусто.
-3. $(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (2, 3)$. Не равно: $(1, 3)$ лежит в первом произведении, но не во втором, так как $3 \notin \{1, 2\}$.
-4. $(a, b, c) = ((a, b), c) = \{\{(a, b)\}, \{(a, b), c\}\} = \{\{\{\{a\}, \{a, b\}\}\}, \{\{\{a\}, \{a, b\}\}, c\}\}$.
-5. Пусть $a \in A$. Тогда $(a, a) \in A \times A = B \times B$, и по замечанию [-@rem:lec11:product-coord] $a \in B$; так же $B \subseteq A$. Второй компонентой пары служит сам $a$, так что брать элемент из другого множества не нужно; если $A = \varnothing$, то $B \times B = \varnothing$, и $B = \varnothing$ по задаче 2.
-6. Нет: при $B = \varnothing$ имеем $A \times B = \varnothing \subseteq C \times D$ для любых $A$, $C$, например $\{1\} \times \varnothing \subseteq \varnothing \times \varnothing$, но $\{1\} \not\subseteq \varnothing$. При $B \ne \varnothing$ — верно (как в примере [-@ex:lec11:cancel]).
-7. $4$: по примеру [-@ex:lec11:product-cap] это $(\{1, 2, 3\} \cap \{1, 2\}) \times (\{1, 2\} \cap \{1, 2, 3\}) = \{1, 2\} \times \{1, 2\}$.
-8. Вертикальная плоскость, проходящая через ось $z$ и прямую $y = x$ плоскости $z = 0$: точки $(x, x, z)$ при всех $x, z \in \R$.
-9. Формула при $n = 0$ дала бы $A^1 = \{\varnothing\} \times A$ — пары $(\varnothing, a)$, а не элементы $A$ (замечание [-@rem:lec11:power0]). $\varnothing^0 = \{\varnothing\}$, $\varnothing^2 = \varnothing \times \varnothing = \varnothing$.
-10. Да: пересечение элементов равно $\{\{\varnothing\}\}$, поэтому первая компонента — $\{\varnothing\}$; объединение равно $\{\{\varnothing\}, \varnothing\}$, вторая компонента — $\varnothing$. Проверка: $(\{\varnothing\}, \varnothing) = \{\{\{\varnothing\}\}, \{\{\varnothing\}, \varnothing\}\}$.
-11. Нет: тогда $a \in \{a\} \in (a, b) \in a$, и $a \ni (a, b) \ni \{a\} \ni a \ni \dots$ — бесконечная цепочка, запрещённая аксиомой [-@ax:lec09:foundation].
-12. Ни при каких: по лемме [-@lem:lec11:tuple] $x = 2$, $1 = y$ и $y = x$, откуда $1 = 2$.
-:::

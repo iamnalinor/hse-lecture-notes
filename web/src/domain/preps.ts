@@ -100,3 +100,7 @@ export const upcomingPreps = (preps: readonly PrepEntry[], today: string): reado
   preps
     .filter((prep) => isUpcoming(prep, today))
     .toSorted((a, b) => nextDay(a, today).localeCompare(nextDay(b, today)));
+
+/** Preps whose last active day has passed, in the order they happened: kept on the course page for revision. */
+export const pastPreps = (preps: readonly PrepEntry[], today: string): readonly PrepEntry[] =>
+  preps.filter((prep) => !isUpcoming(prep, today)).toSorted((a, b) => a.date.localeCompare(b.date));

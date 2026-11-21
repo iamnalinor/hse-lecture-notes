@@ -206,8 +206,6 @@ $$x \in \overline{A \cap B} \iff \neg(x \in A \wedge x \in B) \iff x \notin A \v
 ::: {.example #ex:lec10:identity}
 Докажите, что $A \setminus (B \setminus C) = (A \setminus B) \cup (A \cap C)$, двумя способами: цепочкой тождеств и таблицей принадлежности.
 
-*Ответ:* тождество верно; обе части — объединение областей $100$, $101$, $111$ на рис. [-@fig:lec10:regions].
-
 *Решение цепочкой.* В качестве универсума возьмём $U = A \cup B \cup C$ (при доказательстве тождеств дополнение часто используют без пояснений, подразумевая такой универсум). По $A \setminus B = A \cap \bar B$ и теореме [-@thm:lec10:identities]:
 $$A \setminus (B \setminus C) = A \cap \overline{B \cap \bar C} = A \cap (\bar B \cup \bar{\bar C}) = A \cap (\bar B \cup C) = (A \cap \bar B) \cup (A \cap C) = (A \setminus B) \cup (A \cap C).$$
 Шаги: закон де Моргана, двойное дополнение, дистрибутивность, снова $A \cap \bar B = A \setminus B$.
@@ -269,7 +267,7 @@ $$A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C), \qquad A \setmi
 
 *Решение через тождества.* $C = A \cup C = A \cup (B \cup C) = (A \cup B) \cup C$, и по лемме [-@lem:lec10:subset-equiv] $A \cup B \subseteq C$.
 
-Итак, $A \cup B$ — наименьшее множество, содержащее и $A$, и $B$. Двойственное утверждение для пересечения — в самопроверке.
+Итак, $A \cup B$ — наименьшее множество, содержащее и $A$, и $B$. Двойственно, $A \cap B$ — наибольшее множество, содержащееся и в $A$, и в $B$.
 :::
 
 У включения есть ещё две полезные формы — через разность и через дополнения.
@@ -288,12 +286,10 @@ $$A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C), \qquad A \setmi
 Может ли быть так, что $A \cup B \in A \setminus B$?
 :::
 
-::: answer
-Нет, ни при каких $A$, $B$.
-:::
-
 ::: solution
 *Ключ:* если $x \in A$ и $A \subseteq C$, то $x \in C$ — принадлежность «переносится» на надмножество. Пусть $A \cup B \in A \setminus B$. Тогда, в частности, $A \cup B \in A$. По лемме [-@lem:lec10:basic-incl] $A \subseteq A \cup B$, поэтому $A \cup B \in A \cup B$. Это противоречит утверждению [-@prop:lec09:not-self]: множество не может быть своим элементом. Условие $A \cup B \notin B$ даже не понадобилось.
+
+*Ответ:* Нет, ни при каких $A$, $B$.
 :::
 
 ::: {.problem #prob:lec10:powerset-ops}
@@ -301,15 +297,13 @@ a) Всегда ли $\mathcal{P}(A \cap B) = \mathcal{P}(A) \cap \mathcal{P}(B)
 b) Всегда ли $\mathcal{P}(A \cup B) = \mathcal{P}(A) \cup \mathcal{P}(B)$?
 :::
 
-::: answer
-a) Да, всегда.
-b) Нет: верно только $\mathcal{P}(A) \cup \mathcal{P}(B) \subseteq \mathcal{P}(A \cup B)$; равенство выполнено тогда и только тогда, когда $A \subseteq B$ или $B \subseteq A$. Контрпример: $A = \{1\}$, $B = \{2\}$.
-:::
-
 ::: solution
 a) Для каждого $X$: $X \in \mathcal{P}(A \cap B) \iff X \subseteq A \cap B \iff X \subseteq A \wedge X \subseteq B \iff X \in \mathcal{P}(A) \cap \mathcal{P}(B)$. *Ключ:* средний переход — «$X \subseteq A \cap B$ тогда и только тогда, когда каждый элемент $X$ лежит и в $A$, и в $B$» ($\forall$ переставляется с $\wedge$, замечание [-@rem:lec02:distribute]).
 
 b) *Ключ:* для объединения переход не работает — $\forall$ не переставляется с $\vee$: «каждый элемент $X$ лежит в $A$ или в $B$» не означает «все в $A$ или все в $B$». При $A = \{1\}$, $B = \{2\}$ множество $\{1, 2\} \in \mathcal{P}(A \cup B)$, но $\{1, 2\} \notin \mathcal{P}(A) \cup \mathcal{P}(B) = \{\varnothing, \{1\}, \{2\}\}$. Включение $\mathcal{P}(A) \cup \mathcal{P}(B) \subseteq \mathcal{P}(A \cup B)$ верно по транзитивности включения. Если $A \subseteq B$, обе части равны $\mathcal{P}(B)$ (так как $\mathcal{P}(A) \subseteq \mathcal{P}(B)$). Обратно, из равенства и $A \cup B \in \mathcal{P}(A \cup B)$ следует $A \cup B \in \mathcal{P}(A)$ или $A \cup B \in \mathcal{P}(B)$, то есть $B \subseteq A$ или $A \subseteq B$.
+
+*Ответ:* a) Да, всегда.
+b) Нет: верно только $\mathcal{P}(A) \cup \mathcal{P}(B) \subseteq \mathcal{P}(A \cup B)$; равенство выполнено тогда и только тогда, когда $A \subseteq B$ или $B \subseteq A$. Контрпример: $A = \{1\}$, $B = \{2\}$.
 :::
 
 ::: {.problem #prob:lec10:symdiff}
@@ -317,35 +311,27 @@ b) *Ключ:* для объединения переход не работае�
 $$(A_1 \cup \ldots \cup A_n) \mathbin{\triangle} (B_1 \cup \ldots \cup B_n) \subseteq (A_1 \mathbin{\triangle} B_1) \cup \ldots \cup (A_n \mathbin{\triangle} B_n)?$$
 :::
 
-::: answer
-Да, всегда.
-:::
-
 ::: solution
 $A \mathbin{\triangle} B$ — элементы, лежащие ровно в одном из двух множеств. Обозначим $A = A_1 \cup \ldots \cup A_n$, $B = B_1 \cup \ldots \cup B_n$ и возьмём произвольный $x \in A \mathbin{\triangle} B$. Пусть, например, $x \in A$ и $x \notin B$ (второй случай, $x \in B \setminus A$, симметричен). *Ключ:* из $x \in A$ следует $x \in A_i$ для некоторого $i$, а из $x \notin B$ — что $x \notin B_j$ для *всех* $j$, в частности $x \notin B_i$ для того же $i$. Значит, $x \in A_i \setminus B_i \subseteq A_i \mathbin{\triangle} B_i$, и $x$ лежит в правой части. Обратное включение, вообще говоря, неверно: при $n = 2$, $A_1 = B_2 = \{1\}$, $A_2 = B_1 = \varnothing$ левая часть $\{1\} \mathbin{\triangle} \{1\} = \varnothing$, а правая $\{1\} \cup \{1\} = \{1\}$.
+
+*Ответ:* Да, всегда.
 :::
 
 ::: {.problem #prob:lec10:identities}
 Докажите или опровергните: a) $(A \setminus B) \setminus C = A \setminus (B \cup C)$; b) $A \setminus (B \setminus C) = (A \setminus B) \setminus C$.
 :::
 
-::: answer
-a) Верно.
-b) Неверно: при $A = C = \{1\}$, $B = \varnothing$ слева $\{1\}$, справа $\varnothing$.
-:::
-
 ::: solution
 a) Поэлементно: $x \in (A \setminus B) \setminus C \iff x \in A \wedge x \notin B \wedge x \notin C \iff x \in A \wedge \neg(x \in B \vee x \in C) \iff x \in A \setminus (B \cup C)$ (закон де Моргана). Цепочкой: $(A \cap \bar B) \cap \bar C = A \cap (\bar B \cap \bar C) = A \cap \overline{B \cup C}$.
 
 b) *Ключ:* по таблице принадлежности (пример [-@ex:lec10:identity]) левая часть — области $100$, $101$, $111$, а правая $(A \setminus B) \setminus C$ — только область $100$. Расходятся, например, в строке $101$: $x \in A$, $x \notin B$, $x \in C$. Отсюда контрпример $U = \{1\}$, $A = C = \{1\}$, $B = \varnothing$: $A \setminus (B \setminus C) = \{1\} \setminus \varnothing = \{1\}$, а $(A \setminus B) \setminus C = \{1\} \setminus \{1\} = \varnothing$. Поэтому в «$A \setminus B \setminus C$» скобки опускать нельзя (замечание [-@rem:lec10:parens]).
+
+*Ответ:* a) Верно.
+b) Неверно: при $A = C = \{1\}$, $B = \varnothing$ слева $\{1\}$, справа $\varnothing$.
 :::
 
 ::: {.problem #prob:lec10:union-power}
 Докажите, что $\bigcup \mathcal{P}(A) = A$ и $A \subseteq \mathcal{P}(\bigcup A)$. Верно ли, что $\mathcal{P}(\bigcup A) = A$ для любого $A$?
-:::
-
-::: answer
-Оба утверждения верны; $\mathcal{P}(\bigcup A) = A$ в общем случае неверно: при $A = \{\{1\}\}$ получаем $\mathcal{P}(\bigcup A) = \{\varnothing, \{1\}\} \ne A$. Равенство выполнено тогда и только тогда, когда $A = \mathcal{P}(Y)$ для некоторого $Y$.
 :::
 
 ::: solution
@@ -354,34 +340,32 @@ $\bigcup \mathcal{P}(A) = A$. «$\subseteq$»: если $x \in \bigcup \mathcal{
 $A \subseteq \mathcal{P}(\bigcup A)$: пусть $\alpha \in A$. Каждый элемент $x \in \alpha$ лежит в $\bigcup A$ (свидетель — $\alpha$), значит, $\alpha \subseteq \bigcup A$, то есть $\alpha \in \mathcal{P}(\bigcup A)$.
 
 Для $A = \{\{1\}\}$: $\bigcup A = \{1\}$ (пример [-@ex:lec10:union]), $\mathcal{P}(\{1\}) = \{\varnothing, \{1\}\}$, а $\varnothing \notin A$, так что здесь включение строгое. Равенство бывает ровно при $A = \mathcal{P}(Y)$: тогда по доказанному $\bigcup A = Y$ и $\mathcal{P}(\bigcup A) = A$ (например, $A = \{\varnothing\} = \mathcal{P}(\varnothing)$); обратно, если $\mathcal{P}(\bigcup A) = A$, то $A = \mathcal{P}(Y)$ при $Y = \bigcup A$.
+
+*Ответ:* Оба утверждения верны; $\mathcal{P}(\bigcup A) = A$ в общем случае неверно: при $A = \{\{1\}\}$ получаем $\mathcal{P}(\bigcup A) = \{\varnothing, \{1\}\} \ne A$. Равенство выполнено тогда и только тогда, когда $A = \mathcal{P}(Y)$ для некоторого $Y$.
 :::
 
 ::: {.problem #prob:lec10:infinite}
 Найдите $\bigcup_{n \in \N_+} [\frac1n, 2]$ и $\bigcap_{n \in \N_+} I_n$, где $I_n = \{x \in \R \mid 0 < x < \frac1n\}$.
 :::
 
-::: answer
-$\bigcup_{n \in \N_+} [\frac1n, 2] = \{x \in \R \mid 0 < x \le 2\}$, $\bigcap_{n \in \N_+} I_n = \varnothing$.
-:::
-
 ::: solution
 Объединение. «$\subseteq$»: если $\frac1n \le x \le 2$, то $0 < x \le 2$. «$\supseteq$»: пусть $0 < x \le 2$. *Ключ:* подобрать номер под $x$ — возьмём $n \in \N_+$ с $n \ge \frac1x$; тогда $\frac1n \le x$, и $x \in [\frac1n, 2]$. Точка $0$ не лежит ни в одном отрезке, поэтому в объединение не входит.
 
 Пересечение (замечание [-@rem:lec10:indexed]; семейство непусто). Пусть $x$ лежит во всех $I_n$. Из $x \in I_1$ получаем $x > 0$; но тогда для $n \in \N_+$ с $n \ge \frac1x$ имеем $x \ge \frac1n$, и $x \notin I_n$ — противоречие. Каждое $I_n$ непусто, и любые несколько из них имеют общую точку (множество с наибольшим номером лежит во всех остальных), а пересечение всех пусто.
+
+*Ответ:* $\bigcup_{n \in \N_+} [\frac1n, 2] = \{x \in \R \mid 0 < x \le 2\}$, $\bigcap_{n \in \N_+} I_n = \varnothing$.
 :::
 
 ::: {.problem #prob:lec10:disjoint-diff}
 Докажите, что $A \setminus B = A$ тогда и только тогда, когда $A$ и $B$ не пересекаются, двумя способами: через произвольный элемент и через тождества.
 :::
 
-::: answer
-Верно.
-:::
-
 ::: solution
 *Поэлементно.* «$\Rightarrow$»: пусть $A \setminus B = A$ и $x \in A \cap B$. Тогда $x \in A = A \setminus B$, то есть $x \notin B$, — противоречие с $x \in B$; значит, $A \cap B = \varnothing$. «$\Leftarrow$»: $A \setminus B \subseteq A$ по лемме [-@lem:lec10:basic-incl]; обратно, если $x \in A$, то $x \notin B$ (иначе $x \in A \cap B = \varnothing$), и $x \in A \setminus B$.
 
 *Через тождества* (универсум $U = A \cup B$). *Ключ:* разложить $A$ на две части, «в $B$» и «вне $B$»: $A = A \cap U = A \cap (B \cup \bar B) = (A \cap B) \cup (A \setminus B)$. «$\Leftarrow$»: при $A \cap B = \varnothing$ получаем $A = \varnothing \cup (A \setminus B) = A \setminus B$. «$\Rightarrow$»: при $A \setminus B = A$ имеем $A \cap B = (A \setminus B) \cap B = \varnothing$ по лемме [-@lem:lec10:basic-incl].
+
+*Ответ:* Верно.
 :::
 
 # Итоги
@@ -393,57 +377,3 @@ $\bigcup_{n \in \N_+} [\frac1n, 2] = \{x \in \R \mid 0 < x \le 2\}$, $\bigcap_{n
 - Любое тождество алгебры множеств проверяется таблицей принадлежности из $2^k$ строк, а строка, где части расходятся, даёт контрпример: $(A \cup B) \setminus B = A \setminus B$, а не $A$.
 - Включение $A \subseteq B$ можно заменить равенством ($A \cap B = A$, $A \cup B = B$, $A \setminus B = \varnothing$) и дальше работать тождествами, не разбирая элементов.
 - При вычитании объединения или пересечения операция меняется на двойственную: $A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C)$.
-
-# Глоссарий
-
-$\bigcup A$ (объединение семейства)
-:   множество элементов элементов $A$: $x \in \bigcup A \iff \exists \alpha\, (x \in \alpha \in A)$; [-@ax:lec10:union].
-
-$\bigcup_{i \in I} A_i$; $\bigcap A$ (пересечение семейства)
-:   $\bigcup\{A_i \mid i \in I\}$; $\bigcap A$ — элементы, лежащие во всех членах непустого семейства $A$; $\bigcap \varnothing$ не определено; [-@rem:lec10:indexed].
-
-$A \cup B$, $A \cap B$, $A \setminus B$; непересекающиеся множества
-:   объединение $\bigcup\{A, B\}$, пересечение $\{x \in A \mid x \in B\}$, разность $\{x \in A \mid x \notin B\}$; $A$ и $B$ не пересекаются, если $A \cap B = \varnothing$; [-@def:lec10:operations].
-
-Универсум $U$; дополнение $\bar A$
-:   объемлющее множество задачи; $\bar A = U \setminus A$; [-@def:lec10:complement].
-
-Диаграмма Эйлера
-:   множества — фигуры на плоскости; ничего не доказывает; [-@fig:lec10:euler].
-
-Законы де Моргана для разности
-:   $A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C)$, $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$; [-@rem:lec10:relative-demorgan].
-
-Таблица принадлежности
-:   проверка тождества по $2^k$ вариантам принадлежности; [-@ex:lec10:identity].
-
-$A \mathbin{\triangle} B$ (симметрическая разность)
-:   $(A \setminus B) \cup (B \setminus A)$ — элементы ровно одного из множеств; [-@prob:lec10:symdiff].
-
-# Самопроверка
-
-1. Найдите $\bigcup \{\{1, 2\}, \{2, 3\}, \varnothing\}$.
-2. Докажите, что не существует множества $S$, содержащего все двухэлементные множества.
-3. Докажите, что если $C \subseteq A$ и $C \subseteq B$, то $C \subseteq A \cap B$.
-4. Докажите или опровергните: $(A \cup B) \setminus C = A \cup (B \setminus C)$.
-5. Найдите $\bigcup\bigcup\{\{\{\varnothing\}\}, \{\varnothing, \{\varnothing\}\}\}$.
-6. Пусть $A$ — множество чётных натуральных чисел. Найдите $\bar A$, если универсум $U = \N$; если $U = \Z$.
-7. Найдите $\bigcup_{n \in \N} [0, n]$.
-8. Докажите или опровергните: $A \cup (B \cap C) = (A \cup B) \cap C$.
-9. Опровергните «закон де Моргана» $A \setminus (B \cap C) = (A \setminus B) \cap (A \setminus C)$. Как выглядит верный?
-10. Докажите без поэлементных рассуждений: если $A \subseteq B$, то $A \cap C \subseteq B \cap C$.
-11. Докажите таблицей принадлежности: $(A \setminus B) \setminus C = (A \setminus C) \setminus (B \setminus C)$.
-
-::: answers
-1. $\{1, 2, 3\}$: пустое множество ничего не добавляет.
-2. Тогда $\bigcup S$ содержало бы каждое множество $x$: при $x \ne \varnothing$ имеем $x \in \{x, \varnothing\} \in S$, а $\varnothing \in \{\varnothing, \{\varnothing\}\} \in S$ (у обоих множеств по два различных элемента). Это противоречит следствию [-@cor:lec09:no-universal].
-3. Пусть $x \in C$; тогда $x \in A$ и $x \in B$, то есть $x \in A \cap B$. Через тождества: $C = C \cap A$, $C = C \cap B$, откуда $C = C \cap (A \cap B)$, и по лемме [-@lem:lec10:subset-equiv] $C \subseteq A \cap B$.
-4. Неверно: при $A = C = \{1\}$, $B = \varnothing$ слева $\varnothing$, справа $\{1\}$ (строка $101$ таблицы принадлежности).
-5. $\{\varnothing\}$: $\bigcup$ первого уровня даёт $\{\{\varnothing\}\} \cup \{\varnothing, \{\varnothing\}\} = \{\varnothing, \{\varnothing\}\}$, второго — $\varnothing \cup \{\varnothing\} = \{\varnothing\}$.
-6. При $U = \N$: $\bar A$ — нечётные натуральные числа. При $U = \Z$: $\bar A = \Z \setminus A$ — все нечётные целые и все отрицательные чётные.
-7. $\{x \in \R \mid x \ge 0\}$: каждое $x \ge 0$ лежит в $[0, n]$ при натуральном $n \ge x$, а отрицательные числа не лежат ни в одном отрезке.
-8. Неверно: при $A = \{1\}$, $B = C = \varnothing$ слева $\{1\}$, справа $\varnothing$ (строка $100$).
-9. При $A = B = \{1\}$, $C = \varnothing$ слева $\{1\} \setminus \varnothing = \{1\}$, справа $\varnothing \cap \{1\} = \varnothing$. Верно $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$ (замечание [-@rem:lec10:relative-demorgan]).
-10. По лемме [-@lem:lec10:subset-equiv] $A \cap B = A$, поэтому $(A \cap C) \cap (B \cap C) = (A \cap B) \cap (C \cap C) = A \cap C$ (коммутативность, ассоциативность, идемпотентность), и по той же лемме $A \cap C \subseteq B \cap C$.
-11. Обе части равны $1$ ровно в строке $100$: левая требует $\alpha = 1$, $\beta = 0$, $\gamma = 0$; правая — $\alpha = 1$, $\gamma = 0$ и $x \notin B \setminus C$, а при $\gamma = 0$ это значит $\beta = 0$. Во всех остальных семи строках обе части равны $0$, поэтому тождество верно.
-:::

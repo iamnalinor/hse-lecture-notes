@@ -4,6 +4,7 @@ import type { LectureEntry } from "#web/domain/schemas.ts";
 
 import { shortDate } from "#web/domain/dates.ts";
 import { paths } from "#web/domain/paths.ts";
+import { ChevronIcon, ChevronLeftIcon } from "#web/shared/ui/icons.tsx";
 
 type Props = {
   readonly course: string;
@@ -11,30 +12,43 @@ type Props = {
   readonly prev: LectureEntry | undefined;
 };
 
-const CARD = "block rounded-lg border border-rule bg-card px-4.5 py-4 text-ink no-underline";
+const CARD =
+  "group flex h-full items-center gap-3 rounded-xl border border-rule bg-card px-4 py-4 text-ink no-underline transition-colors hover:border-ink/30";
 
+/** Cards to the neighbouring lectures at the end of the text: direction, number and date, then the title. */
 export const PrevNext = ({ course, next, prev }: Props) => (
   <nav
     aria-label="Соседние лекции"
-    className="mt-14 mb-20 grid gap-4 border-t border-rule pt-7 sm:grid-cols-2"
+    className="mt-14 mb-20 grid auto-rows-fr gap-3 border-t border-rule pt-7 sm:grid-cols-2"
   >
     {prev === undefined ? (
-      <span />
+      <span className="hidden sm:block" />
     ) : (
       <Link className={CARD} to={paths.lecture(course, prev.weekId)}>
-        <small className="mb-1 block text-footnote text-muted">
-          ← Лекция {prev.lecture} · {shortDate(prev.date)}
-        </small>
-        <span className="text-subhead/snug font-semibold">{prev.title}</span>
+        <span className="shrink-0 text-muted group-hover:text-ink">
+          <ChevronLeftIcon size={20} />
+        </span>
+        <Card dir="Предыдущая" lecture={prev} />
       </Link>
     )}
     {next !== undefined && (
       <Link className={`${CARD} sm:text-right`} to={paths.lecture(course, next.weekId)}>
-        <small className="mb-1 block text-footnote text-muted">
-          Лекция {next.lecture} · {shortDate(next.date)} →
-        </small>
-        <span className="text-subhead/snug font-semibold">{next.title}</span>
+        <Card dir="Следующая" lecture={next} />
+        <span className="shrink-0 text-muted group-hover:text-ink">
+          <ChevronIcon size={20} />
+        </span>
       </Link>
     )}
   </nav>
 );
+
+function Card({ dir, lecture }: { readonly dir: string; readonly lecture: LectureEntry }) {
+  return (
+    <span className="min-w-0 flex-1">
+      <span className="mb-1 block text-footnote text-muted">
+        {dir} · лекция {lecture.lecture} · {shortDate(lecture.date)}
+      </span>
+      <span className="line-clamp-2 text-subhead/snug font-semibold">{lecture.title}</span>
+    </span>
+  );
+}

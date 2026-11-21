@@ -79,6 +79,8 @@ export type BackgroundPhase = "done" | "failed" | "paused" | "running";
 
 export type BackgroundPlan = {
   readonly connection: ConnectionLike | undefined;
+  /** A desktop downloads on an unknown link too (`canAutoDownload`). */
+  readonly isDesktop: boolean;
   readonly onPhase: (phase: BackgroundPhase) => void;
   /** The download; it rejects once `signal` aborts. */
   readonly run: (signal: AbortSignal) => Promise<void>;
@@ -90,22 +92,23 @@ export type BackgroundPlan = {
 const attempt = async (
   run: BackgroundPlan["run"],
   signal: AbortSignal,
-  connection: ConnectionLike,
+  canGoOn: () => boolean,
 ): Promise<"aborted" | "done" | "failed"> => {
   try {
     await run(signal);
     return "done";
   } catch {
-    return signal.aborted || !canAutoDownload(connection) ? "aborted" : "failed";
+    return signal.aborted || !canGoOn() ? "aborted" : "failed";
   }
 };
 
-/** Starts the download when allowed; returns «stop». No `navigator.connection` → never starts. */
+/** Starts the download when allowed; returns «stop». No `navigator.connection` → only on a desktop. */
 export const scheduleBackgroundDownload = (plan: BackgroundPlan): (() => void) => {
-  const { connection } = plan;
-  if (connection === undefined) {
+  const { connection, isDesktop } = plan;
+  if (connection === undefined && !isDesktop) {
     return () => undefined;
   }
+  const canRun = (): boolean => canAutoDownload(connection, { isDesktop });
   const state = {
     controller: undefined as AbortController | undefined,
     isOver: false,
@@ -114,12 +117,12 @@ export const scheduleBackgroundDownload = (plan: BackgroundPlan): (() => void) =
   const isBlocked = (): boolean =>
     state.isOver || !state.isSettled || state.controller !== undefined;
   const tryStart = async (): Promise<void> => {
-    if (isBlocked() || !canAutoDownload(connection)) {
+    if (isBlocked() || !canRun()) {
       return;
     }
     state.controller = new AbortController();
     plan.onPhase("running");
-    const outcome = await attempt(plan.run, state.controller.signal, connection);
+    const outcome = await attempt(plan.run, state.controller.signal, canRun);
     state.controller = undefined;
     if (state.isOver) {
       return;
@@ -133,13 +136,13 @@ export const scheduleBackgroundDownload = (plan: BackgroundPlan): (() => void) =
     await tryStart();
   };
   const onChange = (): void => {
-    if (state.controller !== undefined && !canAutoDownload(connection)) {
+    if (state.controller !== undefined && !canRun()) {
       state.controller.abort();
       return;
     }
     void tryStart();
   };
-  connection.addEventListener("change", onChange);
+  connection?.addEventListener("change", onChange);
   const cancelSettled = plan.whenSettled(() => {
     state.isSettled = true;
     void tryStart();
@@ -147,7 +150,7 @@ export const scheduleBackgroundDownload = (plan: BackgroundPlan): (() => void) =
   return () => {
     state.isOver = true;
     cancelSettled();
-    connection.removeEventListener("change", onChange);
+    connection?.removeEventListener("change", onChange);
     state.controller?.abort();
   };
 };

@@ -2,7 +2,7 @@ import { createContext, type ReactNode, useContext } from "react";
 
 export type ReaderContextValue = {
   readonly course: string;
-  /** Lecture being read; `undefined` on course-wide pages (theory, glossary). */
+  /** Lecture being read; `undefined` on course-wide pages (theory, program). */
   readonly lecture: number | undefined;
   /** Inside a hover card references are plain links without further cards. */
   readonly nested: boolean;

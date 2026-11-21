@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CatalogSchema, DocMetaSchema, GlossarySchema, TicketBankSchema } from "./schemas.ts";
+import { CatalogSchema, DocMetaSchema, TicketBankSchema } from "./schemas.ts";
 
 describe("build data schemas", () => {
   it("turns snake_case lecture entries into camelCase", () => {
@@ -143,12 +143,5 @@ describe("build data schemas", () => {
       toc: [{ id: "a", level: 1, text: "Контекст" }],
     });
     expect(meta.dateRu).toBe("23 сентября 2026");
-  });
-
-  it("reads glossary entries", () => {
-    const [entry] = GlossarySchema.parse([
-      { def_html: "d", lecture: 2, term: "t", term_html: "T", week_id: "02" },
-    ]);
-    expect(entry).toEqual({ defHtml: "d", lecture: 2, term: "t", termHtml: "T", weekId: "02" });
   });
 });

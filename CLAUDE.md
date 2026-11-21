@@ -2,7 +2,7 @@
 
 Конспекты лекций ПИ ФКН ВШЭ 2026/27 (алгебра, матанализ, дискретная математика, алгоритмы и алгоритмические языки): Pandoc Markdown → PDF (xelatex) и HTML-данные для сайта.
 
-**Перед любой работой с конспектами прочитай `context/README.md`.** Там сказано, что читать для твоей задачи. Правила — в `context/`, конспекты — `notes/<course>/<week_id>.md`, теория курса — `theory/<course>.md`, подготовка к КР и коллоквиуму — `prep/<course>/krN.md`, `colloqN.md` (банк билетов — `colloqN-bank.yaml`), план учебной дисциплины (ПУД) — `program/<course>.md`.
+**Перед любой работой прочитай `context/README.md` и `context/process.md`.** Правила текста и дизайна — `context/style/` (не зависят от того, какие скиллы стоят в сессии; оригиналы — `./scripts/fetch_skills.sh`). Там сказано, что читать для твоей задачи. Правила — в `context/`, конспекты — `notes/<course>/<week_id>.md`, теория курса — `theory/<course>.md`, подготовка к КР и коллоквиуму — `prep/<course>/krN.md`, `colloqN.md` (банк билетов — `colloqN-bank.yaml`), план учебной дисциплины (ПУД) — `program/<course>.md`.
 
 ```bash
 ./scripts/setup.sh && export PATH="$HOME/.TinyTeX/bin/x86_64-linux:$PATH"

@@ -28,4 +28,20 @@ describe("canAutoDownload", () => {
   ])("refuses %s", (_, connection) => {
     expect(canAutoDownload(connection)).toBe(false);
   });
+
+  it.each<[string, ConnectionInfo | undefined]>([
+    ["no API (Firefox, Safari)", undefined],
+    ["desktop Chrome: no type", { effectiveType: "4g", saveData: false }],
+    ["wifi", { type: "wifi" }],
+  ])("allows %s on a desktop", (_, connection) => {
+    expect(canAutoDownload(connection, { isDesktop: true })).toBe(true);
+  });
+
+  it.each<[string, ConnectionInfo]>([
+    ["data saver", { saveData: true }],
+    ["slow link", { effectiveType: "2g" }],
+    ["cellular, said so", { type: "cellular" }],
+  ])("refuses %s on a desktop", (_, connection) => {
+    expect(canAutoDownload(connection, { isDesktop: true })).toBe(false);
+  });
 });

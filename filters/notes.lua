@@ -8,8 +8,8 @@ notes.lua — фильтр pandoc для конспектов, теории и �
   * превращает блоки в окружения notes.sty (LaTeX) или в размеченные div (HTML);
   * разрешает ссылки @label / [-@label] внутри лекции и между лекциями курса
     через общий индекс;
-  * в режиме index выгружает метки и глоссарий в JSON (для индекса курса);
-  * в режиме render (html) пишет sidecar JSON: оглавление, метки, глоссарий,
+  * в режиме index выгружает метки в JSON (для индекса курса);
+  * в режиме render (html) пишет sidecar JSON: оглавление, метки,
     рисунки TikZ, которые надо скомпилировать в SVG.
 
 Метаданные, которые передаёт scripts/build.py через -M:
@@ -24,6 +24,20 @@ notes.lua — фильтр pandoc для конспектов, теории и �
 ]]
 
 local stringify = pandoc.utils.stringify
+
+-- текст заголовка для оглавления, ссылок и поиска: формулы остаются формулами ($…$),
+-- чтобы сайт отрисовал их KaTeX, а не показал сырой TeX
+local function text_with_math(inlines)
+  local out = {}
+  for _, il in ipairs(inlines) do
+    if il.t == 'Math' then
+      table.insert(out, '$' .. il.text .. '$')
+    else
+      table.insert(out, stringify(il))
+    end
+  end
+  return table.concat(out)
+end
 
 local BLOCKS = {
   definition  = { name = 'Определение', prefix = 'def',  style = 'definition' },
@@ -146,7 +160,6 @@ local S = {
   labels = {},              -- id -> запись (метки этого документа)
   label_order = {},
   index = {},               -- глобальный индекс: course -> id -> запись
-  glossary_index = {},      -- course -> список терминов (для глоссария в теории)
   lectures_index = {},      -- course -> список лекций
   toc = {},
   figures = {},
@@ -243,47 +256,13 @@ local function collect(doc)
     Header = function(h)
       if h.identifier:match('^sec:') then
         record_label(h.identifier, {
-          type = 'section', name = 'раздел', number = '', title = stringify(h.content),
+          type = 'section', name = 'раздел', number = '', title = text_with_math(h.content),
         })
       end
     end,
   }
 end
 
-local function collect_glossary(doc, fmt)
-  fmt = fmt or 'markdown'
-  local in_glossary = false
-  local entries = {}
-  for _, blk in ipairs(doc.blocks) do
-    if blk.t == 'Header' and blk.level == 1 then
-      in_glossary = stringify(blk.content) == 'Глоссарий'
-    elseif in_glossary and blk.t == 'DefinitionList' then
-      for _, item in ipairs(blk.content) do
-        local term, defs = item[1], item[2]
-        local def_blocks = pandoc.Blocks {}
-        for _, d in ipairs(defs) do def_blocks:extend(d) end
-        if fmt == 'markdown' then
-          table.insert(entries, {
-            term = stringify(term),
-            term_md = inlines_to('markdown', term),
-            def_md = blocks_to('markdown', def_blocks),
-          })
-        else
-          table.insert(entries, {
-            term = stringify(term),
-            term_html = inlines_to(fmt, term),
-            def_html = blocks_to(fmt, def_blocks),
-          })
-        end
-      end
-    end
-  end
-  return entries
-end
-
--- ---------------------------------------------------------------------------
--- разрешение ссылок
--- ---------------------------------------------------------------------------
 
 local function lookup(id)
   local local_entry = S.labels[id]
@@ -294,6 +273,21 @@ local function lookup(id)
     return e, (S.kind == 'notes' and e.week_id == S.week_id)
   end
   return nil
+end
+
+-- обратная операция к text_with_math: «текст $формула$» → Str/Space и Math
+local function inlines_from_text(text)
+  local out = pandoc.Inlines {}
+  local pos = 1
+  while pos <= #text do
+    local s, e, tex = text:find('%$([^$]+)%$', pos)
+    local plain = s and text:sub(pos, s - 1) or text:sub(pos)
+    if #plain > 0 then out:extend(pandoc.Inlines(plain)) end
+    if not s then break end
+    out:insert(pandoc.Math('InlineMath', tex))
+    pos = e + 1
+  end
+  return out
 end
 
 local function ref_text(entry, suppress, same_lecture)
@@ -338,7 +332,7 @@ local function resolve_cite(cite)
       local inl = pandoc.Inlines {}
       if c.prefix and #c.prefix > 0 then inl:extend(c.prefix); inl:insert(pandoc.Space()) end
       local href = ref_href(entry, same)
-      local label = pandoc.Inlines { pandoc.Str(text) }
+      local label = inlines_from_text(text)
       if href then
         inl:insert(pandoc.Link(label, href, '', { class = 'ref', ['data-ref'] = id }))
       else
@@ -407,7 +401,10 @@ local function render_box(div, t, number, parts, extra)
   if FORMAT_LATEX then
     local head_raw = pandoc.RawInline('latex', '\\nbhead{' .. inlines_to('latex', head) .. '}')
     local first = body[1]
-    if first and (first.t == 'Para' or first.t == 'Plain') then
+    -- текст, начатый формулой, не продолжает строку заголовка: длинная формула за ним не умещается
+    local starts_with_math = first and (first.t == 'Para' or first.t == 'Plain')
+      and first.content[1] and first.content[1].t == 'Math'
+    if first and (first.t == 'Para' or first.t == 'Plain') and not starts_with_math then
       local inl = pandoc.Inlines { head_raw }
       inl:extend(first.content)
       body[1] = pandoc.Para(inl)
@@ -464,15 +461,6 @@ local function render_proof_like(div, name)
   return pandoc.Div(blocks, { class = cls })
 end
 
-local function render_answer(div)
-  local blocks = pandoc.Blocks(div.content)
-  prefix_first_para(blocks, pandoc.Inlines { pandoc.Strong { pandoc.Str('Ответ:') } })
-  if FORMAT_LATEX then
-    return wrap_raw('latex', '\\begin{nbanswer}', blocks, '\\end{nbanswer}')
-  end
-  return pandoc.Div(blocks, { class = 'nb-answer' })
-end
-
 local function render_answers(div)
   if FORMAT_LATEX then
     return wrap_raw('latex', '\\begin{nbanswers}', div.content, '\\end{nbanswers}')
@@ -493,19 +481,26 @@ local function render_theory_block(div)
   local parts = header_parts({ tag = entry.tag, title = div.attributes['title'] or entry.title })
   local note = pandoc.Inlines {}
   local status = div.attributes['status']
-  local href = ref_href(entry, false)
-  local where = pandoc.Inlines { pandoc.Str('Лекция\u{00A0}' .. int_str(entry.lecture)) }
-  if href then
-    note:insert(pandoc.Link(where, href, '', { class = 'ref', ['data-ref'] = ref }))
-  else
-    note:extend(where)
+  -- теория курса — справочник: лекцию видно по разделу «N. Тема», ссылки в конспект нет;
+  -- подготовка к КР ведёт из блока в лекцию
+  if S.kind ~= 'theory' then
+    local href = ref_href(entry, false)
+    local where = pandoc.Inlines { pandoc.Str('Лекция\u{00A0}' .. int_str(entry.lecture)) }
+    if href then
+      note:insert(pandoc.Link(where, href, '', { class = 'ref', ['data-ref'] = ref }))
+    else
+      note:extend(where)
+    end
   end
   if status and status ~= '' then
-    note:insert(pandoc.Str(';'))
-    note:insert(pandoc.Space())
+    if #note > 0 then
+      note:insert(pandoc.Str(';'))
+      note:insert(pandoc.Space())
+    end
     note:extend(md_inlines(status))
   end
-  local extra = { note = pandoc.Inlines { pandoc.Emph(note) }, ref = ref }
+  local extra = { ref = ref }
+  if #note > 0 then extra.note = pandoc.Inlines { pandoc.Emph(note) } end
   -- префикс reg- остался с тех пор, как теория курса звалась реестром: на эти якоря ведут
   -- сохранённые ссылки (и редирект со старого /<course>/registry), не переименовывать
   -- один и тот же блок может повторяться (подготовка к КР: в теме и в теоретической части) —
@@ -514,40 +509,15 @@ local function render_theory_block(div)
   local n = (S.reg_seen[ref] or 0) + 1
   S.reg_seen[ref] = n
   div.identifier = 'reg-' .. ref .. (n > 1 and ('-' .. n) or '')
+  -- определение в теории — обычный абзац «**Термин** — …», без плашки и номера
+  if S.kind == 'theory' and t == 'definition' then
+    if FORMAT_LATEX then return div.content end
+    return pandoc.Div(div.content, pandoc.Attr(div.identifier, { 'nb-def' }, { { 'data-ref', ref } }))
+  end
   div.attributes['tag'] = entry.tag
   return render_box(div, t, entry.number, parts, extra)
 end
 
-local function render_course_glossary()
-  -- сначала по лекциям, внутри лекции — по алфавиту
-  local course_gl = S.glossary_index[S.course or ''] or {}
-  table.sort(course_gl, function(a, b)
-    if a.lecture ~= b.lecture then return a.lecture < b.lecture end
-    return pandoc.text.lower(a.term) < pandoc.text.lower(b.term)
-  end)
-  local titles = {}
-  for _, l in ipairs(S.lectures_index[S.course or ''] or {}) do titles[l.lecture] = l.title end
-  local out = pandoc.Blocks {}
-  local items, current = {}, nil
-  local function flush()
-    if current == nil then return end
-    local head = 'Лекция\u{00A0}' .. int_str(current)
-    if titles[current] then head = head .. '. ' .. titles[current] end
-    out:insert(pandoc.Para { pandoc.Strong(md_inlines(head)) })
-    out:insert(pandoc.DefinitionList(items))
-    items = {}
-  end
-  for _, g in ipairs(course_gl) do
-    if g.lecture ~= current then flush(); current = g.lecture end
-    local term = pandoc.read(g.term_md, 'markdown').blocks
-    local term_inl = (term[1] and term[1].content) or pandoc.Inlines { pandoc.Str(g.term) }
-    local defs = pandoc.read(g.def_md, 'markdown').blocks
-    table.insert(items, { term_inl, { defs } })
-  end
-  flush()
-  if #out == 0 then return pandoc.Blocks { pandoc.Para { pandoc.Emph { pandoc.Str('Глоссарий пока пуст.') } } } end
-  return out
-end
 
 local function render(doc)
   local c = new_counters()
@@ -557,9 +527,6 @@ local function render(doc)
     Div = function(div)
       if div.attributes['ref'] then
         return render_theory_block(div)
-      end
-      if has_class(div, 'course-glossary') then
-        return pandoc.Div(render_course_glossary(), { class = 'nb-course-glossary' })
       end
       local t = block_type(div)
       if t then
@@ -575,7 +542,6 @@ local function render(doc)
       end
       if has_class(div, 'proof') then return render_proof_like(div, 'Доказательство') end
       if has_class(div, 'solution') then return render_proof_like(div, 'Решение') end
-      if has_class(div, 'answer') then return render_answer(div) end
       if has_class(div, 'answers') then return render_answers(div) end
     end,
     CodeBlock = function(cb)
@@ -655,7 +621,7 @@ local function render(doc)
     Header = function(h)
       -- метки sec:… не трогаем: в LaTeX pandoc сам ставит \label/\hypertarget
       if FORMAT_HTML and h.level <= 3 then
-        table.insert(S.toc, { level = h.level, id = h.identifier, text = stringify(h.content) })
+        table.insert(S.toc, { level = h.level, id = h.identifier, text = text_with_math(h.content) })
       end
     end,
   }
@@ -766,13 +732,12 @@ function Pandoc(doc)
         tag = e.tag ~= '' and e.tag or nil,
       }
     end
-    local glossary = collect_glossary(doc)
     if out_path then
       write_json(out_path, {
         course = S.course, lecture = tonumber(S.lecture), week_id = S.week_id,
         kind = S.kind,
         title = meta_str(meta, 'title'), date = meta_str(meta, 'date'),
-        labels = labels, label_order = S.label_order, glossary = glossary,
+        labels = labels, label_order = S.label_order,
       })
     end
     if #errors > 0 then error('notes.lua: ' .. #errors .. ' ошибок') end
@@ -783,7 +748,6 @@ function Pandoc(doc)
   local index_path = meta_str(meta, 'notes_index')
   local idx = index_path and read_json(index_path) or {}
   S.index = idx.labels or {}
-  S.glossary_index = idx.glossary or {}
   S.lectures_index = idx.lectures or {}
 
   doc = render(doc)
@@ -796,7 +760,6 @@ function Pandoc(doc)
       local e = S.labels[id]
       table.insert(labels, { id = id, type = e.type, name = e.name, number = e.number, title = e.title })
     end
-    local glossary = S.kind == 'notes' and collect_glossary(doc, 'html') or {}
     write_json(out_path, {
       course = S.course, course_name = meta_str(doc.meta, 'course_name'),
       kind = S.kind, lecture = tonumber(S.lecture), week_id = S.week_id,
@@ -805,7 +768,7 @@ function Pandoc(doc)
       highlight_from = meta_str(meta, 'highlight_from'),
       date_ru = meta_str(doc.meta, 'date_ru'),
       header_line = meta_str(doc.meta, 'header_line'),
-      toc = S.toc, labels = labels, figures = S.figures, glossary = glossary,
+      toc = S.toc, labels = labels, figures = S.figures,
     })
   end
 

@@ -5,50 +5,47 @@ title: "Теория: математический анализ"
 
 # Соглашения курса
 
-Здесь только то, что в курсе принято иначе, чем в других книгах и курсах, или обозначается по-своему. Ловушки и корнер-кейсы — в замечаниях лекций.
+- $\N = \{1, 2, 3, \dots\}$: последовательности начинаются с $a_1$, индукция — с $P(1)$. В дискретной математике $0 \in \N$.
+- $C_n^k$ — число сочетаний из $n$ по $k$ ($n$ снизу); в англоязычной литературе $\binom{n}{k}$.
+- «Возрастающая» — строго: $a_n < a_{n+1}$; нестрогая — «неубывающая».
+- Бесконечно большая: $|a_n| \to +\infty$, знак не важен; $(-1)^n n \to \infty$, но не к $+\infty$ и не к $-\infty$.
+- $a^x$, $\ln x$, $x^\alpha$ до лекции 11 берутся со школьными свойствами, их непрерывность — на веру; в лекции 11 она доказана.
+- $\operatorname{tg}$, $\operatorname{ctg}$, $\operatorname{arctg}$ — русская запись $\tan$, $\cot$, $\arctan$.
+- $o(g)$, $O(g)$ и $\sim$ — только для $g$, не обращающихся в ноль около точки.
+- Устранимый разрыв не считается разрывом первого рода: первый род — только скачок.
+- Производная — только конечный предел; «бесконечная производная» производной не считается.
 
-- $\N = \{1, 2, 3, \dots\}$, $0 \notin \N$: последовательности начинаются с $a_1$, индукция — с $P(1)$ [-@rem:lec01:naturals]. В дискретной математике соглашение обратное.
-- Число сочетаний $C_n^k$: $n$ снизу, $k$ сверху (в англоязычной литературе $\binom{n}{k}$, $n$ сверху) [-@rem:lec02:notation]; сочетания с повторениями — $\overline{C}_n^k = C_{n+k-1}^k$ ($n$ видов снизу), в задачах встречается запись $\overline{C_k^n}$ с $n$ сверху [-@rem:lec02:repetitions-notation].
-- «Возрастающая» последовательность — строго ($a_n < a_{n+1}$), нестрогая — «неубывающая» [-@rem:lec02:increasing-convention].
-- Ограниченность последовательности сверху определяется строгим неравенством $a_n < C$ [-@rem:lec02:strict], ограниченность множества — нестрогим $a \le C$ [-@rem:lec05:nonstrict]; на сами понятия это не влияет.
-- Бесконечно большая — это стремление к $\infty$ без знака: $(-1)^n n \to \infty$, но не к $\pm\infty$ [-@rem:lec04:infinity-symbol].
-- Показательная функция, $\ln x$ и степени $x^\alpha$ с вещественным показателем до строгого определения используются со школьными свойствами, а их непрерывность (предел равен значению) принимается на веру [-@rem:lec08:elementary]; в лекции 11 они определены строго ($a^x$ — через супремум рациональных степеней, [-@def:lec11:exp]) и их непрерывность доказана, алгебраические правила $a^{x+y} = a^x a^y$, $(a^x)^y = a^{xy}$ приняты без доказательства.
-- $\arcsin$, $\arccos$, $\operatorname{arctg}$, $\operatorname{arcctg}$ — обратные к $\sin$ на $\left[-\frac\pi2;\ \frac\pi2\right]$, $\cos$ на $[0;\ \pi]$, $\operatorname{tg}$ на $\left(-\frac\pi2;\ \frac\pi2\right)$, $\operatorname{ctg}$ на $(0;\ \pi)$; обозначения $\operatorname{tg}$, $\operatorname{ctg}$, $\operatorname{arctg}$ — русская традиция (в англоязычной литературе $\tan$, $\arctan$) [-@def:lec11:arc].
-- $f = o(g)$, $f = O(g)$ и $f \sim g$ определяются через отношение $\frac fg$, поэтому только для $g$, не обращающихся в ноль около точки [-@rem:lec09:g-nonzero].
-- Разрывы делятся на три непересекающихся класса: устранимый, первого рода (только скачок: односторонние пределы конечны и различны) и второго рода; во многих учебниках устранимые разрывы тоже относят к первому роду [-@rem:lec09:first-kind].
-- Производная — только конечный предел разностного отношения; «бесконечная производная» производной не считается [-@rem:lec11:infinite].
-
-# Лекция 1 — Высказывания, предикаты, кванторы. Метод математической индукции. Неравенство Бернулли
+# 1. Логика и индукция
 
 ::: {.definition ref="def:lec01:statement"}
-Высказывание — утверждение, про которое можно сказать, истинно оно или ложно.
+**Высказывание** — утверждение, про которое можно сказать, истинно оно или ложно.
 :::
 
 ::: {.definition ref="def:lec01:predicate"}
-Предикат — утверждение, зависящее от переменных, которое становится высказыванием при любых значениях переменных.
+**Предикат** — утверждение, зависящее от переменных, которое становится высказыванием при любых значениях переменных.
 :::
 
 ::: {.definition ref="def:lec01:quantifiers"}
-$\forall x \in X\ P(x)$ истинно, если $P(x)$ истинно при каждом $x \in X$; $\exists x \in X\ P(x)$ истинно, если $P(x)$ истинно хотя бы при одном $x \in X$.
+**Кванторы.** $\forall x \in X\ P(x)$ истинно, если $P(x)$ истинно при каждом $x \in X$; $\exists x \in X\ P(x)$ истинно, если $P(x)$ истинно хотя бы при одном $x \in X$.
 :::
 
-::: {.proposition ref="prop:lec01:order" status="доказано в лекции 1"}
+::: {.proposition ref="prop:lec01:order"}
 Одноимённые кванторы перестановочны; $\exists y\, \forall x\ P \Rightarrow \forall x\, \exists y\ P$; обратное неверно. *Идея:* одно $y_0$ из левой части годится для всех $x$; контрпример к обратному — предикат $y \ge x^2$: $\forall x\, \exists y$ истинно, $\exists y\, \forall x$ ложно.
 :::
 
 ::: {.definition ref="def:lec01:operations"}
-$A \wedge B$ истинна, когда истинны обе; $A \vee B$ — когда истинна хотя бы одна; $\lnot A$ — когда $A$ ложно; $A \Rightarrow B$ ложна только при истинной $A$ и ложной $B$; $A \Leftrightarrow B$ — это $(A \Rightarrow B) \wedge (B \Rightarrow A)$.
+**Логические операции.** $A \wedge B$ истинна, когда истинны обе; $A \vee B$ — когда истинна хотя бы одна; $\lnot A$ — когда $A$ ложно; $A \Rightarrow B$ ложна только при истинной $A$ и ложной $B$; $A \Leftrightarrow B$ — это $(A \Rightarrow B) \wedge (B \Rightarrow A)$.
 :::
 
 ::: {.definition ref="def:lec01:tautology"}
-Тавтология — формула, истинная при всех наборах значений входящих в неё высказываний; формулы равносильны, если их значения совпадают при каждом наборе.
+**Тавтология** — формула, истинная при всех наборах значений входящих в неё высказываний; формулы равносильны, если их значения совпадают при каждом наборе.
 :::
 
-::: {.proposition ref="prop:lec01:laws" status="доказано в лекции 1"}
+::: {.proposition ref="prop:lec01:laws"}
 Равносильны: $\lnot\lnot A$ и $A$; $\lnot(A \wedge B)$ и $\lnot A \vee \lnot B$; $\lnot(A \vee B)$ и $\lnot A \wedge \lnot B$; $A \Rightarrow B$ и $\lnot A \vee B$; $\lnot(A \Rightarrow B)$ и $A \wedge \lnot B$; $A \Rightarrow B$ и $\lnot B \Rightarrow \lnot A$. *Идея:* таблицы истинности.
 :::
 
-::: {.theorem ref="thm:lec01:negation" status="доказано в лекции 1"}
+::: {.theorem ref="thm:lec01:negation"}
 $\lnot \forall x \in X\ P(x) \Leftrightarrow \exists x \in X\ \lnot P(x)$, $\lnot \exists x \in X\ P(x) \Leftrightarrow \forall x \in X\ \lnot P(x)$; для цепочки кванторов $\lnot$ проносится слева направо, ограничения $x \in X$ сохраняются. *Идея:* $\forall$-высказывание ложно ровно тогда, когда есть контрпример.
 :::
 
@@ -56,96 +53,96 @@ $\lnot \forall x \in X\ P(x) \Leftrightarrow \exists x \in X\ \lnot P(x)$, $\lno
 Если $P(1)$ и $\forall k \in \N\ (P(k) \Rightarrow P(k+1))$, то $\forall n \in \N\ P(n)$.
 :::
 
-::: {.proposition ref="prop:lec01:sum" status="доказано в лекции 1"}
+::: {.proposition ref="prop:lec01:sum"}
 $1 + 2 + \dots + n = \frac{n(n+1)}{2}$. *Идея:* индукция, $\frac{k(k+1)}{2} + (k + 1) = \frac{(k+1)(k+2)}{2}$.
 :::
 
-::: {.proposition ref="prop:lec01:induction-n0" status="доказано в лекции 1"}
+::: {.proposition ref="prop:lec01:induction-n0"}
 Если $P(n_0)$ и $\forall k \ge n_0\ (P(k) \Rightarrow P(k+1))$, то $P(n)$ при всех $n \ge n_0$. *Идея:* обычная индукция для $Q(m) = P(m + n_0 - 1)$.
 :::
 
-::: {.proposition ref="prop:lec01:induction-two" status="доказано в лекции 1"}
+::: {.proposition ref="prop:lec01:induction-two"}
 Если $P(1)$, $P(2)$ и $\forall k\ (P(k) \wedge P(k+1) \Rightarrow P(k+2))$, то $\forall n\ P(n)$. *Идея:* обычная индукция для $Q(n) = P(n) \wedge P(n+1)$.
 :::
 
-::: {.theorem ref="thm:lec01:bernoulli" status="доказано в лекции 1"}
+::: {.theorem ref="thm:lec01:bernoulli"}
 $\forall n \in \N\ \forall x \ge -1\colon (1 + x)^n \ge 1 + nx$. *Идея:* индукция по $n$; в переходе домножаем на $1 + x \ge 0$ и отбрасываем $kx^2 \ge 0$.
 :::
 
-# Лекция 2 — Комбинаторика и бином Ньютона. Последовательности, монотонность, ограниченность
+# 2. Комбинаторика и последовательности
 
 ::: {.definition ref="def:lec02:permutation"}
-Перестановка $n$-элементного множества — упорядоченный набор всех его элементов; их число $P_n$.
+**Перестановка** $n$-элементного множества — упорядоченный набор всех его элементов; их число $P_n$.
 :::
 
-::: {.proposition ref="prop:lec02:permutations" status="доказано в лекции 2"}
+::: {.proposition ref="prop:lec02:permutations"}
 $P_n = n!$. *Идея:* правило произведения: $n$ вариантов на первое место, $n - 1$ на второе, …
 :::
 
 ::: {.definition ref="def:lec02:arrangement"}
-Размещение из $n$ по $k$ ($0 \le k \le n$) — упорядоченный набор $k$ различных элементов $n$-элементного множества; их число $A_n^k$.
+**Размещение** из $n$ по $k$ ($0 \le k \le n$) — упорядоченный набор $k$ различных элементов $n$-элементного множества; их число $A_n^k$.
 :::
 
-::: {.proposition ref="prop:lec02:arrangements" status="доказано в лекции 2"}
+::: {.proposition ref="prop:lec02:arrangements"}
 $A_n^k = n(n-1)\cdots(n-k+1) = \frac{n!}{(n-k)!}$; $0! = 1$. *Идея:* правило произведения для $k$ мест.
 :::
 
 ::: {.definition ref="def:lec02:combination"}
-Сочетание из $n$ по $k$ ($0 \le k \le n$) — $k$-элементное подмножество $n$-элементного множества; их число $C_n^k$.
+**Сочетание** из $n$ по $k$ ($0 \le k \le n$) — $k$-элементное подмножество $n$-элементного множества; их число $C_n^k$.
 :::
 
-::: {.proposition ref="prop:lec02:combinations" status="доказано в лекции 2"}
+::: {.proposition ref="prop:lec02:combinations"}
 $C_n^k = \frac{A_n^k}{k!} = \frac{n!}{k!(n-k)!}$. *Идея:* каждое сочетание соответствует ровно $k!$ размещениям.
 :::
 
-::: {.proposition ref="prop:lec02:pascal" status="доказано в лекции 2"}
+::: {.proposition ref="prop:lec02:pascal"}
 $C_n^k = C_n^{n-k}$; $C_n^k = C_{n-1}^k + C_{n-1}^{k-1}$ при $1 \le k \le n - 1$. *Идея:* подмножество ↔ дополнение; разбиение подмножеств по тому, содержат ли они фиксированный элемент.
 :::
 
-::: {.proposition ref="prop:lec02:repetitions" status="доказано в лекции 2"}
+::: {.proposition ref="prop:lec02:repetitions"}
 $\overline{A}_n^k = n^k$; $P(n; m_1, \dots, m_s) = \frac{n!}{m_1! \cdots m_s!}$; $\overline{C}_n^k = C_{n+k-1}^k$. *Идея:* правило произведения; деление на перестановки одинаковых букв; кодирование звёздочками и перегородками.
 :::
 
-::: {.theorem ref="thm:lec02:binomial" status="доказано в лекции 2"}
+::: {.theorem ref="thm:lec02:binomial"}
 $(a + b)^n = \sum_{k=0}^{n} C_n^k a^k b^{n-k}$ (здесь $0^0 = 1$). *Идея:* при раскрытии $n$ скобок одночлен $a^k b^{n-k}$ получается столько раз, сколькими способами можно выбрать $k$ скобок, из которых берётся $a$.
 :::
 
-::: {.corollary ref="cor:lec02:sum" status="доказано в лекции 2"}
+::: {.corollary ref="cor:lec02:sum"}
 $\sum_{k=0}^{n} C_n^k = 2^n$, $\sum_{k=0}^{n} (-1)^k C_n^k = 0$. *Идея:* $a = b = 1$ и $a = -1$, $b = 1$ в формуле бинома.
 :::
 
-::: {.theorem ref="thm:lec02:multinomial" status="доказано в лекции 2"}
+::: {.theorem ref="thm:lec02:multinomial"}
 $(x_1 + \dots + x_s)^n = \sum_{m_1 + \dots + m_s = n} P(n; m_1, \dots, m_s) x_1^{m_1} \cdots x_s^{m_s}$. *Идея:* как у бинома — число слов из $m_1$ букв $x_1$, …, $m_s$ букв $x_s$.
 :::
 
 ::: {.definition ref="def:lec02:sequence"}
-Последовательность $(a_n)_{n \in \N}$ — набор вещественных чисел, пронумерованных натуральными индексами (функция $\N \to \R$).
+**Последовательность** $(a_n)_{n \in \N}$ — набор вещественных чисел, пронумерованных натуральными индексами (функция $\N \to \R$).
 :::
 
 ::: {.definition ref="def:lec02:monotone"}
-Возрастающая: $a_n < a_{n+1}$; убывающая: $a_n > a_{n+1}$; неубывающая: $a_n \le a_{n+1}$; невозрастающая: $a_n \ge a_{n+1}$ (при всех $n \in \N$); монотонная — любого из этих типов.
+**Монотонная последовательность** — любого из четырёх типов: возрастающая $a_n < a_{n+1}$, убывающая $a_n > a_{n+1}$, неубывающая $a_n \le a_{n+1}$, невозрастающая $a_n \ge a_{n+1}$ (при всех $n \in \N$).
 :::
 
 ::: {.definition ref="def:lec02:bounded-above"}
-Ограниченная сверху: $\exists C \in \R\ \forall n \in \N\colon a_n < C$; снизу: $\exists C \in \R\ \forall n\colon a_n > C$; ограниченная — и сверху, и снизу.
+**Ограниченная сверху** последовательность: $\exists C \in \R\ \forall n \in \N\colon a_n < C$; снизу: $\exists C \in \R\ \forall n\colon a_n > C$; ограниченная — и сверху, и снизу.
 :::
 
-::: {.proposition ref="prop:lec02:bounded-abs" status="доказано в лекции 2"}
+::: {.proposition ref="prop:lec02:bounded-abs"}
 $(a_n)$ ограничена $\Leftrightarrow \exists C > 0\ \forall n\colon |a_n| < C$. *Идея:* «$\Leftarrow$»: $-C < a_n < C$; «$\Rightarrow$»: $C = |C_1| + |C_2|$.
 :::
 
-# Лекция 3 — Предел последовательности. Единственность предела, ограниченность сходящейся последовательности, предел суммы
+# 3. Предел последовательности
 
 ::: {.definition ref="def:lec03:neighborhood"}
-$\varepsilon$-окрестность точки $a$: $U_\varepsilon(a) = (a - \varepsilon, a + \varepsilon)$, $\varepsilon > 0$.
+**$\varepsilon$-окрестность** точки $a$: $U_\varepsilon(a) = (a - \varepsilon, a + \varepsilon)$, $\varepsilon > 0$.
 :::
 
 ::: {.definition ref="def:lec03:limit"}
-$\lim\limits_{n \to \infty} a_n = a \in \R$, если $\forall \varepsilon > 0\ \exists N = N(\varepsilon) \in \N\ \forall n > N\colon |a_n - a| < \varepsilon$. 
+**Предел последовательности:** $\lim\limits_{n \to \infty} a_n = a \in \R$, если $\forall \varepsilon > 0\ \exists N = N(\varepsilon) \in \N\ \forall n > N\colon |a_n - a| < \varepsilon$.
 :::
 
 ::: {.definition ref="def:lec03:convergent"}
-Сходящаяся — имеет предел-число; расходящаяся — не имеет: $\forall a\ \exists \varepsilon > 0\ \forall N\ \exists n > N\colon |a_n - a| \ge \varepsilon$.
+**Сходящаяся последовательность** — та, у которой есть конечный предел; расходящаяся — та, у которой его нет: $\forall a\ \exists \varepsilon > 0\ \forall N\ \exists n > N\colon |a_n - a| \ge \varepsilon$.
 :::
 
 ::: {.proposition ref="prop:lec03:finitely-many" status="доказательство — на семинаре"}
@@ -156,801 +153,796 @@ $a_n \to a \Leftrightarrow$ для любого $\varepsilon > 0$ вне $U_\var
 Изменение конечного числа членов и сдвиг номера $b_n = a_{n \pm p}$ не меняют сходимости и предела. *Идея:* $N_b = \max(N_a, n_0)$ или $\max(N_a + p, n_0)$.
 :::
 
-::: {.theorem ref="thm:lec03:uniqueness" status="доказано в лекции 3"}
+::: {.theorem ref="thm:lec03:uniqueness"}
 Если $a_n \to a$ и $a_n \to b$, то $a = b$. *Идея:* от противного; окрестности радиуса $\frac{|b - a|}{3}$ не пересекаются, а член с номером $n > \max(N_1, N_2)$ лежит в обеих.
 :::
 
-::: {.theorem ref="thm:lec03:bounded" status="доказано в лекции 3"}
+::: {.theorem ref="thm:lec03:bounded"}
 Сходящаяся последовательность ограничена. *Идея:* $\varepsilon = 2$; $m = \min(a_1, \dots, a_N, a - 2)$, $M = \max(a_1, \dots, a_N, a + 2)$, $m \le a_n \le M$.
 :::
 
-::: {.corollary ref="cor:lec03:unbounded" status="доказано в лекции 3"}
+::: {.corollary ref="cor:lec03:unbounded"}
 Неограниченная последовательность расходится. Обратное неверно: $(-1)^n$ ограничена и расходится.
 :::
 
-::: {.proposition ref="prop:lec03:triangle" status="доказано в лекции 3"}
-Неравенство треугольника: $|x + y| \le |x| + |y|$; равносильная форма $|u - v| \le |u - w| + |w - v|$.
+::: {.proposition ref="prop:lec03:triangle"}
+$|x + y| \le |x| + |y|$; равносильная форма $|u - v| \le |u - w| + |w - v|$.
 :::
 
-::: {.theorem ref="thm:lec03:sum" status="доказано в лекции 3"}
-Арифметика предела: если $a_n \to a$, $b_n \to b$, то (1) $a_n \pm b_n \to a \pm b$; (2) $a_n b_n \to ab$; (3) $\frac{a_n}{b_n} \to \frac ab$ при $b_n \ne 0$, $b \ne 0$. Пункт 1 доказан в лекции 3, пункты 2–3 — в лекции 4. *Идея* (1): $|(a_n + b_n) - (a + b)| \le |a_n - a| + |b_n - b|$, номера для $\frac\varepsilon2$, $N = \max(N_1, N_2)$.
+::: {.theorem ref="thm:lec03:sum"}
+Если $a_n \to a$, $b_n \to b$, то (1) $a_n \pm b_n \to a \pm b$; (2) $a_n b_n \to ab$; (3) $\frac{a_n}{b_n} \to \frac ab$ при $b_n \ne 0$, $b \ne 0$. Пункт 1 доказан в лекции 3, пункты 2–3 — в лекции 4. *Идея* (1): $|(a_n + b_n) - (a + b)| \le |a_n - a| + |b_n - b|$, номера для $\frac\varepsilon2$, $N = \max(N_1, N_2)$.
 :::
 
-# Лекция 4 — Бесконечно малые и бесконечно большие последовательности. Арифметика предела. Предельный переход в неравенствах. Теорема о двух милиционерах
+# 4. Бесконечно малые и арифметика предела
 
 ::: {.definition ref="def:lec04:infinite-limit"}
-$\lim a_n = \infty$: $\forall M > 0\ \exists N = N(M)\ \forall n > N\colon |a_n| > M$; $\lim a_n = +\infty$: то же с $a_n > M$; $\lim a_n = -\infty$: с $a_n < -M$.
+**Бесконечный предел:** $\lim a_n = \infty$, если $\forall M > 0\ \exists N = N(M)\ \forall n > N\colon |a_n| > M$; $\lim a_n = +\infty$ — то же с $a_n > M$; $\lim a_n = -\infty$ — с $a_n < -M$.
 :::
 
 ::: {.definition ref="def:lec04:small-large"}
-Бесконечно малая (б.м.): $a_n \to 0$; бесконечно большая (б.б.): $a_n \to \infty$ (без знака).
+**Бесконечно малая** (б.м.): $a_n \to 0$; **бесконечно большая** (б.б.): $a_n \to \infty$ (без знака).
 :::
 
-::: {.proposition ref="prop:lec04:reciprocal" status="доказано в лекции 4"}
+::: {.proposition ref="prop:lec04:reciprocal"}
 $\frac{1}{\text{б.б.}}$ — б.м.; $\frac{1}{\text{б.м.}}$ — б.б. (при $a_n \ne 0$). *Идея:* $\left|\frac{1}{a_n}\right| < \varepsilon \Leftrightarrow |a_n| > \frac1\varepsilon$; номер $N\left(\frac1\varepsilon\right)$.
 :::
 
-::: {.proposition ref="prop:lec04:bounded-small" status="доказано в лекции 4"}
+::: {.proposition ref="prop:lec04:bounded-small"}
 Ограниченная, умноженная на б.м., — б.м. *Идея:* $|a_n b_n| \le C|b_n|$, номер $N\left(\frac\varepsilon C\right)$.
 :::
 
-::: {.corollary ref="cor:lec04:small-algebra" status="доказано в лекции 4"}
+::: {.corollary ref="cor:lec04:small-algebra"}
 Сумма, разность, произведение б.м. и произведение б.м. на число — б.м.; б.м. ограничена.
 :::
 
-::: {.lemma ref="lem:lec04:decomposition" status="доказано в лекции 4"}
+::: {.lemma ref="lem:lec04:decomposition"}
 $a_n \to a \Leftrightarrow a_n = a + \alpha_n$, где $\alpha_n$ — б.м.
 :::
 
-::: {.theorem ref="thm:lec04:product" status="доказано в лекции 4"}
+::: {.theorem ref="thm:lec04:product"}
 Если $a_n \to a$, $b_n \to b$, то $a_n b_n \to ab$. *Идея:* $a_n b_n - ab = a\beta_n + b\alpha_n + \alpha_n\beta_n$ — сумма б.м.
 :::
 
 ::: {.definition ref="def:lec04:separated"}
-$(d_n)$ отделима от нуля: $\exists \delta > 0\ \forall n \in \N\colon |d_n| > \delta$.
+**Отделимая от нуля** последовательность: $\exists \delta > 0\ \forall n \in \N\colon |d_n| > \delta$.
 :::
 
-::: {.proposition ref="prop:lec04:separated" status="доказано в лекции 4"}
+::: {.proposition ref="prop:lec04:separated"}
 Если $a_n \to a \ne 0$ и $a_n \ne 0$ при всех $n$, то $(a_n)$ отделима от нуля. *Идея:* $\varepsilon_0 = \frac{|a|}{2}$, $\delta = \frac12\min\left(|a_1|, \dots, |a_N|, \frac{|a|}{2}\right)$.
 :::
 
-::: {.proposition ref="prop:lec04:reciprocal-bounded" status="доказано в лекции 4"}
+::: {.proposition ref="prop:lec04:reciprocal-bounded"}
 $\frac{1}{\text{отделимая}}$ — ограниченная ($C = \frac1\delta$); $\frac{1}{\text{ограниченная}}$ — отделимая (при $c_n \ne 0$, $\delta = \frac1C$).
 :::
 
-::: {.theorem ref="thm:lec04:quotient" status="доказано в лекции 4"}
+::: {.theorem ref="thm:lec04:quotient"}
 Если $a_n \to a$, $b_n \to b \ne 0$, $b_n \ne 0$, то $\frac{a_n}{b_n} \to \frac ab$. *Идея:* $\frac{a_n}{b_n} - \frac ab = \frac1b \cdot \frac{1}{b_n} \cdot (b\alpha_n - a\beta_n)$ — ограниченная · б.м.; $\frac{1}{b_n}$ ограничена, так как $b_n$ отделима от нуля.
 :::
 
-::: {.theorem ref="thm:lec04:inequality" status="доказано в лекции 4"}
+::: {.theorem ref="thm:lec04:inequality"}
 Если $a_n \to a$, $b_n \to b$ и $a_n \ge b_n$ при $n > N$, то $a \ge b$. Из строгого неравенства следует только нестрогое ($\frac1n > 0$). *Идея:* от противного, $\varepsilon_0 = \frac{b - a}{3}$, непересекающиеся окрестности дают $a_n < b_n$.
 :::
 
-::: {.corollary ref="cor:lec04:bound-limit" status="доказано в лекции 4"}
+::: {.corollary ref="cor:lec04:bound-limit"}
 Если $a_n \to a$ и $a_n \le C$ (соответственно $\ge C$) с некоторого номера, то $a \le C$ (соответственно $a \ge C$).
 :::
 
-::: {.theorem ref="thm:lec04:squeeze" status="доказано в лекции 4"}
-Теорема о двух милиционерах: если $a_n \le b_n \le c_n$ при $n > N$ и $a_n \to a$, $c_n \to a$, то $b_n \to a$. *Идея:* $a - \varepsilon < a_n \le b_n \le c_n < a + \varepsilon$ при $n > \max(N, N_1, N_2)$.
+::: {.theorem ref="thm:lec04:squeeze"}
+Если $a_n \le b_n \le c_n$ при $n > N$ и $a_n \to a$, $c_n \to a$, то $b_n \to a$. *Идея:* $a - \varepsilon < a_n \le b_n \le c_n < a + \varepsilon$ при $n > \max(N, N_1, N_2)$.
 :::
 
 ::: {.definition ref="def:lec04:indeterminate"}
-Неопределённость — частное, произведение, сумма или разность б.м. и/или б.б., предел которых не определён типами частей: $\frac00$, $\frac\infty\infty$, $\infty - \infty$, $0 \cdot \infty$.
+**Неопределённость** — частное, произведение, сумма или разность б.м. и/или б.б., предел которых не определён типами частей: $\frac00$, $\frac\infty\infty$, $\infty - \infty$, $0 \cdot \infty$.
 :::
 
-::: {.proposition ref="prop:lec04:standard" status="доказано в лекции 4"}
+::: {.proposition ref="prop:lec04:standard"}
 $q^n \to 0$ ($|q| < 1$), $\to +\infty$ ($q > 1$), $\to \infty$ ($q < -1$), $= 1$ ($q = 1$); $\sqrt[n]{a} \to 1$ ($a > 0$); $\sqrt[n]{n} \to 1$; $\frac{n^k}{a^n} \to 0$ ($a > 1$); $\frac{a^n}{n!} \to 0$; $\frac{n!}{n^n} \to 0$. *Идея:* Бернулли или один член бинома + теорема о двух милиционерах; для $\frac{a^n}{n!}$ — множители $\frac{|a|}{j} \le \frac12$ при $j > 2|a|$.
 :::
 
-# Лекция 5 — Аксиома непрерывности. Точные грани. Теорема Вейерштрасса. Число e. Подпоследовательности
+# 5. Точные грани и число $e$
 
 ::: {.axiom ref="ax:lec05:continuity"}
 Если $A, B \subseteq \R$ непусты и $a \le b$ для всех $a \in A$, $b \in B$, то $\exists c \in \R$: $a \le c \le b$ для всех $a \in A$, $b \in B$.
 :::
 
 ::: {.definition ref="def:lec05:bounded-set"}
-$A \subseteq \R$ ограничено сверху: $\exists C \in \R\ \forall a \in A\colon a \le C$ (нестрого); снизу: $a \ge C$; ограничено — и сверху, и снизу.
+**Ограниченное сверху** множество $A \subseteq \R$: $\exists C \in \R\ \forall a \in A\colon a \le C$ (нестрого); снизу: $a \ge C$; ограниченное — и сверху, и снизу.
 :::
 
 ::: {.definition ref="def:lec05:upper-bound"}
-Верхняя грань множества $A$ — число $c$ с $c \ge a$ для всех $a \in A$.
+**Верхняя грань** множества $A$ — число $c$ с $c \ge a$ для всех $a \in A$.
 :::
 
 ::: {.definition ref="def:lec05:sup"}
-$\sup A$ (точная верхняя грань, супремум) — наименьшая из верхних граней ограниченного сверху множества $A$.
+**Точная верхняя грань** (супремум) $\sup A$ — наименьшая из верхних граней ограниченного сверху множества $A$.
 :::
 
-::: {.proposition ref="prop:lec05:max" status="доказано в лекции 5"}
+::: {.proposition ref="prop:lec05:max"}
 Если существует $\max A$, то $\sup A = \max A$.
 :::
 
-::: {.theorem ref="thm:lec05:sup-exists" status="доказано в лекции 5"}
+::: {.theorem ref="thm:lec05:sup-exists"}
 Непустое ограниченное сверху $A \subseteq \R$ имеет $\sup A$. *Идея:* аксиома непрерывности для $A$ и множества $B$ всех его верхних граней; разделяющее $c$ — верхняя грань, не большая любой другой.
 :::
 
 ::: {.definition ref="def:lec05:inf"}
-Нижняя грань: $c \le a$ для всех $a \in A$; $\inf A$ (инфимум) — наибольшая из нижних граней.
+**Нижняя грань** — число $c$ с $c \le a$ для всех $a \in A$; **точная нижняя грань** (инфимум) $\inf A$ — наибольшая из нижних граней.
 :::
 
-::: {.corollary ref="cor:lec05:inf-exists" status="доказано в лекции 5"}
+::: {.corollary ref="cor:lec05:inf-exists"}
 Непустое ограниченное снизу множество имеет $\inf A = -\sup(-A)$.
 :::
 
-::: {.proposition ref="prop:lec05:sup-eps" status="доказано в лекции 5"}
+::: {.proposition ref="prop:lec05:sup-eps"}
 $s = \sup A$ ($A \ne \varnothing$) $\Leftrightarrow$ (1) $a \le s$ для всех $a \in A$; (2) $\forall \varepsilon > 0\ \exists a \in A\colon a > s - \varepsilon$. Для $\inf$ — симметрично. *Идея:* $s - \varepsilon$ не может быть верхней гранью; обратно, верхняя грань $c < s$ противоречит (2) при $\varepsilon = s - c$.
 :::
 
-::: {.theorem ref="thm:lec05:weierstrass" status="доказано в лекции 5"}
-Теорема Вейерштрасса: неубывающая ограниченная сверху последовательность сходится, и $\lim a_n = \sup a_n$. *Идея:* если $a_N > \sup - \varepsilon$, то по монотонности это верно при всех $n > N$; если такого $N$ нет, то $\sup - \varepsilon$ — верхняя грань меньше супремума.
+::: {.theorem ref="thm:lec05:weierstrass"}
+Неубывающая ограниченная сверху последовательность сходится, и $\lim a_n = \sup a_n$. *Идея:* если $a_N > \sup - \varepsilon$, то по монотонности это верно при всех $n > N$; если такого $N$ нет, то $\sup - \varepsilon$ — верхняя грань меньше супремума.
 :::
 
-::: {.corollary ref="cor:lec05:weierstrass-dec" status="доказано в лекции 5"}
+::: {.corollary ref="cor:lec05:weierstrass-dec"}
 Невозрастающая ограниченная снизу последовательность сходится к $\inf a_n$.
 :::
 
-::: {.proposition ref="prop:lec05:monotone-infinite" status="доказано в лекции 5"}
+::: {.proposition ref="prop:lec05:monotone-infinite"}
 Неубывающая неограниченная сверху последовательность стремится к $+\infty$; невозрастающая неограниченная снизу — к $-\infty$.
 :::
 
-::: {.theorem ref="thm:lec05:e" status="доказано в лекции 5"}
+::: {.theorem ref="thm:lec05:e"}
 $\left(1 + \frac1n\right)^n$ сходится. *Идея:* возрастает — отношение соседних членов $\frac{n+2}{n+1}\left(1 - \frac{1}{(n+1)^2}\right)^n > 1$ по Бернулли; ограничена числом $3$ — бином и телескопическая сумма; дальше теорема Вейерштрасса.
 :::
 
 ::: {.definition ref="def:lec05:e"}
-$e = \lim\limits_{n \to \infty} \left(1 + \frac1n\right)^n \approx 2{,}718$.
+**Число $e$** $= \lim\limits_{n \to \infty} \left(1 + \frac1n\right)^n \approx 2{,}718$.
 :::
 
 ::: {.definition ref="def:lec05:subsequence"}
-Подпоследовательность $(a_n)$ — последовательность $b_k = a_{n_k}$, где $n_1 < n_2 < n_3 < \dots$
+**Подпоследовательность** $(a_n)$ — последовательность $b_k = a_{n_k}$, где $n_1 < n_2 < n_3 < \dots$
 :::
 
-::: {.lemma ref="lem:lec05:nk" status="доказано в лекции 5"}
+::: {.lemma ref="lem:lec05:nk"}
 $n_k \ge k$ при всех $k$ (индукция).
 :::
 
-::: {.proposition ref="prop:lec05:subseq-limit" status="доказано в лекции 5"}
+::: {.proposition ref="prop:lec05:subseq-limit"}
 Если $a_n \to a$, то $a_{n_k} \to a$ (так же для $\pm\infty$). *Идея:* $K = N$, так как $n_k \ge k$.
 :::
 
-::: {.corollary ref="cor:lec05:divergence" status="доказано в лекции 5"}
+::: {.corollary ref="cor:lec05:divergence"}
 Расходящаяся подпоследовательность или две подпоследовательности с разными пределами означают расходимость $(a_n)$.
 :::
 
-::: {.proposition ref="prop:lec05:e-power" status="доказано в лекции 5"}
+::: {.proposition ref="prop:lec05:e-power"}
 $\left(1 + \frac kn\right)^n \to e^k$, $\left(1 - \frac kn\right)^n \to e^{-k}$, $k \in \N$. *Идея:* $1 + \frac kn = \prod_{j=0}^{k-1}\left(1 + \frac{1}{n+j}\right)$; для второго — $1 - \frac kn = 1 \Big/ \left(1 + \frac{k}{n - k}\right)$ и сдвиг номера на $k$.
 :::
 
-::: {.proposition ref="prop:lec05:root" status="доказано в лекции 5"}
+::: {.proposition ref="prop:lec05:root"}
 Если $y_n \ge 0$, $y_n \to y$, то $\sqrt[k]{y_n} \to \sqrt[k]{y}$. *Идея:* $\left|\sqrt[k]{y_n} - \sqrt[k]{y}\right| \le \frac{|y_n - y|}{(\sqrt[k]{y})^{k-1}}$ при $y > 0$.
 :::
 
-# Лекция 6 — Теорема Больцано–Вейерштрасса. Критерий Коши. Частичные пределы и предельные точки. Верхний и нижний пределы
+# 6. Критерий Коши и частичные пределы
 
-::: {.theorem ref="thm:lec06:bw" status="доказано в лекции 6"}
-Теорема Больцано–Вейерштрасса: у ограниченной последовательности есть сходящаяся подпоследовательность. *Идея:* деление пополам с сохранением половины, где бесконечно много членов; концы вложенных отрезков сходятся к общему пределу по теореме Вейерштрасса; выбранные члены зажаты между концами.
+::: {.theorem ref="thm:lec06:bw"}
+У ограниченной последовательности есть сходящаяся подпоследовательность. *Идея:* деление пополам с сохранением половины, где бесконечно много членов; концы вложенных отрезков сходятся к общему пределу по теореме Вейерштрасса; выбранные члены зажаты между концами.
 :::
 
-::: {.proposition ref="prop:lec06:unbounded-subseq" status="доказано в лекции 6"}
+::: {.proposition ref="prop:lec06:unbounded-subseq"}
 Неограниченная сверху (снизу) последовательность имеет подпоследовательность, стремящуюся к $+\infty$ ($-\infty$).
 :::
 
-::: {.corollary ref="cor:lec06:any-subseq" status="доказано в лекции 6"}
+::: {.corollary ref="cor:lec06:any-subseq"}
 У любой последовательности есть подпоследовательность с конечным пределом или пределом $\pm\infty$.
 :::
 
 ::: {.definition ref="def:lec06:fundamental"}
-Фундаментальная последовательность (последовательность Коши): $\forall \varepsilon > 0\ \exists N = N(\varepsilon)\ \forall m, n > N\colon |a_m - a_n| < \varepsilon$.
+**Фундаментальная последовательность** (последовательность Коши): $\forall \varepsilon > 0\ \exists N = N(\varepsilon)\ \forall m, n > N\colon |a_m - a_n| < \varepsilon$.
 :::
 
-::: {.lemma ref="lem:lec06:fundamental-bounded" status="доказано в лекции 6"}
+::: {.lemma ref="lem:lec06:fundamental-bounded"}
 Фундаментальная последовательность ограничена. *Идея:* $\varepsilon = 1$, $m = N + 1$; границы $\min(a_1, \dots, a_N, a_{N+1} - 1)$ и $\max(a_1, \dots, a_N, a_{N+1} + 1)$.
 :::
 
-::: {.theorem ref="thm:lec06:cauchy" status="доказано в лекции 6"}
-Критерий Коши: последовательность сходится $\Leftrightarrow$ она фундаментальна. *Идея:* «$\Rightarrow$» — $\frac\varepsilon2$ и неравенство треугольника; «$\Leftarrow$» — ограниченность, Больцано–Вейерштрасс даёт $a_{n_k} \to a$, затем $|a_n - a| \le |a_n - a_{n_k}| + |a_{n_k} - a|$.
+::: {.theorem ref="thm:lec06:cauchy"}
+Последовательность сходится $\Leftrightarrow$ она фундаментальна. *Идея:* «$\Rightarrow$» — $\frac\varepsilon2$ и неравенство треугольника; «$\Leftarrow$» — ограниченность, Больцано–Вейерштрасс даёт $a_{n_k} \to a$, затем $|a_n - a| \le |a_n - a_{n_k}| + |a_{n_k} - a|$.
 :::
 
 ::: {.definition ref="def:lec06:partial-limit"}
-Частичный предел — предел (конечный или $\pm\infty$) какой-либо подпоследовательности.
+**Частичный предел** — предел (конечный или $\pm\infty$) какой-либо подпоследовательности.
 :::
 
 ::: {.definition ref="def:lec06:limit-point"}
-Предельная точка — число $a$, в любой окрестности $U_\varepsilon(a)$ которого лежит бесконечно много членов (бесконечно много номеров $n$).
+**Предельная точка** — число $a$, в любой окрестности $U_\varepsilon(a)$ которого лежит бесконечно много членов (бесконечно много номеров $n$).
 :::
 
-::: {.theorem ref="thm:lec06:partial-limit-point" status="доказано в лекции 6"}
+::: {.theorem ref="thm:lec06:partial-limit-point"}
 Число $a$ — частичный предел $\Leftrightarrow$ $a$ — предельная точка. *Идея:* «$\Leftarrow$» — из $U_{1/k}(a)$ выбираем $a_{n_k}$ с $n_k > n_{k-1}$, затем теорема о двух милиционерах.
 :::
 
-::: {.proposition ref="prop:lec06:split" status="доказано в лекции 6"}
+::: {.proposition ref="prop:lec06:split"}
 Если номера разбиты на конечное число бесконечных частей и подпоследовательность $j$-й части стремится к $L_j$, то частичные пределы — ровно $L_1, \dots, L_p$. *Идея:* у сходящейся подпоследовательности бесконечно много номеров в одной части; единственность предела.
 :::
 
 ::: {.definition ref="def:lec06:limsup"}
-$\varlimsup\limits_{n \to \infty} a_n$ — наибольший, $\varliminf\limits_{n \to \infty} a_n$ — наименьший из частичных пределов ($-\infty <$ числа $< +\infty$).
+**Верхний предел** $\varlimsup\limits_{n \to \infty} a_n$ — наибольший, **нижний** $\varliminf\limits_{n \to \infty} a_n$ — наименьший из частичных пределов ($-\infty <$ числа $< +\infty$).
 :::
 
 ::: {.theorem ref="thm:lec06:limsup-exists" status="без доказательства"}
 Верхний и нижний пределы существуют у любой последовательности (возможно, $\pm\infty$).
 :::
 
-::: {.proposition ref="prop:lec06:limsup-sup" status="доказано в лекции 6"}
+::: {.proposition ref="prop:lec06:limsup-sup"}
 Для ограниченной последовательности $\inf a_n \le \varliminf a_n \le \varlimsup a_n \le \sup a_n$.
 :::
 
-# Лекция 7 — Предел функции по Коши и по Гейне. Арифметика предела, предельный переход в неравенствах, сложная функция
+# 7. Предел функции
 
 ::: {.definition ref="def:lec07:function"}
-Функция $f\colon X \to Y$ ($X, Y \subseteq \R$) сопоставляет каждому $x \in X$ ровно одно $f(x) \in Y$; $D_f = X$ — область определения, $E_f = f(X)$ — множество значений ($Y$ может быть больше $E_f$).
+**Функция** $f\colon X \to Y$ ($X, Y \subseteq \R$) сопоставляет каждому $x \in X$ ровно одно $f(x) \in Y$; $D_f = X$ — область определения, $E_f = f(X)$ — множество значений ($Y$ может быть больше $E_f$).
 :::
 
 ::: {.definition ref="def:lec07:punctured"}
-Проколотая окрестность $\mathring{U}_\delta(x_0) = (x_0 - \delta; x_0) \cup (x_0; x_0 + \delta)$, то есть $0 < |x - x_0| < \delta$.
+**Проколотая окрестность** $\mathring{U}_\delta(x_0) = (x_0 - \delta; x_0) \cup (x_0; x_0 + \delta)$, то есть $0 < |x - x_0| < \delta$.
 :::
 
 ::: {.definition ref="def:lec07:cauchy-limit"}
-Предел по Коши ($f$ определена в $\mathring{U}_r(x_0)$): $\lim\limits_{x \to x_0} f(x) = A$, если $\forall \varepsilon > 0\ \exists \delta = \delta(\varepsilon) > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x) - A| < \varepsilon$.
+**Предел по Коши** ($f$ определена в $\mathring{U}_r(x_0)$): $\lim\limits_{x \to x_0} f(x) = A$, если $\forall \varepsilon > 0\ \exists \delta = \delta(\varepsilon) > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x) - A| < \varepsilon$.
 :::
 
 ::: {.definition ref="def:lec07:heine-limit"}
-Предел по Гейне ($f$ определена в $\mathring{U}_r(x_0)$): $f(x_n) \to A$ для любой последовательности Гейне — $x_n \in D_f$, $x_n \ne x_0$, $x_n \to x_0$.
+**Предел по Гейне** ($f$ определена в $\mathring{U}_r(x_0)$): $f(x_n) \to A$ для любой последовательности Гейне — $x_n \in D_f$, $x_n \ne x_0$, $x_n \to x_0$.
 :::
 
-::: {.theorem ref="thm:lec07:cauchy-heine" status="доказано в лекции 7"}
+::: {.theorem ref="thm:lec07:cauchy-heine"}
 Определения по Коши и по Гейне равносильны. *Идея:* «$\Rightarrow$» — номер $N(\delta(\varepsilon))$; «$\Leftarrow$» — от противного: в $\mathring{U}_{1/k}(x_0)$ берём $x_k$ с $|f(x_k) - A| \ge \varepsilon_0$, по теореме о двух милиционерах $x_k \to x_0$, противоречие с определением Гейне.
 :::
 
-::: {.corollary ref="cor:lec07:uniqueness" status="доказано в лекции 7"}
+::: {.corollary ref="cor:lec07:uniqueness"}
 Предел функции в точке единствен. *Идея:* одна последовательность Гейне и единственность предела последовательности.
 :::
 
-::: {.theorem ref="thm:lec07:arithmetic" status="доказано в лекции 7"}
+::: {.theorem ref="thm:lec07:arithmetic"}
 Если $f \to A$, $g \to B$ при $x \to x_0$, то $f \pm g \to A \pm B$, $fg \to AB$, а при $B \ne 0$ и $g \ne 0$ в некоторой $\mathring{U}_{\delta_0}(x_0)$ — $\frac fg \to \frac AB$. *Идея:* по Гейне сводится к арифметике последовательностей.
 :::
 
-::: {.theorem ref="thm:lec07:inequalities" status="доказано в лекции 7"}
+::: {.theorem ref="thm:lec07:inequalities"}
 Если $f \ge g$ в $\mathring{U}_{\delta_0}(x_0)$, $f \to A$, $g \to B$, то $A \ge B$. Если $f \le g \le h$ в $\mathring{U}_{\delta_0}(x_0)$ и $f, h \to A$, то $g \to A$ (о двух милиционерах). *Идея:* по Гейне; члены последовательности Гейне попадают в $\mathring{U}_{\delta_0}(x_0)$ с некоторого номера.
 :::
 
-::: {.theorem ref="thm:lec07:composite" status="доказано в лекции 8"}
+::: {.theorem ref="thm:lec07:composite"}
 Если $f(x) \to A$ при $x \to x_0$, $g(y) \to B$ при $y \to A$ и либо $g(A) = B$, либо $f(x) \ne A$ в некоторой $\mathring{U}_{\delta_0}(x_0)$, то $g(f(x)) \to B$. Без условий неверно: $f \equiv 0$, $g(y) = |\operatorname{sign} y|$. *Идея:* по Гейне $y_n = f(x_n) \to A$; опасны члены $y_n = A$: при $f \ne A$ около $x_0$ их конечное число, при $g(A) = B$ их значения равны $B$ (подпоследовательность, постоянная $B$).
 :::
 
-::: {.corollary ref="cor:lec07:two-sequences" status="доказано в лекции 7"}
+::: {.corollary ref="cor:lec07:two-sequences"}
 Если на двух последовательностях Гейне значения $f$ стремятся к разным числам или на одной расходятся, то предела в точке $x_0$ нет.
 :::
 
-# Лекция 8 — Предел сложной функции. Первый и второй замечательные пределы. Пределы на бесконечности и бесконечные пределы
+# 8. Замечательные пределы
 
-::: {.lemma ref="lem:lec08:sin-estimate" status="доказано в лекции 8"}
+::: {.lemma ref="lem:lec08:sin-estimate"}
 $\sin x < x < \operatorname{tg} x$ при $0 < x < \frac\pi2$; $|\sin x| \le |x|$ при всех $x$. *Идея:* площади треугольника $OAB$, сектора $OAB$ и треугольника $OAC$ на единичной окружности ($A = (1, 0)$, $C$ — на касательной в $A$).
 :::
 
-::: {.theorem ref="thm:lec08:first-remarkable" status="доказано в лекции 8"}
+::: {.theorem ref="thm:lec08:first-remarkable"}
 $\lim\limits_{x \to 0} \dfrac{\sin x}{x} = 1$ (угол в радианах). *Идея:* $\cos x < \frac{\sin x}{x} < 1$ в $\mathring{U}_{\pi/2}(0)$ (лемма, чётность), $\cos x \to 1$ (не значение, а предел — отдельно), теорема о двух милиционерах.
 :::
 
-::: {.proposition ref="prop:lec08:sin-cos" status="п. 1 доказан в лекции 8; п. 2 — в конспекте лекции 8 (на лекции не доказывалось)"}
+::: {.proposition ref="prop:lec08:sin-cos" status="на лекции не доказывалось"}
 $\sin x \to 0$, $\cos x \to 1$ при $x \to 0$; более того, $\sin x \to \sin x_0$, $\cos x \to \cos x_0$ при $x \to x_0$. *Идея:* $0 \le 1 - \cos x = 2\sin^2\frac x2 \le \frac{x^2}{2}$ и милиционеры; в общей точке — формулы разности и $|\sin t| \le |t|$, $\delta = \varepsilon$.
 :::
 
-::: {.corollary ref="cor:lec08:consequences" status="п. 1 — в лекции 8 (пример $\frac{\sin 5x}{x}$); пп. 2–3 — в конспекте лекции 8 (на лекции не доказывалось)"}
+::: {.corollary ref="cor:lec08:consequences" status="на лекции не доказывалось"}
 $\frac{\sin kx}{x} \to k$, $\frac{\operatorname{tg} x}{x} \to 1$, $\frac{1 - \cos x}{x^2} \to \frac12$ при $x \to 0$. *Идея:* замена $y = kx$ (условие 2 теоремы о сложной функции), $1 - \cos x = 2\sin^2\frac x2$.
 :::
 
 ::: {.definition ref="def:lec08:local"}
-$f$ ограничена в окрестности $x_0$: $\exists C > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| < C$. Отделима от нуля в окрестности $x_0$: $\exists c > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > c$.
+**Ограниченная в окрестности** $x_0$ функция: $\exists C > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| < C$. **Отделимая от нуля** в окрестности $x_0$: $\exists c > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > c$.
 :::
 
-::: {.proposition ref="prop:lec08:local" status="в конспекте лекции 8 (на лекции не доказывалось)"}
+::: {.proposition ref="prop:lec08:local" status="на лекции не доказывалось"}
 Если $\lim_{x \to x_0} f(x) = A \in \R$, то $|f(x)| < |A| + 1$ около $x_0$; если $A \ne 0$, то $|f(x)| > \frac{|A|}{2}$ около $x_0$. *Идея:* определение Коши с $\varepsilon = 1$ и $\varepsilon = \frac{|A|}{2}$, неравенство треугольника. В пределе частного условие $g \ne 0$ около $x_0$ следует из $B \ne 0$.
 :::
 
-::: {.corollary ref="cor:lec08:sign" status="в конспекте лекции 8 (на лекции не доказывалось)"}
+::: {.corollary ref="cor:lec08:sign" status="на лекции не доказывалось"}
 Если $\lim_{x \to x_0} f(x) = A > 0$, то $f(x) > \frac A2 > 0$ в некоторой $\mathring{U}_\delta(x_0)$ (аналогично для $A < 0$).
 :::
 
 ::: {.definition ref="def:lec08:infinity-nbhd"}
-$U_C(+\infty) = (C; +\infty)$, $U_C(-\infty) = (-\infty; -C)$, $U_C(\infty) = (-\infty; -C) \cup (C; +\infty)$, $C > 0$.
+**Окрестности бесконечности:** $U_C(+\infty) = (C; +\infty)$, $U_C(-\infty) = (-\infty; -C)$, $U_C(\infty) = (-\infty; -C) \cup (C; +\infty)$, $C > 0$.
 :::
 
 ::: {.definition ref="def:lec08:general-limit"}
-$\lim_{x \to a} f(x) = b$ ($a \in \{x_0, +\infty, -\infty, \infty\}$, $b \in \{A, +\infty, -\infty, \infty\}$, всего 16 определений): для любой окрестности $b$ найдётся окрестность $a$ (для $x_0$ — проколотая), при всех $x$ из которой $f(x)$ лежит в окрестности $b$. Например, $\lim_{x \to \infty} f(x) = A$: $\forall \varepsilon > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow |f(x) - A| < \varepsilon$; $\lim_{x \to x_0} f(x) = \infty$: $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$. Определение Гейне, арифметика конечных пределов, неравенства и теорема о сложной функции переносятся; условия 1–2 теоремы о сложной функции нужны только при конечном $A$. Предел при $x \to \infty$ есть $\Leftrightarrow$ равны пределы при $x \to +\infty$ и $x \to -\infty$.
+**Предел в общем виде:** $\lim_{x \to a} f(x) = b$ ($a \in \{x_0, +\infty, -\infty, \infty\}$, $b \in \{A, +\infty, -\infty, \infty\}$, всего 16 определений), если для любой окрестности $b$ найдётся окрестность $a$ (для $x_0$ — проколотая), при всех $x$ из которой $f(x)$ лежит в окрестности $b$. Например, $\lim_{x \to \infty} f(x) = A$: $\forall \varepsilon > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow |f(x) - A| < \varepsilon$; $\lim_{x \to x_0} f(x) = \infty$: $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$. Определение Гейне, арифметика конечных пределов, неравенства и теорема о сложной функции переносятся; условия 1–2 теоремы о сложной функции нужны только при конечном $A$. Предел при $x \to \infty$ есть $\Leftrightarrow$ равны пределы при $x \to +\infty$ и $x \to -\infty$.
 :::
 
 ::: {.definition ref="def:lec08:small-large"}
-$f$ бесконечно малая при $x \to a$, если $\lim_{x \to a} f(x) = 0$; бесконечно большая, если $\lim_{x \to a} f(x) = \infty$.
+**Бесконечно малая** при $x \to a$: $\lim_{x \to a} f(x) = 0$; **бесконечно большая**: $\lim_{x \to a} f(x) = \infty$.
 :::
 
-::: {.proposition ref="prop:lec08:small-large" status="в конспекте лекции 8 (на лекции не доказывалось)"}
+::: {.proposition ref="prop:lec08:small-large" status="на лекции не доказывалось"}
 При $x \to a$: $\frac{1}{\text{б.б.}}$ — б.м.; $\frac{1}{\text{б.м.}}$ — б.б., если $f \ne 0$ около $a$; (ограниченная около $a$)$\cdot$(б.м.) — б.м. *Идея:* по Гейне сводится к утверждениям лекции 4.
 :::
 
-::: {.theorem ref="thm:lec08:second-remarkable" status="доказано в лекции 8"}
+::: {.theorem ref="thm:lec08:second-remarkable"}
 $\lim\limits_{x \to \infty} \left(1 + \dfrac1x\right)^x = e$. *Идея:* при $x \to +\infty$, $n = [x]$: $\left(1 + \frac{1}{n + 1}\right)^n < \left(1 + \frac1x\right)^x < \left(1 + \frac1n\right)^{n + 1}$, обе границы $\to e$ по определению $e$, милиционеры (по Гейне); при $x \to -\infty$ замена $x = -y$: $\left(1 - \frac1y\right)^{-y} = \left(1 + \frac{1}{y - 1}\right)^{y - 1}\left(1 + \frac{1}{y - 1}\right)$.
 :::
 
-::: {.corollary ref="cor:lec08:e-alpha" status="доказано в лекции 8 (непрерывность $u^\alpha$ принята на веру)"}
+::: {.corollary ref="cor:lec08:e-alpha"}
 $\left(1 + \frac\alpha x\right)^x \to e^\alpha$ при $x \to \infty$ для любого $\alpha \in \R$. *Идея:* $\left(\left(1 + \frac{1}{x/\alpha}\right)^{x/\alpha}\right)^\alpha$, замена $t = \frac x\alpha$.
 :::
 
-::: {.corollary ref="cor:lec08:e-zero" status="доказано в лекции 8"}
+::: {.corollary ref="cor:lec08:e-zero"}
 $(1 + x)^{1/x} \to e$ при $x \to 0$. *Идея:* замена $y = \frac1x \to \infty$.
 :::
 
-::: {.corollary ref="cor:lec08:log" status="доказано в лекции 8 (непрерывность $\ln$ принята на веру)"}
+::: {.corollary ref="cor:lec08:log"}
 $\frac{\ln(1 + x)}{x} \to 1$ при $x \to 0$. *Идея:* $= \ln (1 + x)^{1/x} \to \ln e$.
 :::
 
-::: {.corollary ref="cor:lec08:exp" status="доказано в лекции 8 (непрерывность $e^x$ принята на веру)"}
+::: {.corollary ref="cor:lec08:exp"}
 $\frac{e^x - 1}{x} \to 1$ при $x \to 0$. *Идея:* замена $y = e^x - 1$, $x = \ln(1 + y)$, $y \ne 0$ при $x \ne 0$.
 :::
 
-::: {.corollary ref="cor:lec08:power" status="доказано в лекции 8 (непрерывность $\ln$ и $e^x$ принята на веру)"}
+::: {.corollary ref="cor:lec08:power"}
 $\frac{(1 + x)^\alpha - 1}{x} \to \alpha$ при $x \to 0$, $\alpha \in \R$. *Идея:* $(1 + x)^\alpha = e^{\alpha \ln(1 + x)}$; разделить и умножить на $\alpha \ln(1 + x)$ и применить следствия 3 и 4.
 :::
 
-::: {.proposition ref="prop:lec08:roots" status="в конспекте лекции 8 (на лекции не доказывалось)"}
+::: {.proposition ref="prop:lec08:roots" status="на лекции не доказывалось"}
 $\sqrt x \to \sqrt{x_0}$ при $x \to x_0 > 0$; $\sqrt[3]{x} \to \sqrt[3]{x_0}$ при любом $x_0$. *Идея:* $|\sqrt x - \sqrt{x_0}| \le \frac{|x - x_0|}{\sqrt{x_0}}$; для кубического корня $a^2 + ab + b^2 \ge \frac34 b^2$.
 :::
 
-# Лекция 9 — О-символика, эквивалентность. Непрерывность, односторонние пределы, точки разрыва. Асимптоты
+# 9. О-символика и непрерывность
 
 ::: {.definition ref="def:lec09:o"}
-При $g \ne 0$ около $a$: $f = o(g)$ при $x \to a$, если $\frac fg \to 0$; $f = O(g)$, если $\frac fg$ ограничена в некоторой окрестности $a$: $\exists C > 0\ \exists \delta_0 > 0\ \forall x \in \mathring{U}_{\delta_0}(x_0)\colon \left|\frac{f(x)}{g(x)}\right| \le C$ (при $a = +\infty$ — $\forall x > M_0$). $o(1)$ — бесконечно малая, $O(1)$ — ограниченная около $a$.
+**О-символика** (при $g \ne 0$ около $a$): $f = o(g)$ при $x \to a$, если $\frac fg \to 0$; $f = O(g)$, если $\frac fg$ ограничена в некоторой окрестности $a$: $\exists C > 0\ \exists \delta_0 > 0\ \forall x \in \mathring{U}_{\delta_0}(x_0)\colon \left|\frac{f(x)}{g(x)}\right| \le C$ (при $a = +\infty$ — $\forall x > M_0$). $o(1)$ — бесконечно малая, $O(1)$ — ограниченная около $a$.
 :::
 
-::: {.proposition ref="prop:lec09:o-rules" status="п. 1 доказан в лекции 9; остальные — в конспекте лекции 9 (на лекции не доказывались)"}
+::: {.proposition ref="prop:lec09:o-rules" status="на лекции не доказывалось"}
 При $x \to a$ (одно и то же $a$): $o(g) \pm o(g) = o(g)$, $c \cdot o(g) = o(g)$; $O(g) \pm O(g) = O(g)$; $o(g) = O(g)$ (обратное неверно); $o(g) \cdot O(h) = o(gh)$, $O(g) \cdot O(h) = O(gh)$, $h \cdot o(g) = o(hg)$; $|o(g)|^\alpha = o(|g|^\alpha)$, $|O(g)|^\alpha = O(|g|^\alpha)$ при $\alpha > 0$; $o(O(g)) = O(o(g)) = o(g)$; при $x \to 0$ для целых $0 \le m < n$: $o(x^n) = o(x^m)$, $x^m \cdot o(x^n) = o(x^{m+n})$. Равенства читаются слева направо. *Идея:* отношения и арифметика предела, «ограниченная · б.м. = б.м.».
 :::
 
 ::: {.definition ref="def:lec09:equivalent"}
-При $g \ne 0$ около $a$: $f \sim g$ при $x \to a$, если $\frac{f(x)}{g(x)} \to 1$.
+**Эквивалентные функции** (при $g \ne 0$ около $a$): $f \sim g$ при $x \to a$, если $\frac{f(x)}{g(x)} \to 1$.
 :::
 
-::: {.proposition ref="prop:lec09:equiv-props" status="доказано в лекции 9"}
+::: {.proposition ref="prop:lec09:equiv-props"}
 $\sim$ рефлексивно, симметрично, транзитивно; если $f_1 \sim f_2$, то $f_1 g \sim f_2 g$ и $\frac{g}{f_1} \sim \frac{g}{f_2}$; если $f \sim f_1$, $g \sim g_1$, то $fg \sim f_1 g_1$, $\frac fg \sim \frac{f_1}{g_1}$. *Идея:* в отношении $\frac{f_1 g}{f_2 g}$ множитель $g$ сокращается; транзитивность — $\frac fh = \frac fg \cdot \frac gh$.
 :::
 
-::: {.theorem ref="thm:lec09:replacement" status="доказано в лекции 9"}
+::: {.theorem ref="thm:lec09:replacement"}
 Если $f \sim f_1$ при $x \to a$, то $\lim f$ и $\lim f_1$ (конечные или бесконечные) существуют одновременно и равны; то же для $\lim f h$ и $\lim f_1 h$, $\lim \frac hf$ и $\lim \frac h{f_1}$. В суммах заменять слагаемые на эквивалентные нельзя. *Идея:* $f = \frac{f}{f_1} \cdot f_1$, $\frac{f}{f_1} \to 1$.
 :::
 
-::: {.proposition ref="prop:lec09:table" status="следует из лекции 8 (непрерывность $\ln$, $e^x$, $u^\alpha$ принята на веру)"}
+::: {.proposition ref="prop:lec09:table"}
 При $x \to 0$: $\sin x \sim x$, $\operatorname{tg} x \sim x$, $1 - \cos x \sim \frac{x^2}{2}$, $\ln(1 + x) \sim x$, $e^x - 1 \sim x$, $(1 + x)^\alpha - 1 \sim \alpha x$ ($\alpha \ne 0$; в частности $\sqrt{1 + x} - 1 \sim \frac x2$, $\sqrt[3]{1 + x} - 1 \sim \frac x3$, $(1 + x)^n - 1 \sim nx$). *Идея:* замечательные и классические пределы лекции 8; для корней и $n$ — сопряжённое, неполный квадрат, бином.
 :::
 
-::: {.proposition ref="prop:lec09:substitution" status="доказано в лекции 9"}
+::: {.proposition ref="prop:lec09:substitution"}
 Если $u(x) \to 0$ при $x \to a$ и $u \ne 0$ около $a$, то из $f(y) \sim g(y)$ при $y \to 0$ следует $f(u(x)) \sim g(u(x))$, из $h(y) = o(y^k)$ — $h(u(x)) = o(u(x)^k)$. *Идея:* теорема о пределе сложной функции, условие 2.
 :::
 
-::: {.theorem ref="thm:lec09:equiv-o" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+::: {.theorem ref="thm:lec09:equiv-o" status="на лекции не доказывалось"}
 $f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg - 1$.
 :::
 
-::: {.corollary ref="cor:lec09:main-part" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+::: {.corollary ref="cor:lec09:main-part" status="на лекции не доказывалось"}
 Если $h = o(f)$, то $f + h \sim f$.
 :::
 
 ::: {.definition ref="def:lec09:main-part"}
-Главная часть $f$ при $x \to 0$ — функция $c x^k$, $c \ne 0$, с $f \sim c x^k$ (при $x \to x_0$ — $c(x - x_0)^k$, при $x \to +\infty$, $x \to -\infty$, $x \to \infty$ — $c x^k$); она единственна.
+**Главная часть** $f$ при $x \to 0$ — функция $c x^k$, $c \ne 0$, с $f \sim c x^k$ (при $x \to x_0$ — $c(x - x_0)^k$, при $x \to +\infty$, $x \to -\infty$, $x \to \infty$ — $c x^k$); она единственна.
 :::
 
 ::: {.definition ref="def:lec09:continuous"}
-$f$, определённая в окрестности $x_0$, непрерывна в $x_0$, если $\lim_{x \to x_0} f(x) = f(x_0)$: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon$ (окрестность не проколотая).
+**Непрерывность в точке:** $f$, определённая в окрестности $x_0$, непрерывна в $x_0$, если $\lim_{x \to x_0} f(x) = f(x_0)$: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon$ (окрестность не проколотая).
 :::
 
-::: {.proposition ref="prop:lec09:heine" status="в лекции 9 — без доказательства; доказательство — в конспекте лекции 9"}
+::: {.proposition ref="prop:lec09:heine" status="на лекции не доказывалось"}
 $f$ непрерывна в $x_0$ $\Leftrightarrow$ $f(x_n) \to f(x_0)$ для любой последовательности $x_n \to x_0$ из окрестности (равенство $x_n = x_0$ разрешено). *Идея:* «$\Rightarrow$» — из определения по $\delta$ находим номер; «$\Leftarrow$» — частный случай: последовательности Гейне и теорема Коши–Гейне.
 :::
 
 ::: {.definition ref="def:lec09:one-sided"}
-$\lim\limits_{x \to x_0 - 0} f(x) = A$ ($f(x_0 - 0) = A$): $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in (x_0 - \delta;\ x_0)\colon |f(x) - A| < \varepsilon$. Предел справа $f(x_0 + 0)$ — то же с $x \in (x_0;\ x_0 + \delta)$. Добавляет к местам $a$ ещё $x_0 \pm 0$.
+**Односторонние пределы.** Слева: $\lim\limits_{x \to x_0 - 0} f(x) = A$ ($f(x_0 - 0) = A$), если $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in (x_0 - \delta;\ x_0)\colon |f(x) - A| < \varepsilon$. Справа $f(x_0 + 0)$ — то же с $x \in (x_0;\ x_0 + \delta)$.
 :::
 
-::: {.theorem ref="thm:lec09:one-sided" status="в лекции 9 — без доказательства (упражнение); доказательство — в конспекте лекции 9"}
+::: {.theorem ref="thm:lec09:one-sided" status="на лекции не доказывалось"}
 Если $f$ определена в $\mathring{U}_r(x_0)$, то $\lim_{x \to x_0} f(x) = A \Leftrightarrow f(x_0 - 0) = f(x_0 + 0) = A$. *Идея:* «$\Leftarrow$» — $\delta = \min(\delta_1, \delta_2)$.
 :::
 
 ::: {.definition ref="def:lec09:discontinuity"}
-$x_0$ — точка разрыва $f$, если $f$ определена в проколотой окрестности $x_0$ и не непрерывна в $x_0$ (в том числе не определена в ней).
+**Точка разрыва** $f$ — точка $x_0$, в проколотой окрестности которой $f$ определена, а в самой $x_0$ не непрерывна (в том числе не определена).
 :::
 
 ::: {.definition ref="def:lec09:kinds"}
-Устранимый разрыв: $\lim_{x \to x_0} f(x)$ конечен, но $\ne f(x_0)$ или $f(x_0)$ нет (доопределение по непрерывности). Разрыв первого рода (скачок): $f(x_0 \pm 0)$ конечны и различны. Разрыв второго рода — всё остальное: хотя бы один односторонний предел не существует или бесконечен.
+**Устранимый разрыв:** $\lim_{x \to x_0} f(x)$ конечен, но $\ne f(x_0)$ или $f(x_0)$ нет (доопределение по непрерывности). **Разрыв первого рода** (скачок): $f(x_0 \pm 0)$ конечны и различны. **Разрыв второго рода** — всё остальное: хотя бы один односторонний предел не существует или бесконечен.
 :::
 
 ::: {.definition ref="def:lec09:asymptotes"}
-$x = x_0$ — вертикальная асимптота, если хотя бы один из $\lim_{x \to x_0 \pm 0} f(x)$ равен $+\infty$, $-\infty$ или $\infty$. $y = kx + b$ — наклонная асимптота при $x \to +\infty$ (при $x \to -\infty$), если $f(x) - (kx + b) \to 0$; при $k = 0$ — горизонтальная.
+**Вертикальная асимптота** $x = x_0$: хотя бы один из $\lim_{x \to x_0 \pm 0} f(x)$ равен $+\infty$, $-\infty$ или $\infty$. **Наклонная асимптота** $y = kx + b$ при $x \to +\infty$ (при $x \to -\infty$): $f(x) - (kx + b) \to 0$; при $k = 0$ — горизонтальная.
 :::
 
-::: {.theorem ref="thm:lec09:oblique" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+::: {.theorem ref="thm:lec09:oblique" status="на лекции не доказывалось"}
 $y = kx + b$ — наклонная асимптота при $x \to +\infty$ $\Leftrightarrow$ существуют конечные $k = \lim_{x \to +\infty} \frac{f(x)}{x}$ и $b = \lim_{x \to +\infty}(f(x) - kx)$. *Идея:* «$\Rightarrow$» — $\frac{f(x)}{x} - k = (f(x) - kx) \cdot \frac1x \to b \cdot 0$; «$\Leftarrow$» — определение.
 :::
 
-::: {.corollary ref="cor:lec09:unique" status="в конспекте лекции 9 (на лекции не доказывалось)"}
+::: {.corollary ref="cor:lec09:unique" status="на лекции не доказывалось"}
 При $x \to +\infty$ (и при $x \to -\infty$) наклонная асимптота не более чем одна. *Идея:* $k$ и $b$ — пределы, а предел единствен.
 :::
 
-# Лекция 10 — Свойства непрерывных функций. Функции, непрерывные на отрезке. Обратная функция
+# 10. Функции, непрерывные на отрезке
 
 ::: {.definition ref="def:lec10:one-sided"}
-$f$ непрерывна справа (слева) в $x_0$, если $f(x_0 + 0) = f(x_0)$ (соответственно $f(x_0 - 0) = f(x_0)$).
+**Непрерывность справа (слева)** в $x_0$: $f(x_0 + 0) = f(x_0)$ (соответственно $f(x_0 - 0) = f(x_0)$).
 :::
 
-Непрерывность в $x_0$ равносильна непрерывности слева и справа — по теореме [-@thm:lec09:one-sided].
+Непрерывность в $x_0$ равносильна непрерывности слева и справа — по теореме.
 
 ::: {.definition ref="def:lec10:on-interval"}
-$f$ непрерывна на $[a;\ b]$, если непрерывна в каждой точке $(a;\ b)$, справа в $a$ и слева в $b$; «$f$ непрерывна» — непрерывна на области определения.
+**Непрерывность на отрезке** $[a;\ b]$: непрерывность в каждой точке $(a;\ b)$, справа в $a$ и слева в $b$; «$f$ непрерывна» — непрерывна на области определения.
 :::
 
-::: {.theorem ref="thm:lec10:arithmetic" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:arithmetic"}
 Сумма, разность, произведение непрерывных в $x_0$ функций непрерывны в $x_0$; частное — при $g(x_0) \ne 0$. *Идея:* арифметика предела функции.
 :::
 
-::: {.theorem ref="thm:lec10:composite" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:composite"}
 Если $f(x) \to A$ при $x \to x_0$ и $g$ непрерывна в $A$, то $g(f(x)) \to g(A)$. Если $f$ непрерывна в $x_0$, $g$ — в $f(x_0)$, то $g \circ f$ непрерывна в $x_0$. Односторонний вариант: если $f(x) \to A$, $f(x) \ge A$ около $x_0$ и $g$ непрерывна справа в $A$, то $g(f(x)) \to g(A)$. *Идея:* теорема о пределе сложной функции при условии $g(A) = B$; в одностороннем случае из окрестности $A$ нужна только правая половина.
 :::
 
-::: {.proposition ref="prop:lec10:elementary" status="доказано в лекции 10"}
+::: {.proposition ref="prop:lec10:elementary"}
 Многочлены, рациональные функции, $\sin$, $\cos$, $\operatorname{tg}$, $\sqrt x$ (в нуле — справа), $\sqrt[3]{x}$, $|x|$ непрерывны на области определения. Составленная из них функция непрерывна в $x_0$, если каждое промежуточное значение лежит внутри области определения применяемой к нему функции; граничные случаи — односторонним вариантом теоремы о композиции. *Идея:* пределы $\sin$, $\cos$ и корней из лекции 8, $\sqrt x$ справа в нуле — лекция 9 ($\delta = \varepsilon^2$); затем две предыдущие теоремы по шагам построения формулы.
 :::
 
-::: {.theorem ref="thm:lec10:bolzano-cauchy" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:bolzano-cauchy"}
 $f$ непрерывна на $[a;\ b]$, $f(a) f(b) < 0$ $\Rightarrow$ $\exists c \in (a;\ b)\colon f(c) = 0$. *Идея:* деление пополам с сохранением разных знаков на концах; концы сходятся к $c$ (Вейерштрасс), по непрерывности $f(c) \le 0$ и $f(c) \ge 0$.
 :::
 
-::: {.corollary ref="cor:lec10:intermediate" status="доказано в лекции 10"}
+::: {.corollary ref="cor:lec10:intermediate"}
 Непрерывная на $[a;\ b]$ функция принимает все значения между $f(a)$ и $f(b)$. *Идея:* теорема Больцано–Коши для $f(x) - C$.
 :::
 
-::: {.theorem ref="thm:lec10:weierstrass-bounded" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:weierstrass-bounded"}
 Непрерывная на отрезке функция ограничена на нём. *Идея:* от противного $|f(x_n)| > n$; Больцано–Вейерштрасс даёт $x_{n_k} \to c \in [a;\ b]$, по непрерывности $f(x_{n_k}) \to f(c)$ — сходящаяся, а значит ограниченная последовательность.
 :::
 
-::: {.theorem ref="thm:lec10:weierstrass-max" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:weierstrass-max"}
 Непрерывная на отрезке функция достигает наибольшего и наименьшего значений. *Идея:* $M = \sup$ конечен; $M - \frac1n < f(x_n) \le M$, подпоследовательность $x_{n_k} \to q$, $f(q) = M$ по непрерывности и милиционерам.
 :::
 
-::: {.corollary ref="cor:lec10:image" status="доказано в лекции 10"}
+::: {.corollary ref="cor:lec10:image"}
 Множество значений непрерывной на $[a;\ b]$ функции — отрезок $[m;\ M]$ (наименьшее и наибольшее значения).
 :::
 
 ::: {.definition ref="def:lec10:injection"}
-$f\colon X \to Y$ — инъекция, если $x_1 \ne x_2 \Rightarrow f(x_1) \ne f(x_2)$; сюръекция, если $E_f = Y$; биекция — и то и другое.
+**Инъекция** $f\colon X \to Y$: $x_1 \ne x_2 \Rightarrow f(x_1) \ne f(x_2)$; **сюръекция**: $E_f = Y$; **биекция** — и то и другое.
 :::
 
 ::: {.definition ref="def:lec10:inverse"}
-Для биекции $f\colon X \to Y$ обратная $f^{-1}\colon Y \to X$ сопоставляет $y$ единственное $x$ с $f(x) = y$; $f^{-1}(f(x)) = x$, $f(f^{-1}(y)) = y$. Обычно обратная к инъективной $f$ рассматривается на $E_f$.
+**Обратная функция** к биекции $f\colon X \to Y$ — $f^{-1}\colon Y \to X$, сопоставляющая $y$ единственное $x$ с $f(x) = y$; $f^{-1}(f(x)) = x$, $f(f^{-1}(y)) = y$. Обычно обратная к инъективной $f$ рассматривается на $E_f$.
 :::
 
 ::: {.definition ref="def:lec10:monotone"}
-На $E$: строго возрастает ($x_1 < x_2 \Rightarrow f(x_1) < f(x_2)$), строго убывает ($>$), не убывает ($\le$), не возрастает ($\ge$); строго монотонная — строго возрастающая или строго убывающая.
+**Монотонная функция** на $E$: строго возрастает ($x_1 < x_2 \Rightarrow f(x_1) < f(x_2)$), строго убывает ($>$), не убывает ($\le$), не возрастает ($\ge$); строго монотонная — строго возрастающая или строго убывающая.
 :::
 
-::: {.theorem ref="thm:lec10:sufficient" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:sufficient"}
 Строго монотонная на $X$ функция обратима ($X \to E_f$), и $f^{-1}$ строго монотонна того же типа. *Идея:* из $x_1 < x_2$ следует $f(x_1) \ne f(x_2)$; для $f^{-1}$ — от противного.
 :::
 
-::: {.theorem ref="thm:lec10:criterion" status="доказано в лекции 10"}
+::: {.theorem ref="thm:lec10:criterion"}
 Непрерывная на $[a;\ b]$ функция инъективна $\Leftrightarrow$ строго монотонна (верно и для любого промежутка). *Идея:* если $f(a) < f(b)$, то значения внутри любого отрезка лежат строго между значениями на концах, иначе по теореме о промежуточном значении некоторое значение принимается дважды.
 :::
 
-::: {.corollary ref="cor:lec10:inverse-domain" status="доказано в лекции 10"}
+::: {.corollary ref="cor:lec10:inverse-domain"}
 Если $f$ непрерывна и строго возрастает на $[a;\ b]$, то $f^{-1}$ определена на $[f(a);\ f(b)]$ и строго возрастает (для убывающей — на $[f(b);\ f(a)]$, убывает).
 :::
 
-# Лекция 11 — Непрерывность обратной функции. Обратные тригонометрические, показательная и логарифмическая функции. Производная
+# 11. Элементарные функции и производная
 
-::: {.theorem ref="thm:lec11:inverse-continuous" status="доказано в лекции 11"}
+::: {.theorem ref="thm:lec11:inverse-continuous"}
 Если $f$ непрерывна и строго монотонна на $[a;\ b]$, то $f^{-1}$ непрерывна на отрезке $E_f$. *Идея:* по Гейне: если $f^{-1}(y_n) \not\to x_0$, то по Больцано–Вейерштрассу часть прообразов сходится к $c \ne x_0$, по непрерывности $f(c) = y_0 = f(x_0)$ — противоречие с инъективностью. Второй способ: для возрастающей $f$ интервал $(x_0 - \varepsilon;\ x_0 + \varepsilon)$ переходит в интервал вокруг $y_0$, $\delta = \min(y_0 - y_1,\ y_2 - y_0)$.
 :::
 
-::: {.corollary ref="cor:lec11:inverse-interval" status="доказано в лекции 11"}
+::: {.corollary ref="cor:lec11:inverse-interval"}
 Если $f$ непрерывна и строго монотонна на промежутке $I$, то $E_f$ — промежуток, а $f^{-1}\colon E_f \to I$ непрерывна и монотонна того же типа. *Идея:* промежуточные значения — Больцано–Коши; непрерывность — теорема для отрезка $[c;\ d] \subseteq I$ вокруг $x_0$.
 :::
 
 ::: {.definition ref="def:lec11:arc"}
-$\arcsin y$ ($y \in [-1;\ 1]$) — единственное $x \in \left[-\frac\pi2;\ \frac\pi2\right]$ с $\sin x = y$; $\arccos y$ — $x \in [0;\ \pi]$ с $\cos x = y$; $\operatorname{arctg} y$ ($y \in \R$) — $x \in \left(-\frac\pi2;\ \frac\pi2\right)$ с $\operatorname{tg} x = y$; $\operatorname{arcctg} y$ — $x \in (0;\ \pi)$ с $\operatorname{ctg} x = y$.
+**Обратные тригонометрические функции.** $\arcsin y$ ($y \in [-1;\ 1]$) — единственное $x \in \left[-\frac\pi2;\ \frac\pi2\right]$ с $\sin x = y$; $\arccos y$ — $x \in [0;\ \pi]$ с $\cos x = y$; $\operatorname{arctg} y$ ($y \in \R$) — $x \in \left(-\frac\pi2;\ \frac\pi2\right)$ с $\operatorname{tg} x = y$; $\operatorname{arcctg} y$ — $x \in (0;\ \pi)$ с $\operatorname{ctg} x = y$.
 :::
 
-::: {.proposition ref="prop:lec11:arc" status="доказано в лекции 11"}
+::: {.proposition ref="prop:lec11:arc"}
 $\arcsin$ возрастает, $\arccos$ убывает (на $[-1;\ 1]$, значения $\left[-\frac\pi2;\ \frac\pi2\right]$ и $[0;\ \pi]$); $\operatorname{arctg}$ возрастает, $\operatorname{arcctg}$ убывает на $\R$, $\operatorname{arctg} y \to \pm\frac\pi2$ при $y \to \pm\infty$; все четыре непрерывны. $\arcsin$, $\operatorname{arctg}$ нечётны, $\arccos(-y) = \pi - \arccos y$; $\arcsin y + \arccos y = \operatorname{arctg} y + \operatorname{arcctg} y = \frac\pi2$. *Идея:* строгая монотонность сужений через формулы разности; затем теорема о непрерывности обратной.
 :::
 
-::: {.corollary ref="cor:lec11:arc-limits" status="доказано в лекции 11"}
+::: {.corollary ref="cor:lec11:arc-limits"}
 $\arcsin x \sim x$, $\operatorname{arctg} x \sim x$ при $x \to 0$. *Идея:* замена $y = \arcsin x \to 0$, $y \ne 0$, и $\frac{y}{\sin y} \to 1$.
 :::
 
 ::: {.definition ref="def:lec11:rational-power"}
-$a^{p/q} = \left(\sqrt[q]{a}\right)^p$ при $a > 0$, $p \in \Z$, $q \in \N$ (не зависит от записи дроби).
+**Рациональная степень:** $a^{p/q} = \left(\sqrt[q]{a}\right)^p$ при $a > 0$, $p \in \Z$, $q \in \N$ (не зависит от записи дроби).
 :::
 
 ::: {.definition ref="def:lec11:exp"}
-При $a > 1$: $a^x = \sup\{a^r \mid r \in \Q,\ r \le x\}$; при $0 < a < 1$: $a^x = \left(\frac1a\right)^{-x}$; $1^x = 1$.
+**Показательная функция:** при $a > 1$ $a^x = \sup\{a^r \mid r \in \Q,\ r \le x\}$; при $0 < a < 1$ $a^x = \left(\frac1a\right)^{-x}$; $1^x = 1$.
 :::
 
-::: {.theorem ref="thm:lec11:exp" status="доказано в лекции 11 (пункт 1 — без доказательства)"}
+::: {.theorem ref="thm:lec11:exp"}
 При $a > 0$, $a \ne 1$: (1) $a^{x+y} = a^x a^y$, $(a^x)^y = a^{xy}$, $(ab)^x = a^x b^x$; (2) $a^x$ строго возрастает при $a > 1$, убывает при $a < 1$; (3) непрерывна на $\R$; (4) множество значений $(0;\ +\infty)$. *Идея:* пункты 2–4 используют только правила для рациональных показателей, не пункт 1. Монотонность — рациональные $x < r < s < y$; непрерывность в $x_0$ — рациональные $r < x_0 < s$, $s - r < \frac1n$: $|a^x - a^{x_0}| \le a^s - a^r = a^r(a^{s-r} - 1) \le a^q(a^{1/n} - 1)$ и $\sqrt[n]{a} \to 1$.
 :::
 
 ::: {.definition ref="def:lec11:log"}
-$\log_a\colon (0;\ +\infty) \to \R$ ($a > 0$, $a \ne 1$) — функция, обратная к $a^x$; $\ln = \log_e$.
+**Логарифм** $\log_a\colon (0;\ +\infty) \to \R$ ($a > 0$, $a \ne 1$) — функция, обратная к $a^x$; $\ln = \log_e$.
 :::
 
-::: {.proposition ref="prop:lec11:log" status="доказано в лекции 11"}
+::: {.proposition ref="prop:lec11:log"}
 $\log_a$ непрерывна, монотонна (как $a^x$), множество значений $\R$; $\log_a(uv) = \log_a u + \log_a v$, $\log_a u^t = t\log_a u$; $a^x = e^{x \ln a}$, $\log_a y = \frac{\ln y}{\ln a}$. *Идея:* обратная к непрерывной монотонной на промежутке; тождества — из свойств $a^x$.
 :::
 
 ::: {.definition ref="def:lec11:power"}
-$x^\alpha = e^{\alpha \ln x}$ при $x > 0$, $\alpha \in \R$.
+**Степенная функция:** $x^\alpha = e^{\alpha \ln x}$ при $x > 0$, $\alpha \in \R$.
 :::
 
-::: {.corollary ref="cor:lec11:power-limit" status="доказано в лекции 11"}
+::: {.corollary ref="cor:lec11:power-limit"}
 Если $u \to A > 0$, $v \to B \in \R$, то $u^v \to A^B$. *Идея:* $u^v = e^{v \ln u}$ и непрерывность $\ln$ и $e^x$.
 :::
 
 ::: {.definition ref="def:lec11:derivative"}
-$f'(x_0) = \lim\limits_{h \to 0} \frac{f(x_0 + h) - f(x_0)}{h} = \lim\limits_{\Delta x \to 0} \frac{\Delta f}{\Delta x}$ (предел конечен; $f$ определена в окрестности $x_0$).
+**Производная:** $f'(x_0) = \lim\limits_{h \to 0} \frac{f(x_0 + h) - f(x_0)}{h} = \lim\limits_{\Delta x \to 0} \frac{\Delta f}{\Delta x}$ (предел конечен; $f$ определена в окрестности $x_0$).
 :::
 
 ::: {.definition ref="def:lec11:one-sided"}
-$f'_\pm(x_0) = \lim\limits_{h \to \pm 0} \frac{f(x_0 + h) - f(x_0)}{h}$. Производная существует $\Leftrightarrow$ $f'_-(x_0) = f'_+(x_0)$ (обе конечны).
+**Односторонние производные:** $f'_\pm(x_0) = \lim\limits_{h \to \pm 0} \frac{f(x_0 + h) - f(x_0)}{h}$. Производная существует $\Leftrightarrow$ $f'_-(x_0) = f'_+(x_0)$ (обе конечны).
 :::
 
 ::: {.definition ref="def:lec11:tangent"}
-Касательная в точке $(x_0;\ f(x_0))$: $y = f(x_0) + f'(x_0)(x - x_0)$; при непрерывной $f$ и $f'(x_0) = \pm\infty$ — вертикальная прямая $x = x_0$.
+**Касательная** в точке $(x_0;\ f(x_0))$: $y = f(x_0) + f'(x_0)(x - x_0)$; при непрерывной $f$ и $f'(x_0) = \pm\infty$ — вертикальная прямая $x = x_0$.
 :::
 
-::: {.proposition ref="prop:lec11:table" status="доказано в лекции 11"}
+::: {.proposition ref="prop:lec11:table"}
 $(x^n)' = nx^{n-1}$, $(\sin x)' = \cos x$, $(\cos x)' = -\sin x$, $(\operatorname{tg} x)' = \frac{1}{\cos^2 x}$, $(a^x)' = a^x \ln a$, $(\ln x)' = \frac1x$, $(\log_a x)' = \frac{1}{x \ln a}$, $(x^\alpha)' = \alpha x^{\alpha - 1}$ ($x > 0$). *Идея:* разностное отношение сводится к замечательному пределу: $\frac{\sin(h/2)}{h/2}$, $\frac{e^y - 1}{y}$, $\frac{\ln(1 + t)}{t}$, $\frac{(1 + t)^\alpha - 1}{t}$ с $t = \frac hx$; для $x^n$ — бином.
 :::
 
-# Лекция 12 — Дифференцируемость. Правила дифференцирования. Производная обратной функции
+# 12. Правила дифференцирования
 
 ::: {.definition ref="def:lec12:differentiable"}
-$f$ дифференцируема в $x_0$, если $f(x_0 + h) = f(x_0) + Ah + o(h)$ при $h \to 0$ для некоторого $A \in \R$.
+**Дифференцируемость** в $x_0$: $f(x_0 + h) = f(x_0) + Ah + o(h)$ при $h \to 0$ для некоторого $A \in \R$.
 :::
 
-::: {.theorem ref="thm:lec12:criterion" status="доказано в лекции 12"}
+::: {.theorem ref="thm:lec12:criterion"}
 $f$ дифференцируема в $x_0$ $\Leftrightarrow$ существует $f'(x_0)$; при этом $A = f'(x_0)$. *Идея:* разделить равенство на $h$.
 :::
 
 ::: {.definition ref="def:lec12:differential"}
-Дифференциал $df(x_0) = f'(x_0)\,dx$, $dx = \Delta x$; $\Delta f = df + o(\Delta x)$.
+**Дифференциал** $df(x_0) = f'(x_0)\,dx$, $dx = \Delta x$; $\Delta f = df + o(\Delta x)$.
 :::
 
-::: {.theorem ref="thm:lec12:continuous" status="доказано в лекции 12"}
+::: {.theorem ref="thm:lec12:continuous"}
 Дифференцируемая в $x_0$ функция непрерывна в $x_0$ (односторонняя производная — односторонняя непрерывность). Обратное неверно: $|x|$, $x \sin\frac1x$. *Идея:* $f(x_0 + h) - f(x_0) = \frac{\Delta f}{h} \cdot h \to f'(x_0) \cdot 0$.
 :::
 
-::: {.theorem ref="thm:lec12:arithmetic" status="доказано в лекции 12"}
+::: {.theorem ref="thm:lec12:arithmetic"}
 $(f \pm g)' = f' \pm g'$, $(cf)' = cf'$, $(fg)' = f'g + fg'$, $\left(\frac fg\right)' = \frac{f'g - fg'}{g^2}$ ($g(x_0) \ne 0$). *Идея:* для произведения прибавить и вычесть $f(x_0) g(x_0 + h)$ и воспользоваться непрерывностью $g$; частное — через $\frac1g$.
 :::
 
-::: {.theorem ref="thm:lec12:chain" status="доказано в лекции 12"}
+::: {.theorem ref="thm:lec12:chain"}
 Если $g$ дифференцируема в $x_0$, $f$ — в $g(x_0)$, то $(f \circ g)'(x_0) = f'(g(x_0))\, g'(x_0)$. *Идея:* вспомогательная функция $\varphi(y) = \frac{f(y) - f(y_0)}{y - y_0}$, $\varphi(y_0) = f'(y_0)$, непрерывна в $y_0$, и $f(g(x)) - f(y_0) = \varphi(g(x))(g(x) - g(x_0))$ — без деления на $g(x) - g(x_0)$, которое может быть нулём.
 :::
 
-::: {.theorem ref="thm:lec12:inverse" status="доказано в лекции 12"}
+::: {.theorem ref="thm:lec12:inverse"}
 Если $f$ непрерывна и строго монотонна на промежутке, $x_0$ — внутренняя точка, $f'(x_0) \ne 0$, то $(f^{-1})'(f(x_0)) = \frac{1}{f'(x_0)}$. *Идея:* $\frac{f^{-1}(y) - f^{-1}(y_0)}{y - y_0} = \frac{x - x_0}{f(x) - f(x_0)}$, $x = f^{-1}(y) \to x_0$ по непрерывности обратной и $x \ne x_0$.
 :::
 
-::: {.proposition ref="prop:lec12:arc-derivatives" status="доказано в лекции 12"}
+::: {.proposition ref="prop:lec12:arc-derivatives"}
 $(\arcsin y)' = \frac{1}{\sqrt{1 - y^2}}$, $(\arccos y)' = -\frac{1}{\sqrt{1 - y^2}}$ ($|y| < 1$); $(\operatorname{arctg} y)' = \frac{1}{1 + y^2}$, $(\operatorname{arcctg} y)' = -\frac{1}{1 + y^2}$. *Идея:* теорема о производной обратной; $\cos x = \sqrt{1 - \sin^2 x}$ при $|x| < \frac\pi2$, $\cos^2 x = \frac{1}{1 + \operatorname{tg}^2 x}$.
 :::
 
-# Лекция 13 — Экстремумы. Теорема Ферма. Теоремы Ролля, Лагранжа и Коши
+# 13. Теоремы Ферма, Ролля, Лагранжа и Коши
 
 ::: {.definition ref="def:lec13:extremum"}
-$x_0$ — точка локального максимума (минимума) $f$, если $f$ определена в окрестности $x_0$ и $f(x) \le f(x_0)$ ($\ge$) в некоторой окрестности $U_\delta(x_0)$; строгого — неравенство строгое при $x \ne x_0$.
+**Локальный максимум (минимум)** $f$ в $x_0$: $f$ определена в окрестности $x_0$ и $f(x) \le f(x_0)$ ($\ge$) в некоторой окрестности $U_\delta(x_0)$; строгий — неравенство строгое при $x \ne x_0$.
 :::
 
-::: {.theorem ref="thm:lec13:fermat" status="доказано в лекции 13"}
+::: {.theorem ref="thm:lec13:fermat"}
 В точке локального экстремума существующая производная равна нулю. *Идея:* разностное отношение справа $\le 0$, слева $\ge 0$ (для максимума); предельный переход.
 :::
 
 ::: {.definition ref="def:lec13:critical"}
-Стационарная точка: $f'(x_0) = 0$; критическая: $f'(x_0) = 0$ или $f'(x_0)$ не существует.
+**Стационарная точка:** $f'(x_0) = 0$; **критическая:** $f'(x_0) = 0$ или $f'(x_0)$ не существует.
 :::
 
-::: {.proposition ref="prop:lec13:monotone-necessary" status="доказано в лекции 13"}
+::: {.proposition ref="prop:lec13:monotone-necessary"}
 Если $f$ не убывает на интервале и дифференцируема в $x_0$, то $f'(x_0) \ge 0$. *Идея:* разностное отношение неотрицательно.
 :::
 
-::: {.proposition ref="prop:lec13:max-min" status="доказано в лекции 13"}
+::: {.proposition ref="prop:lec13:max-min"}
 Наибольшее и наименьшее значения непрерывной на $[a;\ b]$ функции (дифференцируемой внутри, кроме конечного числа точек) достигаются в концах или в критических точках. *Идея:* Вейерштрасс + Ферма во внутренней точке.
 :::
 
-::: {.theorem ref="thm:lec13:rolle" status="доказано в лекции 13"}
+::: {.theorem ref="thm:lec13:rolle"}
 $f$ непрерывна на $[a;\ b]$, дифференцируема на $(a;\ b)$, $f(a) = f(b)$ $\Rightarrow$ $\exists c \in (a;\ b)\colon f'(c) = 0$. *Идея:* наибольшее или наименьшее значение достигается внутри (иначе $f$ постоянна), там Ферма.
 :::
 
-::: {.corollary ref="cor:lec13:roots" status="доказано в лекции 13"}
+::: {.corollary ref="cor:lec13:roots"}
 Между корнями функции лежит корень производной; если $f'$ имеет не больше $k$ корней на интервале, то $f$ — не больше $k + 1$.
 :::
 
-::: {.theorem ref="thm:lec13:lagrange" status="доказано в лекции 13"}
+::: {.theorem ref="thm:lec13:lagrange"}
 $f$ непрерывна на $[a;\ b]$, дифференцируема на $(a;\ b)$ $\Rightarrow$ $f(b) - f(a) = f'(c)(b - a)$ для некоторого $c \in (a;\ b)$. *Идея:* Ролль для $f$ минус хорда.
 :::
 
-::: {.corollary ref="cor:lec13:constant" status="доказано в лекции 13"}
+::: {.corollary ref="cor:lec13:constant"}
 $f' = 0$ на промежутке $\Rightarrow$ $f$ постоянна; $f' = g'$ $\Rightarrow$ $f = g + C$ (только на промежутке).
 :::
 
-::: {.corollary ref="cor:lec13:lipschitz" status="доказано в лекции 13"}
+::: {.corollary ref="cor:lec13:lipschitz"}
 $|f'| \le M$ на промежутке $\Rightarrow$ $|f(x_2) - f(x_1)| \le M|x_2 - x_1|$.
 :::
 
-::: {.corollary ref="cor:lec13:derivative-limit" status="доказано в лекции 13"}
+::: {.corollary ref="cor:lec13:derivative-limit"}
 Если $f$ непрерывна справа в $x_0$, дифференцируема на $(x_0;\ x_0 + r)$ и $f'(x) \to A$ при $x \to x_0 + 0$, то $f'_+(x_0) = A$. *Идея:* Лагранж на $[x_0;\ x_0 + h]$, средняя точка стремится к $x_0$.
 :::
 
-::: {.theorem ref="thm:lec13:cauchy" status="доказано в лекции 13"}
+::: {.theorem ref="thm:lec13:cauchy"}
 $f$, $g$ непрерывны на $[a;\ b]$, дифференцируемы на $(a;\ b)$, $g' \ne 0$ $\Rightarrow$ $\frac{f(b) - f(a)}{g(b) - g(a)} = \frac{f'(c)}{g'(c)}$. *Идея:* Ролль для $f - Kg$; точка $c$ общая (Лагранж для $f$ и $g$ по отдельности даёт разные точки).
 :::
 
-::: {.proposition ref="prop:lec13:parametric" status="доказано в лекции 13"}
+::: {.proposition ref="prop:lec13:parametric"}
 $x = \varphi(t)$, $y = \psi(t)$, $\varphi$ непрерывна, строго монотонна, $\varphi'(t_0) \ne 0$ $\Rightarrow$ $y'_x = \frac{\psi'(t_0)}{\varphi'(t_0)}$. *Идея:* производная обратной + сложной функции.
 :::
 
-# Лекция 14 — Монотонность и экстремумы. Производные высших порядков. Выпуклость
+# 14. Монотонность, экстремумы, выпуклость
 
-::: {.theorem ref="thm:lec14:monotone" status="доказано в лекции 14"}
+::: {.theorem ref="thm:lec14:monotone"}
 $f$ непрерывна на промежутке, дифференцируема внутри: $f' \ge 0$ $\Rightarrow$ не убывает, $f' > 0$ $\Rightarrow$ строго возрастает (аналогично для $\le$, $<$). Вместе с необходимым условием: на интервале $f$ не убывает $\Leftrightarrow$ $f' \ge 0$. *Идея:* Лагранж на $[x_1;\ x_2]$.
 :::
 
-::: {.theorem ref="thm:lec14:extremum-first" status="доказано в лекции 14"}
+::: {.theorem ref="thm:lec14:extremum-first"}
 $f$ непрерывна в $x_0$, дифференцируема в проколотой окрестности; $f'$ меняет знак с $+$ на $-$ — строгий максимум, с $-$ на $+$ — строгий минимум; не меняет — экстремума нет. *Идея:* монотонность на $(x_0 - \delta;\ x_0]$ и $[x_0;\ x_0 + \delta)$.
 :::
 
 ::: {.definition ref="def:lec14:higher"}
-$f''(x_0) = (f')'(x_0)$ (нужна $f'$ в окрестности $x_0$), $f^{(n)} = \left(f^{(n-1)}\right)'$, $f^{(0)} = f$.
+**Производные высших порядков:** $f''(x_0) = (f')'(x_0)$ (нужна $f'$ в окрестности $x_0$), $f^{(n)} = \left(f^{(n-1)}\right)'$, $f^{(0)} = f$.
 :::
 
-::: {.proposition ref="prop:lec14:higher-table" status="доказано в лекции 14"}
+::: {.proposition ref="prop:lec14:higher-table"}
 $(e^x)^{(n)} = e^x$, $(a^x)^{(n)} = a^x \ln^n a$, $(\sin x)^{(n)} = \sin\left(x + \frac{\pi n}{2}\right)$, $(\cos x)^{(n)} = \cos\left(x + \frac{\pi n}{2}\right)$, $(x^\alpha)^{(n)} = \alpha(\alpha - 1)\cdots(\alpha - n + 1)x^{\alpha - n}$, $\left(\frac1x\right)^{(n)} = \frac{(-1)^n n!}{x^{n+1}}$, $(\ln x)^{(n)} = \frac{(-1)^{n-1}(n-1)!}{x^n}$. *Идея:* индукция.
 :::
 
-::: {.theorem ref="thm:lec14:leibniz" status="доказано в лекции 14"}
+::: {.theorem ref="thm:lec14:leibniz"}
 $(fg)^{(n)} = \sum_{k=0}^n C_n^k f^{(k)} g^{(n-k)}$. *Идея:* индукция, правило произведения и правило Паскаля — как бином.
 :::
 
 ::: {.definition ref="def:lec14:convex"}
-$f$ выпукла вниз на промежутке $I$, если на каждом $[x_1;\ x_2] \subseteq I$ график не выше хорды: $f(\lambda x_1 + (1 - \lambda)x_2) \le \lambda f(x_1) + (1 - \lambda) f(x_2)$; выпукла вверх — $\ge$; строго — строгие неравенства внутри.
+**Выпуклость вниз** на промежутке $I$: на каждом $[x_1;\ x_2] \subseteq I$ график не выше хорды, $f(\lambda x_1 + (1 - \lambda)x_2) \le \lambda f(x_1) + (1 - \lambda) f(x_2)$; выпуклость вверх — $\ge$; строгая — строгие неравенства внутри.
 :::
 
-::: {.lemma ref="lem:lec14:slopes" status="доказано в лекции 14"}
+::: {.lemma ref="lem:lec14:slopes"}
 $f$ выпукла вниз $\Leftrightarrow$ при $x_1 < x < x_2$ наклоны хорд $[x_1, x] \le [x_1, x_2] \le [x, x_2]$. *Идея:* каждое неравенство равносильно $f(x) \le \ell(x)$.
 :::
 
-::: {.theorem ref="thm:lec14:convex-derivative" status="доказано в лекции 14"}
+::: {.theorem ref="thm:lec14:convex-derivative"}
 Для $f$, непрерывной на промежутке и дифференцируемой внутри: выпукла вниз $\Leftrightarrow$ $f'$ не убывает; $f'$ строго возрастает $\Rightarrow$ строго выпукла вниз. *Идея:* «$\Rightarrow$» — предельный переход в лемме о хордах; «$\Leftarrow$» — Лагранж на соседних отрезках, наклон всей хорды — среднее взвешенное.
 :::
 
-::: {.corollary ref="cor:lec14:convex-second" status="доказано в лекции 14"}
+::: {.corollary ref="cor:lec14:convex-second"}
 Для $f$, непрерывной на промежутке и дважды дифференцируемой внутри него: выпукла вниз $\Leftrightarrow$ $f'' \ge 0$; $f'' > 0$ $\Rightarrow$ строго выпукла вниз (обратное неверно: $x^4$).
 :::
 
-::: {.corollary ref="cor:lec14:tangent" status="доказано в лекции 14"}
+::: {.corollary ref="cor:lec14:tangent"}
 Выпуклая вниз функция не ниже своей касательной: $f(x) \ge f(x_0) + f'(x_0)(x - x_0)$. Отсюда $e^x \ge 1 + x$, $\ln x \le x - 1$, $(1 + x)^\alpha \ge 1 + \alpha x$ при $\alpha \ge 1$.
 :::
 
 ::: {.definition ref="def:lec14:inflection"}
-$(x_0;\ f(x_0))$ — точка перегиба, если $f$ непрерывна в $x_0$, график имеет касательную (конечную или вертикальную) и по разные стороны от $x_0$ строго выпукла в разные стороны (на $(x_0 - \delta;\ x_0]$ и $[x_0;\ x_0 + \delta)$).
+**Точка перегиба** $(x_0;\ f(x_0))$: $f$ непрерывна в $x_0$, график имеет касательную (конечную или вертикальную) и по разные стороны от $x_0$ строго выпукла в разные стороны (на $(x_0 - \delta;\ x_0]$ и $[x_0;\ x_0 + \delta)$).
 :::
 
-::: {.proposition ref="prop:lec14:inflection" status="доказано в лекции 14"}
+::: {.proposition ref="prop:lec14:inflection"}
 Необходимое: если в точке перегиба есть $f''(x_0)$, то $f''(x_0) = 0$. Достаточное: $f''$ строго меняет знак ($> 0$ с одной стороны, $< 0$ с другой) в точке непрерывности с касательной. *Идея:* $x_0$ — экстремум $f'$, Ферма для $f'$.
 :::
 
-# Лекция 15 — Правило Лопиталя. Формула Тейлора с остаточным членом в форме Пеано
+# 15. Правило Лопиталя и формула Тейлора
 
-::: {.theorem ref="thm:lec15:lhopital-zero" status="доказано в лекции 15"}
+::: {.theorem ref="thm:lec15:lhopital-zero"}
 $f, g$ дифференцируемы на $(x_0;\ x_0 + \delta)$, $g' \ne 0$, $f, g \to 0$, $\frac{f'}{g'} \to A$ ($A \in \R$ или $\pm\infty$) $\Rightarrow$ $\frac fg \to A$; так же при $x \to x_0 - 0$, $x_0$, $\pm\infty$. *Идея:* $f(x_0) = g(x_0) := 0$, теорема Коши на $[x_0;\ x]$, промежуточная точка $\xi \in (x_0;\ x)$; для $\pm\infty$ — замена $x = \frac1t$.
 :::
 
-::: {.theorem ref="thm:lec15:lhopital-infinity" status="доказано в лекции 15 (для конечного $A$)"}
+::: {.theorem ref="thm:lec15:lhopital-infinity"}
 То же при $|g| \to +\infty$ (условие на $f$ не нужно). *Идея:* теорема Коши на $[x;\ c]$ с фиксированным $c$ и $\frac fg = \frac{f(c)}{g} + \left(1 - \frac{g(c)}{g}\right)\frac{f(x) - f(c)}{g(x) - g(c)}$.
 :::
 
-::: {.proposition ref="prop:lec15:growth" status="доказано в лекции 15"}
+::: {.proposition ref="prop:lec15:growth"}
 При $x \to +\infty$: $\frac{(\ln x)^\beta}{x^\alpha} \to 0$, $\frac{x^\alpha}{a^x} \to 0$ ($\alpha, \beta > 0$, $a > 1$). *Идея:* Лопиталь для $\frac{\ln x}{x^\gamma}$ и $\frac{x}{b^x}$, затем возведение в степень.
 :::
 
 ::: {.definition ref="def:lec15:taylor"}
-$T_n(x) = \sum_{k=0}^n \frac{f^{(k)}(x_0)}{k!}(x - x_0)^k$ (при $x_0 = 0$ — многочлен Маклорена); $R_n = f - T_n$.
+**Многочлен Тейлора:** $T_n(x) = \sum_{k=0}^n \frac{f^{(k)}(x_0)}{k!}(x - x_0)^k$ (при $x_0 = 0$ — многочлен Маклорена); $R_n = f - T_n$.
 :::
 
-::: {.proposition ref="prop:lec15:taylor-property" status="доказано в лекции 15"}
+::: {.proposition ref="prop:lec15:taylor-property"}
 $T_n^{(k)}(x_0) = f^{(k)}(x_0)$, $k = 0, \dots, n$, и это свойство определяет многочлен степени $\le n$ однозначно.
 :::
 
-::: {.theorem ref="thm:lec15:peano" status="доказано в лекции 15"}
+::: {.theorem ref="thm:lec15:peano"}
 Если существует $f^{(n)}(x_0)$, то $f(x) = T_n(x) + o((x - x_0)^n)$ при $x \to x_0$. *Идея:* у $R$ нулевые производные до порядка $n$ в $x_0$; $n - 1$ раз правило Лопиталя для $\frac{R^{(k)}}{(x - x_0)^{n-k}}$, последнее отношение стремится к $R^{(n)}(x_0) = 0$ по определению производной.
 :::
 
-::: {.proposition ref="prop:lec15:maclaurin" status="доказано в лекции 15"}
+::: {.proposition ref="prop:lec15:maclaurin"}
 $e^x = \sum_{k \le n}\frac{x^k}{k!} + o(x^n)$; $\sin x = \sum_{k \le n}\frac{(-1)^k x^{2k+1}}{(2k+1)!} + o(x^{2n+2})$; $\cos x = \sum_{k \le n}\frac{(-1)^k x^{2k}}{(2k)!} + o(x^{2n+1})$; $\ln(1 + x) = \sum_{k=1}^n \frac{(-1)^{k-1}x^k}{k} + o(x^n)$; $(1 + x)^\alpha = \sum_{k \le n} C_\alpha^k x^k + o(x^n)$, $C_\alpha^k = \frac{\alpha(\alpha - 1)\cdots(\alpha - k + 1)}{k!}$.
 :::
 
-::: {.theorem ref="thm:lec15:uniqueness" status="доказано в лекции 15"}
+::: {.theorem ref="thm:lec15:uniqueness"}
 Представление $f(x) = \sum_{k=0}^n a_k (x - x_0)^k + o((x - x_0)^n)$ единственно; при существовании $f^{(n)}(x_0)$ коэффициенты $a_k = \frac{f^{(k)}(x_0)}{k!}$. *Идея:* наименьший ненулевой коэффициент разности, деление на $(x - x_0)^m$ и предел.
 :::
 
-# Лекция 16 — Остаточный член в форме Лагранжа. Достаточные условия экстремума по высшим производным. Первообразная
+# 16. Остаток Лагранжа и первообразная
 
-::: {.theorem ref="thm:lec16:lagrange" status="доказано в лекции 16"}
+::: {.theorem ref="thm:lec16:lagrange"}
 Если $f$ $(n + 1)$ раз дифференцируема на интервале, содержащем $x_0$ и $x \ne x_0$, то $f(x) = T_n(x) + \frac{f^{(n+1)}(c)}{(n + 1)!}(x - x_0)^{n+1}$ для некоторой точки $c$ строго между $x_0$ и $x$; при $n = 0$ — теорема Лагранжа. *Идея:* $R = f - T_n$ и $g = (t - x_0)^{n+1}$ имеют нулевые производные до порядка $n$ в $x_0$; теорема Коши $n + 1$ раз: $\frac{R(x)}{g(x)} = \frac{R'(c_1)}{g'(c_1)} = \dots = \frac{f^{(n+1)}(c)}{(n + 1)!}$.
 :::
 
-::: {.proposition ref="prop:lec16:bounds" status="доказано в лекции 16"}
+::: {.proposition ref="prop:lec16:bounds"}
 В разложениях Маклорена: для $e^x$ $|R_n(x)| \le \frac{e^{\max(x,\, 0)}}{(n + 1)!}|x|^{n+1}$; для $\sin x$, $\cos x$ $|R_n(x)| \le \frac{|x|^{n+1}}{(n + 1)!}$; для $\ln(1 + x)$ при $0 \le x \le 1$ $|R_n(x)| \le \frac{x^{n+1}}{n + 1}$. *Идея:* форма Лагранжа и оценка $(n+1)$-й производной.
 :::
 
-::: {.corollary ref="cor:lec16:convergence" status="доказано в лекции 16"}
+::: {.corollary ref="cor:lec16:convergence"}
 $T_n(x) \to e^x$, $\sin x$, $\cos x$ при любом $x$ и $T_n(x) \to \ln(1 + x)$ при $0 \le x \le 1$ ($n \to \infty$); в частности, $e = \lim\limits_{n \to \infty} \sum_{k=0}^n \frac{1}{k!}$. *Идея:* $\frac{|x|^{n+1}}{(n + 1)!} \to 0$.
 :::
 
-::: {.lemma ref="lem:lec16:sign" status="доказано в лекции 16"}
+::: {.lemma ref="lem:lec16:sign"}
 Если $f(x) = f(x_0) + a(x - x_0)^m + o((x - x_0)^m)$, $a \ne 0$, то около $x_0$ знак $f(x) - f(x_0)$ равен знаку $a(x - x_0)^m$: при чётном $m$ — строгий минимум ($a > 0$) или максимум ($a < 0$), при нечётном — экстремума нет. *Идея:* $f(x) - f(x_0) = (x - x_0)^m(a + \alpha(x))$, $\alpha \to 0$.
 :::
 
-::: {.theorem ref="thm:lec16:extremum-second" status="доказано в лекции 16"}
+::: {.theorem ref="thm:lec16:extremum-second"}
 $f'(x_0) = 0$, $f''(x_0) > 0$ ($< 0$) $\Rightarrow$ $x_0$ — точка строгого локального минимума (максимума). *Идея:* формула Пеано с $n = 2$ и лемма о знаке.
 :::
 
-::: {.theorem ref="thm:lec16:extremum-higher" status="доказано в лекции 16"}
+::: {.theorem ref="thm:lec16:extremum-higher"}
 Если $f'(x_0) = \dots = f^{(n-1)}(x_0) = 0$, $f^{(n)}(x_0) \ne 0$, $n \ge 2$: при чётном $n$ — строгий минимум ($f^{(n)}(x_0) > 0$) или максимум ($< 0$), при нечётном — экстремума нет. *Идея:* формула Пеано порядка $n$ и лемма о знаке.
 :::
 
-::: {.corollary ref="cor:lec16:inflection" status="доказано в лекции 16"}
+::: {.corollary ref="cor:lec16:inflection"}
 Если $n \ge 3$ нечётно, $f''(x_0) = \dots = f^{(n-1)}(x_0) = 0$, $f^{(n)}(x_0) \ne 0$, то $(x_0;\ f(x_0))$ — точка перегиба. *Идея:* лемма о знаке для $f''$: она меняет знак в $x_0$.
 :::
 
 ::: {.definition ref="def:lec16:antiderivative"}
-$F$ — первообразная $f$ на интервале $I$, если $F$ дифференцируема на $I$ и $F' = f$ на $I$.
+**Первообразная** $f$ на интервале $I$ — дифференцируемая на $I$ функция $F$ с $F' = f$ на $I$.
 :::
 
-::: {.theorem ref="thm:lec16:general-form" status="доказано в лекции 16"}
+::: {.theorem ref="thm:lec16:general-form"}
 Если $F$ — первообразная $f$ на интервале, то все первообразные — это $F + C$, $C \in \R$ (на объединении интервалов — своя постоянная на каждом). *Идея:* производная разности равна нулю на промежутке.
 :::
 
-::: {.proposition ref="prop:lec16:no-jump" status="доказано в лекции 16"}
+::: {.proposition ref="prop:lec16:no-jump"}
 Если $F' = f$ на интервале и существует конечный $\lim_{x \to x_0 \pm 0} f(x)$, то он равен $f(x_0)$; функция с устранимым разрывом или скачком первообразной на интервале не имеет. *Идея:* следствие о пределе производной.
 :::
 
 ::: {.definition ref="def:lec16:indefinite"}
-Неопределённый интеграл $\int f(x)\,dx$ — множество всех первообразных $f$ на интервале: $\int f(x)\,dx = F(x) + C$.
+**Неопределённый интеграл** $\int f(x)\,dx$ — множество всех первообразных $f$ на интервале: $\int f(x)\,dx = F(x) + C$.
 :::
 
-::: {.proposition ref="prop:lec16:linearity" status="доказано в лекции 16"}
+::: {.proposition ref="prop:lec16:linearity"}
 $\int(\alpha f + \beta g)\,dx = \alpha\int f\,dx + \beta\int g\,dx$ ($\alpha$, $\beta$ не равны нулю одновременно); $\int f(kx + b)\,dx = \frac1k F(kx + b) + C$ при $k \ne 0$. *Идея:* дифференцирование правой части.
 :::
 
-# Лекция 17 — Внесение под знак дифференциала. Замена переменной. Интегрирование по частям
+# 17. Методы интегрирования
 
-::: {.theorem ref="thm:lec17:substitution" status="доказано в лекции 17"}
+::: {.theorem ref="thm:lec17:substitution"}
 Если $F' = f$ на интервале $J$, $\varphi$ дифференцируема на интервале $I$ и $\varphi(I) \subseteq J$, то $\int f(\varphi(x))\varphi'(x)\,dx = F(\varphi(x)) + C$, то есть $\int f(\varphi)\,d\varphi = F(\varphi) + C$. *Идея:* правило дифференцирования сложной функции.
 :::
 
-::: {.corollary ref="cor:lec17:log" status="доказано в лекции 17"}
+::: {.corollary ref="cor:lec17:log"}
 $\int \frac{\varphi'(x)}{\varphi(x)}\,dx = \ln|\varphi(x)| + C$ на интервале, где $\varphi \ne 0$. *Идея:* подстановка в $\int \frac{dt}{t}$; $\varphi$ сохраняет знак по теореме о промежуточном значении.
 :::
 
-::: {.theorem ref="thm:lec17:change" status="доказано в лекции 17"}
+::: {.theorem ref="thm:lec17:change"}
 Если $\varphi$ непрерывна, строго монотонна и дифференцируема на интервале $J$, $\varphi' \ne 0$, $I = \varphi(J)$, $f$ определена на $I$ и $G' = f(\varphi(t))\varphi'(t)$ на $J$, то $\int f(x)\,dx = G(\varphi^{-1}(x)) + C$ на $I$. *Идея:* $(G \circ \varphi^{-1})' = G'(t) \cdot \frac{1}{\varphi'(t)}$ по теоремам о сложной и обратной функции.
 :::
 
-::: {.proposition ref="prop:lec17:table" status="доказано в лекции 17"}
+::: {.proposition ref="prop:lec17:table"}
 $\int \frac{dx}{x^2 + a^2} = \frac1a\operatorname{arctg}\frac xa + C$; $\int \frac{dx}{x^2 - a^2} = \frac{1}{2a}\ln\left|\frac{x - a}{x + a}\right| + C$; $\int \frac{dx}{\sqrt{a^2 - x^2}} = \arcsin\frac xa + C$; $\int \frac{dx}{\sqrt{x^2 + A}} = \ln\left|x + \sqrt{x^2 + A}\right| + C$ ($a > 0$, $A \ne 0$). *Идея:* линейная замена, разложение $\frac{1}{x^2 - a^2}$ на две дроби, дифференцирование.
 :::
 
-::: {.theorem ref="thm:lec17:parts" status="доказано в лекции 17"}
+::: {.theorem ref="thm:lec17:parts"}
 Если $u$, $v$ дифференцируемы на интервале и $u'v$ имеет первообразную, то $\int u v'\,dx = uv - \int u'v\,dx$ ($\int u\,dv = uv - \int v\,du$). *Идея:* $(uv)' = u'v + uv'$.
-:::
-
-# Глоссарий курса
-
-::: course-glossary
 :::

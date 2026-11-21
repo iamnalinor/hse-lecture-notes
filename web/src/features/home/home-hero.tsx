@@ -18,7 +18,7 @@ export const HomeHero = ({ courses, lectures, statements }: Props) => (
       <p className="mb-7.5 max-w-140 text-body/relaxed text-ink/85 sm:text-title3/relaxed">
         Алгебра, матан, дискра и АиАЯ первого курса ПИ: конспект на каждую лекцию. Внутри
         определения и теоремы с номерами, доказательства, разобранные примеры и задачи с решениями,
-        а у каждого курса — сводка теории и глоссарий.
+        а у каждого курса — сводка теории.
       </p>
       <dl className="flex flex-wrap gap-x-8.5 gap-y-5 border-t border-rule pt-6">
         {(

@@ -6,7 +6,6 @@ describe("isDocumentPath", () => {
   it.each([
     ["/", false],
     ["/algebra", false],
-    ["/algebra/glossary", false],
     ["/algebra/theory", true],
     ["/algebra/program", true],
     ["/algebra/kr1", true],

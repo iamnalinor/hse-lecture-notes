@@ -90,6 +90,8 @@ stray `text-sm` does nothing instead of adding an eleventh size.
   --text-title3--line-height: 26px;
   --text-title2: 24px;
   --text-title2--line-height: 30px;
+  --text-headline: 28px;
+  --text-headline--line-height: 34px;
   --text-title1: 32px;
   --text-title1--line-height: 38px;
   --text-large: 40px;

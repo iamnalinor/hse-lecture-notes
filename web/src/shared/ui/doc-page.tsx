@@ -16,10 +16,8 @@ type Props = {
   readonly note?: string;
   /** Last crumb and the title: «Теория». */
   readonly pageName: string;
-  /** Document id of the PDF; omit when the page has none (glossary). */
+  /** Document id of the PDF; omit when the page has none. */
   readonly pdfDoc?: string;
-  /** Wider main column for pages that are lists, not reading (glossary). */
-  readonly wide?: boolean;
 };
 
 const NO_DOWNLOADS: readonly PdfDoc[] = [];
@@ -34,10 +32,9 @@ export const DocPage = ({
   note,
   pageName,
   pdfDoc,
-  wide = false,
 }: Props) => (
   <div
-    className={`mx-auto grid justify-center gap-14 px-4 sm:px-8 ${wide ? "max-w-[1400px] min-[1100px]:grid-cols-[230px_minmax(0,1080px)]" : "max-w-[1240px] min-[1100px]:grid-cols-[230px_minmax(0,800px)]"}`}
+    className={`mx-auto grid max-w-[1240px] justify-center gap-14 px-4 min-[1100px]:grid-cols-[230px_minmax(0,800px)] sm:px-8`}
   >
     <div className="sticky top-6 hidden max-h-[calc(100vh-3rem)] self-start overflow-y-auto pt-14 min-[1100px]:block">
       {aside}

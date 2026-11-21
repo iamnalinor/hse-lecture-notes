@@ -3,6 +3,8 @@ import { Link } from "react-router";
 
 import type { TocItem } from "#web/domain/schemas.ts";
 
+import { TexText } from "#web/shared/reader/tex-text.tsx";
+
 import { useActiveSection } from "./use-active-section.ts";
 import { useReadingProgress } from "./use-reading-progress.ts";
 
@@ -65,7 +67,7 @@ export const TocList = ({ active, caption, minutes, onNavigate, progress, toc }:
               onClick={onNavigate}
               to={{ hash: `#${item.id}` }}
             >
-              {item.text}
+              <TexText text={item.text} />
             </Link>
           </li>
         ))}

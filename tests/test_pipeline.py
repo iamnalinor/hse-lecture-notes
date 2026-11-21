@@ -60,11 +60,7 @@ def test_index_single_counter(demo: Path):
     assert labels["prob:lec01:product"]["number"] == "1.7"
     assert labels["def:lec02:elem"]["number"] == "2.1"
     assert "basis" not in labels["def:lec02:elem"]
-    assert {g["term"] for g in idx["glossary"]["algebra"]} == {
-        "Матрица",
-        "[A]_{ij}",
-        "Элементарное преобразование",
-    }
+    assert "glossary" not in idx
 
 
 FIGURE_CASES = """
@@ -129,7 +125,6 @@ def test_html_blocks_and_refs(demo: Path):
     assert "Замечание 1.5" in frag
     assert 'href="#eq:lec01:assoc"' in frag and "(1.4)" in frag
     assert "\\tag{1.4}" in frag
-    assert '<details class="nb-answers">' in frag
     meta = json.loads((site / "algebra" / "01_sep03_matrices" / "meta.json").read_text(encoding="utf-8"))
     assert meta["lecture"] == 1 and "basis" not in meta and "based_on" not in meta
     assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Лекция 1 · 3 сентября 2026"
@@ -141,18 +136,21 @@ def test_html_blocks_and_refs(demo: Path):
     frag2 = (site / "algebra" / "02_sep09_gauss" / "fragment.html").read_text(encoding="utf-8")
     assert 'href="../01_sep03_matrices/#thm:lec01:assoc"' in frag2
     assert "1.3 (лекция 1)" in frag2
+    # формулы в заголовках оглавления остаются формулами ($…$), а не сырым TeX
+    meta2 = json.loads((site / "algebra" / "02_sep09_gauss" / "meta.json").read_text(encoding="utf-8"))
+    assert "Ранг матрицы $A^T$ и строки $\\varepsilon$" in [t["text"] for t in meta2["toc"]]
+    # ссылка на раздел с формулой в заголовке: формула в ссылке тоже формула
+    ref = frag2.split('href="#sec:lec02:rank"', 1)[1].split("</a>", 1)[0]
+    assert "$A^T$" not in ref and "A^T" in ref and "math" in ref
     # теория курса берёт номера из конспектов
     reg = (site / "algebra" / "theory" / "fragment.html").read_text(encoding="utf-8")
     assert 'data-number="1.3"' in reg and "черновик" not in reg
-    # глоссарий курса в теории: сначала по лекциям, внутри по алфавиту
-    glossary_html = reg[reg.index("nb-course-glossary") :]
-    assert (
-        glossary_html.index("Лекция\u00a01")
-        < glossary_html.index("Матрица")
-        < glossary_html.index("Лекция\u00a02")
-    )
-    gl = json.loads((site / "algebra" / "glossary.json").read_text(encoding="utf-8"))
-    assert [g["term"] for g in gl] == ["[A]_{ij}", "Матрица", "Элементарное преобразование"]
+    # теория — справочник: определения без плашек, у теорем нет ссылки «Лекция N» в конспект
+    assert 'id="reg-def:lec01:matrix" class="nb-def"' in reg
+    assert 'data-type="definition"' not in reg
+    assert "01_sep03_matrices/" not in reg and "Лекция" not in reg
+    assert "nb-course-glossary" not in reg and not (site / "algebra" / "glossary.json").exists()
+    assert "glossary" not in meta
     search = json.loads((site / "search.json").read_text(encoding="utf-8"))
     assoc = next(e for e in search if e["anchor"] == "thm:lec01:assoc")
     assert assoc["course"] == "algebra" and assoc["doc"] == "01_sep03_matrices"
@@ -165,7 +163,7 @@ def test_html_blocks_and_refs(demo: Path):
     assert 'id="reg-thm:lec01:assoc-2"' in prep  # повтор того же блока — другой якорь
     assert 'href="../01_sep03_matrices/#prob:lec01:product"' in prep
     assert 'href="#prob:kr1:square"' in prep and "«Умножение матриц»" in prep
-    assert 'class="nb-answer"' in prep and '<details class="nb-answers">' in prep
+    assert 'class="nb-answer"' not in prep and "<em>Ответ:</em>" in prep
     pmeta = json.loads((site / "algebra" / "kr1" / "meta.json").read_text(encoding="utf-8"))
     assert pmeta["kind"] == "prep" and pmeta["lecture"] == 0
     assert pmeta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к КР-1 · 7 ноября 2026"
@@ -196,7 +194,7 @@ def test_search_entries():
         '<section id="s1" class="level1"><h1>Раздел</h1><p>Текст <span class="math inline">x^2</span>, '
         'дальше.</p><span class="math display">\\[ y \\]</span>'
         '<div id="thm:a" class="nb nb-theorem"><div class="nb-head"><span class="nb-name">Теорема 1.1'
-        '</span></div><div class="nb-body"><p>Тело.</p><div class="nb-answer"><p>Ответ.</p></div></div></div>'
+        '</span></div><div class="nb-body"><p>Тело.</p><div class="nb-solution"><p>Решение.</p></div></div></div>'
         '<div id="reg-thm:a" class="nb"><p>Копия.</p></div><p>Хвост.</p></section>'
     )
     assert search_entries("algebra", "w", 1, frag) == [
@@ -330,7 +328,8 @@ def test_lint_demo_clean(demo: Path):
         ("Первая лекция курса", "По рекомендации Р4 первая лекция курса", "служебное слово"),
         ("#def:lec01:matrix", "#def:lec02:matrix", "номер лекции lec02"),
         ("#ex:lec01:matrix", "#thm:lec01:matrixex", "префикс ex:"),
-        ("::: answers\n1. Нет", "::: answer\n1. Нет", "нет блока ::: answers"),
+        ("# Итоги", "# Самопроверка\n\n1. Задача.\n\n# Итоги", "раздела «# Самопроверка» больше нет"),
+        ("# Итоги", "# Глоссарий\n\nТермин\n:   определение.\n\n# Итоги", "раздела «# Глоссарий» больше нет"),
         ("date: 2026-09-03", "date: 2026-09-04", "mmmDD в имени"),
         ("# Итоги", "# Выводы", "нет раздела «# Итоги»"),
         ("date: 2026-09-03", "date: 2026-09-03\nbasis: lecture", "поле basis больше не используется"),
@@ -350,11 +349,36 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
 @pytest.mark.parametrize(
     "old,new,expected",
     [
+        ("# 1. Матрицы", "# Лекция 1 — Матрицы", "заголовок теории"),
+        ("# 2. Метод Гаусса", "# 3. Метод Гаусса", "из лекции 2"),
+        ("# 1. Матрицы", "# 1. " + "Очень " * 12 + "длинно", "длиннее"),
+        ('ref="thm:lec01:assoc"}', 'ref="thm:lec01:assoc" status="доказано в лекции 1"}', "status="),
+        ("**Матрица** — таблица", "Таблица", "начинается с термина"),
+        ("слева направо.", "слева направо [-@thm:lec01:assoc].", "без ссылок"),
+        ("# 2. Метод Гаусса", "::: remark\nЗамечание.\n:::\n\n# 2. Метод Гаусса", "в теории только"),
+    ],
+)
+def test_lint_theory_catches(demo: Path, old: str, new: str, expected: str):
+    p = demo / "theory" / "algebra.md"
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
         ("#prob:kr1:square", "#prob:lec01:square", "не по схеме тип:kr1:slug"),
         ("#rem:kr1:order", "#prob:kr1:order", "префикс rem:"),
         ('ref="thm:lec01:assoc"', 'ref="thm:lec01:nope"', "не найден в конспектах"),
-        ("::: answer\n$\\begin", "::: remark\n$\\begin", "должны идти ::: answer и ::: solution"),
+        ("::: solution\nПеремножаем", "::: remark\nПеремножаем", "должно идти ::: solution"),
+        ("::: solution\nПеремножаем", "::: answer\n$2$\n:::\n\n::: solution\nПеремножаем", "блока ::: answer больше нет"),
         ("# О контрольной", "# Про контрольную", "первый раздел"),
+        ("## Как решать", "## Вопросы для самопроверки\n\nПочему?\n\n## Как решать", "тренируются генератором"),
+        ("# Пробный вариант", "# Блиц: формулировки\n\nТекст.\n\n# Пробный вариант", "тренируются генератором"),
         ("::: {.theorem ref=", "::: {.theorem #thm:kr1:x title=", "без ref="),
         ("course: algebra", "course: calculus", "лежит в prep/algebra/"),
         ("date: 2026-11-07", 'date: "7 ноября"', "не в формате YYYY-MM-DD"),
@@ -424,6 +448,16 @@ def test_lint_missing_glyph(demo: Path):
     )
     res = lint(demo)
     assert "нет в шрифте PDF" in res.stdout, res.stdout
+
+
+def test_lint_exclamation_only_in_prose(demo: Path):
+    """«!» в тексте — предупреждение, а оператор C в `коде` (`!=`, `!x`) — нет."""
+    p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
+    src = p.read_text(encoding="utf-8")
+    p.write_text(src.replace("Первая лекция курса", "Условие `a != 0` и `!x`. Первая лекция курса", 1), encoding="utf-8")
+    assert "восклицательный знак" not in lint(demo).stdout
+    p.write_text(src.replace("Первая лекция курса", "Отлично! Первая лекция курса", 1), encoding="utf-8")
+    assert "восклицательный знак" in lint(demo).stdout
 
 
 def test_lint_weekday(demo: Path):

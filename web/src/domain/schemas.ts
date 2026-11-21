@@ -97,23 +97,6 @@ export const DocMetaSchema = z
   .transform(({ date_ru: dateRu, ...rest }) => ({ ...rest, dateRu }));
 export type DocMeta = z.infer<typeof DocMetaSchema>;
 
-const GlossaryEntrySchema = z
-  .object({
-    def_html: z.string(),
-    lecture: z.number(),
-    term: z.string(),
-    term_html: z.string(),
-    week_id: z.string(),
-  })
-  .transform(({ def_html: defHtml, term_html: termHtml, week_id: weekId, ...rest }) => ({
-    ...rest,
-    defHtml,
-    termHtml,
-    weekId,
-  }));
-export type GlossaryEntry = z.infer<typeof GlossaryEntrySchema>;
-export const GlossarySchema = z.array(GlossaryEntrySchema);
-
 /** `search.json`: the plain text of every document, one entry per section or block. */
 const SearchEntrySchema = z.object({
   anchor: z.string(),
@@ -174,7 +157,7 @@ export const MacrosSchema = z.record(z.string(), z.string());
 const OfflineDocSchema = z.object({
   files: z.array(z.string()),
   id: z.string(),
-  kind: z.enum(["glossary", "notes", "prep", "program", "theory"]),
+  kind: z.enum(["notes", "prep", "program", "theory"]),
 });
 
 export const OfflineManifestSchema = z.object({

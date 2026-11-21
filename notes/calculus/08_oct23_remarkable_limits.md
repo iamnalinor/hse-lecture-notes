@@ -61,8 +61,6 @@ title: Предел сложной функции. Первый и второй 
 ::: {.example #ex:lec08:composite-conditions}
 Найдём $\lim\limits_{x \to 0} \left|\operatorname{sign}(x^2)\right|$ и укажем, какое условие теоремы [-@thm:lec07:composite] работает.
 
-*Ответ:* $1$, условие 2.
-
 *Решение.* Внутренняя функция $f(x) = x^2 \to 0$, внешняя $g(y) = |\operatorname{sign} y| \to 1$ при $y \to 0$ — те же $g$ и $A = 0$, что в примере [-@ex:lec07:composite-counter]. Условие 1 нарушено ($g(0) = 0$), но теперь $f(x) = x^2 \ne 0$ при $x \ne 0$: выполнено условие 2, и предел равен $1$. Разница с примером [-@ex:lec07:composite-counter] только в том, принимает ли внутренняя функция значение $A$. Пример, где спасает условие 1, — задача [-@prob:lec08:composite].
 :::
 
@@ -233,8 +231,6 @@ $$U_C(+\infty) = (C;\ +\infty), \qquad U_C(-\infty) = (-\infty;\ -C), \qquad U_C
 
 ::: {.example #ex:lec08:at-infinity}
 Докажем, что (a) $\lim\limits_{x \to +\infty} \left(1 + \dfrac{\sin x}{x}\right) = 1$; (b) $\lim\limits_{x \to 1} \dfrac{1}{x - 1} = \infty$ и $\lim\limits_{x \to \infty} \dfrac{1}{x - 1} = 0$.
-
-*Ответ:* (a) годится $C = \frac1\varepsilon$; (b) для $x \to 1$ годится $\delta = \frac1M$, для $x \to \infty$ — $C = \frac1\varepsilon + 1$.
 
 *Решение.* (a) $\left|\frac{\sin x}{x}\right| \le \frac1x$ при $x > 0$. Неравенство $\frac1x < \varepsilon$ выполнено при $x > \frac1\varepsilon$. На рис. [-@fig:lec08:infinity] слева $\varepsilon = 0{,}2$, $C = 5$: при $x > 5$ график лежит в полосе $(0{,}8;\ 1{,}2)$. До $x = 5$ он из полосы выходит, около $x \approx 4{,}5$ значение равно примерно $0{,}78$.
 
@@ -475,8 +471,6 @@ $$|a - b| = \frac{|x - x_0|}{a^2 + ab + b^2} \le \frac{4|x - x_0|}{3b^2}.$$
 ::: {.example #ex:lec08:substitution}
 Найдём $\lim\limits_{x \to 1} \dfrac{\sin 7\pi x}{\sin 2\pi x}$.
 
-*Ответ:* $-\frac72$.
-
 *Решение.* При $x = 1$ получается $\frac{\sin 7\pi}{\sin 2\pi} = \frac00$. Первый замечательный предел — утверждение о точке $0$, поэтому сначала переносим точку в ноль. *Ключ:* замена $t = x - 1$, так что $t \to 0$ и $t \ne 0$ при $x \ne 1$ (условие 2 теоремы [-@thm:lec07:composite]). По формулам приведения $\sin(7\pi + 7\pi t) = -\sin 7\pi t$, так как $7\pi$ — нечётное число полуоборотов, и $\sin(2\pi + 2\pi t) = \sin 2\pi t$. Получаем
 $$\lim_{t \to 0} \frac{-\sin 7\pi t}{\sin 2\pi t} = -\lim_{t \to 0} \frac{\sin 7\pi t}{t} \cdot \frac{t}{\sin 2\pi t} = -7\pi \cdot \frac{1}{2\pi} = -\frac72.$$
 Наивный ответ $\frac{7\pi}{2\pi} = \frac72$ (заменить синусы аргументами) неверен по знаку: замена $\sin u$ на $u$ годится только при $u \to 0$, а здесь $7\pi x \to 7\pi$.
@@ -484,8 +478,6 @@ $$\lim_{t \to 0} \frac{-\sin 7\pi t}{\sin 2\pi t} = -\lim_{t \to 0} \frac{\sin 7
 
 ::: {.example #ex:lec08:one-infinity}
 Найдём $\lim\limits_{x \to \infty} \left(\dfrac{x + 3}{x - 1}\right)^{2x}$.
-
-*Ответ:* $e^8$.
 
 *Решение.* Основание $\frac{x + 3}{x - 1} = 1 + \frac{4}{x - 1} \to 1$, показатель $2x \to \infty$: неопределённость $1^\infty$. Решим двумя способами.
 
@@ -508,8 +500,6 @@ $$\frac{\operatorname{tg} x - \sin x}{x^3} = \frac{\sin x\,(1 - \cos x)}{x^3 \co
 ::: {.example #ex:lec08:infinity-conjugate}
 Найдём (a) $\lim\limits_{x \to +\infty} \left(\sqrt{x^2 + x} - x\right)$; (b) $\lim\limits_{x \to -\infty} \left(\sqrt{x^2 + x} + x\right)$.
 
-*Ответ:* (a) $\frac12$; (b) $-\frac12$.
-
 *Решение.* (a) Неопределённость $\infty - \infty$. Домножим на сопряжённое: $\sqrt{x^2 + x} - x = \frac{x}{\sqrt{x^2 + x} + x}$. *Ключ:* вынести из корня $x^2$; при $x > 0$ имеем $\sqrt{x^2 + x} = x\sqrt{1 + \frac1x}$. Тогда выражение равно $\frac{1}{\sqrt{1 + 1/x} + 1}$. При $x \to +\infty$: $\frac1x \to 0$, $\sqrt{1 + \frac1x} \to 1$ (сложная функция, условие 1), и ответ $\frac12$.
 
 \(b) Так же $\sqrt{x^2 + x} + x = \frac{x}{\sqrt{x^2 + x} - x}$. Но при $x < 0$ выносить нужно $|x| = -x$: $\sqrt{x^2 + x} = |x| \sqrt{1 + \frac1x} = -x\sqrt{1 + \frac1x}$. Знаменатель равен $-x\left(\sqrt{1 + \frac1x} + 1\right)$, и вся дробь равна $-\frac{1}{\sqrt{1 + 1/x} + 1} \to -\frac12$. Проверка: при $x = -100$ имеем $\sqrt{9900} - 100 \approx -0{,}501$.
@@ -528,24 +518,18 @@ $$\frac{\operatorname{tg} x - \sin x}{x^3} = \frac{\sin x\,(1 - \cos x)}{x^3 \co
 $$\text{(a) } \lim_{x \to 0} \frac{\sqrt[3]{x + 8} - 2}{\sqrt{1 + 2x} - 1}; \qquad \text{(b) } \lim_{x \to 5} \frac{\sqrt{6 - x} - 1}{3 - \sqrt{4 + x}}.$$
 :::
 
-::: answer
-\(a) $\frac{1}{12}$; (b) $3$.
-:::
-
 ::: solution
 \(a) *Ключ:* домножить кубическую разность на неполный квадрат, а квадратную — на сопряжённое. Пусть $a = \sqrt[3]{x + 8} \to 2$ (утверждение [-@prop:lec08:roots]). Тогда $a - 2 = \frac{(x + 8) - 8}{a^2 + 2a + 4} = \frac{x}{a^2 + 2a + 4}$ и $\sqrt{1 + 2x} - 1 = \frac{2x}{\sqrt{1 + 2x} + 1}$. Отношение равно $\frac{\sqrt{1 + 2x} + 1}{2(a^2 + 2a + 4)} \to \frac{2}{2 \cdot 12} = \frac{1}{12}$.
 
 \(b) Числитель: $\sqrt{6 - x} - 1 = \frac{5 - x}{\sqrt{6 - x} + 1}$. Знаменатель: $3 - \sqrt{4 + x} = \frac{5 - x}{3 + \sqrt{4 + x}}$. Множитель $5 - x$ сокращается, остаётся $\frac{3 + \sqrt{4 + x}}{\sqrt{6 - x} + 1} \to \frac{3 + 3}{1 + 1} = 3$.
+
+*Ответ:* (a) $\frac{1}{12}$; (b) $3$.
 :::
 
 ## Тригонометрические пределы
 
 ::: {.problem #prob:lec08:trig}
 Найдите (a) $\lim\limits_{x \to 0} \dfrac{\sin x}{\sin 6x - \sin 7x}$; (b) $\lim\limits_{x \to 0} \dfrac{\operatorname{tg} 4x}{\sin x}$; (c) $\lim\limits_{x \to 0} \dfrac{\cos 3x^3 - 1}{\sin^6 2x}$.
-:::
-
-::: answer
-\(a) $-1$; (b) $4$; (c) $-\frac{9}{128}$.
 :::
 
 ::: solution
@@ -556,6 +540,8 @@ $$\text{(a) } \lim_{x \to 0} \frac{\sqrt[3]{x + 8} - 2}{\sqrt{1 + 2x} - 1}; \qqu
 \(c) *Ключ:* выделить $\frac{1 - \cos u}{u^2}$ при $u = 3x^3$ и $\frac{\sin 2x}{2x}$:
 $$\frac{\cos 3x^3 - 1}{\sin^6 2x} = -\frac{1 - \cos 3x^3}{(3x^3)^2} \cdot \frac{9x^6}{(2x)^6} \cdot \left(\frac{2x}{\sin 2x}\right)^6.$$
 Первый множитель стремится к $-\frac12$ (замена $u = 3x^3 \ne 0$ при $x \ne 0$), второй равен $\frac{9}{64}$, третий стремится к $1$. Ответ: $-\frac12 \cdot \frac{9}{64} = -\frac{9}{128}$.
+
+*Ответ:* (a) $-1$; (b) $4$; (c) $-\frac{9}{128}$.
 :::
 
 ## Пределы на бесконечности и бесконечные пределы
@@ -564,28 +550,24 @@ $$\frac{\cos 3x^3 - 1}{\sin^6 2x} = -\frac{1 - \cos 3x^3}{(3x^3)^2} \cdot \frac{
 Докажите по определению: (a) $\lim\limits_{x \to -\infty} \dfrac{2x + 1}{x - 3} = 2$ — укажите $C(\varepsilon)$; (b) $\lim\limits_{x \to 2} \dfrac{1}{(x - 2)^2} = +\infty$ — укажите $\delta(M)$.
 :::
 
-::: answer
-\(a) $C = \frac7\varepsilon$; (b) $\delta = \frac{1}{\sqrt M}$.
-:::
-
 ::: solution
 \(a) $\left|\frac{2x + 1}{x - 3} - 2\right| = \frac{7}{|x - 3|}$. *Ключ:* огрубить знаменатель: при $x < 0$ имеем $|x - 3| = 3 - x > -x = |x|$, поэтому $\frac{7}{|x - 3|} < \frac{7}{|x|}$. Неравенство $\frac{7}{|x|} < \varepsilon$ выполнено при $|x| > \frac7\varepsilon$, то есть при $x < -\frac7\varepsilon$. Годится $C = \frac7\varepsilon$.
 
 \(b) $\frac{1}{(x - 2)^2} > M$ равносильно $(x - 2)^2 < \frac1M$, то есть $0 < |x - 2| < \frac{1}{\sqrt M}$ (точка $x = 2$ выколота). Годится $\delta = \frac{1}{\sqrt M}$. Дробь положительна с обеих сторон от $2$, поэтому предел именно $+\infty$, а не просто $\infty$.
+
+*Ответ:* \(a) $C = \frac7\varepsilon$; (b) $\delta = \frac{1}{\sqrt M}$.
 :::
 
 ::: {.problem #prob:lec08:infinity}
 Найдите (a) $\lim\limits_{x \to \infty} \dfrac{2x^2 + 1}{x^2 - 3x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{x + \sin x}{x}$.
 :::
 
-::: answer
-\(a) $2$; (b) $1$.
-:::
-
 ::: solution
 \(a) *Ключ:* разделить на старшую степень $x^2$: $\frac{2 + 1/x^2}{1 - 3/x}$. При $x \to \infty$ имеем $\frac1x \to 0$ и $\frac{1}{x^2} \to 0$ (утверждение [-@prop:lec08:small-large]), поэтому предел равен $\frac21 = 2$.
 
 \(b) $\frac{x + \sin x}{x} = 1 + \frac{\sin x}{x} \to 1$: ограниченная $\sin x$, умноженная на бесконечно малую $\frac1x$ (утверждение [-@prop:lec08:small-large], пункт 3). Арифметика «предел суммы $x + \sin x$, делённый на предел $x$» неприменима: оба стремятся к $+\infty$, это не числа.
+
+*Ответ:* (a) $2$; (b) $1$.
 :::
 
 ## Сложная функция
@@ -594,24 +576,18 @@ $$\frac{\cos 3x^3 - 1}{\sin^6 2x} = -\frac{1 - \cos 3x^3}{(3x^3)^2} \cdot \frac{
 Найдите (a) $\lim\limits_{x \to 0} \cos\left(x \sin\dfrac1x\right)$; (b) $\lim\limits_{x \to 0} \dfrac{\sin(x^2)}{x^2}$. Какое условие теоремы о пределе сложной функции работает в каждом случае?
 :::
 
-::: answer
-\(a) $1$, условие 1; (b) $1$, условие 2.
-:::
-
 ::: solution
 \(a) Внутренняя функция $f(x) = x \sin\frac1x \to 0$ (пример [-@ex:lec07:xsin]), но обращается в ноль в точках $\frac{1}{\pi n}$, так что условие 2 нарушено. *Ключ:* внешняя функция $\cos y$ определена в нуле, и $\lim_{y \to 0} \cos y = 1 = \cos 0$ (утверждение [-@prop:lec08:sin-cos]) — это условие 1. Предел равен $1$.
 
 \(b) Внешняя функция $\frac{\sin y}{y}$ в нуле не определена, условие 1 неприменимо. Но $x^2 \ne 0$ при $x \ne 0$ — условие 2, и предел равен $1$.
+
+*Ответ:* (a) $1$, условие 1; (b) $1$, условие 2.
 :::
 
 ## Второй замечательный предел и классические пределы
 
 ::: {.problem #prob:lec08:e-limits}
 Найдите (a) $\lim\limits_{x \to \infty} \left(1 - \dfrac3x\right)^{x/2}$; (b) $\lim\limits_{x \to 0} (1 + 2x)^{1/\sin x}$; (c) $\lim\limits_{x \to 0} (\cos x)^{1/x^2}$.
-:::
-
-::: answer
-\(a) $e^{-3/2}$; (b) $e^2$; (c) $e^{-1/2}$.
 :::
 
 ::: solution
@@ -624,14 +600,12 @@ $$v = \frac{\ln(1 + 2x)}{2x} \cdot 2 \cdot \frac{x}{\sin x} \to 1 \cdot 2 \cdot 
 \(c) $(\cos x)^{1/x^2} = e^{v}$, $v = \frac{\ln \cos x}{x^2}$. *Ключ:* записать $\cos x = 1 + u$, $u = \cos x - 1$. При $0 < |x| < 2\pi$ имеем $u \ne 0$, и
 $$v = \frac{\ln(1 + u)}{u} \cdot \frac{\cos x - 1}{x^2} \to 1 \cdot \left(-\frac12\right) = -\frac12$$
 по следствиям [-@cor:lec08:log] и [-@cor:lec08:consequences]. Ответ $e^{-1/2} \approx 0{,}607$; проверка: $(\cos 0{,}1)^{100} \approx 0{,}606$.
+
+*Ответ:* (a) $e^{-3/2}$; (b) $e^2$; (c) $e^{-1/2}$.
 :::
 
 ::: {.problem #prob:lec08:classic}
 Найдите (a) $\lim\limits_{x \to 0} \dfrac{e^{3x} - 1}{\ln(1 + 5x)}$; (b) $\lim\limits_{x \to 0} \dfrac{\sqrt[4]{1 + 2x} - 1}{e^x - 1}$; (c) $\lim\limits_{x \to 0} \dfrac{a^x - 1}{x}$, где $a > 0$; (d) $\lim\limits_{x \to 0} \dfrac{e^{x^2} - \cos x}{x^2}$.
-:::
-
-::: answer
-\(a) $\frac35$; (b) $\frac12$; (c) $\ln a$; (d) $\frac32$.
 :::
 
 ::: solution
@@ -646,6 +620,8 @@ $$\frac{a^x - 1}{x} = \frac{e^{x \ln a} - 1}{x \ln a} \cdot \ln a \to \ln a,$$
 так как $y = x \ln a \to 0$ и $y \ne 0$ при $x \ne 0$ (следствие [-@cor:lec08:exp]).
 
 \(d) *Ключ:* добавить и вычесть $1$, чтобы получить два известных предела: $\frac{e^{x^2} - 1}{x^2} + \frac{1 - \cos x}{x^2} \to 1 + \frac12 = \frac32$. Оба слагаемых имеют конечные пределы, поэтому здесь работает арифметика (в отличие от замечания [-@rem:lec08:replace-sin], ничего не заменяется приближённо).
+
+*Ответ:* (a) $\frac35$; (b) $\frac12$; (c) $\ln a$; (d) $\frac32$.
 :::
 
 # Итоги
@@ -657,93 +633,3 @@ $$\frac{a^x - 1}{x} = \frac{e^{x \ln a} - 1}{x \ln a} \cdot \ln a \to \ln a,$$
 - $\left(1 + \frac1x\right)^x \to e$ при вещественном $x \to \pm\infty$: при $x \to +\infty$ выражение зажимается между выражениями от $[x]$, а случай $x \to -\infty$ заменой $x = -y$ сводится к первому. Из $f(n) \to A$ предел по вещественному $x$ сам не следует.
 - Из второго замечательного предела заменами переменной получаются $\left(1 + \frac\alpha x\right)^x \to e^\alpha$, $(1 + x)^{1/x} \to e$, а при $x \to 0$ — $\frac{\ln(1 + x)}{x} \to 1$, $\frac{e^x - 1}{x} \to 1$, $\frac{(1 + x)^\alpha - 1}{x} \to \alpha$. Переход «под знак» $\ln$, $e^x$, $u^\alpha$ опирается на их непрерывность, которую пока принимаем на веру.
 - Неопределённость $1^\infty$ раскрывается переходом $u^v = e^{v \ln u}$: в показателе получается $0 \cdot \infty$, которое считается классическими пределами.
-
-# Глоссарий
-
-Замена переменной в пределе
-:   переход от $\lim_{x \to x_0} g(f(x))$ к $\lim_{y \to A} g(y)$, где $A = \lim f$, законный при $g(A) = B$ или при $f(x) \ne A$ около $x_0$; [-@thm:lec07:composite], доказательство — раздел [-@sec:lec08:composite].
-
-Первый замечательный предел
-:   $\lim_{x \to 0} \frac{\sin x}{x} = 1$ (угол в радианах); [-@thm:lec08:first-remarkable].
-
-$\operatorname{tg} x$
-:   тангенс, $\frac{\sin x}{\cos x}$; при $0 < x < \frac\pi2$ выполнено $\sin x < x < \operatorname{tg} x$; [-@lem:lec08:sin-estimate].
-
-Локальность предела
-:   предел при $x \to x_0$ зависит только от значений $f$ в сколь угодно малой проколотой окрестности $x_0$; [-@rem:lec08:locality].
-
-Ограниченная в окрестности $x_0$ функция
-:   $|f(x)| < C$ при всех $x$ из некоторой $\mathring{U}_\delta(x_0)$; [-@def:lec08:local].
-
-Отделимая от нуля в окрестности $x_0$ функция
-:   $|f(x)| > c > 0$ при всех $x$ из некоторой $\mathring{U}_\delta(x_0)$; [-@def:lec08:local].
-
-Сохранение знака
-:   если $\lim_{x \to x_0} f(x) = A > 0$, то $f(x) > 0$ в некоторой проколотой окрестности $x_0$; [-@cor:lec08:sign].
-
-$U_C(+\infty)$, $U_C(-\infty)$, $U_C(\infty)$
-:   окрестности бесконечности: $(C; +\infty)$, $(-\infty; -C)$ и их объединение; [-@def:lec08:infinity-nbhd].
-
-$\lim_{x \to \infty} f(x) = A$
-:   $\forall \varepsilon > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow |f(x) - A| < \varepsilon$; для $x \to +\infty$ и $x \to -\infty$ — условия $x > C$ и $x < -C$; [-@def:lec08:general-limit].
-
-$\lim_{x \to x_0} f(x) = \infty$
-:   $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$; [-@def:lec08:general-limit].
-
-$\lim f(x) = +\infty$, $\lim f(x) = -\infty$
-:   $f(x) > M$, соответственно $f(x) < -M$ в некоторой окрестности $a$ при любом $M > 0$; [-@def:lec08:general-limit].
-
-$\lim_{x \to a} f(x) = b$ (общая схема)
-:   для любой окрестности $b$ найдётся окрестность $a$ (для $x_0$ — проколотая), где все значения $f$ лежат в окрестности $b$; [-@def:lec08:general-limit].
-
-Бесконечно малая и бесконечно большая функции
-:   $f \to 0$ и $f \to \infty$ при $x \to a$; без указания $a$ термин не имеет смысла; [-@def:lec08:small-large].
-
-$e^x$, $\ln x$, $a^x$, $x^\alpha$
-:   показательная функция, натуральный логарифм, степени с вещественным показателем; пока используются со школьными свойствами и с равенством предела значению; [-@rem:lec08:elementary].
-
-Второй замечательный предел
-:   $\lim_{x \to \infty} \left(1 + \frac1x\right)^x = e$, или $\lim_{x \to 0} (1 + x)^{1/x} = e$; [-@thm:lec08:second-remarkable], [-@cor:lec08:e-zero].
-
-Классические пределы
-:   при $x \to 0$: $\frac{\ln(1 + x)}{x} \to 1$, $\frac{e^x - 1}{x} \to 1$, $\frac{(1 + x)^\alpha - 1}{x} \to \alpha$; [-@cor:lec08:log], [-@cor:lec08:exp], [-@cor:lec08:power].
-
-# Самопроверка
-
-1. В доказательстве теоремы о пределе сложной функции по Гейне в каком месте не хватает условий? Что делает с проблемными членами условие 1 и что условие 2?
-2. Найдите $\lim_{x \to 0} \frac{\sin 5x}{\sin 3x}$ и укажите, какое условие теоремы о сложной функции позволяет сделать замену $y = 5x$.
-3. Найдите $\lim_{x \to 0} \frac{1 - \cos 4x}{x^2}$.
-4. Найдите $\lim_{x \to \pi/2} \frac{\sin x}{x}$.
-5. В доказательстве первого замечательного предела используется неравенство $\cos x < \frac{\sin x}{x} < 1$. Почему его достаточно проверить при $0 < x < \frac\pi2$? И почему недостаточно знать, что $\cos 0 = 1$?
-6. Пусть $\lim_{x \to 2} f(x) = -3$. Докажите, что $f(x) < -1$ в некоторой проколотой окрестности точки $2$.
-7. Можно ли утверждать, что функция с пределом $0$ в точке $x_0$ отлична от нуля около $x_0$? Приведите пример.
-8. Запишите кванторами: (a) $\lim_{x \to -\infty} f(x) = 2$; (b) $\lim_{x \to \infty} f(x) = -\infty$; (c) $\lim_{x \to 1} f(x) = \infty$.
-9. Докажите по определению, что $\lim_{x \to +\infty} \frac{1}{\sqrt x} = 0$, указав $C(\varepsilon)$.
-10. Найдите пределы $\operatorname{sign} x$ при $x \to +\infty$, $x \to -\infty$ и $x \to \infty$.
-11. Для $f(x) = \cos 2\pi x$ все $f(n) = 1$. Существует ли $\lim_{x \to +\infty} f(x)$?
-12. Найдите $\lim_{x \to \infty} \left(1 + \frac{1}{2x}\right)^x$ и $\lim_{x \to 0} (1 - x)^{1/x}$.
-13. Найдите $\lim_{x \to 0} \frac{\sqrt{1 + x} - 1}{x}$ двумя способами: сопряжённым и через следствие о $(1 + x)^\alpha$.
-14. Найдите $\lim_{x \to 0} \frac{\ln(1 + 3x)}{e^{2x} - 1}$.
-15. В выводе $\frac{\ln(1 + x)}{x} \to 1$ из $(1 + x)^{1/x} \to e$ какое свойство логарифма используется, кроме $\ln e = 1$?
-16. Найдите $\lim_{x \to \infty} \left(\frac{x}{x + 2}\right)^{x}$.
-17. Найдите $\lim_{x \to 0} \frac{\operatorname{tg} 2x - \sin 2x}{x^3}$. Что даст замена $\operatorname{tg} 2x$ и $\sin 2x$ на $2x$ и почему это неверно?
-
-::: answers
-1. Члены $y_n = f(x_n)$ могут равняться $A$, а определение Гейне для $g$ говорит только о $y_n \ne A$. При условии 1 значения $g$ в таких членах равны $g(A) = B$ и предел не портят; при условии 2 таких членов конечное число, и их можно отбросить.
-2. $\frac53$: $\frac{\sin 5x}{x} \to 5$, $\frac{\sin 3x}{x} \to 3 \ne 0$. Условие 2: $5x \ne 0$ при $x \ne 0$; условие 1 неприменимо, $\frac{\sin y}{y}$ в нуле не определена.
-3. $8$: $\frac{1 - \cos 4x}{(4x)^2} \cdot 16 \to \frac12 \cdot 16$.
-4. $\frac2\pi$: неопределённости нет, числитель стремится к $\sin\frac\pi2 = 1$, знаменатель — к $\frac\pi2 \ne 0$. Ответ $1$ был бы только при $x \to 0$.
-5. Предел локален, а обе части неравенства — чётные функции, поэтому при $-\frac\pi2 < x < 0$ оно следует из случая $-x$. Нужен предел $\lim_{x \to 0} \cos x = 1$, а предел не обязан равняться значению: его даёт оценка $0 \le 1 - \cos x \le \frac{x^2}{2}$.
-6. Возьмём $\varepsilon = 2$: при $x \in \mathring{U}_{\delta(2)}(2)$ имеем $f(x) < -3 + 2 = -1$ (это следствие [-@cor:lec08:sign] с запасом).
-7. Нет: $x \sin\frac1x \to 0$ при $x \to 0$, но обращается в ноль в точках $\frac{1}{\pi n}$.
-8. (a) $\forall \varepsilon > 0\ \exists C > 0\ \forall x < -C\colon |f(x) - 2| < \varepsilon$. (b) $\forall M > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow f(x) < -M$. (c) $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(1)\colon |f(x)| > M$.
-9. $\frac{1}{\sqrt x} < \varepsilon$ при $x > \frac{1}{\varepsilon^2}$; годится $C = \frac{1}{\varepsilon^2}$.
-10. $1$, $-1$; при $x \to \infty$ предела нет, так как пределы на $+\infty$ и $-\infty$ различны.
-11. Нет: в точках $n + \frac12$ значения $\cos(2\pi n + \pi) = -1$, а в точках $n$ равны $1$ — две последовательности Гейне с разными пределами.
-12. $\sqrt e$ (следствие 1 с $\alpha = \frac12$) и $e^{-1}$: $(1 - x)^{1/x} = \left((1 + (-x))^{1/(-x)}\right)^{-1}$.
-13. $\frac12$: $\frac{\sqrt{1 + x} - 1}{x} = \frac{1}{\sqrt{1 + x} + 1}$; либо $\alpha = \frac12$ в следствии [-@cor:lec08:power].
-14. $\frac32$: $\frac{\ln(1 + 3x)}{3x} \cdot \frac{2x}{e^{2x} - 1} \cdot \frac32$.
-15. Непрерывность логарифма в точке $e$: $\ln u \to \ln e$ при $u \to e$.
-16. $e^{-2}$: $\frac{x}{x + 2} = 1 + \frac{-2}{x + 2}$; замена $t = x + 2$ даёт $\left(1 - \frac2t\right)^{t} \cdot \left(1 - \frac2t\right)^{-2} \to e^{-2}$.
-17. $4$: замена $u = 2x$ даёт $8 \cdot \frac{\operatorname{tg} u - \sin u}{u^3} \to 8 \cdot \frac12$. Замена на $2x$ даёт $0$: в разности она выбрасывает погрешности $\operatorname{tg} 2x - 2x$ и $2x - \sin 2x$, а из них и состоит числитель.
-:::

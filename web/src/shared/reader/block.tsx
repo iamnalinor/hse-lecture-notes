@@ -25,6 +25,8 @@ type Props = {
   readonly children: ReactNode;
   readonly footer?: ReactNode;
   readonly id: string | undefined;
+  /** The theory page is a reference list: statements stand on a hairline, without tinted boxes. */
+  readonly isFlat?: boolean;
   readonly kind: BlockStyle;
   readonly name: BlockHeading;
   readonly number: string | undefined;
@@ -52,11 +54,11 @@ const Header = ({ id, name, number, tag }: Pick<Props, "id" | "name" | "number" 
 One shape for every block: the type is in the label («Теорема 8.4», in its hue), not in a frame.
 Definitions, theorems and problems sit on a soft tint; examples and remarks are text with a hairline.
 */
-export const Block = ({ children, footer, id, kind, name, number, tag }: Props) => {
+export const Block = ({ children, footer, id, isFlat = false, kind, name, number, tag }: Props) => {
   const header = <Header id={id} name={name} number={number} tag={tag} />;
-  const theme = `group/block relative my-7 scroll-mt-6 ${THEME[kind]}`;
+  const theme = `group/block relative ${isFlat ? "my-5" : "my-7"} scroll-mt-6 ${THEME[kind]}`;
 
-  if (BOXED.has(kind)) {
+  if (!isFlat && BOXED.has(kind)) {
     return (
       <div className={`${theme} rounded-lg bg-(--t)`} data-block-label={name.label} id={id}>
         <div className="px-5 pt-3.5">{header}</div>

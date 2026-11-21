@@ -6,8 +6,7 @@ const FRAGMENT = `<p>до</p>
 <div id="prob:colloq1:sup" class="nb nb-problem" data-type="problem">
   <div class="nb-body"><p>Найдите <span id="eq:inner" class="nb-eq">sup</span>.</p></div>
 </div>
-<div class="nb-answer"><p>Ответ: 1.</p></div>
-<div class="nb-solution"><p>Решение.</p></div>
+<div class="nb-solution"><p>Решение.</p><p><em>Ответ:</em> 1.</p></div>
 <p>после</p>
 <span id="eq:lec06:x" class="nb-eq" data-number="6.2">x = 1</span>
 <div id="thm:lec06:bw" class="nb nb-theorem"><div class="nb-head"><span class="nb-name">Теорема 6.1
@@ -22,9 +21,9 @@ const part = (id: string, shouldAttachProof = false) =>
   extractAnswerPart(FRAGMENT, id, shouldAttachProof);
 
 describe("extractAnswerPart", () => {
-  it("gives a problem's answer and solution, not its statement", () => {
+  it("gives a problem's solution with its answer, not its statement", () => {
     const html = part("prob:colloq1:sup")?.html ?? "";
-    expect(html).toContain("Ответ: 1.");
+    expect(html).toContain("<em>Ответ:</em> 1.");
     expect(html).toContain("Решение.");
     expect(html).not.toContain("Найдите");
     expect(html).not.toContain("после");

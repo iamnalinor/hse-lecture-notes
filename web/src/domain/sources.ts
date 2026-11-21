@@ -58,7 +58,7 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
       url: "https://www.youtube.com/playlist?list=PLJlA4dg2M_qc",
     },
     {
-      note: "задачи практики и самопроверки, подготовка к КР1",
+      note: "задачи практики, подготовка к КР1",
       title: "Семинарские листки и демоверсия КР1 2026/27",
       url: "https://drive.google.com/drive/folders/1tbsAlQ9jFL4w7WTh7vY1r6hlBR52hn4y",
     },
@@ -97,7 +97,7 @@ export const SOURCES: Readonly<Record<CourseId, readonly Source[]>> = {
       url: "https://drive.google.com/file/d/19ofoTdWUNepPDDdRfV-FfTF_Ug71YYot/view",
     },
     {
-      note: "задачи практики и самопроверки",
+      note: "задачи практики",
       title: "Материалы лектора: ДЗ и семинарские листки 2026/27",
       url: "https://drive.google.com/drive/folders/1vJQkWLMxA-3_T9pb3EelOCd_3wsUvcXC",
     },

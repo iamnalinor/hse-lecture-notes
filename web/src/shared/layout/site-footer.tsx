@@ -1,5 +1,7 @@
 import { OfflineStatus } from "#web/shared/offline/offline-status.tsx";
 
+import { ThemeToggle } from "./theme-toggle.tsx";
+
 const REPO = "https://github.com/iamnalinor/hse-lecture-notes";
 
 const BUILT = new Intl.DateTimeFormat("ru-RU", {
@@ -13,6 +15,7 @@ export const SiteFooter = () => (
     <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 pt-7 pb-12 sm:px-8">
       <span>Конспекты ПИ ФКН ВШЭ, 2026/27 · сборка от {BUILT}</span>
       <OfflineStatus />
+      <ThemeToggle place="footer" />
       <span>
         <a className="text-muted" href={REPO}>
           Исходники на GitHub

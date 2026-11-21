@@ -71,35 +71,29 @@ describe("course page", () => {
       "href",
       "/calculus/08_oct23_continuity",
     );
-    expect(navLinks("Материалы курса")).toStrictEqual([
-      "Читать лекцию 8 · 23 окт",
-      "Теория",
-      "Глоссарий",
-    ]);
+    expect(navLinks("Материалы курса")).toStrictEqual(["Читать лекцию 8 · 23 окт", "Теория"]);
   });
 
-  it("lists only the preps still ahead after the documents, neutral far from the event", () => {
+  it("lists every prep in its own row: upcoming first with the day, then past ones", () => {
     calculusOn("2026-10-26");
-    expect(navLinks("Подготовка к контрольным")).toStrictEqual([
-      "Подготовка к коллоквиуму 1",
-      "Подготовка к КР-2",
+    expect(navLinks("Подготовка")).toStrictEqual([
+      "Коллоквиум 1 · 02.11–30.12",
+      "КР-2 · 10.12",
+      "КР-1",
     ]);
-    expect(screen.getByRole("link", { name: "Подготовка к коллоквиуму 1" })).not.toHaveClass(
-      "bg-org-fill",
-    );
-    expect(screen.queryByRole("link", { name: "Подготовка к КР-1" })).toBeNull();
+    expect(screen.getByRole("link", { name: /Коллоквиум 1/u })).not.toHaveClass("bg-org-fill");
+    expect(screen.getByRole("link", { name: "КР-1" })).toHaveAttribute("href", "/calculus/kr1");
   });
 
-  it("orders the preps by the next day that matters and accents those near the event", () => {
+  it("orders upcoming preps by the next day that matters and accents those near the event", () => {
     calculusOn("2026-12-08");
-    expect(navLinks("Подготовка к контрольным")).toStrictEqual([
-      "Подготовка к КР-2",
-      "Подготовка к коллоквиуму 1",
+    expect(navLinks("Подготовка")).toStrictEqual([
+      "КР-2 · 10.12",
+      "Коллоквиум 1 · 02.11–30.12",
+      "КР-1",
     ]);
-    expect(screen.getByRole("link", { name: "Подготовка к КР-2" })).toHaveClass("bg-org-fill");
-    expect(screen.getByRole("link", { name: "Подготовка к коллоквиуму 1" })).toHaveClass(
-      "bg-org-fill",
-    );
+    expect(screen.getByRole("link", { name: /КР-2/u })).toHaveClass("bg-org-fill");
+    expect(screen.getByRole("link", { name: /Коллоквиум 1/u })).toHaveClass("bg-org-fill");
   });
 
   it("lists the sources of the course, the public ones linked", () => {

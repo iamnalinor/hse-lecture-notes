@@ -3,7 +3,6 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import {
   CatalogSchema,
   DocMetaSchema,
-  GlossarySchema,
   LabelIndexSchema,
   MacrosSchema,
   SearchIndexSchema,
@@ -40,13 +39,6 @@ export const searchIndexQuery = queryOptions({
   queryKey: ["search"],
 });
 
-export const glossaryQuery = (course: string) =>
-  queryOptions({
-    ...STATIC,
-    queryFn: async () => await fetchJson(`${course}/glossary.json`, GlossarySchema),
-    queryKey: ["glossary", course],
-  });
-
 export const docMetaQuery = (course: string, docId: string) =>
   queryOptions({
     ...STATIC,
@@ -72,7 +64,6 @@ export const ticketBankQuery = (course: string, prepId: string) =>
 export const useCatalog = () => useSuspenseQuery(catalogQuery).data;
 export const useLabelIndex = () => useSuspenseQuery(labelIndexQuery).data;
 export const useMacros = () => useSuspenseQuery(macrosQuery).data;
-export const useGlossary = (course: string) => useSuspenseQuery(glossaryQuery(course)).data;
 export const useDocMeta = (course: string, docId: string) =>
   useSuspenseQuery(docMetaQuery(course, docId)).data;
 export const useFragment = (course: string, docId: string) =>

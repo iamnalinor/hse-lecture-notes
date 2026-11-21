@@ -92,10 +92,10 @@ collected from the data: update it and rerun this script when a course gets its 
 page for a test or colloquium (`context/site.md` reminds of this too).
 */
 const OFFER: Readonly<Record<CourseId, string>> = {
-  aiya: "Теория · глоссарий · ПУД",
-  algebra: "Теория · глоссарий · ПУД · подготовка к КР",
-  calculus: "Теория · глоссарий · ПУД · подготовка к КР и коллоквиуму",
-  discrete: "Теория · глоссарий · ПУД · подготовка к КР",
+  aiya: "Теория · ПУД",
+  algebra: "Теория · ПУД · подготовка к КР",
+  calculus: "Теория · ПУД · подготовка к КР и коллоквиуму",
+  discrete: "Теория · ПУД · подготовка к КР",
 };
 
 const courseCard = (course: CourseInfo): Card => ({
@@ -111,7 +111,7 @@ const courseCard = (course: CourseInfo): Card => ({
 const siteCard: Card = {
   kicker: "1 курс · 2026/27",
   note: COURSES.map((course) => course.name).join(" · "),
-  offer: "Теория · глоссарий · ПУД · подготовка к КР и коллоквиумам",
+  offer: "Теория · ПУД · подготовка к КР и коллоквиумам",
   symbol: tex(COURSES.map((course) => course.symbol).join(String.raw`\quad `)),
   symbolSize: 38,
   title: "Конспекты лекций",

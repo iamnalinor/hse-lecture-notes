@@ -11,11 +11,11 @@ the manifest (`scripts/build-sw.ts`) and the page. Paths are relative to the sit
   cached before it was added).
 */
 
-export type OfflineDocKind = "glossary" | "notes" | "prep" | "program" | "theory";
+export type OfflineDocKind = "notes" | "prep" | "program" | "theory";
 
 export type OfflineDoc = {
   readonly files: readonly string[];
-  /** `<course>/<week_id>`, `<course>/theory`, `<course>/program`, `<course>/glossary`, `<course>/kr1`. */
+  /** `<course>/<week_id>`, `<course>/theory`, `<course>/program`, `<course>/kr1`. */
   readonly id: string;
   readonly kind: OfflineDocKind;
 };

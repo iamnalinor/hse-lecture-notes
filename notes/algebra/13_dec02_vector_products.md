@@ -226,8 +226,6 @@ $$[\vec a, \vec b] = \sum_{p=1}^{3} \sum_{q=1}^{3} a_p b_q [\vec e_p, \vec e_q],
 ::: {.example #ex:lec13:cross}
 Найдём $[\vec a, \vec b]$ для $\vec a = (1, 2, 0)$, $\vec b = (0, 1, 3)$ в правом ортонормированном базисе и площадь параллелограмма на этих векторах.
 
-*Ответ:* $[\vec a, \vec b] = (6, -3, 1)$, площадь $\sqrt{46}$.
-
 По [-@eq:lec13:cross-coords]: $(2 \cdot 3 - 0 \cdot 1, \; 0 \cdot 0 - 1 \cdot 3, \; 1 \cdot 1 - 2 \cdot 0) = (6, -3, 1)$. Проверка перпендикулярности: $(6, -3, 1) \cdot (1, 2, 0) = 6 - 6 = 0$ и $(6, -3, 1) \cdot (0, 1, 3) = -3 + 3 = 0$. Площадь $|[\vec a, \vec b]| = \sqrt{36 + 9 + 1} = \sqrt{46}$. Проверим по определению: $|\vec a| = \sqrt5$, $|\vec b| = \sqrt{10}$, $(\vec a, \vec b) = 2$, $\cos \varphi = \frac{2}{\sqrt{50}}$, $\sin^2 \varphi = 1 - \frac{4}{50} = \frac{46}{50}$, и $|\vec a| \, |\vec b| \sin \varphi = \sqrt{50} \cdot \sqrt{\frac{46}{50}} = \sqrt{46}$.
 :::
 
@@ -267,8 +265,6 @@ $$\langle \vec a, \vec b, \vec c \rangle = \det(a \;\, b \;\, c) \cdot \langle \
 
 ::: {.example #ex:lec13:any-basis}
 В правом ортонормированном базисе заданы $\vec e_1 = \vec i$, $\vec e_2 = \vec i + \vec j$, $\vec e_3 = \vec j + 2\vec k$. Найдём $\langle \vec a, \vec b, \vec c \rangle$ для $\vec a = \vec e_1 + \vec e_2$, $\vec b = \vec e_2 + \vec e_3$, $\vec c = \vec e_1 + \vec e_3$.
-
-*Ответ:* $4$.
 
 $\langle \vec e_1, \vec e_2, \vec e_3 \rangle = \begin{vmatrix} 1 & 0 & 0 \\ 1 & 1 & 0 \\ 0 & 1 & 2 \end{vmatrix} = 2$ по [-@eq:lec13:mixed-coords]. Координаты в базисе $\vec e_1, \vec e_2, \vec e_3$: $a = (1, 1, 0)^T$, $b = (0, 1, 1)^T$, $c = (1, 0, 1)^T$, и $\det(a \; b \; c) = \begin{vmatrix} 1 & 0 & 1 \\ 1 & 1 & 0 \\ 0 & 1 & 1 \end{vmatrix} = 1 + 1 = 2$. По [-@eq:lec13:mixed-any] ответ $2 \cdot 2 = 4$. Проверка в базисе $\vec i, \vec j, \vec k$: $\vec a = (2, 1, 0)$, $\vec b = (1, 2, 2)$, $\vec c = (1, 1, 2)$, и $\begin{vmatrix} 2 & 1 & 0 \\ 1 & 2 & 2 \\ 1 & 1 & 2 \end{vmatrix} = 2 \cdot 2 - 1 \cdot 0 + 0 = 4$.
 :::
@@ -343,78 +339,66 @@ $$\vec r_G = \frac{1 \cdot \vec r_A + 2 \cdot \frac{\vec r_B + \vec r_C}{2}}{3} 
 Найдите площадь треугольника с вершинами $A(1, 0, 1)$, $B(2, 1, 3)$, $C(0, 2, 1)$ и длину его высоты, опущенной из вершины $C$.
 :::
 
-::: answer
-$S = \frac{\sqrt{29}}{2}$, $h_C = \sqrt{\frac{29}{6}}$.
-:::
-
 ::: solution
 $\overrightarrow{AB} = (1, 1, 2)$, $\overrightarrow{AC} = (-1, 2, 0)$. По [-@eq:lec13:cross-coords]
 $$[\overrightarrow{AB}, \overrightarrow{AC}] = (1 \cdot 0 - 2 \cdot 2, \; 2 \cdot (-1) - 1 \cdot 0, \; 1 \cdot 2 - 1 \cdot (-1)) = (-4, -2, 3).$$
 Проверка: $(-4, -2, 3) \cdot (1, 1, 2) = 0$, $(-4, -2, 3) \cdot (-1, 2, 0) = 0$. Площадь $S = \frac12 \sqrt{16 + 4 + 9} = \frac{\sqrt{29}}{2}$ (утверждение [-@prop:lec13:collinear]). *Ключ:* высоту находим из той же площади: $S = \frac12 |AB| \cdot h_C$, $|AB| = \sqrt{1 + 1 + 4} = \sqrt6$, $h_C = \frac{2S}{|AB|} = \frac{\sqrt{29}}{\sqrt6}$.
+
+*Ответ:* $S = \frac{\sqrt{29}}{2}$, $h_C = \sqrt{\frac{29}{6}}$.
 :::
 
 ::: {.problem #prob:lec13:tetra}
 Для точек из задачи [-@prob:lec13:triangle-area] и $D(1, 1, 4)$ найдите объём тетраэдра $ABCD$, высоту, опущенную из вершины $D$ на грань $ABC$, и ориентацию тройки $\overrightarrow{AB}, \overrightarrow{AC}, \overrightarrow{AD}$.
 :::
 
-::: answer
-$V = \frac76$, $h_D = \frac{7}{\sqrt{29}}$, тройка правая.
-:::
-
 ::: solution
 $\overrightarrow{AD} = (0, 1, 3)$. По теореме [-@thm:lec13:mixed-coords]
 $$\langle \overrightarrow{AB}, \overrightarrow{AC}, \overrightarrow{AD} \rangle = \begin{vmatrix} 1 & 1 & 2 \\ -1 & 2 & 0 \\ 0 & 1 & 3 \end{vmatrix} = 1 \cdot 6 - 1 \cdot (-3) + 2 \cdot (-1) = 7.$$
 Проверка через задачу [-@prob:lec13:triangle-area]: $\big((-4, -2, 3), (0, 1, 3)\big) = -2 + 9 = 7$. Произведение положительно — тройка правая (следствие [-@cor:lec13:coplanar]). Объём тетраэдра $\frac16 \cdot 7 = \frac76$. *Ключ:* высоту даёт формула объёма пирамиды $V = \frac13 S_{ABC} \, h_D$: $h_D = \frac{3V}{S_{ABC}} = \frac{7/2}{\sqrt{29}/2} = \frac{7}{\sqrt{29}}$.
+
+*Ответ:* $V = \frac76$, $h_D = \frac{7}{\sqrt{29}}$, тройка правая.
 :::
 
 ::: {.problem #prob:lec13:coplanar-param}
 При каком $\lambda$ векторы $\vec a = (1, 2, \lambda)$, $\vec b = (0, 1, 1)$, $\vec c = (2, \lambda, 1)$ компланарны? При каких $\lambda$ тройка $\vec a, \vec b, \vec c$ правая?
 :::
 
-::: answer
-Компланарны при $\lambda = \frac53$; тройка правая при $\lambda < \frac53$.
-:::
-
 ::: solution
 $\langle \vec a, \vec b, \vec c \rangle = \begin{vmatrix} 1 & 2 & \lambda \\ 0 & 1 & 1 \\ 2 & \lambda & 1 \end{vmatrix} = 1 \cdot (1 - \lambda) - 2 \cdot (0 - 2) + \lambda \cdot (0 - 2) = 5 - 3\lambda$ (разложение по первой строке). По следствию [-@cor:lec13:coplanar] векторы компланарны при $5 - 3\lambda = 0$. *Ключ:* ориентация — знак того же определителя: тройка правая при $5 - 3\lambda > 0$, левая при $\lambda > \frac53$. Проверка при $\lambda = \frac53$: $2\vec a - \frac73 \vec b = \left(2, \; 4 - \frac73, \; \frac{10}{3} - \frac73\right) = \left(2, \frac53, 1\right) = \vec c$ — векторы действительно зависимы.
+
+*Ответ:* Компланарны при $\lambda = \frac53$; тройка правая при $\lambda < \frac53$.
 :::
 
 ::: {.problem #prob:lec13:cross-algebra}
 Известно, что $|\vec a| = 3$, $|\vec b| = 4$, $(\vec a, \vec b) = 6$. Найдите $|[2\vec a - \vec b, \vec a + 3\vec b]|$.
 :::
 
-::: answer
-$42\sqrt3$.
-:::
-
 ::: solution
 *Ключ:* раскрываем по линейности, следя за порядком: $[2\vec a - \vec b, \vec a + 3\vec b] = 2[\vec a, \vec a] + 6[\vec a, \vec b] - [\vec b, \vec a] - 3[\vec b, \vec b] = 6[\vec a, \vec b] + [\vec a, \vec b] = 7[\vec a, \vec b]$ (теорема [-@thm:lec13:cross-props]). Угол: $\cos \varphi = \frac{6}{3 \cdot 4} = \frac12$, $\sin \varphi = \frac{\sqrt3}{2}$, $|[\vec a, \vec b]| = 3 \cdot 4 \cdot \frac{\sqrt3}{2} = 6\sqrt3$. Ответ $7 \cdot 6\sqrt3 = 42\sqrt3$.
+
+*Ответ:* $42\sqrt3$.
 :::
 
 ::: {.problem #prob:lec13:any-basis}
 Базис $\vec e_1, \vec e_2, \vec e_3$ таков, что объём параллелепипеда на нём равен $5$, и тройка $\vec e_1, \vec e_2, \vec e_3$ левая. Векторы заданы координатами в этом базисе: $\vec a = (1, 0, 2)$, $\vec b = (2, 1, 0)$, $\vec c = (0, 1, 1)$. Найдите объём параллелепипеда на $\vec a, \vec b, \vec c$ и ориентацию этой тройки.
 :::
 
-::: answer
-Объём $25$; тройка левая.
-:::
-
 ::: solution
 По следствию [-@cor:lec13:coplanar] $\langle \vec e_1, \vec e_2, \vec e_3 \rangle = -5$ (левая тройка, объём $5$). *Ключ:* по [-@eq:lec13:mixed-any] координаты дают только определитель, а масштаб и знак вносит базис:
 $$\det(a \; b \; c) = \begin{vmatrix} 1 & 2 & 0 \\ 0 & 1 & 1 \\ 2 & 0 & 1 \end{vmatrix} = 1 \cdot (1 - 0) - 2 \cdot (0 - 2) + 0 = 5, \qquad \langle \vec a, \vec b, \vec c \rangle = 5 \cdot (-5) = -25.$$
 Объём $|-25| = 25$, знак минус — тройка левая. Считать объём как $|\det| = 5$, «как в ортонормированном базисе», — ошибка в $5$ раз.
+
+*Ответ:* Объём $25$; тройка левая.
 :::
 
 ::: {.problem #prob:lec13:division}
 Даны $A(1, -2, 3)$ и $B(4, 1, 0)$. Найдите точку $M$, делящую отрезок $AB$ в отношении $2 : 1$ от $A$, и точку $C$, для которой $B$ — середина отрезка $AC$.
 :::
 
-::: answer
-$M(3, 0, 1)$, $C(7, 4, -3)$.
-:::
-
 ::: solution
 По [-@eq:lec13:division] с $p = 2$, $q = 1$: $\vec r_M = \frac{1 \cdot \vec r_A + 2 \vec r_B}{3} = \left(\frac{1 + 8}{3}, \frac{-2 + 2}{3}, \frac{3 + 0}{3}\right) = (3, 0, 1)$. Проверка: $\overrightarrow{AM} = (2, 2, -2)$, $\overrightarrow{MB} = (1, 1, -1)$, $\overrightarrow{AM} = 2 \overrightarrow{MB}$. *Ключ:* во второй части неизвестен конец отрезка; из $\vec r_B = \frac{\vec r_A + \vec r_C}{2}$ выражаем $\vec r_C = 2\vec r_B - \vec r_A = (8 - 1, 2 + 2, 0 - 3) = (7, 4, -3)$.
+
+*Ответ:* $M(3, 0, 1)$, $C(7, 4, -3)$.
 :::
 
 # Итоги
@@ -425,61 +409,3 @@ $M(3, 0, 1)$, $C(7, 4, -3)$.
 - Векторное произведение антикоммутативно и линейно, но не ассоциативно; линейность выводится из геометрического смысла смешанного произведения.
 - В правом ортонормированном базисе $[\vec a, \vec b]$ — «определитель» с $\vec i, \vec j, \vec k$ в первой строке, а $\langle \vec a, \vec b, \vec c \rangle$ — определитель из координат; в произвольном базисе определитель из координат умножается на $\langle \vec e_1, \vec e_2, \vec e_3 \rangle$.
 - Декартова система координат — начало и базис; координаты вектора $\overrightarrow{AB}$ — разности координат конца и начала, точка, делящая отрезок в отношении $p : q$, имеет радиус-вектор $\frac{q \vec r_1 + p \vec r_2}{p + q}$.
-
-# Глоссарий
-
-Правая / левая тройка
-:   некомпланарная упорядоченная тройка, у которой с конца третьего вектора поворот от первого ко второму виден против / по часовой стрелке; [-@def:lec13:orientation].
-
-Правый базис
-:   базис, тройка векторов которого правая; [-@def:lec13:orientation].
-
-$[\vec a, \vec b]$, векторное произведение
-:   вектор длины $|\vec a| \, |\vec b| \sin \varphi$, перпендикулярный $\vec a$ и $\vec b$, с правой тройкой $\vec a, \vec b, [\vec a, \vec b]$; также $\vec a \times \vec b$; [-@def:lec13:cross].
-
-$\langle \vec a, \vec b, \vec c \rangle$, смешанное произведение
-:   число $([\vec a, \vec b], \vec c)$ — объём параллелепипеда со знаком ориентации; [-@def:lec13:mixed].
-
-Декартова система координат
-:   точка $O$ и базис; прямоугольная (ПДСК) — если базис ортонормированный; [-@def:lec13:cartesian].
-
-$\vec r_M$, радиус-вектор
-:   вектор $\overrightarrow{OM}$ из начала координат в точку $M$; его координаты — координаты точки; [-@def:lec13:cartesian].
-
-$M(x, y, z)$, координаты точки
-:   координаты радиус-вектора $\overrightarrow{OM}$; [-@def:lec13:cartesian].
-
-Деление отрезка в отношении $p : q$
-:   $M \in M_1 M_2$ с $q \, \overrightarrow{M_1 M} = p \, \overrightarrow{M M_2}$; $\vec r_M = \frac{q \vec r_1 + p \vec r_2}{p + q}$; [-@def:lec13:division].
-
-# Самопроверка
-
-1. Базис $\vec i, \vec j, \vec k$ правый. Какие из троек $(\vec j, \vec i, \vec k)$, $(\vec k, \vec i, \vec j)$, $(\vec i, \vec j, -\vec k)$, $(-\vec i, -\vec j, -\vec k)$ правые?
-2. Вычислите $[\vec a, \vec b]$ для $\vec a = (2, -1, 1)$, $\vec b = (1, 0, -1)$ и площадь треугольника, построенного на этих векторах.
-3. Коллинеарны ли векторы $(1, -2, 3)$ и $(-2, 4, -6)$? Проверьте через векторное произведение.
-4. Упростите $[\vec a + \vec b, \vec a - \vec b]$.
-5. Верно ли, что $[\vec a, [\vec b, \vec c]] = [[\vec a, \vec b], \vec c]$ для любых векторов? Приведите пример или контрпример.
-6. Вычислите $\langle \vec a, \vec b, \vec c \rangle$ для $\vec a = (1, 0, 0)$, $\vec b = (1, 1, 0)$, $\vec c = (1, 1, 1)$. Правая ли это тройка? Чему равен объём тетраэдра на этих векторах?
-7. Лежат ли точки $A(1, 1, 1)$, $B(2, 3, 1)$, $C(3, 1, 2)$, $D(4, 3, 2)$ в одной плоскости?
-8. Известно, что $\langle \vec a, \vec b, \vec c \rangle = 2$. Найдите $\langle \vec c, \vec b, \vec a \rangle$ и $\langle \vec a + \vec b, \vec b, \vec c \rangle$.
-9. В базисе с $\langle \vec e_1, \vec e_2, \vec e_3 \rangle = 3$ векторы имеют координаты $(1, 1, 0)$, $(0, 1, 1)$, $(1, 0, 1)$. Найдите объём параллелепипеда на них.
-10. Найдите координаты вектора $\overrightarrow{AB}$ и длину отрезка для $A(1, 2, 3)$, $B(-1, 0, 4)$.
-11. Найдите центр тяжести треугольника с вершинами $(1, 0, 0)$, $(0, 2, 0)$, $(0, 0, 3)$.
-12. Точка $M(2, 1, 0)$ делит отрезок $AB$ в отношении $1 : 3$ от $A$, и $A(1, 1, 1)$. Найдите $B$.
-13. Для тетраэдра из вопроса 6 найдите высоту, опущенную из конца вектора $\vec c$ на грань, натянутую на $\vec a$ и $\vec b$.
-
-::: answers
-1. $(\vec k, \vec i, \vec j)$ — циклическая перестановка, правая. $(\vec j, \vec i, \vec k)$ и $(\vec i, \vec j, -\vec k)$ — левые. $(-\vec i, -\vec j, -\vec k)$ — левая: три смены знака меняют ориентацию нечётное число раз (определитель $-1$).
-2. $((-1)(-1) - 1 \cdot 0, \; 1 \cdot 1 - 2 \cdot (-1), \; 2 \cdot 0 - (-1) \cdot 1) = (1, 3, 1)$; площадь $\frac12 \sqrt{11}$.
-3. Да: $[\vec a, \vec b] = ((-2)(-6) - 3 \cdot 4, \; 3 \cdot (-2) - 1 \cdot (-6), \; 1 \cdot 4 - (-2)(-2)) = (0, 0, 0)$.
-4. $[\vec a, \vec a] - [\vec a, \vec b] + [\vec b, \vec a] - [\vec b, \vec b] = -2[\vec a, \vec b]$.
-5. Нет: $[\vec i, [\vec i, \vec j]] = -\vec j$, а $[[\vec i, \vec i], \vec j] = \vec 0$ (замечание [-@rem:lec13:not-associative]).
-6. Определитель треугольной матрицы $\begin{vmatrix} 1 & 0 & 0 \\ 1 & 1 & 0 \\ 1 & 1 & 1 \end{vmatrix} = 1 > 0$ — правая; объём тетраэдра $\frac16$.
-7. $\overrightarrow{AB} = (1, 2, 0)$, $\overrightarrow{AC} = (2, 0, 1)$, $\overrightarrow{AD} = (3, 2, 1)$, $\overrightarrow{AD} = \overrightarrow{AB} + \overrightarrow{AC}$, определитель $0$ — да, в одной плоскости ($ABDC$ — параллелограмм).
-8. $\langle \vec c, \vec b, \vec a \rangle = -2$ (транспозиция $\vec a \leftrightarrow \vec c$); $\langle \vec a + \vec b, \vec b, \vec c \rangle = 2 + \langle \vec b, \vec b, \vec c \rangle = 2 + 0 = 2$.
-9. Определитель координат равен $2$, $\langle \vec a, \vec b, \vec c \rangle = 2 \cdot 3 = 6$, объём $6$.
-10. $\overrightarrow{AB} = (-2, -2, 1)$, $|AB| = 3$.
-11. $\left(\frac13, \frac23, 1\right)$.
-12. $\vec r_M = \frac{3\vec r_A + \vec r_B}{4}$, $\vec r_B = 4\vec r_M - 3\vec r_A = (5, 1, -3)$.
-13. $[\vec a, \vec b] = (0, 0, 1)$, площадь основания параллелепипеда $1$, объём $|\langle \vec a, \vec b, \vec c \rangle| = 1$, высота $h = \frac{V}{S} = 1$ (для тетраэдра: $\frac{3 \cdot \frac16}{\frac12} = 1$ — то же).
-:::

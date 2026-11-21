@@ -35,8 +35,8 @@ const PAGE_SHELL = /^(?!data\/).+\/index\.html$/u;
 const SHARED_DATA = new Set(["data/courses.json", "data/index.json", "data/katex-macros.json"]);
 // Browsers that run service workers all take woff2: the woff/ttf fallbacks of KaTeX are not precached.
 const PRECACHED_ASSET = /^assets\/.+\.(?:css|js|woff2)$/u;
-// data/<course>/<doc>/… (a lecture, the theory, the program, a prep) and data/<course>/glossary.json
-const DOC_FILE = /^data\/(?<course>[^/]+)\/(?:(?<doc>[^/]+)\/.+|glossary\.json)$/u;
+// data/<course>/<doc>/… (a lecture, the theory, the program, a prep)
+const DOC_FILE = /^data\/(?<course>[^/]+)\/(?<doc>[^/]+)\/.+$/u;
 
 const encode = (text: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(text);
 
@@ -61,10 +61,10 @@ const docsOf = (paths: readonly string[]): OfflineDoc[] => {
   const byId = new Map<string, { files: string[]; kind: OfflineDocKind }>();
   for (const file of paths) {
     const groups = DOC_FILE.exec(file)?.groups;
-    if (groups?.["course"] === undefined) {
+    const doc = groups?.["doc"];
+    if (doc === undefined || groups?.["course"] === undefined) {
       continue;
     }
-    const doc = groups["doc"] ?? "glossary";
     const id = `${groups["course"]}/${doc}`;
     const entry = byId.get(id) ?? { files: [], kind: offlineDocKind(doc) };
     entry.files.push(file);

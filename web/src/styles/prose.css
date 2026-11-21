@@ -34,6 +34,8 @@ anchors still reach skipped content.
 
 .prose-notes ol {
   list-style: decimal;
+  /* room for two-digit markers («10.»): with 1.3em they hang out of the column and get clipped on phones */
+  padding-left: 1.9em;
 }
 
 .prose-notes li {
@@ -347,4 +349,9 @@ only push them off the centre.
 
 .ref-preview figcaption {
   margin-top: 8px;
+}
+
+/* the first part follows the lecture header directly: its rule replaces the header's, no double gap */
+.prose-notes > section:first-child > h2 {
+  margin-top: 1.75rem;
 }

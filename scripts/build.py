@@ -6,13 +6,12 @@
     uv run scripts/build.py --no-html --strict
 
 Результат в build/:
-    build/index.json                    глобальный индекс меток и глоссариев
+    build/index.json                    глобальный индекс меток и лекций
     build/pdf/<course>/<week_id>.pdf    PDF конспектов, build/pdf/<course>/theory.pdf, program.pdf
     build/pdf/<course>/krN-cheatsheet-<variant>.pdf
                                         читлисты из prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex
     build/site-data/                    данные для будущего сайта + preview-страницы
         index.json, courses.json, katex-macros.json, search.json
-        <course>/glossary.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
         <course>/theory/..., <course>/program/...
         <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
@@ -213,7 +212,6 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
         paths = list(ex.map(one, docs))
 
     labels: dict[str, dict] = {}
-    glossary: dict[str, list] = {}
     lectures: dict[str, list] = {}
     errors = []
     for doc, p in zip(docs, paths, strict=True):
@@ -233,9 +231,6 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
                 file=doc.rel,
             )
             course_labels[lid] = e
-        for g in data.get("glossary") or []:
-            g.update(lecture=data["lecture"], week_id=doc.week_id)
-            glossary.setdefault(doc.course, []).append(g)
         lectures.setdefault(doc.course, []).append(
             {
                 "lecture": data["lecture"],
@@ -249,7 +244,7 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
         raise BuildError("\n".join(errors))
     for v in lectures.values():
         v.sort(key=lambda x: x["lecture"])
-    index = {"labels": labels, "glossary": glossary, "lectures": lectures}
+    index = {"labels": labels, "lectures": lectures}
     shutil.rmtree(idx_dir, ignore_errors=True)
     tmp = BUILD / f"index.json.{os.getpid()}"
     write_json(tmp, index)
@@ -558,7 +553,7 @@ def write_preview(page_dir: Path, meta: dict) -> None:
 
 BLOCK_TAGS = {"p", "div", "li", "section", "br", "td", "th", "tr", "figcaption", "summary", "blockquote"}
 # ответы прячутся под спойлер — в сниппете поиска их быть не должно
-SEARCH_SKIP = {"nb-answer", "nb-answers", "nb-solution"}
+SEARCH_SKIP = {"nb-answers", "nb-solution"}
 
 
 class SearchChunks(HTMLParser):
@@ -696,18 +691,6 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
         },
     )
     write_json(SITE / "katex-macros.json", katex_macros())
-    by_course: dict[str, list] = {}
-    for m in metas:
-        if m.get("kind") != "notes":
-            continue
-        for g in m.get("glossary") or []:
-            by_course.setdefault(m["course"], []).append(
-                {**g, "lecture": m["lecture"], "week_id": m["week_id"]}
-            )
-    for course, items in by_course.items():
-        items.sort(key=lambda g: (g["lecture"], g["term"].lower()))
-        (SITE / course).mkdir(parents=True, exist_ok=True)
-        write_json(SITE / course / "glossary.json", items)
     search = []
     for m in sorted(metas, key=lambda m: (m["course"], m["kind"], m["lecture"])):
         fragment = (SITE / m["course"] / m["week_id"] / "fragment.html").read_text(encoding="utf-8")

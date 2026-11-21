@@ -44,7 +44,7 @@ const placeOf = (hit: SearchHit): string => {
 export const resultId = (index: number): string => `search-hit-${String(index)}`;
 
 export const SearchResults = ({ active, hits, onHover, onPick }: Props) => (
-  <ul className="max-h-[60vh] overflow-y-auto p-2" id="search-results" role="listbox">
+  <ul className="p-2" id="search-results" role="listbox">
     {hits.map((hit, index) => (
       <li
         aria-selected={index === active}

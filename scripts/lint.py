@@ -42,7 +42,9 @@ PREFIX = {
     "remark": "rem",
     "problem": "prob",
 }
-AUX_DIVS = {"proof", "solution", "answer", "answers", "course-glossary"}
+AUX_DIVS = {"proof", "solution", "answers"}
+# Блока «Ответ» больше нет: ответ — последней строкой решения («*Ответ:* …»).
+GONE_DIVS = {"answer": "блока ::: answer больше нет: ответ пишется в конце решения строкой «*Ответ:* …»"}
 TAGS = {"корнер-кейс", "подводный камень", "частое заблуждение", "соглашение курса", "напоминание"}
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
@@ -103,7 +105,8 @@ class Report:
         self.warnings.append(f"{path}: WARN: {msg}")
 
 
-def stringify(inlines) -> str:
+def stringify(inlines, code: bool = True) -> str:
+    """Текст инлайнов; code=False — без `кода` (в нём законны «!», «!=» и т. п.)."""
     out = []
 
     def go(x):
@@ -120,7 +123,8 @@ def stringify(inlines) -> str:
             elif t == "Math":
                 out.append("$" + c[1] + "$")
             elif t == "Code":
-                out.append(c[1])
+                if code:
+                    out.append(c[1])
             elif t == "Cite":
                 go(c[1])
             elif c is not None:
@@ -165,13 +169,13 @@ def split_sections(blocks: list) -> list[tuple[str, list]]:
     return sections
 
 
-def text_of_block(b) -> str:
+def text_of_block(b, code: bool = True) -> str:
     parts = []
 
     def fn(n):
         if n["t"] in ("Para", "Plain", "Header"):
             inl = n["c"][2] if n["t"] == "Header" else n["c"]
-            parts.append(stringify(inl))
+            parts.append(stringify(inl, code))
 
     walk(b, fn)
     return "\n".join(parts)
@@ -233,7 +237,7 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
     required = ["Контекст", "После прочтения ты сможешь", "Теория"]
     if has_practice:
         required.append("Практика")
-    required += ["Итоги", "Глоссарий", "Самопроверка"]
+    required.append("Итоги")
     sections = split_sections(blocks)
     names = [s[0] for s in sections]
     for r in required:
@@ -242,6 +246,9 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
     order = [n for n in names if n in required]
     if order != [r for r in required if r in names]:
         rep.err(rel, f"разделы не в порядке скелета: {order}")
+    for gone in ("Глоссарий", "Самопроверка"):
+        if gone in names:
+            rep.err(rel, f"раздела «# {gone}» больше нет: термины находит поиск, себя проверяют задачами «Практики»")
     sec = dict(sections)
 
     if "Итоги" in sec:
@@ -249,37 +256,12 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
         n = len(lists[0]["c"]) if lists else 0
         if not 3 <= n <= 8:
             rep.warn(rel, f"в итогах {n} пунктов, нужно 3–8")
-    if "Глоссарий" in sec:
-        dls = [b for b in sec["Глоссарий"] if b["t"] == "DefinitionList"]
-        if not dls:
-            rep.err(rel, "глоссарий должен быть definition list (Термин\\n:   определение)")
-        for dl in dls:
-            for term, defs in dl["c"]:
-                cites = [n for n in iter_nodes(defs) if n["t"] == "Cite"]
-                if not cites:
-                    rep.warn(rel, f"в глоссарии у «{stringify(term)}» нет ссылки на номер определения")
     skills = 0
     if "После прочтения ты сможешь" in sec:
         lists = [b for b in sec["После прочтения ты сможешь"] if b["t"] in ("BulletList", "OrderedList")]
         skills = len(lists[0]["c"] if lists[0]["t"] == "BulletList" else lists[0]["c"][1]) if lists else 0
         if skills == 0:
             rep.err(rel, "«После прочтения ты сможешь» — нужен список навыков")
-    if "Самопроверка" in sec:
-        body = sec["Самопроверка"]
-        olists = [b for b in body if b["t"] == "OrderedList"]
-        answers = [b for b in body if b["t"] == "Div" and "answers" in b["c"][0][1]]
-        if not olists:
-            rep.err(rel, "в самопроверке нет нумерованного списка задач")
-        if not answers:
-            rep.err(rel, "в самопроверке нет блока ::: answers")
-        if olists and answers:
-            n_q = len(olists[0]["c"][1])
-            alists = [b for b in answers[0]["c"][1] if b["t"] == "OrderedList"]
-            n_a = len(alists[0]["c"][1]) if alists else 0
-            if n_q != n_a:
-                rep.err(rel, f"задач в самопроверке {n_q}, ответов {n_a}")
-            if n_q < skills:
-                rep.warn(rel, f"навыков {skills}, а задач самопроверки {n_q}: на каждый навык нужна задача")
     return sec
 
 
@@ -301,24 +283,22 @@ def check_texts(rep: Report, rel: str, blocks: list) -> None:
                     rel,
                     f"символов {''.join(missing)} нет в шрифте PDF (будут квадраты): пиши их в формуле, например $\\Rightarrow$",
                 )
-        if "!" in no_math:
+        prose = re.sub(r"\$[^$]*\$", "", text_of_block(b, code=False))
+        if "!" in prose:
             rep.warn(
                 rel,
-                f"восклицательный знак вне формулы: «{no_math[max(0, no_math.find('!') - 40) : no_math.find('!') + 1]}»",
+                f"восклицательный знак вне формулы: «{prose[max(0, prose.find('!') - 40) : prose.find('!') + 1]}»",
             )
 
 
 def check_practice(rep: Report, rel: str, body: list) -> None:
-    """В практике за каждой задачей идут ::: answer и ::: solution."""
+    """В практике за каждой задачей идёт ::: solution (ответ — в его конце)."""
     flat = [n for n in iter_nodes(body) if n["t"] == "Div"]
     for i, d in enumerate(flat):
         if "problem" in d["c"][0][1]:
-            nxt = [x["c"][0][1] for x in flat[i + 1 : i + 3]]
-            if len(nxt) < 2 or "answer" not in nxt[0] or "solution" not in nxt[1]:
-                rep.err(
-                    rel,
-                    f"после задачи {d['c'][0][0] or '(без метки)'} должны идти ::: answer и ::: solution",
-                )
+            nxt = [x["c"][0][1] for x in flat[i + 1 : i + 2]]
+            if not nxt or "solution" not in nxt[0]:
+                rep.err(rel, f"после задачи {d['c'][0][0] or '(без метки)'} должно идти ::: solution")
 
 
 def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
@@ -349,6 +329,10 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
             (ident, classes, kv), content = n["c"]
             attrs = dict(kv)
             kinds = [c for c in classes if c in PREFIX]
+            gone = [GONE_DIVS[c] for c in classes if c in GONE_DIVS]
+            if gone:
+                rep.err(rel, gone[0])
+                return
             unknown = [c for c in classes if c not in PREFIX and c not in AUX_DIVS and c != "unnumbered"]
             if unknown:
                 rep.err(rel, f"неизвестный тип блока ::: {{.{unknown[0]}}} (см. context/markup.md)")
@@ -402,25 +386,69 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
         check_practice(rep, rel, sec["Практика"])
 
 
+# Теория курса — справочник для повторения (context/prompts/theory.md): разделы «# N. Тема» по
+# лекциям, определения абзацем с термином в начале, без ссылок в конспекты и «доказано в лекции N»
+THEORY_HEADING = re.compile(r"(\d+)\. \S")
+THEORY_HEADING_MAX = 60
+THEORY_FIRST = "Соглашения курса"
+THEORY_BLOCKS = {"definition", "axiom", "theorem", "lemma", "proposition", "corollary"}
+THEORY_STATUSES = (
+    "без доказательства",
+    "доказательство — на семинаре",
+    "на лекции не доказывалось",
+    "на лекции — только идея",
+    "набросок доказательства",
+)
+
+
 def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
     meta = build.read_front_matter(path)
     course = path.stem
     if meta.get("course") != course:
         rep.err(rel, f"course={meta.get('course')!r}, а файл theory/{course}.md")
     doc = ast_of(path)
+    course_labels = labels.get(course, {})
+    lecture = None  # номер из заголовка «# N. Тема», под которым идут блоки
 
     def on_node(n):
-        if n["t"] == "Div":
-            attrs = dict(n["c"][0][2])
-            ref = attrs.get("ref")
-            if ref and ref not in labels.get(course, {}):
-                rep.err(rel, f"ref={ref} не найден в конспектах курса")
-        elif n["t"] == "Cite":
-            check_cite(rep, rel, n, labels.get(course, {}))
+        if n["t"] == "Cite":
+            rep.err(rel, "теория — без ссылок: номер блока уже совпадает с конспектом, лекцию видно по разделу")
         elif n["t"] == "Math":
             check_math(rep, rel, n["c"][1])
 
-    walk(doc["blocks"], on_node)
+    for b in doc["blocks"]:
+        if b["t"] == "Header" and b["c"][0] == 1:
+            title = stringify(b["c"][2])
+            m = THEORY_HEADING.match(title)
+            if title == THEORY_FIRST:
+                lecture = None
+            elif not m:
+                rep.err(rel, f"заголовок теории «{title}»: нужен вид «N. Тема», N — номер лекции")
+            else:
+                lecture = int(m.group(1))
+                if len(title) > THEORY_HEADING_MAX:
+                    rep.err(rel, f"заголовок «{title}» длиннее {THEORY_HEADING_MAX} символов: тема, а не оглавление лекции")
+        elif b["t"] == "Div":
+            classes, attrs = b["c"][0][1], dict(b["c"][0][2])
+            ref = attrs.get("ref")
+            if not ref or not set(classes) & THEORY_BLOCKS:
+                rep.err(rel, f"блок {classes or attrs}: в теории только определения и утверждения с ref= — примеры и замечания живут в конспектах")
+            if ref:
+                if ref not in course_labels:
+                    rep.err(rel, f"ref={ref} не найден в конспектах курса")
+                m = re.search(r":lec(\d+):", ref)
+                if m and lecture is not None and int(m.group(1)) != lecture:
+                    rep.err(rel, f"ref={ref} из лекции {int(m.group(1))} стоит в разделе «{lecture}. …»")
+                status = attrs.get("status")
+                if status is not None and status not in THEORY_STATUSES:
+                    allowed = ", ".join(f"«{x}»" for x in THEORY_STATUSES)
+                    rep.err(rel, f"{ref}: status=«{status}» — доказано на лекции пишется без status=, иначе одно из: {allowed}")
+                if "definition" in classes:
+                    first = b["c"][1][0] if b["c"][1] else None
+                    inl = first["c"] if first and first["t"] in ("Para", "Plain") else []
+                    if not inl or inl[0]["t"] != "Strong":
+                        rep.err(rel, f"{ref}: определение начинается с термина жирным: «**Термин** — …»")
+        walk(b, on_node)
 
 
 PROGRAM_META = {"course", "title"}
@@ -530,6 +558,9 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
         rep.warn(rel, "в программе нет ни одной таблицы: веса элементов контроля удобнее читать таблицей")
 
 
+PREP_GONE = re.compile(r"(Вопросы для самопроверки|Самопроверка|Блиц)", re.I)
+
+
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
     """Подготовка к КР или коллоквиуму (prep/<course>/krN.md, colloqN.md).
 
@@ -603,6 +634,10 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
             (ident, classes, kv), _ = n["c"]
             attrs = dict(kv)
             kinds = [c for c in classes if c in PREFIX]
+            gone = [GONE_DIVS[c] for c in classes if c in GONE_DIVS]
+            if gone:
+                rep.err(rel, gone[0])
+                return
             unknown = [c for c in classes if c not in PREFIX and c not in AUX_DIVS and c != "unnumbered"]
             if unknown:
                 rep.err(rel, f"неизвестный тип блока ::: {{.{unknown[0]}}} (см. context/markup.md)")
@@ -645,6 +680,10 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     if not h1 or h1[0] != first:
         rep.err(rel, f"первый раздел — «# {first}»")
     h2 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 2]
+    # себя проверяют генератором билетов (context/prompts/prep.md → «На странице нет»)
+    for title in h1 + h2:
+        if PREP_GONE.match(title):
+            rep.err(rel, f"раздела «{title}» на странице подготовки нет: тренируются генератором билетов")
     # коллоквиум — устная теория: задачи по желанию, обязательны разделы «Что нужно знать»
     need = "Что нужно знать" if colloq else "Прототипы"
     if need not in h2:

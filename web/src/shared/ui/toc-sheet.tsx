@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import type { TocItem } from "#web/domain/schemas.ts";
 
+import { TexText } from "#web/shared/reader/tex-text.tsx";
+
 import { tocItems, TocList, WIDE_QUERY } from "./doc-toc.tsx";
 import { MenuIcon } from "./icons.tsx";
 import { useActiveSection } from "./use-active-section.ts";
@@ -51,7 +53,7 @@ const Sheet = ({ caption, minutes, toc }: Props) => {
           aria-controls={sheetId}
           aria-expanded={isOpen}
           aria-haspopup="dialog"
-          className="pointer-events-auto flex min-h-11 max-w-full cursor-pointer items-center gap-2.5 rounded-full border border-rule bg-[color-mix(in_srgb,var(--paper)_88%,transparent)] px-4.5 text-footnote text-ink shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150"
+          className="pointer-events-auto flex min-h-11 max-w-full cursor-pointer items-center gap-2.5 rounded-full border border-rule bg-card px-4.5 text-footnote text-ink shadow-[0_6px_18px_-12px_rgba(0,0,0,0.4)]"
           onClick={() => {
             setIsOpen(true);
             ref.current?.showModal();
@@ -59,14 +61,16 @@ const Sheet = ({ caption, minutes, toc }: Props) => {
           type="button"
         >
           <MenuIcon size={16} />
-          <span className="truncate font-semibold">{current?.text ?? caption}</span>
+          <span className="truncate font-semibold">
+            <TexText text={current?.text ?? caption} />
+          </span>
           <span className="text-muted tabular-nums">{Math.round(progress * 100)}%</span>
         </button>
       </div>
       {/* The padding is on the inner box: a click on the dialog element itself is the backdrop. */}
       <dialog
         aria-label="Оглавление"
-        className="mx-0 mt-auto mb-0 max-h-[78vh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-xl border-t border-rule bg-card p-0 text-ink backdrop:bg-black/30 [&_li_a]:py-2.5"
+        className="mx-0 mt-auto mb-0 max-h-[78vh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-xl border-t border-rule bg-card p-0 text-ink backdrop:bg-black/30 [&_li_a]:flex [&_li_a]:min-h-11 [&_li_a]:items-center [&_li_a]:py-2 [&_li_a]:text-subhead"
         data-toc-sheet=""
         id={sheetId}
         onClick={(event) => {

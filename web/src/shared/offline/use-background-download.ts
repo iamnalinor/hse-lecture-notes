@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { OfflineManifest } from "#web/domain/offline.ts";
 
 import { downloadAll } from "#web/api/offline-cache.ts";
+import { isDesktopDevice } from "#web/domain/connection.ts";
 
 import {
   currentConnection,
@@ -33,6 +34,7 @@ export const useIsSavingInBackground = ({ isManual, manifest }: Options): boolea
     }
     const stop = scheduleBackgroundDownload({
       connection: currentConnection(),
+      isDesktop: isDesktopDevice(),
       onPhase: (phase) => {
         setIsRunning(phase === "running");
         if (phase === "done" || phase === "failed") {

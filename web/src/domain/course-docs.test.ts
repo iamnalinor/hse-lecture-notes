@@ -14,7 +14,6 @@ describe("course documents", () => {
     ["theory", true],
     ["program", true],
     ["kr1", false],
-    ["glossary", false],
     ["04_sep23_determinant_properties", false],
   ])("%s is a course document: %s", (doc, expected) => {
     expect(isCourseDoc(doc)).toBe(expected);

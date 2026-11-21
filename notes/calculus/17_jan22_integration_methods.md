@@ -69,9 +69,9 @@ $$\int \frac{\varphi'(x)}{\varphi(x)}\,dx = \ln|\varphi(x)| + C.$$
 ::: {.example #ex:lec17:differential}
 Найдём $\int x^2\sqrt{x^3 + 1}\,dx$, $\int \sin^3 x\,dx$ и $\int \frac{e^{\sqrt x}}{\sqrt x}\,dx$.
 
-*Ответ:* $\frac29(x^3 + 1)^{3/2} + C$ при $x > -1$; $-\cos x + \frac{\cos^3 x}{3} + C$; $2e^{\sqrt x} + C$ при $x > 0$.
-
 *Решение.* Первый: $x^2\,dx = \frac13\,d(x^3 + 1)$, и $\frac13\int (x^3 + 1)^{1/2}\,d(x^3 + 1) = \frac13 \cdot \frac23 (x^3 + 1)^{3/2}$. Второй: *ключ:* при нечётной степени синуса отделить один множитель $\sin x$ и внести его под дифференциал, а остальное выразить через $\cos x$: $\sin^3 x\,dx = -(1 - \cos^2 x)\,d(\cos x)$, и $-\int (1 - t^2)\,dt$ при $t = \cos x$ даёт $-\cos x + \frac{\cos^3 x}{3}$. Третий: $\frac{dx}{\sqrt x} = 2\,d(\sqrt x)$, $2\int e^{\sqrt x}\,d(\sqrt x) = 2e^{\sqrt x}$.
+
+*Ответ:* $\frac29(x^3 + 1)^{3/2} + C$ при $x > -1$; $-\cos x + \frac{\cos^3 x}{3} + C$; $2e^{\sqrt x} + C$ при $x > 0$.
 :::
 
 ## Замена переменной {#sec:lec17:change}
@@ -97,11 +97,11 @@ $$\int \frac{2t\,dt}{1 + t} = \int \left(2 - \frac{2}{1 + t}\right)dt = 2t - 2\l
 ::: {.example #ex:lec17:circle}
 Найдём $\int \sqrt{1 - x^2}\,dx$ на $(-1;\ 1)$.
 
-*Ответ:* $\frac12\left(\arcsin x + x\sqrt{1 - x^2}\right) + C$.
-
 *Решение.* *Ключ:* замена $x = \sin t$ превращает $1 - x^2$ в полный квадрат $\cos^2 t$. Берём $t \in \left(-\frac\pi2;\ \frac\pi2\right)$: там синус строго возрастает, $(\sin t)' = \cos t > 0$, и $\sqrt{1 - \sin^2 t} = \cos t$ (а не $|\cos t|$ — на этом интервале косинус положителен). Тогда $dx = \cos t\,dt$ и
 $$\int \cos t \cdot \cos t\,dt = \int \frac{1 + \cos 2t}{2}\,dt = \frac t2 + \frac{\sin 2t}{4} + C = \frac t2 + \frac{\sin t\cos t}{2} + C.$$
 Возвращаемся: $t = \arcsin x$, $\sin t = x$, $\cos t = \sqrt{1 - x^2}$. Проверка: $\left(\frac12\arcsin x\right)' = \frac{1}{2\sqrt{1 - x^2}}$, $\left(\frac12 x\sqrt{1 - x^2}\right)' = \frac{1 - 2x^2}{2\sqrt{1 - x^2}}$, сумма $\frac{2 - 2x^2}{2\sqrt{1 - x^2}} = \sqrt{1 - x^2}$.
+
+*Ответ:* $\frac12\left(\arcsin x + x\sqrt{1 - x^2}\right) + C$.
 :::
 
 Этот интеграл понадобится, когда появится определённый интеграл: график $\sqrt{1 - x^2}$ — верхняя полуокружность, и через найденную первообразную будет вычислена площадь круга.
@@ -172,9 +172,9 @@ $$\left(\ln\left|x + \sqrt{x^2 + A}\right|\right)' = \frac{1 + \frac{x}{\sqrt{x^
 ::: {.example #ex:lec17:quadratic}
 Найдём $\int \dfrac{3x + 1}{x^2 + 2x + 5}\,dx$.
 
-*Ответ:* $\frac32\ln(x^2 + 2x + 5) - \operatorname{arctg}\frac{x + 1}{2} + C$.
-
 *Решение.* Производная знаменателя $2x + 2$; $3x + 1 = \frac32(2x + 2) - 2$. Первая часть: $\frac32\ln(x^2 + 2x + 5)$ (знаменатель положителен, модуль не нужен). Вторая: $x^2 + 2x + 5 = (x + 1)^2 + 4$, и $-2\int \frac{d(x + 1)}{(x + 1)^2 + 2^2} = -2 \cdot \frac12\operatorname{arctg}\frac{x + 1}{2}$. Проверка: производная ответа $\frac{3x + 3}{x^2 + 2x + 5} - \frac{1/2}{1 + (x + 1)^2/4} = \frac{3x + 3 - 2}{x^2 + 2x + 5}$.
+
+*Ответ:* $\frac32\ln(x^2 + 2x + 5) - \operatorname{arctg}\frac{x + 1}{2} + C$.
 :::
 
 Произвольную рациональную дробь $\frac{P(x)}{Q(x)}$ сводят к таким слагаемым и к $\frac{1}{(x - a)^k}$ разложением на простейшие дроби; это отдельный приём. Для знаменателей $(x^2 + px + q)^n$ с $q - \frac{p^2}{4} = a^2 > 0$ замена $x + \frac p2 = as$ даёт $\int \frac{dx}{\left((x + p/2)^2 + a^2\right)^n} = a^{1 - 2n}\int \frac{ds}{(s^2 + 1)^n}$, и работает рекуррентная формула из примера [-@ex:lec17:recurrence] ниже.
@@ -208,15 +208,13 @@ $$\int u(x)\,v'(x)\,dx = u(x)\,v(x) - \int u'(x)\,v(x)\,dx,$$ {#eq:lec17:parts}
 ::: {.example #ex:lec17:parts}
 Найдём $\int \ln x\,dx$ и $\int \operatorname{arctg} x\,dx$.
 
-*Ответ:* $x\ln x - x + C$; $x\operatorname{arctg} x - \frac12\ln(1 + x^2) + C$.
-
 *Решение.* *Ключ:* «многочлен» здесь — $1$, и $dv = dx$, $v = x$. Для логарифма: $u = \ln x$, $du = \frac{dx}{x}$; $x\ln x - \int x \cdot \frac1x\,dx = x\ln x - x$. Для арктангенса: $u = \operatorname{arctg} x$, $du = \frac{dx}{1 + x^2}$; $x\operatorname{arctg} x - \int \frac{x\,dx}{1 + x^2}$, а последний интеграл — $\frac12\ln(1 + x^2)$ (следствие [-@cor:lec17:log]).
+
+*Ответ:* $x\ln x - x + C$; $x\operatorname{arctg} x - \frac12\ln(1 + x^2) + C$.
 :::
 
 ::: {.example #ex:lec17:cyclic}
 Найдём $\int e^x\cos x\,dx$.
-
-*Ответ:* $\frac12 e^x(\sin x + \cos x) + C$.
 
 *Решение.* Пусть $F$ — какая-нибудь первообразная $e^x\cos x$. По частям с $u = \cos x$, $dv = e^x\,dx$, а затем ещё раз с $u = \sin x$, $dv = e^x\,dx$:
 $$\begin{aligned} \int e^x\cos x\,dx &= e^x\cos x + \int e^x\sin x\,dx, \\ \int e^x\sin x\,dx &= e^x\sin x - \int e^x\cos x\,dx. \end{aligned}$$
@@ -234,8 +232,6 @@ $$\left(\tfrac12 e^x(\sin x + \cos x)\right)' = \tfrac12 e^x(\sin x + \cos x) + 
 Для $I_n = \int \frac{dx}{(x^2 + 1)^n}$ докажем рекуррентную формулу
 $$I_{n+1} = \frac{x}{2n(x^2 + 1)^n} + \frac{2n - 1}{2n}I_n, \qquad n \in \N,$$ {#eq:lec17:recurrence}
 и найдём $I_2$.
-
-*Ответ:* $I_2 = \frac{x}{2(x^2 + 1)} + \frac12\operatorname{arctg} x + C$.
 
 *Решение.* По частям с $u = (x^2 + 1)^{-n}$, $dv = dx$: $du = -2nx(x^2 + 1)^{-n-1}\,dx$, $v = x$, и
 $$I_n = \frac{x}{(x^2 + 1)^n} + 2n\int \frac{x^2\,dx}{(x^2 + 1)^{n+1}}.$$
@@ -259,10 +255,6 @@ $$I_n = \frac{x}{(x^2 + 1)^n} + 2n\int \frac{x^2\,dx}{(x^2 + 1)^{n+1}}.$$
 Найдите интегралы: (a) $\int \dfrac{x\,dx}{\sqrt{1 - x^4}}$; (b) $\int \dfrac{\cos x\,dx}{1 + \sin^2 x}$; (c) $\int \dfrac{dx}{x\ln^2 x}$; (d) $\int \cos^3 x\,dx$; (e) $\int \dfrac{e^{2x}\,dx}{1 + e^{4x}}$; (f) $\int \operatorname{ctg} x\,dx$.
 :::
 
-::: answer
-\(a) $\frac12\arcsin x^2 + C$; (b) $\operatorname{arctg}(\sin x) + C$; (c) $-\frac{1}{\ln x} + C$; (d) $\sin x - \frac{\sin^3 x}{3} + C$; (e) $\frac12\operatorname{arctg} e^{2x} + C$; (f) $\ln|\sin x| + C$.
-:::
-
 ::: solution
 \(a) *Ключ:* $x^4 = (x^2)^2$ и $x\,dx = \frac12\,d(x^2)$: $\frac12\int \frac{d(x^2)}{\sqrt{1 - (x^2)^2}} = \frac12\arcsin x^2$ (на $(-1;\ 1)$).
 
@@ -275,16 +267,14 @@ $$I_n = \frac{x}{(x^2 + 1)^n} + 2n\int \frac{x^2\,dx}{(x^2 + 1)^{n+1}}.$$
 \(e) $e^{2x}\,dx = \frac12\,d(e^{2x})$, а $e^{4x} = (e^{2x})^2$: $\frac12\int \frac{d(e^{2x})}{1 + (e^{2x})^2}$.
 
 \(f) $\operatorname{ctg} x = \frac{(\sin x)'}{\sin x}$, следствие [-@cor:lec17:log]; ответ — на каждом интервале $(\pi k;\ \pi(k + 1))$, $k \in \Z$.
+
+*Ответ:* (a) $\frac12\arcsin x^2 + C$; (b) $\operatorname{arctg}(\sin x) + C$; (c) $-\frac{1}{\ln x} + C$; (d) $\sin x - \frac{\sin^3 x}{3} + C$; (e) $\frac12\operatorname{arctg} e^{2x} + C$; (f) $\ln|\sin x| + C$.
 :::
 
 ## Замена переменной
 
 ::: {.problem #prob:lec17:change}
 Найдите интегралы: (a) $\int \sqrt{e^x - 1}\,dx$; (b) $\int x\sqrt{x - 1}\,dx$; (c) $\int \dfrac{dx}{x^2\sqrt{1 + x^2}}$.
-:::
-
-::: answer
-\(a) $2\sqrt{e^x - 1} - 2\operatorname{arctg}\sqrt{e^x - 1} + C$; (b) $\frac25(x - 1)^{5/2} + \frac23(x - 1)^{3/2} + C$; (c) $-\frac{\sqrt{1 + x^2}}{x} + C$.
 :::
 
 ::: solution
@@ -297,16 +287,14 @@ $$\int t \cdot \frac{2t\,dt}{1 + t^2} = \int \left(2 - \frac{2}{1 + t^2}\right)d
 \(c) *Ключ:* $\sqrt{1 + x^2}$ — замена $x = \operatorname{tg} t$. Теорема о замене требует интервала, поэтому делаем её отдельно на каждом из лучей: при $x > 0$ — $t \in \left(0;\ \frac\pi2\right)$, при $x < 0$ — $t \in \left(-\frac\pi2;\ 0\right)$; на обоих $\cos t > 0$ и $\sqrt{1 + \operatorname{tg}^2 t} = \frac{1}{\cos t}$, $dx = \frac{dt}{\cos^2 t}$:
 $$\int \frac{dt/\cos^2 t}{\operatorname{tg}^2 t / \cos t} = \int \frac{\cos t\,dt}{\sin^2 t} = \int \frac{d(\sin t)}{\sin^2 t} = -\frac{1}{\sin t} + C.$$
 Выкладка одинакова на обоих интервалах. Возвращаемся: $\sin t = \operatorname{tg} t\cos t = \frac{x}{\sqrt{1 + x^2}}$. Ответ верен на каждом из лучей $x < 0$ и $x > 0$ (с независимыми постоянными, замечание [-@rem:lec16:union]).
+
+*Ответ:* (a) $2\sqrt{e^x - 1} - 2\operatorname{arctg}\sqrt{e^x - 1} + C$; (b) $\frac25(x - 1)^{5/2} + \frac23(x - 1)^{3/2} + C$; (c) $-\frac{\sqrt{1 + x^2}}{x} + C$.
 :::
 
 ## По частям
 
 ::: {.problem #prob:lec17:parts}
 Найдите интегралы: (a) $\int x^2 e^{-x}\,dx$; (b) $\int x\operatorname{arctg} x\,dx$; (c) $\int \arcsin x\,dx$; (d) $\int e^{2x}\sin 3x\,dx$.
-:::
-
-::: answer
-\(a) $-e^{-x}(x^2 + 2x + 2) + C$; (b) $\frac{x^2 + 1}{2}\operatorname{arctg} x - \frac x2 + C$; (c) $x\arcsin x + \sqrt{1 - x^2} + C$; (d) $\frac{e^{2x}}{13}(2\sin 3x - 3\cos 3x) + C$.
 :::
 
 ::: solution
@@ -317,16 +305,14 @@ $$\int \frac{dt/\cos^2 t}{\operatorname{tg}^2 t / \cos t} = \int \frac{\cos t\,d
 \(c) $u = \arcsin x$, $v = x$: $x\arcsin x - \int \frac{x\,dx}{\sqrt{1 - x^2}}$, а $\int \frac{x\,dx}{\sqrt{1 - x^2}} = -\frac12\int (1 - x^2)^{-1/2}\,d(1 - x^2) = -\sqrt{1 - x^2}$.
 
 \(d) Циклический интеграл. Пусть $F$ — первообразная. $u = \sin 3x$, $v = \frac12 e^{2x}$: $\frac12 e^{2x}\sin 3x - \frac32\int e^{2x}\cos 3x\,dx$; ещё раз $u = \cos 3x$: $\int e^{2x}\cos 3x\,dx = \frac12 e^{2x}\cos 3x + \frac32\int e^{2x}\sin 3x\,dx$. Получаем $F = \frac12 e^{2x}\sin 3x - \frac34 e^{2x}\cos 3x - \frac94 F + C_1$, откуда $\frac{13}{4}F = \frac{e^{2x}}{4}(2\sin 3x - 3\cos 3x) + C_1$. Проверка: производная ответа $\frac{e^{2x}}{13}\big(2(2\sin 3x - 3\cos 3x) + (6\cos 3x + 9\sin 3x)\big) = e^{2x}\sin 3x$.
+
+*Ответ:* (a) $-e^{-x}(x^2 + 2x + 2) + C$; (b) $\frac{x^2 + 1}{2}\operatorname{arctg} x - \frac x2 + C$; (c) $x\arcsin x + \sqrt{1 - x^2} + C$; (d) $\frac{e^{2x}}{13}(2\sin 3x - 3\cos 3x) + C$.
 :::
 
 ## Дроби с квадратным трёхчленом
 
 ::: {.problem #prob:lec17:quadratic}
 Найдите интегралы: (a) $\int \dfrac{dx}{x^2 - 6x + 13}$; (b) $\int \dfrac{x - 1}{x^2 + 4x + 3}\,dx$; (c) $\int \dfrac{dx}{\sqrt{x^2 + 2x + 5}}$.
-:::
-
-::: answer
-\(a) $\frac12\operatorname{arctg}\frac{x - 3}{2} + C$; (b) $2\ln|x + 3| - \ln|x + 1| + C$; (c) $\ln\left(x + 1 + \sqrt{x^2 + 2x + 5}\right) + C$.
 :::
 
 ::: solution
@@ -337,6 +323,8 @@ $$\frac12\ln|x^2 + 4x + 3| - 3 \cdot \frac12\ln\left|\frac{x + 1}{x + 3}\right| 
 *Ключ:* при положительном дискриминанте знаменатель раскладывается, $(x + 1)(x + 3)$, и быстрее сразу разложить дробь: $\frac{x - 1}{(x + 1)(x + 3)} = \frac{\alpha}{x + 1} + \frac{\beta}{x + 3}$, $x - 1 = \alpha(x + 3) + \beta(x + 1)$; при $x = -1$: $\alpha = -1$, при $x = -3$: $\beta = 2$. Ответ тот же: $-\ln|x + 1| + 2\ln|x + 3|$ на каждом из промежутков $(-\infty;\ -3)$, $(-3;\ -1)$, $(-1;\ +\infty)$.
 
 \(c) $x^2 + 2x + 5 = (x + 1)^2 + 4$, п. 4 утверждения [-@prop:lec17:table] с $A = 4$ для $t = x + 1$; выражение $x + 1 + \sqrt{(x + 1)^2 + 4}$ положительно.
+
+*Ответ:* (a) $\frac12\operatorname{arctg}\frac{x - 3}{2} + C$; (b) $2\ln|x + 3| - \ln|x + 1| + C$; (c) $\ln\left(x + 1 + \sqrt{x^2 + 2x + 5}\right) + C$.
 :::
 
 ## Кусочно заданные функции
@@ -347,12 +335,10 @@ $$\frac12\ln|x^2 + 4x + 3| - 3 \cdot \frac12\ln\left|\frac{x + 1}{x + 3}\right| 
 Найдите все первообразные функции $f(x) = \max(1, x^2)$ на $\R$.
 :::
 
-::: answer
-$F(x) = \frac{x^3}{3} - \frac23 + C$ при $x < -1$; $F(x) = x + C$ при $|x| \le 1$; $F(x) = \frac{x^3}{3} + \frac23 + C$ при $x > 1$.
-:::
-
 ::: solution
 $f(x) = 1$ при $|x| \le 1$ и $x^2$ при $|x| > 1$. На $(-1;\ 1)$: $F = x + C$. На $(1;\ +\infty)$: $F = \frac{x^3}{3} + C_1$; *ключ:* непрерывность в точке $1$: $1 + C = \frac13 + C_1$, $C_1 = C + \frac23$. На $(-\infty;\ -1)$: $F = \frac{x^3}{3} + C_2$, в точке $-1$: $-1 + C = -\frac13 + C_2$, $C_2 = C - \frac23$. Функция $f$ непрерывна (в точках $\pm 1$ обе формулы дают $1$), поэтому склеенная $F$ дифференцируема и в точках $\pm 1$: по следствию [-@cor:lec13:derivative-limit] односторонние производные равны пределам $f$, то есть $1$. Без согласования постоянных $F$ имела бы скачки и не была бы первообразной.
+
+*Ответ:* $F(x) = \frac{x^3}{3} - \frac23 + C$ при $x < -1$; $F(x) = x + C$ при $|x| \le 1$; $F(x) = \frac{x^3}{3} + \frac23 + C$ при $x > 1$.
 :::
 
 # Итоги
@@ -363,60 +349,3 @@ $f(x) = 1$ при $|x| \le 1$ и $x^2$ при $|x| > 1$. На $(-1;\ 1)$: $F = x
 - Если интеграл после двух интегрирований по частям вернулся к себе, получается уравнение на первообразную, верное с точностью до постоянной; вычитать неопределённые интегралы как числа нельзя — иначе выйдет «$0 = 1$».
 - Дробь $\frac{Ax + B}{x^2 + px + q}$ интегрируется выделением производной знаменателя (логарифм) и полного квадрата: при $q - \frac{p^2}{4} > 0$ — арктангенс, при $q - \frac{p^2}{4} < 0$ — логарифм отношения, при нуле — $-\frac{1}{x + p/2}$.
 - Первообразная кусочной функции на прямой собирается из первообразных кусков с согласованными постоянными: она обязана быть непрерывной.
-
-# Глоссарий
-
-Внесение под знак дифференциала
-:   запись множителя $\varphi'(x)\,dx$ как $d\varphi(x)$, после которой работает табличная формула с $\varphi(x)$ вместо $x$; [-@thm:lec17:substitution].
-
-Замена переменной
-:   переход к новой переменной $x = \varphi(t)$ ($\varphi$ строго монотонна, $\varphi' \ne 0$): $\int f(x)\,dx = G(\varphi^{-1}(x)) + C$, где $G' = f(\varphi(t))\varphi'(t)$; [-@thm:lec17:change].
-
-Логарифмическая производная
-:   дробь $\frac{\varphi'}{\varphi}$; $\int \frac{\varphi'(x)}{\varphi(x)}\,dx = \ln|\varphi(x)| + C$; [-@cor:lec17:log].
-
-$\int f(\varphi(x))\,d\varphi(x)$
-:   то же, что $\int f(\varphi(x))\varphi'(x)\,dx$, так как $d\varphi(x) = \varphi'(x)\,dx$; [-@thm:lec17:substitution].
-
-Циклический интеграл
-:   интеграл, который после интегрирования по частям (обычно двукратного) возвращается к себе; находится из уравнения на первообразную; [-@ex:lec17:cyclic].
-
-Интегрирование по частям
-:   $\int u\,dv = uv - \int v\,du$; [-@thm:lec17:parts].
-
-$\ln\left|x + \sqrt{x^2 + A}\right|$
-:   первообразная $\frac{1}{\sqrt{x^2 + A}}$ («длинный логарифм»); [-@prop:lec17:table].
-
-# Самопроверка
-
-1. Найдите $\int x\cos(x^2)\,dx$.
-2. Найдите $\int \frac{e^x}{e^x + 1}\,dx$ и $\int \frac{\sin x}{\cos^2 x}\,dx$ (на интервалах, где $\cos x \ne 0$).
-3. Где ошибка: «$\int x e^{x^2}\,dx = \int e^{x^2}\,d(x^2) = e^{x^2} + C$»?
-4. Найдите $\int \dfrac{dx}{x + \sqrt x}$ при $x > 0$ заменой $t = \sqrt x$.
-5. Где ошибка: «$\int \sqrt{1 - x^2}\,dx$, $x = \sin t$, $= \int \cos t\,dt = \sin t + C = x + C$»?
-6. Почему при замене $x = \sin t$ берут $t \in \left(-\frac\pi2;\ \frac\pi2\right)$, а не $t \in \R$?
-7. Найдите $\int x\ln x\,dx$ и $\int x\sin x\,dx$.
-8. Что нужно взять за $u$ в $\int x^3\ln x\,dx$? Найдите интеграл.
-9. Найдите $\int e^x\sin x\,dx$.
-10. Объясните, почему из $\int \frac{dx}{x} = 1 + \int \frac{dx}{x}$ не следует $0 = 1$.
-11. Найдите $\int \dfrac{dx}{x^2 + 9}$, $\int \dfrac{dx}{x^2 - 9}$ и $\int \dfrac{dx}{x^2 + 4x + 8}$.
-12. Найдите $\int \dfrac{2x + 3}{x^2 + 1}\,dx$.
-13. Найдите все первообразные функции $\max(x, x^2)$ на $\R$.
-14. Найдите $\int \dfrac{dx}{\sqrt{3 + 2x - x^2}}$.
-
-::: answers
-1. $\frac12\sin(x^2) + C$ ($x\,dx = \frac12\,d(x^2)$).
-2. $\ln(e^x + 1) + C$ на $\R$; $\frac{1}{\cos x} + C$ на каждом интервале, где $\cos x \ne 0$ ($\sin x\,dx = -d(\cos x)$, $-\int t^{-2}\,dt = \frac1t$).
-3. $x\,dx = \frac12\,d(x^2)$, а не $d(x^2)$: верный ответ $\frac12 e^{x^2} + C$ (замечание [-@rem:lec17:factor]).
-4. $x = t^2$, $dx = 2t\,dt$: $\int \frac{2t\,dt}{t^2 + t} = 2\ln(1 + t)$, ответ $2\ln(1 + \sqrt x) + C$ при $x > 0$.
-5. Забыт множитель $dx = \cos t\,dt$ (замечание [-@rem:lec17:dx]); верный ответ — пример [-@ex:lec17:circle].
-6. На $\R$ синус не монотонен, и вернуться от $x$ к $t$ однозначно нельзя; берут промежуток монотонности. На $\left(-\frac\pi2;\ \frac\pi2\right)$ обратная функция — $\arcsin x$, и $\sqrt{1 - \sin^2 t} = \cos t$ без модуля; на другой ветви было бы $-\cos t$ (замечание [-@rem:lec17:monotone]).
-7. $\frac{x^2}{2}\ln x - \frac{x^2}{4} + C$; $-x\cos x + \sin x + C$.
-8. $u = \ln x$, $dv = x^3\,dx$: $\frac{x^4}{4}\ln x - \frac{x^4}{16} + C$.
-9. $\frac12 e^x(\sin x - \cos x) + C$.
-10. Неопределённый интеграл — множество функций, и $1 + (\ln|x| + C)$ — то же множество; для конкретной первообразной равенство верно с точностью до постоянной (замечание [-@rem:lec17:paradox]).
-11. $\frac13\operatorname{arctg}\frac x3 + C$; $\frac16\ln\left|\frac{x - 3}{x + 3}\right| + C$; $\frac12\operatorname{arctg}\frac{x + 2}{2} + C$.
-12. $\ln(x^2 + 1) + 3\operatorname{arctg} x + C$.
-13. $f = x^2$ при $x \le 0$ и $x \ge 1$, $f = x$ на $[0;\ 1]$. $F = \frac{x^3}{3} + C$ при $x < 0$; $\frac{x^2}{2} + C$ при $0 \le x \le 1$; $\frac{x^3}{3} + \frac16 + C$ при $x > 1$ (постоянная $C_1$ при $x > 1$ — из непрерывности в точке $1$: $\frac12 + C = \frac13 + C_1$; в точке $0$ обе формулы дают $C$).
-14. $3 + 2x - x^2 = 4 - (x - 1)^2$: $\arcsin\frac{x - 1}{2} + C$ на $(-1;\ 3)$.
-:::
