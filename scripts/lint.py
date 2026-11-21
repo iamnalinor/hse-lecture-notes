@@ -42,7 +42,9 @@ PREFIX = {
     "remark": "rem",
     "problem": "prob",
 }
-AUX_DIVS = {"proof", "solution", "answer", "answers"}
+AUX_DIVS = {"proof", "solution", "answers"}
+# Блока «Ответ» больше нет: ответ — последней строкой решения («*Ответ:* …»).
+GONE_DIVS = {"answer": "блока ::: answer больше нет: ответ пишется в конце решения строкой «*Ответ:* …»"}
 TAGS = {"корнер-кейс", "подводный камень", "частое заблуждение", "соглашение курса", "напоминание"}
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
@@ -287,16 +289,13 @@ def check_texts(rep: Report, rel: str, blocks: list) -> None:
 
 
 def check_practice(rep: Report, rel: str, body: list) -> None:
-    """В практике за каждой задачей идут ::: answer и ::: solution."""
+    """В практике за каждой задачей идёт ::: solution (ответ — в его конце)."""
     flat = [n for n in iter_nodes(body) if n["t"] == "Div"]
     for i, d in enumerate(flat):
         if "problem" in d["c"][0][1]:
-            nxt = [x["c"][0][1] for x in flat[i + 1 : i + 3]]
-            if len(nxt) < 2 or "answer" not in nxt[0] or "solution" not in nxt[1]:
-                rep.err(
-                    rel,
-                    f"после задачи {d['c'][0][0] or '(без метки)'} должны идти ::: answer и ::: solution",
-                )
+            nxt = [x["c"][0][1] for x in flat[i + 1 : i + 2]]
+            if not nxt or "solution" not in nxt[0]:
+                rep.err(rel, f"после задачи {d['c'][0][0] or '(без метки)'} должно идти ::: solution")
 
 
 def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
@@ -327,6 +326,10 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
             (ident, classes, kv), content = n["c"]
             attrs = dict(kv)
             kinds = [c for c in classes if c in PREFIX]
+            gone = [GONE_DIVS[c] for c in classes if c in GONE_DIVS]
+            if gone:
+                rep.err(rel, gone[0])
+                return
             unknown = [c for c in classes if c not in PREFIX and c not in AUX_DIVS and c != "unnumbered"]
             if unknown:
                 rep.err(rel, f"неизвестный тип блока ::: {{.{unknown[0]}}} (см. context/markup.md)")
@@ -581,6 +584,10 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
             (ident, classes, kv), _ = n["c"]
             attrs = dict(kv)
             kinds = [c for c in classes if c in PREFIX]
+            gone = [GONE_DIVS[c] for c in classes if c in GONE_DIVS]
+            if gone:
+                rep.err(rel, gone[0])
+                return
             unknown = [c for c in classes if c not in PREFIX and c not in AUX_DIVS and c != "unnumbered"]
             if unknown:
                 rep.err(rel, f"неизвестный тип блока ::: {{.{unknown[0]}}} (см. context/markup.md)")

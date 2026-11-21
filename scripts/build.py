@@ -553,7 +553,7 @@ def write_preview(page_dir: Path, meta: dict) -> None:
 
 BLOCK_TAGS = {"p", "div", "li", "section", "br", "td", "th", "tr", "figcaption", "summary", "blockquote"}
 # ответы прячутся под спойлер — в сниппете поиска их быть не должно
-SEARCH_SKIP = {"nb-answer", "nb-answers", "nb-solution"}
+SEARCH_SKIP = {"nb-answers", "nb-solution"}
 
 
 class SearchChunks(HTMLParser):

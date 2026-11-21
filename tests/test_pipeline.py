@@ -159,7 +159,7 @@ def test_html_blocks_and_refs(demo: Path):
     assert 'id="reg-thm:lec01:assoc-2"' in prep  # повтор того же блока — другой якорь
     assert 'href="../01_sep03_matrices/#prob:lec01:product"' in prep
     assert 'href="#prob:kr1:square"' in prep and "«Умножение матриц»" in prep
-    assert 'class="nb-answer"' in prep and '<details class="nb-answers">' in prep
+    assert 'class="nb-answer"' not in prep and "<em>Ответ:</em>" in prep
     pmeta = json.loads((site / "algebra" / "kr1" / "meta.json").read_text(encoding="utf-8"))
     assert pmeta["kind"] == "prep" and pmeta["lecture"] == 0
     assert pmeta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к КР-1 · 7 ноября 2026"
@@ -190,7 +190,7 @@ def test_search_entries():
         '<section id="s1" class="level1"><h1>Раздел</h1><p>Текст <span class="math inline">x^2</span>, '
         'дальше.</p><span class="math display">\\[ y \\]</span>'
         '<div id="thm:a" class="nb nb-theorem"><div class="nb-head"><span class="nb-name">Теорема 1.1'
-        '</span></div><div class="nb-body"><p>Тело.</p><div class="nb-answer"><p>Ответ.</p></div></div></div>'
+        '</span></div><div class="nb-body"><p>Тело.</p><div class="nb-solution"><p>Решение.</p></div></div></div>'
         '<div id="reg-thm:a" class="nb"><p>Копия.</p></div><p>Хвост.</p></section>'
     )
     assert search_entries("algebra", "w", 1, frag) == [
@@ -348,7 +348,8 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
         ("#prob:kr1:square", "#prob:lec01:square", "не по схеме тип:kr1:slug"),
         ("#rem:kr1:order", "#prob:kr1:order", "префикс rem:"),
         ('ref="thm:lec01:assoc"', 'ref="thm:lec01:nope"', "не найден в конспектах"),
-        ("::: answer\n$\\begin", "::: remark\n$\\begin", "должны идти ::: answer и ::: solution"),
+        ("::: solution\nПеремножаем", "::: remark\nПеремножаем", "должно идти ::: solution"),
+        ("::: solution\nПеремножаем", "::: answer\n$2$\n:::\n\n::: solution\nПеремножаем", "блока ::: answer больше нет"),
         ("# О контрольной", "# Про контрольную", "первый раздел"),
         ("::: {.theorem ref=", "::: {.theorem #thm:kr1:x title=", "без ref="),
         ("course: algebra", "course: calculus", "лежит в prep/algebra/"),

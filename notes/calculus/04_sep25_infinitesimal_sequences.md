@@ -63,8 +63,6 @@ $$\forall M > 0\ \ \exists N = N(M)\ \ \forall n > N\colon\ |a_n| > M.$$
 ::: {.example #ex:lec04:infinity}
 Проверим: $(-1)^n n \to \infty$, но не стремится ни к $+\infty$, ни к $-\infty$.
 
-*Ответ:* $N(M) = [M]$.
-
 *Решение.* $|(-1)^n n| = n > M$ при $n > [M]$. При этом для любого $N$ среди номеров $n > N$ есть нечётные, где $(-1)^n n = -n < 0$, так что неравенство $a_n > M$ не выполнено ни после какого $N$; так же для $a_n < -M$ и чётных $n$. На рис. [-@fig:lec04:small-large] при $M = 4{,}5$ получается $N = 4$.
 :::
 
@@ -415,8 +413,6 @@ $$\frac{2n^2 + 3n}{5n^2 - 1} = \frac{2 + \frac3n}{5 - \frac{1}{n^2}} \to \frac{2
 ::: {.example #ex:lec04:fastest}
 Найдём $\lim \dfrac{2^n + n^5}{3^n - n}$.
 
-*Ответ:* $0$.
-
 *Решение.* *Ключ:* самое быстрое слагаемое — $3^n$; делим на него:
 $$\frac{2^n + n^5}{3^n - n} = \frac{\left(\frac23\right)^n + \frac{n^5}{3^n}}{1 - \frac{n}{3^n}} \to \frac{0 + 0}{1 - 0} = 0$$
 по пунктам 1 и 4 утверждения [-@prop:lec04:standard]. Знаменатель $3^n - n > 0$ при всех $n$.
@@ -430,8 +426,6 @@ $$\left|\sqrt{1 + x} - 1\right| = \frac{|x|}{\sqrt{1 + x} + 1} \le |x|, \qquad \
 
 ::: {.example #ex:lec04:conjugate}
 Найдём $\lim\left(\sqrt{n^2 + n} - n\right)$ и $\lim\left(\sqrt[3]{n^3 + n^2} - n\right)$.
-
-*Ответ:* $\frac12$ и $\frac13$.
 
 *Решение.* *Ключ:* домножить и разделить на сопряжённое, затем разделить на $n$ (или на $n^2$).
 $$\sqrt{n^2 + n} - n = \frac{n}{\sqrt{n^2 + n} + n} = \frac{1}{\sqrt{1 + \frac1n} + 1} \to \frac{1}{1 + 1} = \frac12.$$
@@ -457,10 +451,6 @@ $$\sqrt[n]{a_1^n + \dots + a_k^n} \to M.$$ {#eq:lec04:max-root}
 (a) $x_n \to +\infty$, $y_n \to +\infty$, $x_n - y_n \to -3$; (b) $x_n \to +\infty$, $y_n \to +\infty$, разность $x_n - y_n$ ограничена, но предела не имеет; (c) $x_n \to \infty$, $y_n \to \infty$, $\frac{x_n}{y_n} \to -2$; (d) $x_n \to \infty$, $y_n \to \infty$, $\frac{x_n}{y_n}$ не имеет предела; (e) неограниченной последовательности, которая не отделима от нуля и не бесконечно большая.
 :::
 
-::: answer
-(a) $x_n = n$, $y_n = n + 3$; (b) $x_n = n + (-1)^n$, $y_n = n$; (c) $x_n = -2n$, $y_n = n$; (d) $x_n = (2 + (-1)^n) n$, $y_n = n$; (e) $a_n = (1 + (-1)^n) n$ ($0, 4, 0, 8, 0, \dots$).
-:::
-
 ::: solution
 *Ключ:* неопределённости $\infty - \infty$ и $\frac\infty\infty$ (определение [-@def:lec04:indeterminate]) удобно строить из одной б.б. $n$, добавляя к ней или умножая её на «управляющую» последовательность с нужным поведением.
 
@@ -473,16 +463,14 @@ $$\sqrt[n]{a_1^n + \dots + a_k^n} \to M.$$ {#eq:lec04:max-root}
 (d) $|x_n| \ge n$, отношение $2 + (-1)^n$ принимает значения $1, 3, 1, 3, \dots$ и расходится.
 
 (e) Чётные члены $a_{2m} = 4m$ неограниченно растут, нечётные равны $0$. Нулевой член губит отделимость, а нули при сколь угодно больших номерах не дают $|a_n| > M$ «начиная с некоторого номера» ни при каком $M$. Значит, утверждения «не б.б. $\Rightarrow$ ограничена», «неограниченная $\Rightarrow$ б.б.», «не отделима $\Rightarrow$ ограничена» все неверны.
+
+*Ответ:* (a) $x_n = n$, $y_n = n + 3$; (b) $x_n = n + (-1)^n$, $y_n = n$; (c) $x_n = -2n$, $y_n = n$; (d) $x_n = (2 + (-1)^n) n$, $y_n = n$; (e) $a_n = (1 + (-1)^n) n$ ($0, 4, 0, 8, 0, \dots$).
 :::
 
 ::: {.problem #prob:lec04:large-plus-bounded}
 (a) Пусть $x_n \to -\infty$, а $(y_n)$ ограничена сверху. Докажите, что $x_n + y_n \to -\infty$.
 
 (b) Пусть $x_n \to \infty$ (без знака). Каким условием на $(y_n)$ — ограниченностью сверху или ограниченностью с обеих сторон — гарантируется, что $x_n + y_n \to \infty$? Докажите достаточность и приведите контрпример для другого условия.
-:::
-
-::: answer
-(a) Если $y_n < C$, $C > 0$, то $x_n + y_n < -M$ при $n > N_x(M + C)$. (b) Достаточно ограниченности: если $|y_n| < C$, то $|x_n + y_n| > M$ при $n > N_x(M + C)$. Ограниченности сверху мало: $x_n = n$, $y_n = -n$.
 :::
 
 ::: solution
@@ -497,10 +485,6 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 Пусть $(x_n)$ бесконечно большая. Обязана ли $(x_n y_n)$ быть бесконечно большой, если (a) $(y_n)$ отделима от нуля; (b) $(y_n)$ бесконечно большая; (c) $(y_n)$ ограничена и все её члены ненулевые? Пусть теперь $x_n \to -\infty$. Докажите или опровергните: (d) если $y_n \ge c > 0$ при $n > N$, то $x_n y_n \to -\infty$; (e) если $y_n > 0$ при всех $n$, то $x_n y_n \to -\infty$.
 :::
 
-::: answer
-(a) Да: если $|y_n| > \delta$ при $n > N_y$, то $|x_n y_n| > M$ при $n > \max\left(N_y, N_x\left(\frac M\delta\right)\right)$. (b) Да. (c) Нет: $n \cdot \frac{1}{n^2} \to 0$. (d) Верно. (e) Неверно: $x_n = -n$, $y_n = \frac{1}{n^2}$.
-:::
-
 ::: solution
 (a) Пусть $|y_n| > \delta > 0$ и дано $M > 0$. Неравенство $|y_n| > \delta$ нужно лишь при $n > N_y$, поэтому достаточно отделимости начиная с некоторого номера. При $n > \max\left(N_y, N_x\left(\frac M\delta\right)\right)$ имеем $|x_n| > \frac M\delta$, поэтому $|x_n y_n| = |x_n| \cdot |y_n| > \frac M\delta \cdot \delta = M$.
 
@@ -511,14 +495,12 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 (d) Пусть $M > 0$. При $n > \max\left(N, N_x\left(\frac Mc\right)\right)$ имеем $x_n < -\frac Mc < 0$ и $y_n \ge c$; умножая $y_n \ge c$ на отрицательное $x_n$, получаем $x_n y_n \le c\, x_n < -M$. То же для $+\infty$ — строка таблицы раздела [-@sec:lec04:table].
 
 (e) $x_n y_n = -\frac1n \to 0$. Положительность $y_n$ без общей нижней границы $c$ не мешает $y_n$ стремиться к нулю и «погасить» $x_n$.
+
+*Ответ:* (a) да; (b) да; (c) нет; (d) верно; (e) неверно.
 :::
 
 ::: {.problem #prob:lec04:partial-sums}
 Пусть $S_n = x_1 + \dots + x_n$. (a) Докажите, что если $x_n \to +\infty$, то $S_n \to +\infty$. (b) Докажите, что $\max(|S_{n-1}|, |S_n|) \ge \frac{|x_n|}{2}$ при $n \ge 2$, и выведите отсюда, что для бесконечно большой $(x_n)$ модули $|S_n|$ принимают сколь угодно большие значения. (c) Обязана ли при этом $(S_n)$ быть бесконечно большой?
-:::
-
-::: answer
-(a), (b) См. решение. (c) Нет: для $1, -1, 2, -2, 3, -3, \dots$ суммы с чётными номерами равны $0$.
 :::
 
 ::: solution
@@ -539,10 +521,6 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 *Часть 2.* Найдите пределы: (a) $\dfrac{n^3 \cdot 5^n}{n!}$; (b) $\dfrac{(n!)^2}{(2n)!}$; (c) $\dfrac{C_{2n}^n}{5^n}$; (d) $\dfrac{C_{2n}^n}{3^n}$.
 :::
 
-::: answer
-Часть 1 — см. решение. Часть 2: (a) $0$; (b) $0$; (c) $0$; (d) $+\infty$.
-:::
-
 ::: solution
 *Часть 1.* *Ключ:* перемножить неравенства для соседних членов. По индукции $x_n \le x_N q^{n - N}$ при $n \ge N$ (переход: $x_{n+1} \le q x_n$). Значит, $0 < x_n \le \frac{x_N}{q^N} \cdot q^n$; правая часть — число, умноженное на $q^n \to 0$ (утверждение [-@prop:lec04:standard], п. 1), и по теореме [-@thm:lec04:squeeze] $x_n \to 0$. Во втором случае так же $x_n \ge \frac{x_N}{Q^N} \cdot Q^n \to +\infty$, и $x_n \to +\infty$ по замечанию [-@rem:lec04:one-policeman]. Это обобщает пункты 4–5 утверждения [-@prop:lec04:standard]: у $\frac{n^k}{a^n}$ отношение соседних членов равно $\frac1a \left(1 + \frac1n\right)^k$ и при больших $n$ меньше $q = \frac{1}{2}\left(1 + \frac1a\right) < 1$, у $\frac{a^n}{n!}$ оно равно $\frac{a}{n + 1}$.
 
@@ -555,6 +533,8 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 (c) $\dfrac{C_{2n+2}^{n+1}}{C_{2n}^n} = \dfrac{(2n+2)!\, (n!)^2}{((n+1)!)^2\, (2n)!} = \dfrac{(2n+1)(2n+2)}{(n+1)^2} = \dfrac{2(2n+1)}{n+1} < 4$, поэтому отношение для $\frac{C_{2n}^n}{5^n}$ меньше $\frac45$.
 
 (d) Отношение равно $\dfrac{2(2n+1)}{3(n+1)}$, и $\dfrac{2(2n+1)}{3(n+1)} \ge \dfrac76 \Leftrightarrow 24n + 12 \ge 21n + 21 \Leftrightarrow n \ge 3$. С $Q = \frac76$ получаем $+\infty$.
+
+*Ответ:* (a) $0$; (b) $0$; (c) $0$; (d) $+\infty$.
 :::
 
 ## Подсчёт пределов
@@ -566,10 +546,6 @@ $$\text{(a) } \lim \frac{(n^2 + 2n + 3)^3 - (n^2 + 2n - 3)^3}{(n^2 + 4n + 5)^3 -
 $$\text{(c) } \lim \frac{n^2 \cdot 3^n + 5^n}{n + 5^{n+1}}; \qquad \text{(d) } \lim \frac{9^n + n \cdot (n + 1)!}{(n + 2)! + n^5}.$$
 :::
 
-::: answer
-(a) $\frac35$; (b) $11025$; (c) $\frac15$; (d) $1$.
-:::
-
 ::: solution
 (a) *Ключ:* старшие степени в числителе и знаменателе сокращаются, поэтому сначала раскрываем разность кубов: $(A + c)^3 - (A - c)^3 = 6cA^2 + 2c^3$. При $A = n^2 + 2n$, $c = 3$ числитель равен $18A^2 + 54$, при $B = n^2 + 4n$, $c = 5$ знаменатель равен $30B^2 + 250$. Делим на $n^4$: $\frac{A}{n^2} = 1 + \frac2n \to 1$, $\frac{B}{n^2} = 1 + \frac4n \to 1$, и
 $$\frac{18\left(\frac{A}{n^2}\right)^2 + \frac{54}{n^4}}{30\left(\frac{B}{n^2}\right)^2 + \frac{250}{n^4}} \to \frac{18}{30} = \frac35.$$
@@ -579,15 +555,13 @@ $$\frac{18\left(\frac{A}{n^2}\right)^2 + \frac{54}{n^4}}{30\left(\frac{B}{n^2}\r
 (c) Делим на $5^n$: $\dfrac{n^2 \left(\frac35\right)^n + 1}{\frac{n}{5^n} + 5} \to \dfrac{0 + 1}{0 + 5} = \dfrac15$, так как $n^2 \left(\frac35\right)^n = \frac{n^2}{(5/3)^n} \to 0$ и $\frac{n}{5^n} \to 0$ (утверждение [-@prop:lec04:standard], п. 4).
 
 (d) Самое быстрое слагаемое — $(n + 2)!$ (шкала из замечания [-@rem:lec04:scale]). После деления: $\frac{n \cdot (n+1)!}{(n+2)!} = \frac{n}{n + 2} \to 1$; $0 < \frac{9^n}{(n+2)!} \le \frac{9^n}{n!} \to 0$; $0 < \frac{n^5}{(n+2)!} \le \frac{n^5}{n!} = \frac{n^5}{2^n} \cdot \frac{2^n}{n!} \to 0$. Предел равен $\frac{0 + 1}{1 + 0} = 1$.
+
+*Ответ:* (a) $\frac35$; (b) $11025$; (c) $\frac15$; (d) $1$.
 :::
 
 ::: {.problem #prob:lec04:kr5}
 Вычислите:
 $$\text{(a) } \lim\left(\dfrac{2n^2 - n + 3}{n + 4} - \dfrac{6n^2 + 1}{3n - 2}\right); \qquad \text{(b) } \lim\left(\sqrt{4n + \sqrt{n + \sqrt n}} - 2\sqrt n\right).$$
-:::
-
-::: answer
-(a) $-\frac{31}{3}$; (b) $\frac14$.
 :::
 
 ::: solution
@@ -600,16 +574,14 @@ $$\sqrt{4n + \sqrt{n + \sqrt n}} - 2\sqrt n = \frac{\sqrt{n + \sqrt n}}{\sqrt{4n
 Делим на $\sqrt n$:
 $$\frac{\sqrt{1 + \frac{1}{\sqrt n}}}{2\sqrt{1 + \frac{x_n}{4}} + 2}, \qquad x_n = \frac{\sqrt{n + \sqrt n}}{n} \le \frac{\sqrt{2n}}{n} = \sqrt{\frac2n} \to 0.$$
 Корни $\sqrt{1 + \frac{1}{\sqrt n}}$ и $\sqrt{1 + \frac{x_n}{4}}$ стремятся к $1$ (оценка $|\sqrt{1 + x} - 1| \le |x|$ из раздела [-@sec:lec04:computing]), ответ $\frac{1}{2 + 2} = \frac14$.
+
+*Ответ:* (a) $-\frac{31}{3}$; (b) $\frac14$.
 :::
 
 ::: {.problem #prob:lec04:conjugate}
 Вычислите, домножив на сопряжённое:
 $$\text{(a) } \lim\left(\sqrt{(n + 4)(n + 1)} - \sqrt{n(n + 2)}\right); \qquad \text{(b) } \lim\left(\sqrt[3]{n^3 - 3n^2 + 4} - n\right);$$
 $$\text{(c) } \lim \frac{\sqrt{n^2 + 3n} - n}{\sqrt[3]{n^3 + 6n^2} - n}.$$
-:::
-
-::: answer
-(a) $\frac32$; (b) $-1$; (c) $\frac34$.
 :::
 
 ::: solution
@@ -621,16 +593,14 @@ $$\sqrt[3]{n^3 - 3n^2 + 4} - n = n(u_n - 1) = \frac{n(u_n^3 - 1)}{u_n^2 + u_n + 
 (c) Числитель и знаменатель раскрываем по отдельности. Числитель: $\dfrac{3n}{\sqrt{n^2 + 3n} + n} = \dfrac{3}{\sqrt{1 + \frac3n} + 1} \to \dfrac32$. Знаменатель: при $v_n = \sqrt[3]{1 + \frac6n} \to 1$
 $$\sqrt[3]{n^3 + 6n^2} - n = \frac{n^3 v_n^3 - n^3}{n^2 v_n^2 + n^2 v_n + n^2} = \frac{6}{v_n^2 + v_n + 1} \to 2,$$
 и он положителен. Предел частного $\frac{3/2}{2} = \frac34$ (теорема [-@thm:lec04:quotient]).
+
+*Ответ:* (a) $\frac32$; (b) $-1$; (c) $\frac34$.
 :::
 
 ::: {.problem #prob:lec04:roots}
 Найдите пределы:
 $$\text{(a) } \frac{\sqrt[n]{n^5} + \sqrt[n]{3}}{2\sqrt[n]{n} + \sqrt[n]{n^2}}; \qquad \text{(b) } \left(\frac{n^2 + 4}{3n^2 - 1}\right)^{n^2}; \qquad \text{(c) } \sqrt[n]{\frac{3n^3 + 2}{n^2 + 4}};$$
 $$\text{(d) } \sqrt[n]{3^n + n^4 + \cos n}; \qquad \text{(e) } \sqrt[n]{\frac{2^n + 7^n + 5}{4^n + n}}.$$
-:::
-
-::: answer
-(a) $\frac23$; (b) $0$; (c) $1$; (d) $3$; (e) $\frac74$.
 :::
 
 ::: solution
@@ -647,16 +617,14 @@ $$\sqrt[n]{\tfrac35} \cdot \sqrt[n]{n} \le a_n \le \sqrt[n]{5} \cdot \sqrt[n]{n}
 (e) Приём [-@eq:lec04:max-root] отдельно для числителя и знаменателя: $7^n \le 2^n + 7^n + 5 \le 3 \cdot 7^n$ и $4^n \le 4^n + n \le 2 \cdot 4^n$. Поэтому
 $$\frac12 \left(\frac74\right)^n \le \frac{2^n + 7^n + 5}{4^n + n} \le 3\left(\frac74\right)^n, \qquad \frac74 \sqrt[n]{\tfrac12} \le a_n \le \frac74 \sqrt[n]{3},$$
 и оба края стремятся к $\frac74$.
+
+*Ответ:* (a) $\frac23$; (b) $0$; (c) $1$; (d) $3$; (e) $\frac74$.
 :::
 
 ::: {.problem #prob:lec04:sum-n}
 Найдите $\lim S_n$ и $\lim T_n$, где
 $$\text{(a) } S_n = \frac{1}{\sqrt{n^2 + 1}} + \frac{1}{\sqrt{n^2 + 2}} + \dots + \frac{1}{\sqrt{n^2 + 3n}};$$
 $$\text{(b) } T_n = \frac{1}{n^2 + 1} + \frac{2}{n^2 + 2} + \dots + \frac{n}{n^2 + n}.$$
-:::
-
-::: answer
-(a) $3$; (b) $\frac12$.
 :::
 
 ::: solution
@@ -669,6 +637,8 @@ $$\frac{3n}{\sqrt{n^2 + 3n}} \le S_n \le \frac{3n}{\sqrt{n^2 + 1}}.$$
 (b) Здесь слагаемые сильно различаются (от $\frac{1}{n^2 + 1}$ до $\frac{n}{n^2 + n}$), и оценка «главное слагаемое, умноженное на число слагаемых» даёт разные пределы краёв: $n \cdot \frac{1}{n^2 + 1} \to 0$ и $n \cdot \frac{n}{n^2 + n} \to 1$. *Ключ:* оценивать только знаменатели, а числители оставить: $n^2 + 1 \le n^2 + k \le n^2 + n$, и $1 + 2 + \dots + n = \frac{n(n + 1)}{2}$. Получаем
 $$\frac12 = \frac{n(n + 1)}{2(n^2 + n)} \le T_n \le \frac{n(n + 1)}{2(n^2 + 1)} = \frac{1 + \frac1n}{2\left(1 + \frac{1}{n^2}\right)} \to \frac12,$$
 и $T_n \to \frac12$.
+
+*Ответ:* (a) $3$; (b) $\frac12$.
 :::
 
 # Итоги

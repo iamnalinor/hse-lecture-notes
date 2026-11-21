@@ -372,8 +372,6 @@ $$f'_+(x_0) = \lim_{h \to +0} \frac{f(x_0 + h) - f(x_0)}{h},$$
 ::: {.example #ex:lec11:abs}
 Существует ли производная $f(x) = |x|$ в нуле?
 
-*Ответ:* нет: $f'_-(0) = -1$, $f'_+(0) = 1$.
-
 *Решение.* Разностное отношение $\frac{|h| - 0}{h} = \operatorname{sign} h$ равно $1$ при $h > 0$ и $-1$ при $h < 0$. Односторонние пределы различны, предела нет. При $x \ne 0$ функция совпадает с $x$ или $-x$ около точки, и $f'(x) = \operatorname{sign} x$.
 :::
 
@@ -481,8 +479,6 @@ $$\frac{(x + h)^\alpha - x^\alpha}{h} = x^\alpha \cdot \frac{(1 + t)^\alpha - 1}
 ::: {.example #ex:lec11:sqrt}
 Найдём производную $f(x) = \sqrt x$ при $x > 0$ двумя способами.
 
-*Ответ:* $\left(\sqrt x\right)' = \dfrac{1}{2\sqrt x}$.
-
 *Решение.* *Способ 1: по определению.* *Ключ:* домножить на сопряжённое (как в задаче [-@prob:lec08:roots]):
 $$\frac{\sqrt{x + h} - \sqrt x}{h} = \frac{(x + h) - x}{h\left(\sqrt{x + h} + \sqrt x\right)} = \frac{1}{\sqrt{x + h} + \sqrt x} \to \frac{1}{2\sqrt x}$$
 по непрерывности корня (утверждение [-@prop:lec08:roots]).
@@ -508,10 +504,6 @@ $$\frac{\sqrt{x + h} - \sqrt x}{h} = \frac{(x + h) - x}{h\left(\sqrt{x + h} + \s
 Найдите: (a) $\arcsin(\sin 5)$; (b) $\arccos(\cos 4)$; (c) $\operatorname{arctg}\left(\operatorname{tg}\frac{3\pi}{4}\right)$; (d) $\sin\left(\arccos\left(-\frac35\right)\right)$; (e) область определения и множество значений функции $f(x) = \arcsin(2x - 1)$.
 :::
 
-::: answer
-\(a) $5 - 2\pi$; (b) $2\pi - 4$; (c) $-\frac\pi4$; (d) $\frac45$; (e) $D_f = [0;\ 1]$, $E_f = \left[-\frac\pi2;\ \frac\pi2\right]$.
-:::
-
 ::: solution
 *Ключ:* ответ $\arcsin(\ldots)$ обязан лежать в $\left[-\frac\pi2;\ \frac\pi2\right]$, $\arccos(\ldots)$ — в $[0;\ \pi]$, $\operatorname{arctg}(\ldots)$ — в $\left(-\frac\pi2;\ \frac\pi2\right)$; ищем в этом промежутке точку с тем же значением синуса (косинуса, тангенса).
 
@@ -524,14 +516,12 @@ $$\frac{\sqrt{x + h} - \sqrt x}{h} = \frac{(x + h) - x}{h\left(\sqrt{x + h} + \s
 \(d) Пусть $x = \arccos\left(-\frac35\right) \in [0;\ \pi]$. Тогда $\cos x = -\frac35$ и $\sin x \ge 0$ на $[0;\ \pi]$, поэтому $\sin x = \sqrt{1 - \frac{9}{25}} = \frac45$. Знак корня определяется промежутком значений $\arccos$.
 
 \(e) Нужно $-1 \le 2x - 1 \le 1$, то есть $0 \le x \le 1$. Внутренняя функция $2x - 1$ пробегает весь отрезок $[-1;\ 1]$, поэтому $f$ принимает все значения $\arcsin$: от $-\frac\pi2$ (при $x = 0$) до $\frac\pi2$ (при $x = 1$).
+
+*Ответ:* (a) $5 - 2\pi$; (b) $2\pi - 4$; (c) $-\frac\pi4$; (d) $\frac45$; (e) $D_f = [0;\ 1]$, $E_f = \left[-\frac\pi2;\ \frac\pi2\right]$.
 :::
 
 ::: {.problem #prob:lec11:arc-identity}
 Докажите, что $\operatorname{arctg} x + \operatorname{arctg}\dfrac1x = \dfrac\pi2$ при $x > 0$. Чему равна сумма при $x < 0$?
-:::
-
-::: answer
-При $x < 0$ сумма равна $-\frac\pi2$.
 :::
 
 ::: solution
@@ -547,10 +537,6 @@ $$-\left(\operatorname{arctg}(-x) + \operatorname{arctg}\frac{1}{-x}\right) = -\
 Найдите пределы: (a) $\lim\limits_{x \to 0} \dfrac{\arcsin 3x}{\ln(1 + 5x)}$; (b) $\lim\limits_{x \to 0} (1 + \sin x)^{\frac{1}{\operatorname{arctg} 2x}}$; (c) $\lim\limits_{x \to +\infty} x\left(\dfrac\pi2 - \operatorname{arctg} x\right)$; (d) $\lim\limits_{x \to 0} \dfrac{2^x - 3^x}{x}$; (e) $\lim\limits_{x \to 2} \left(\dfrac{x^2 + 5}{x + 1}\right)^{\frac{1}{x - 1}}$.
 :::
 
-::: answer
-\(a) $\frac35$; (b) $\sqrt e$; (c) $1$; (d) $\ln\frac23$; (e) $3$.
-:::
-
 ::: solution
 \(a) По следствию [-@cor:lec11:arc-limits] и таблице [-@prop:lec09:table] с подстановками $3x$, $5x$ (утверждение [-@prop:lec09:substitution]): $\arcsin 3x \sim 3x$, $\ln(1 + 5x) \sim 5x$, предел $\frac{3x}{5x} = \frac35$ (теорема [-@thm:lec09:replacement]).
 
@@ -563,16 +549,14 @@ $$\frac{\ln(1 + \sin x)}{\operatorname{arctg} 2x} \sim \frac{\sin x}{2x} \sim \f
 \(d) $\frac{2^x - 3^x}{x} = \frac{2^x - 1}{x} - \frac{3^x - 1}{x}$, и $\frac{a^x - 1}{x} = \frac{e^{x \ln a} - 1}{x \ln a} \cdot \ln a \to \ln a$ (следствие [-@cor:lec08:exp]). Ответ $\ln 2 - \ln 3 = \ln\frac23$.
 
 \(e) Неопределённости нет: основание стремится к $\frac{9}{3} = 3 > 0$, показатель — к $1$. По следствию [-@cor:lec11:power-limit] предел равен $3^1 = 3$. *Ключ:* прежде чем раскрывать $1^\infty$, проверить, что это действительно $1^\infty$.
+
+*Ответ:* (a) $\frac35$; (b) $\sqrt e$; (c) $1$; (d) $\ln\frac23$; (e) $3$.
 :::
 
 ## Производная по определению
 
 ::: {.problem #prob:lec11:by-definition}
 Найдите по определению производную или докажите, что её нет: (a) $f(x) = \frac1x$ в точке $x_0 \ne 0$; (b) $f(x) = x|x|$ в точке $0$; (c) $f(x) = \cos 3x$ в точке $x_0$; (d) $f(x) = \sqrt[5]{x^2}$ в точке $0$.
-:::
-
-::: answer
-\(a) $-\frac{1}{x_0^2}$; (b) $0$; (c) $-3\sin 3x_0$; (d) производной нет: $f'_\pm(0) = \pm\infty$.
 :::
 
 ::: solution
@@ -585,14 +569,12 @@ $$-3 \cdot \frac{\sin\frac{3h}{2}}{\frac{3h}{2}} \cdot \sin\left(3x_0 + \frac{3h
 Это первый пример, где внутри стоит $3x$: множитель $3$ потом даст правило дифференцирования сложной функции.
 
 \(d) $\frac{\sqrt[5]{h^2}}{h}$: при $h > 0$ это $h^{2/5 - 1} = \frac{1}{h^{3/5}} \to +\infty$, при $h < 0$ числитель положителен, знаменатель отрицателен, и отношение $-\frac{1}{|h|^{3/5}} \to -\infty$. Конечной производной нет, вертикальной касательной тоже: на графике острие, как у $\sqrt{|x|}$ (замечание [-@rem:lec11:infinite]).
+
+*Ответ:* (a) $-\frac{1}{x_0^2}$; (b) $0$; (c) $-3\sin 3x_0$; (d) производной нет: $f'_\pm(0) = \pm\infty$.
 :::
 
 ::: {.problem #prob:lec11:one-sided}
 \(a) При каких $a$ и $b$ функция $f(x) = x^2$ при $x \le 1$, $f(x) = ax + b$ при $x > 1$ имеет производную в точке $1$? (b) При каких $\alpha > 0$ функция $|x|^\alpha$ имеет производную в нуле?
-:::
-
-::: answer
-\(a) $a = 2$, $b = -1$; (b) при $\alpha > 1$ (и тогда $f'(0) = 0$).
 :::
 
 ::: solution
@@ -601,16 +583,14 @@ $$\frac{a(1 + h) + b - 1}{h} = a + \frac{a + b - 1}{h}.$$
 *Ключ:* если $a + b - 1 \ne 0$, второе слагаемое стремится к бесконечности, и правой производной нет. Значит, нужно $a + b = 1$ (это условие непрерывности в точке $1$), и тогда $f'_+(1) = a$. Из $f'_+(1) = f'_-(1)$ получаем $a = 2$, $b = -1$: прямая $y = 2x - 1$ — касательная к параболе в точке $(1;\ 1)$, и график переходит в неё без излома.
 
 \(b) $\frac{|h|^\alpha}{h} = \operatorname{sign} h \cdot |h|^{\alpha - 1}$. При $\alpha > 1$ модуль $|h|^{\alpha - 1} \to 0$ и производная равна $0$. При $\alpha = 1$ — это $\operatorname{sign} h$, предела нет (пример [-@ex:lec11:abs]). При $0 < \alpha < 1$ модуль стремится к $+\infty$, односторонние пределы $\pm\infty$ — производной нет.
+
+*Ответ:* (a) $a = 2$, $b = -1$; (b) при $\alpha > 1$ (и тогда $f'(0) = 0$).
 :::
 
 ## Касательная
 
 ::: {.problem #prob:lec11:tangent}
 \(a) Напишите уравнение касательной к графику $y = \ln x$ в точке с абсциссой $e$. (b) В какой точке касательная к графику $y = e^x$ проходит через начало координат? (c) Под каким углом график $y = \sin x$ пересекает ось $Ox$ в точках $0$ и $\pi$? (d) Найдите касательную к параболе $y = x^2$, параллельную прямой $y = 4x - 1$.
-:::
-
-::: answer
-\(a) $y = \frac xe$; (b) в точке $(1;\ e)$, касательная $y = ex$; (c) под углом $\frac\pi4$ в точке $0$ и $\frac{3\pi}{4}$ в точке $\pi$; (d) $y = 4x - 4$, точка касания $(2;\ 4)$.
 :::
 
 ::: solution
@@ -621,14 +601,12 @@ $$\frac{a(1 + h) + b - 1}{h} = a + \frac{a + b - 1}{h}.$$
 \(c) $(\sin x)' = \cos x$; $\cos 0 = 1 = \operatorname{tg}\frac\pi4$, $\cos\pi = -1 = \operatorname{tg}\frac{3\pi}{4}$. Угол с положительным направлением оси — $\frac\pi4$ и $\frac{3\pi}{4}$.
 
 \(d) Параллельность означает равенство угловых коэффициентов: $2x_0 = 4$, $x_0 = 2$. Касательная $y = 4 + 4(x - 2) = 4x - 4$.
+
+*Ответ:* (a) $y = \frac xe$; (b) в точке $(1;\ e)$, касательная $y = ex$; (c) под углом $\frac\pi4$ в точке $0$ и $\frac{3\pi}{4}$ в точке $\pi$; (d) $y = 4x - 4$, точка касания $(2;\ 4)$.
 :::
 
 ::: {.problem #prob:lec11:table-use}
 Пользуясь утверждением [-@prop:lec11:table], найдите: (a) $f'(x)$ для $f(x) = \dfrac{1}{x\sqrt x}$ при $x > 0$; (b) $f'(8)$ для $f(x) = x^{2/3}$; (c) $f'(2)$ для $f(x) = 3^x$; (d) $f'(4)$ для $f(x) = \log_2 x$.
-:::
-
-::: answer
-\(a) $-\frac{3}{2x^2\sqrt x}$; (b) $\frac13$; (c) $9\ln 3$; (d) $\frac{1}{4\ln 2}$.
 :::
 
 ::: solution
@@ -639,6 +617,8 @@ $$\frac{a(1 + h) + b - 1}{h} = a + \frac{a + b - 1}{h}.$$
 \(c) $f'(x) = 3^x \ln 3$, $f'(2) = 9 \ln 3$.
 
 \(d) $f'(x) = \frac{1}{x \ln 2}$, $f'(4) = \frac{1}{4 \ln 2}$.
+
+*Ответ:* (a) $-\frac{3}{2x^2\sqrt x}$; (b) $\frac13$; (c) $9\ln 3$; (d) $\frac{1}{4\ln 2}$.
 :::
 
 # Итоги

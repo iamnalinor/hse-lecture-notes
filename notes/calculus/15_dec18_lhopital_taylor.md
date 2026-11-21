@@ -119,8 +119,6 @@ $$\lim_{x \to 0} \frac{x - \sin x}{x^3} = \lim_{x \to 0} \frac{1 - \cos x}{3x^2}
 ::: {.example #ex:lec15:x-ln-x}
 Найдём $\lim\limits_{x \to +0} x \ln x$ и $\lim\limits_{x \to +0} x^x$.
 
-*Ответ:* $0$ и $1$.
-
 *Решение.* *Ключ:* записать произведение дробью так, чтобы производные упростились: $x \ln x = \frac{\ln x}{1/x}$ — неопределённость $\frac{\infty}{\infty}$ (знаменатель $\frac1x \to +\infty$). Отношение производных $\frac{1/x}{-1/x^2} = -x \to 0$, и по теореме [-@thm:lec15:lhopital-infinity] $x \ln x \to 0$. Запись $\frac{x}{1/\ln x}$ тоже законна, но производная $\frac{1}{\ln x}$ сложнее, и дело не упрощается. Далее $x^x = e^{x \ln x} \to e^0 = 1$ по непрерывности экспоненты.
 :::
 
@@ -275,8 +273,6 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 ::: {.example #ex:lec15:limit}
 Найдём $\lim\limits_{x \to 0} \dfrac{\operatorname{tg} x - \sin x}{x^3}$ и $\lim\limits_{x \to 0} \dfrac{x - \sin x}{x^3}$.
 
-*Ответ:* $\frac12$ и $\frac16$.
-
 *Решение.* *Ключ:* знаменатель $x^3$, поэтому числитель раскладываем до $o(x^3)$. $\operatorname{tg} x - \sin x = \left(x + \frac{x^3}{3}\right) - \left(x - \frac{x^3}{6}\right) + o(x^3) = \frac{x^3}{2} + o(x^3)$, и отношение $\frac12 + o(1) \to \frac12$. В лекции 9 этот предел требовал преобразования, так как главные части $\operatorname{tg} x \sim x$ и $\sin x \sim x$ сокращались (замечание [-@rem:lec09:sums]). Второй предел: $x - \sin x = \frac{x^3}{6} + o(x^3)$ — тот же ответ, что по правилу Лопиталя выше, но без трёх дифференцирований.
 :::
 
@@ -296,10 +292,6 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 Найдите пределы: (a) $\lim\limits_{x \to 0} \dfrac{e^x - e^{-x} - 2x}{x - \sin x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{x^3}{e^{2x}}$; (c) $\lim\limits_{x \to +0} x^{\sin x}$; (d) $\lim\limits_{x \to 1} \left(\dfrac{1}{\ln x} - \dfrac{1}{x - 1}\right)$; (e) $\lim\limits_{x \to \pi/2} \dfrac{\operatorname{tg} x}{\operatorname{tg} 3x}$.
 :::
 
-::: answer
-\(a) $2$; (b) $0$; (c) $1$; (d) $\frac12$; (e) $3$.
-:::
-
 ::: solution
 \(a) $\frac00$. Производные: $\frac{e^x + e^{-x} - 2}{1 - \cos x}$ — снова $\frac00$; ещё раз: $\frac{e^x - e^{-x}}{\sin x}$ — снова; ещё раз: $\frac{e^x + e^{-x}}{\cos x} \to 2$. Производные знаменателей $x - \sin x$, $1 - \cos x$, $\sin x$ — это $1 - \cos x$, $\sin x$, $\cos x$, они не равны нулю при малых $x \ne 0$. Правило применено три раза справа налево.
 
@@ -310,30 +302,26 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 \(d) $\infty - \infty$. Общий знаменатель: $\frac{x - 1 - \ln x}{(x - 1)\ln x}$ — $\frac00$. Производные: $\frac{1 - 1/x}{\ln x + (x - 1)/x} = \frac{x - 1}{x\ln x + x - 1}$ — снова $\frac00$; ещё раз: $\frac{1}{\ln x + 1 + 1} \to \frac12$.
 
 \(e) $\frac\infty\infty$, но прямое применение даёт $\frac{\cos^2 3x}{3\cos^2 x}$ — снова $\frac00$, и выражение не упрощается. *Ключ:* сначала преобразовать: $\frac{\operatorname{tg} x}{\operatorname{tg} 3x} = \frac{\sin x}{\sin 3x} \cdot \frac{\cos 3x}{\cos x}$. Первый множитель стремится к $\frac{1}{-1} = -1$, второй по правилу Лопиталя: $\frac{-3\sin 3x}{-\sin x} \to \frac{-3 \cdot (-1)}{-1} = -3$. Ответ $(-1)(-3) = 3$.
+
+*Ответ:* (a) $2$; (b) $0$; (c) $1$; (d) $\frac12$; (e) $3$.
 :::
 
 ::: {.problem #prob:lec15:lhopital-fails}
 Почему правило Лопиталя не помогает найти пределы, и чему они равны? (a) $\lim\limits_{x \to +\infty} \dfrac{x - \sin x}{x + \sin x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{\sqrt{1 + x^2}}{x}$.
 :::
 
-::: answer
-\(a) $1$; (b) $1$.
-:::
-
 ::: solution
 \(a) Отношение производных $\frac{1 - \cos x}{1 + \cos x}$ предела не имеет (и не определено при $\cos x = -1$), поэтому правило ничего не даёт (замечание [-@rem:lec15:converse]). Делим на $x$: $\frac{1 - \frac{\sin x}{x}}{1 + \frac{\sin x}{x}} \to 1$.
 
 \(b) Отношение производных $\frac{x/\sqrt{1 + x^2}}{1} = \frac{x}{\sqrt{1 + x^2}}$ — перевёрнутая исходная дробь; повторное применение возвращает к началу. *Ключ:* правило не всегда упрощает; здесь проще алгебра: $\frac{\sqrt{1 + x^2}}{x} = \sqrt{\frac{1}{x^2} + 1} \to 1$.
+
+*Ответ:* (a) $1$; (b) $1$.
 :::
 
 ## Формула Тейлора
 
 ::: {.problem #prob:lec15:expansions}
 Представьте формулой Маклорена с $o(x^n)$: (a) $(x + 2)e^{-x}$; (b) $\ln(2 + x - x^2)$. Представьте формулой Маклорена с $o(x^3)$: (c) $\sqrt{1 + \sin x}$. Представьте формулой Тейлора в точке $x_0 = 2$ с $o((x - 2)^n)$: (d) $\dfrac{1}{x}$.
-:::
-
-::: answer
-\(a) $\sum\limits_{k=0}^{n} \dfrac{(-1)^k (2 - k)}{k!} x^k + o(x^n)$; (b) $\ln 2 + \sum\limits_{k=1}^{n} \dfrac{(-1)^{k-1} - 2^{-k}}{k} x^k + o(x^n)$; (c) $1 + \dfrac x2 - \dfrac{x^2}{8} - \dfrac{x^3}{48} + o(x^3)$; (d) $\sum\limits_{k=0}^{n} \dfrac{(-1)^k}{2^{k+1}}(x - 2)^k + o((x - 2)^n)$.
 :::
 
 ::: solution
@@ -344,14 +332,12 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 \(c) $y = \sin x = x - \frac{x^3}{6} + o(x^3)$; $\sqrt{1 + y} = 1 + \frac y2 - \frac{y^2}{8} + \frac{y^3}{16} + o(y^3)$ ($C_{1/2}^2 = -\frac18$, $C_{1/2}^3 = \frac{1}{16}$). С $y^2 = x^2 + o(x^3)$, $y^3 = x^3 + o(x^3)$: $1 + \frac x2 - \frac{x^3}{12} - \frac{x^2}{8} + \frac{x^3}{16} + o(x^3)$, и $-\frac1{12} + \frac1{16} = -\frac1{48}$.
 
 \(d) $t = x - 2$: $\frac1x = \frac{1}{2 + t} = \frac12 \cdot \frac{1}{1 + t/2} = \frac12\sum_{k=0}^n \left(-\frac t2\right)^k + o(t^n)$.
+
+*Ответ:* (a) $\sum\limits_{k=0}^{n} \dfrac{(-1)^k (2 - k)}{k!} x^k + o(x^n)$; (b) $\ln 2 + \sum\limits_{k=1}^{n} \dfrac{(-1)^{k-1} - 2^{-k}}{k} x^k + o(x^n)$; (c) $1 + \dfrac x2 - \dfrac{x^2}{8} - \dfrac{x^3}{48} + o(x^3)$; (d) $\sum\limits_{k=0}^{n} \dfrac{(-1)^k}{2^{k+1}}(x - 2)^k + o((x - 2)^n)$.
 :::
 
 ::: {.problem #prob:lec15:derivatives}
 \(a) Найдите $f^{(5)}(0)$ и $f^{(6)}(0)$ для $f(x) = x^2 \sin x$. (b) Найдите $f^{(8)}(0)$ для $f(x) = \dfrac{1}{1 + x^2}$. (c) Найдите $A$ и $B$, при которых $e^x - \dfrac{1 + Ax}{1 + Bx} = o(x^2)$ при $x \to 0$, и главную часть этой разности.
-:::
-
-::: answer
-\(a) $-20$ и $0$; (b) $8! = 40320$; (c) $A = \frac12$, $B = -\frac12$; главная часть $-\frac{x^3}{12}$.
 :::
 
 ::: solution
@@ -362,16 +348,14 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 \(c) $\frac{1}{1 + Bx} = 1 - Bx + B^2x^2 - B^3x^3 + o(x^3)$, и
 $$\frac{1 + Ax}{1 + Bx} = 1 + (A - B)x + B(B - A)x^2 + B^2(A - B)x^3 + o(x^3).$$
 *Ключ:* по единственности приравнять коэффициенты с $e^x = 1 + x + \frac{x^2}{2} + \frac{x^3}{6} + o(x^3)$ до степени $2$: $A - B = 1$, $B(B - A) = -B = \frac12$. Отсюда $B = -\frac12$, $A = \frac12$. Коэффициент при $x^3$ у дроби $B^2(A - B) = \frac14$, у $e^x$ — $\frac16$; разность $\frac16 - \frac14 = -\frac{1}{12}$. Проверка при $x = 0{,}01$: $e^{0{,}01} - \frac{1{,}005}{0{,}995} \approx -8{,}42 \cdot 10^{-8}$, а $-\frac{x^3}{12} \approx -8{,}33 \cdot 10^{-8}$; при $x = 0{,}1$ расхождение заметнее ($-9{,}22 \cdot 10^{-5}$ против $-8{,}33 \cdot 10^{-5}$) — главная часть описывает поведение только при $x \to 0$.
+
+*Ответ:* (a) $-20$ и $0$; (b) $8! = 40320$; (c) $A = \frac12$, $B = -\frac12$; главная часть $-\frac{x^3}{12}$.
 :::
 
 ## Пределы через разложения
 
 ::: {.problem #prob:lec15:limits}
 Найдите пределы: (a) $\lim\limits_{x \to 0} \dfrac{\cos x - e^{-x^2/2}}{x^4}$; (b) $\lim\limits_{x \to 0} \dfrac{\sin x - x\cos x}{x \ln(1 + x^2)}$; (c) $\lim\limits_{x \to 0} \left(\dfrac{1}{x^2} - \dfrac{1}{\sin^2 x}\right)$; (d) $\lim\limits_{x \to 0} \left(\dfrac{(1 + x)^{1/x}}{e}\right)^{1/x}$.
-:::
-
-::: answer
-\(a) $-\frac{1}{12}$; (b) $\frac13$; (c) $-\frac13$; (d) $e^{-1/2}$.
 :::
 
 ::: solution
@@ -382,6 +366,8 @@ $$\frac{1 + Ax}{1 + Bx} = 1 + (A - B)x + B(B - A)x^2 + B^2(A - B)x^3 + o(x^3).$$
 \(c) $\infty - \infty$; $\frac{\sin^2 x - x^2}{x^2 \sin^2 x}$, знаменатель $\sim x^4$. $\sin^2 x = \left(x - \frac{x^3}{6} + o(x^4)\right)^2 = x^2 - \frac{x^4}{3} + o(x^5)$. Числитель $-\frac{x^4}{3} + o(x^4)$.
 
 \(d) $1^\infty$. Логарифм выражения: $\frac1x\left(\frac{\ln(1 + x)}{x} - 1\right)$. *Ключ:* $\frac{\ln(1 + x)}{x} = 1 - \frac x2 + o(x)$, поэтому логарифм равен $\frac1x\left(-\frac x2 + o(x)\right) \to -\frac12$. Ответ $e^{-1/2}$.
+
+*Ответ:* (a) $-\frac{1}{12}$; (b) $\frac13$; (c) $-\frac13$; (d) $e^{-1/2}$.
 :::
 
 # Итоги

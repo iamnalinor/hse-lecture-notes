@@ -74,10 +74,6 @@ active_until: 2026-10-23  # вторая половина потока пише�
 Докажите, что $3^{2n+1} + 2^{n+2}$ делится на $7$ при всех $n \in \N$.
 :::
 
-::: answer
-Переход: $f(k+1) = 9 f(k) - 7 \cdot 2^{k+2}$.
-:::
-
 ::: solution
 Пусть $f(n) = 3^{2n+1} + 2^{n+2}$.
 
@@ -93,10 +89,6 @@ $$f(k+1) = 9 \cdot 3^{2k+1} + 2 \cdot 2^{k+2} = 9\left(3^{2k+1} + 2^{k+2}\right)
 $$\frac{1}{1 \cdot 4} + \frac{1}{4 \cdot 7} + \dots + \frac{1}{(3n - 2)(3n + 1)} = \frac{n}{3n + 1}.$$
 :::
 
-::: answer
-Переход сводится к $\frac{k}{3k+1} + \frac{1}{(3k+1)(3k+4)} = \frac{k+1}{3k+4}$.
-:::
-
 ::: solution
 *База.* При $n = 1$ слева $\frac{1}{1 \cdot 4} = \frac14$, справа $\frac{1}{4}$.
 
@@ -109,10 +101,6 @@ $$\frac{k}{3k+1} + \frac{1}{(3k+1)(3k+4)} = \frac{k(3k + 4) + 1}{(3k+1)(3k+4)} =
 При каких $n \in \N$ верно неравенство $2^n > n^2 + n$? Докажите.
 :::
 
-::: answer
-При $n \ge 5$.
-:::
-
 ::: solution
 Проверка: $n = 1, 2, 3, 4$ дают $2 = 2$, $4 < 6$, $8 < 12$, $16 < 20$ — неверно; $n = 5$: $32 > 30$ — верно. Докажем неравенство при $n \ge 5$ индукцией с базой $n_0 = 5$ (утверждение [-@prop:lec01:induction-n0]).
 
@@ -121,14 +109,12 @@ $$\frac{k}{3k+1} + \frac{1}{(3k+1)(3k+4)} = \frac{k(3k + 4) + 1}{(3k+1)(3k+4)} =
 *Переход.* Пусть $2^k > k^2 + k$ при некотором $k \ge 5$. Тогда $2^{k+1} = 2 \cdot 2^k > 2k^2 + 2k$. Осталось проверить, что $2k^2 + 2k \ge (k+1)^2 + (k+1) = k^2 + 3k + 2$. Это равносильно $k^2 - k - 2 \ge 0$, то есть $(k - 2)(k + 1) \ge 0$, а это верно при $k \ge 2$. Значит, $2^{k+1} > (k+1)^2 + (k + 1)$.
 
 *Ключ:* переход работает уже с $k = 2$, но база верна только с $5$; ответ «при всех $n$» неверен, и проверка малых $n$ — часть решения.
+
+*Ответ:* При $n \ge 5$.
 :::
 
 ::: {.problem #prob:kr1:ind-strengthen}
 Докажите, что $1 + \dfrac{1}{2^3} + \dfrac{1}{3^3} + \dots + \dfrac{1}{n^3} < \dfrac32$ при всех $n \in \N$.
-:::
-
-::: answer
-Доказывается более сильное неравенство $S_n \le \frac32 - \frac{1}{2n^2}$.
 :::
 
 ::: solution
@@ -145,10 +131,6 @@ $$\frac{1}{(k+1)^3} + \frac{1}{2(k+1)^2} \le \frac{1}{2k^2}.$$
 
 ::: {.problem #prob:kr1:ind-two}
 Последовательность задана условиями $a_1 = 2$, $a_2 = 8$, $a_{n+2} = 4a_{n+1} - 4a_n$. Докажите, что $a_n = n \cdot 2^n$ при всех $n \in \N$.
-:::
-
-::: answer
-Индукция с двумя базами: $(k+2) 2^{k+2} = 4(k+1) 2^{k+1} - 4k \cdot 2^k$.
 :::
 
 ::: solution
@@ -196,22 +178,16 @@ $(a + b)^n = \sum_{k=0}^{n} C_n^k a^k b^{n-k}$, $C_n^k = \frac{n!}{k!(n-k)!}$.
 Найдите все члены разложения $\left(\sqrt3 - \sqrt[4]{5}\right)^6$, являющиеся целыми числами.
 :::
 
-::: answer
-$27$ и $225$.
-:::
-
 ::: solution
 Общий член: $T_k = C_6^k \left(-\sqrt[4]{5}\right)^k \left(\sqrt3\right)^{6-k} = (-1)^k C_6^k \cdot 5^{k/4} \cdot 3^{(6-k)/2}$, $k = 0, \dots, 6$. Член целый, когда оба показателя целые: $k$ делится на $4$ и $6 - k$ чётно. Из $k \in \{0, 4\}$ оба условия выполнены (при $k = 4$: $6 - 4 = 2$ чётно).
 
 $k = 0$: $T_0 = 3^3 = 27$. $k = 4$: $T_4 = C_6^4 \cdot 5 \cdot 3 = 15 \cdot 15 = 225$, знак $(-1)^4 = +1$.
+
+*Ответ:* $27$ и $225$.
 :::
 
 ::: {.problem #prob:kr1:bin-count}
 Сколько рациональных членов в разложении $\left(\sqrt[3]{2} + \sqrt3\right)^{100}$?
-:::
-
-::: answer
-$17$.
 :::
 
 ::: solution
@@ -222,24 +198,18 @@ $T_k = C_{100}^k \cdot 2^{k/3} \cdot 3^{(100-k)/2}$. Рациональност�
 В разложении $\left(x^2 - \dfrac{1}{2x}\right)^9$ найдите член, не содержащий $x$, и коэффициент при $x^3$.
 :::
 
-::: answer
-Свободный член $\frac{21}{16}$; коэффициент при $x^3$ равен $-\frac{63}{16}$.
-:::
-
 ::: solution
 $T_k = C_9^k \left(-\frac{1}{2x}\right)^k (x^2)^{9-k} = C_9^k \left(-\frac12\right)^k x^{18 - 3k}$.
 
 Свободный член: $18 - 3k = 0$, $k = 6$: $C_9^6 \cdot \frac{1}{64} = \frac{84}{64} = \frac{21}{16}$.
 
 $x^3$: $18 - 3k = 3$, $k = 5$: $C_9^5 \cdot \left(-\frac{1}{32}\right) = -\frac{126}{32} = -\frac{63}{16}$. Знак — от нечётной степени $-\frac{1}{2x}$.
+
+*Ответ:* Свободный член $\frac{21}{16}$; коэффициент при $x^3$ равен $-\frac{63}{16}$.
 :::
 
 ::: {.problem #prob:kr1:bin-max}
 Найдите наибольший коэффициент многочлена $(1 + 2x)^{10}$.
-:::
-
-::: answer
-$15360$ (при $x^7$).
 :::
 
 ::: solution
@@ -291,10 +261,6 @@ $(a_n)$ ограничена $\Leftrightarrow$ $\exists C > 0\ \forall n \in \N\
 $$a_n = \frac{n! - 3^n}{2^n + n}.$$
 :::
 
-::: answer
-При $n \ge 7$ верно $a_n \ge \frac{n}{8}$; для любого $C$ подходит $n = 7 + [8|C|]$.
-:::
-
 ::: solution
 *Шаг 1: убрать $3^n$.* Докажем индукцией, что $n! \ge 2 \cdot 3^n$ при $n \ge 7$. База: $7! = 5040 \ge 4374 = 2 \cdot 3^7$. Переход: $(k+1)! = (k+1) \cdot k! \ge 3 \cdot 2 \cdot 3^k = 2 \cdot 3^{k+1}$, так как $k + 1 \ge 3$. Значит, $3^n \le \frac{n!}{2}$, и при $n \ge 7$ числитель $n! - 3^n \ge \frac{n!}{2} > 0$.
 
@@ -309,20 +275,12 @@ $$a_n \ge \frac14 \cdot \frac n2 = \frac n8.$$
 $$a_n = \frac{(-1)^n n^2}{3n + 1}.$$
 :::
 
-::: answer
-$|a_n| \ge \frac n4$; для любого $C$ подходит $n = [4|C|] + 1$.
-:::
-
 ::: solution
 $|a_n| = \frac{n^2}{3n + 1} \ge \frac{n^2}{4n} = \frac n4$ при всех $n \ge 1$, так как $3n + 1 \le 4n$. Для данного $C$ номер $n = [4|C|] + 1$ натуральный и $n > 4|C|$, поэтому $|a_n| \ge \frac n4 > |C| \ge C$. Последовательность не ограничена ни сверху, ни снизу, но и не стремится ни к $+\infty$, ни к $-\infty$ — это не мешает: определению нужен только модуль.
 :::
 
 ::: {.problem #prob:kr1:bounded-c}
 Докажите по определению, что последовательность $a_n = \dfrac{4n^2 - 3n\cos n}{n^2 + 2}$ ограничена.
-:::
-
-::: answer
-$|a_n| < 7$ при всех $n$.
 :::
 
 ::: solution
@@ -333,10 +291,6 @@ $|a_n| < 7$ при всех $n$.
 Выясните, ограничены ли последовательности $a_n = n\left(\sqrt{n^2 + 1} - n\right)$ и $b_n = n^2\left(\sqrt{n^2 + 1} - n\right)$. Ответ докажите по определению.
 :::
 
-::: answer
-$(a_n)$ ограничена: $0 < a_n < \frac12$. $(b_n)$ не ограничена: $b_n \ge \frac n3$, номер $n = [3|C|] + 1$.
-:::
-
 ::: solution
 *Ключ:* домножить на сопряжённое: $\sqrt{n^2 + 1} - n = \frac{1}{\sqrt{n^2 + 1} + n}$.
 
@@ -345,6 +299,8 @@ $a_n = \frac{n}{\sqrt{n^2+1} + n} < \frac{n}{n + n} = \frac12$ и $a_n > 0$, п�
 $b_n = \frac{n^2}{\sqrt{n^2+1} + n}$. Так как $\sqrt{n^2 + 1} \le n + 1$ (возвести в квадрат), знаменатель не больше $2n + 1 \le 3n$, и $b_n \ge \frac{n^2}{3n} = \frac n3$. Для данного $C$ при $n = [3|C|] + 1$ имеем $b_n \ge \frac n3 > |C| \ge C$.
 
 Выражение в скобках — б.м., и ответ зависит от того, на что её умножают: «раз скобка стремится к нулю, всё ограничено» — неверный вывод.
+
+*Ответ:* $(a_n)$ ограничена: $0 < a_n < \frac12$. $(b_n)$ не ограничена: $b_n \ge \frac n3$, номер $n = [3|C|] + 1$.
 :::
 
 Ещё задачи: [-@prob:lec02:bounded-def], [-@prob:lec02:kr-unbounded], [-@prob:lec02:bounded-ops].
@@ -384,10 +340,6 @@ $\lim\limits_{n \to \infty} a_n = a$, если $\forall \varepsilon > 0\ \exists
 Докажите по определению, что $\lim\limits_{n \to \infty} \dfrac{3n^2 - 1}{n^2 + 2n} = 3$.
 :::
 
-::: answer
-$N(\varepsilon) = \left[\frac7\varepsilon\right]$.
-:::
-
 ::: solution
 $$|a_n - 3| = \left|\frac{3n^2 - 1 - 3n^2 - 6n}{n^2 + 2n}\right| = \frac{6n + 1}{n^2 + 2n} \le \frac{7n}{n^2} = \frac7n,$$
 так как $6n + 1 \le 7n$ и $n^2 + 2n \ge n^2$. Неравенство $\frac7n < \varepsilon$ выполнено при $n > \frac7\varepsilon$. Пусть $\varepsilon > 0$ и $N = \left[\frac7\varepsilon\right]$; при $n > N$ имеем $n \ge N + 1 > \frac7\varepsilon$, поэтому $|a_n - 3| \le \frac7n < \varepsilon$.
@@ -395,10 +347,6 @@ $$|a_n - 3| = \left|\frac{3n^2 - 1 - 3n^2 - 6n}{n^2 + 2n}\right| = \frac{6n + 1}
 
 ::: {.problem #prob:kr1:eps-bounded-factor}
 Докажите по определению, что $\lim\limits_{n \to \infty} \dfrac{3n\cos(n!) - n^2}{n^3 - 5n^2 + 1} = 0$.
-:::
-
-::: answer
-$N(\varepsilon) = \max\left(9, \left[\frac8\varepsilon\right]\right)$.
 :::
 
 ::: solution
@@ -409,10 +357,6 @@ $\frac8n < \varepsilon$ при $n > \frac8\varepsilon$. При $n > N = \max\lef
 
 ::: {.problem #prob:kr1:eps-root}
 Докажите по определению, что $\lim\limits_{n \to \infty} \dfrac{\sqrt n + 2}{\sqrt{4n + 1}} = \dfrac12$.
-:::
-
-::: answer
-$|a_n - \frac12| < \frac{1}{\sqrt n}$, $N(\varepsilon) = \left[\frac{1}{\varepsilon^2}\right]$.
 :::
 
 ::: solution
@@ -426,10 +370,6 @@ $\frac{1}{\sqrt n} < \varepsilon$ при $n > \frac{1}{\varepsilon^2}$; при $
 (a) Докажите по определению, что $1$ не является пределом последовательности $a_n = \dfrac{2n + 1}{n + 3}$. (b) Докажите по определению, что последовательность $b_n = (-1)^n + \dfrac1n$ расходится.
 :::
 
-::: answer
-(a) $\varepsilon_0 = \frac12$, для любого $N$ подходит $n = N + 7$. (b) Для любого $a$ подходит $\varepsilon_0 = \frac12$: при $a \ge \frac12$ — нечётные номера, при $a < \frac12$ — чётные.
-:::
-
 ::: solution
 (a) Нужно: $\exists \varepsilon_0 > 0\ \forall N\ \exists n > N\colon |a_n - 1| \ge \varepsilon_0$. Имеем $a_n - 1 = \frac{n - 2}{n + 3}$, и $\frac{n-2}{n+3} \ge \frac12$ равносильно $2n - 4 \ge n + 3$, то есть $n \ge 7$. Возьмём $\varepsilon_0 = \frac12$; для любого $N$ номер $n = N + 7 > N$ и $n \ge 7$, поэтому $|a_n - 1| \ge \frac12$. (На самом деле $a_n \to 2$.)
 
@@ -439,6 +379,8 @@ $\frac{1}{\sqrt n} < \varepsilon$ при $n > \frac{1}{\varepsilon^2}$; при $
 - Если $a < \frac12$, возьмём чётное $n = 2N + 2 > N$: $|b_n - a| = b_n - a > 1 - \frac12 = \frac12$.
 
 Ни одно $a$ не является пределом, последовательность расходится. Короче, но уже не «по определению»: $b_{2m} \to 1$, $b_{2m-1} \to -1$, пределы подпоследовательностей разные (следствие [-@cor:lec05:divergence]).
+
+*Ответ:* (a) $\varepsilon_0 = \frac12$, для любого $N$ подходит $n = N + 7$. (b) Для любого $a$ подходит $\varepsilon_0 = \frac12$: при $a \ge \frac12$ — нечётные номера, при $a < \frac12$ — чётные.
 :::
 
 Ещё задачи: [-@prob:lec03:choose-n], [-@prob:lec03:kr], [-@prob:lec03:diverge].
@@ -476,10 +418,6 @@ $q^n \to 0$ при $|q| < 1$; $\sqrt[n]{a} \to 1$ при $a > 0$; $\sqrt[n]{n} \
 Вычислите $\lim\limits_{n \to \infty} \left(\dfrac{n^3 + 2n^2}{3n^2 - 1} - \dfrac{n^2 + 1}{3n + 2}\right)$.
 :::
 
-::: answer
-$\frac89$.
-:::
-
 ::: solution
 Каждая дробь — б.б., неопределённость $\infty - \infty$. Общий знаменатель:
 $$\begin{aligned} \frac{(n^3 + 2n^2)(3n + 2) - (n^2 + 1)(3n^2 - 1)}{(3n^2 - 1)(3n + 2)} &= \frac{(3n^4 + 8n^3 + 4n^2) - (3n^4 + 2n^2 - 1)}{9n^3 + 6n^2 - 3n - 2} \\ &= \frac{8n^3 + 2n^2 + 1}{9n^3 + 6n^2 - 3n - 2}. \end{aligned}$$
@@ -492,10 +430,6 @@ $$\frac{8 + \frac2n + \frac{1}{n^3}}{9 + \frac6n - \frac{3}{n^2} - \frac{2}{n^3}
 Вычислите $\lim\limits_{n \to \infty} \dfrac{2^{n+1} + n^7 + (n + 1)!}{(n + 3) \cdot n! + 5^n}$.
 :::
 
-::: answer
-$1$.
-:::
-
 ::: solution
 По шкале роста самое быстрое слагаемое — $(n+1)!$ (в знаменателе $(n+3) \cdot n!$ того же порядка). Делим на $(n+1)! = (n+1) \cdot n!$:
 $$\frac{\dfrac{2 \cdot 2^n}{(n+1)!} + \dfrac{n^7}{(n+1)!} + 1}{\dfrac{n+3}{n+1} + \dfrac{5^n}{(n+1)!}}.$$
@@ -506,10 +440,6 @@ $$\frac{\dfrac{2 \cdot 2^n}{(n+1)!} + \dfrac{n^7}{(n+1)!} + 1}{\dfrac{n+3}{n+1} 
 Вычислите $\lim\limits_{n \to \infty} \left(\dfrac{n^2 \sin n + 3n^3}{n^3 + 1} + \dfrac{(-1)^n n}{n^2 + 4}\right)$.
 :::
 
-::: answer
-$3$.
-:::
-
 ::: solution
 У $\sin n$ и $(-1)^n$ предела нет, поэтому арифметику предела к ним применять нельзя. *Ключ:* выделить произведения «ограниченная · б.м.»:
 $$\frac{n^2 \sin n + 3n^3}{n^3 + 1} + \frac{(-1)^n n}{n^2 + 4} = \frac{3n^3}{n^3 + 1} + \sin n \cdot \frac{n^2}{n^3 + 1} + (-1)^n \cdot \frac{n}{n^2 + 4}.$$
@@ -518,10 +448,6 @@ $$\frac{n^2 \sin n + 3n^3}{n^3 + 1} + \frac{(-1)^n n}{n^2 + 4} = \frac{3n^3}{n^3
 
 ::: {.problem #prob:kr1:arith-nested}
 Вычислите $\lim\limits_{n \to \infty} \left(\sqrt{n + 2\sqrt n} - \sqrt{n - \sqrt n}\right)$.
-:::
-
-::: answer
-$\frac32$.
 :::
 
 ::: solution
@@ -536,10 +462,6 @@ $$\frac{3}{\sqrt{1 + \frac{2}{\sqrt n}} + \sqrt{1 - \frac{1}{\sqrt n}}} \to \fra
 Вычислите $\lim\limits_{n \to \infty} \left(\sqrt[3]{n^3 + 3n^2} - \sqrt{n^2 + n}\right)$.
 :::
 
-::: answer
-$\frac12$.
-:::
-
 ::: solution
 *Ключ:* корни разных степеней одним сопряжённым не убрать — прибавим и вычтем $n$:
 $$\sqrt[3]{n^3 + 3n^2} - \sqrt{n^2 + n} = \left(\sqrt[3]{n^3 + 3n^2} - n\right) - \left(\sqrt{n^2 + n} - n\right).$$
@@ -550,10 +472,6 @@ $$n u_n - n = \frac{3n^2}{n^2 u_n^2 + n^2 u_n + n^2} = \frac{3}{u_n^2 + u_n + 1}
 
 ::: {.problem #prob:kr1:arith-nested3}
 Вычислите $\lim\limits_{n \to \infty} \left(\sqrt{9n + \sqrt{n + 2\sqrt n}} - 3\sqrt n\right)$.
-:::
-
-::: answer
-$\frac16$.
 :::
 
 ::: solution
@@ -606,20 +524,12 @@ $1 + \frac{3}{2n - 3} \to 1$, но $\left(1 + \frac{3}{2n-3}\right)^{n+1} \not\t
 Вычислите $\lim\limits_{n \to \infty} \dfrac{\sqrt[n]{3n^2} + 2\sqrt[n]{5}}{\sqrt[n]{n + 1}}$.
 :::
 
-::: answer
-$3$.
-:::
-
 ::: solution
 $\sqrt[n]{3n^2} = \sqrt[n]{3} \cdot \sqrt[n]{n} \cdot \sqrt[n]{n} \to 1$, $\sqrt[n]{5} \to 1$ (утверждение [-@prop:lec04:standard], пп. 2, 3; произведение — теорема [-@thm:lec04:product]). Знаменатель: из $n \le n + 1 \le 2n$ получаем $\sqrt[n]{n} \le \sqrt[n]{n+1} \le \sqrt[n]{2} \sqrt[n]{n}$, обе границы стремятся к $1$, по теореме о двух милиционерах $\sqrt[n]{n + 1} \to 1$. По арифметике предела ответ $\frac{1 + 2}{1} = 3$.
 :::
 
 ::: {.problem #prob:kr1:e-shift}
 Вычислите (a) $\lim\limits_{n \to \infty} \left(1 + \dfrac3n\right)^{n - 2}$; (b) $\lim\limits_{n \to \infty} \left(\dfrac{n + 1}{n + 4}\right)^{n}$; (c) $\lim\limits_{n \to \infty} \left(1 + \dfrac{2}{n^2 + 1}\right)^{n}$.
-:::
-
-::: answer
-(a) $e^3$; (b) $e^{-3}$; (c) $1$.
 :::
 
 ::: solution
@@ -632,14 +542,12 @@ $$c_m = \left(1 - \frac3m\right)^{m - 4} = \frac{\left(1 - \frac3m\right)^m}{\le
 (c) Здесь показатель $n$ растёт медленнее знаменателя $n^2 + 1$, и ответ не $e^2$. *Ключ:* зажать. Снизу $b_n \ge 1$. Сверху $1 + \frac{2}{n^2 + 1} < 1 + \frac{2}{n^2} < \left(1 + \frac{1}{n^2}\right)^2$, поэтому
 $$b_n^n < \left(1 + \frac{1}{n^2}\right)^{2n^2} = \left(a_{n^2}\right)^2 < 9, \qquad a_m = \left(1 + \frac1m\right)^m < 3$$
 (ограниченность из теоремы [-@thm:lec05:e]). Значит, $1 \le b_n < \sqrt[n]{9} \to 1$, и по теореме о двух милиционерах $b_n \to 1$.
+
+*Ответ:* (a) $e^3$; (b) $e^{-3}$; (c) $1$.
 :::
 
 ::: {.problem #prob:kr1:e-power-root}
 Вычислите $\lim\limits_{n \to \infty} \left(\dfrac{3n + 4}{3n + 1}\right)^{2n}$.
-:::
-
-::: answer
-$e^2$.
 :::
 
 ::: solution
@@ -650,10 +558,6 @@ $$b_n^3 = \left(1 + \frac3m\right)^{6n} = \left(1 + \frac3m\right)^{2m - 2} = \f
 
 ::: {.problem #prob:kr1:e-combo}
 Вычислите $\lim\limits_{n \to \infty} \dfrac{\sqrt[n]{2n^3} + \left(\frac{4n + 1}{4n - 1}\right)^{2n}}{\sqrt[n]{5} + \sqrt[n]{n + 3}}$.
-:::
-
-::: answer
-$\frac{1 + e}{2}$.
 :::
 
 ::: solution
@@ -696,10 +600,6 @@ $$c_m = \left(1 + \frac2m\right)^{m + 1} = \left(1 + \frac2m\right)^m \left(1 + 
 Найдите $\lim\limits_{n \to \infty} \sqrt[n]{\dfrac{5n^3 - n^2 + 2\sin n}{n^2 + 4}}$.
 :::
 
-::: answer
-$1$.
-:::
-
 ::: solution
 При $n \ge 1$: числитель $5n^3 - n^2 + 2\sin n \ge 5n^3 - n^3 - 2n^3 = 2n^3$ (так как $n^2 \le n^3$ и $2\sin n \ge -2 \ge -2n^3$) и $\le 5n^3 + 2 \le 7n^3$; знаменатель $n^2 \le n^2 + 4 \le 5n^2$. Поэтому
 $$\frac{2n}{5} = \frac{2n^3}{5n^2} \le \frac{5n^3 - n^2 + 2\sin n}{n^2 + 4} \le \frac{7n^3}{n^2} = 7n.$$
@@ -708,10 +608,6 @@ $$\frac{2n}{5} = \frac{2n^3}{5n^2} \le \frac{5n^3 - n^2 + 2\sin n}{n^2 + 4} \le 
 
 ::: {.problem #prob:kr1:squeeze-exp}
 Найдите $\lim\limits_{n \to \infty} \sqrt[n]{5^n + n \cdot 3^n + 2}$.
-:::
-
-::: answer
-$5$.
 :::
 
 ::: solution
@@ -724,10 +620,6 @@ $$5 \le \sqrt[n]{5^n + n \cdot 3^n + 2} \le 5 \sqrt[n]{4} \sqrt[n]{n} \to 5.$$
 Найдите $\lim\limits_{n \to \infty} \sqrt[n]{\dfrac{2^n + 6^n}{3^n + n^2}}$.
 :::
 
-::: answer
-$2$.
-:::
-
 ::: solution
 Числитель: $6^n \le 2^n + 6^n \le 2 \cdot 6^n$. Знаменатель: $3^n \le 3^n + n^2 \le 3^n + n^2 3^n \le 2n^2 \cdot 3^n$. Отсюда
 $$\frac{6^n}{2n^2 \cdot 3^n} \le \frac{2^n + 6^n}{3^n + n^2} \le \frac{2 \cdot 6^n}{3^n}, \qquad \frac{2}{\sqrt[n]{2} \left(\sqrt[n]{n}\right)^2} \le b_n \le 2\sqrt[n]{2}.$$
@@ -736,10 +628,6 @@ $$\frac{6^n}{2n^2 \cdot 3^n} \le \frac{2^n + 6^n}{3^n + n^2} \le \frac{2 \cdot 6
 
 ::: {.problem #prob:kr1:squeeze-small}
 Найдите $\lim\limits_{n \to \infty} \sqrt[n]{\left(\frac23\right)^n + \left(\frac34\right)^n + \frac1n}$.
-:::
-
-::: answer
-$1$.
 :::
 
 ::: solution
@@ -786,10 +674,6 @@ $1$.
 Последовательность задана условиями $x_1 = 1$, $x_{n+1} = \sqrt{5 + 4x_n}$. Докажите, что она сходится, и найдите её предел.
 :::
 
-::: answer
-$5$.
-:::
-
 ::: solution
 *Кандидаты:* $L^2 = 5 + 4L$, $L \in \{5, -1\}$. Члены $1$, $3$, $\sqrt{17} \approx 4{,}12$ растут к $5$.
 
@@ -804,10 +688,6 @@ $5$.
 Последовательность задана условиями $x_1 = 5$, $x_{n+1} = \sqrt{6 + x_n}$. Докажите, что она сходится, и найдите её предел.
 :::
 
-::: answer
-$3$.
-:::
-
 ::: solution
 *Кандидаты:* $L^2 = 6 + L$, $L \in \{3, -2\}$. Члены $5$, $\sqrt{11} \approx 3{,}32$, $\approx 3{,}05$ убывают к $3$.
 
@@ -820,10 +700,6 @@ $3$.
 
 ::: {.problem #prob:kr1:rec-fraction}
 Последовательность задана условиями $x_1 = 1$, $x_{n+1} = \dfrac{4x_n + 2}{x_n + 3}$. Докажите, что она сходится, и найдите её предел.
-:::
-
-::: answer
-$2$.
 :::
 
 ::: solution
@@ -841,10 +717,6 @@ $$x_{n+1} = 4 - \frac{10}{x_n + 3}, \qquad x_{n+1} - x_n = \frac{4x_n + 2 - x_n^
 Последовательность задана условиями $x_1 = \frac13$, $x_{n+1} = x_n(2 - x_n)$. Докажите, что она сходится, и найдите её предел.
 :::
 
-::: answer
-$1$.
-:::
-
 ::: solution
 *Кандидаты:* $L = L(2 - L)$, то есть $L^2 = L$, $L \in \{0, 1\}$. Оба корня неотрицательны, выбирать придётся монотонностью.
 
@@ -857,10 +729,6 @@ $1$.
 
 ::: {.problem #prob:kr1:rec-sum}
 Докажите, что последовательность $s_n = \dfrac{2 + \sin 1}{3} + \dfrac{2 + \sin 2}{3^2} + \dots + \dfrac{2 + \sin n}{3^n}$ сходится.
-:::
-
-::: answer
-Возрастает и ограничена сверху числом $\frac32$.
 :::
 
 ::: solution
@@ -908,10 +776,6 @@ $$s_n \le 1 + \frac13 + \dots + \frac{1}{3^{n-1}} = \frac{1 - 3^{-n}}{1 - \frac1
 Найдите $\lim\limits_{n \to \infty} \sum\limits_{k=1}^{n} \dfrac{2k + 1}{n^2 + 3k}$.
 :::
 
-::: answer
-$1$.
-:::
-
 ::: solution
 *Ключ:* зажимаем только знаменатели: $n^2 + 3 \le n^2 + 3k \le n^2 + 3n$ при $1 \le k \le n$. Числители складываем точно: $\sum_{k=1}^{n} (2k + 1) = n(n + 1) + n = n^2 + 2n$ (утверждение [-@prop:lec01:sum]). Поэтому
 $$\frac{n^2 + 2n}{n^2 + 3n} \le S_n \le \frac{n^2 + 2n}{n^2 + 3},$$
@@ -920,10 +784,6 @@ $$\frac{n^2 + 2n}{n^2 + 3n} \le S_n \le \frac{n^2 + 2n}{n^2 + 3},$$
 
 ::: {.problem #prob:kr1:bonus-product}
 Найдите $\lim\limits_{n \to \infty} \left(1 - \dfrac{1}{2^2}\right)\left(1 - \dfrac{1}{3^2}\right) \cdots \left(1 - \dfrac{1}{n^2}\right)$.
-:::
-
-::: answer
-$\frac12$.
 :::
 
 ::: solution
@@ -936,10 +796,6 @@ $$P_n = \prod_{k=2}^{n} \frac{k - 1}{k} \cdot \prod_{k=2}^{n} \frac{k + 1}{k} = 
 Пусть $a_n \to 0$. Докажите, что $\dfrac{a_1 + a_2 + \dots + a_n}{n} \to 0$.
 :::
 
-::: answer
-См. решение.
-:::
-
 ::: solution
 Пусть $\varepsilon > 0$. *Ключ:* разбить сумму на «голову» с фиксированным числом членов и «хвост», где все $|a_k|$ уже малы.
 
@@ -950,10 +806,6 @@ $$\left|\frac{a_1 + \dots + a_n}{n}\right| \le \frac{A}{n} + \frac{|a_{N_1 + 1}|
 
 ::: {.problem #prob:kr1:bonus-unbounded}
 Последовательность задана рекуррентно: $x_1 = 1$, $x_{n+1} = x_n + \dfrac{1}{x_n}$. Найдите её предел.
-:::
-
-::: answer
-$+\infty$.
 :::
 
 ::: solution

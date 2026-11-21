@@ -226,8 +226,6 @@ $$[\vec a, \vec b] = \sum_{p=1}^{3} \sum_{q=1}^{3} a_p b_q [\vec e_p, \vec e_q],
 ::: {.example #ex:lec13:cross}
 Найдём $[\vec a, \vec b]$ для $\vec a = (1, 2, 0)$, $\vec b = (0, 1, 3)$ в правом ортонормированном базисе и площадь параллелограмма на этих векторах.
 
-*Ответ:* $[\vec a, \vec b] = (6, -3, 1)$, площадь $\sqrt{46}$.
-
 По [-@eq:lec13:cross-coords]: $(2 \cdot 3 - 0 \cdot 1, \; 0 \cdot 0 - 1 \cdot 3, \; 1 \cdot 1 - 2 \cdot 0) = (6, -3, 1)$. Проверка перпендикулярности: $(6, -3, 1) \cdot (1, 2, 0) = 6 - 6 = 0$ и $(6, -3, 1) \cdot (0, 1, 3) = -3 + 3 = 0$. Площадь $|[\vec a, \vec b]| = \sqrt{36 + 9 + 1} = \sqrt{46}$. Проверим по определению: $|\vec a| = \sqrt5$, $|\vec b| = \sqrt{10}$, $(\vec a, \vec b) = 2$, $\cos \varphi = \frac{2}{\sqrt{50}}$, $\sin^2 \varphi = 1 - \frac{4}{50} = \frac{46}{50}$, и $|\vec a| \, |\vec b| \sin \varphi = \sqrt{50} \cdot \sqrt{\frac{46}{50}} = \sqrt{46}$.
 :::
 
@@ -267,8 +265,6 @@ $$\langle \vec a, \vec b, \vec c \rangle = \det(a \;\, b \;\, c) \cdot \langle \
 
 ::: {.example #ex:lec13:any-basis}
 В правом ортонормированном базисе заданы $\vec e_1 = \vec i$, $\vec e_2 = \vec i + \vec j$, $\vec e_3 = \vec j + 2\vec k$. Найдём $\langle \vec a, \vec b, \vec c \rangle$ для $\vec a = \vec e_1 + \vec e_2$, $\vec b = \vec e_2 + \vec e_3$, $\vec c = \vec e_1 + \vec e_3$.
-
-*Ответ:* $4$.
 
 $\langle \vec e_1, \vec e_2, \vec e_3 \rangle = \begin{vmatrix} 1 & 0 & 0 \\ 1 & 1 & 0 \\ 0 & 1 & 2 \end{vmatrix} = 2$ по [-@eq:lec13:mixed-coords]. Координаты в базисе $\vec e_1, \vec e_2, \vec e_3$: $a = (1, 1, 0)^T$, $b = (0, 1, 1)^T$, $c = (1, 0, 1)^T$, и $\det(a \; b \; c) = \begin{vmatrix} 1 & 0 & 1 \\ 1 & 1 & 0 \\ 0 & 1 & 1 \end{vmatrix} = 1 + 1 = 2$. По [-@eq:lec13:mixed-any] ответ $2 \cdot 2 = 4$. Проверка в базисе $\vec i, \vec j, \vec k$: $\vec a = (2, 1, 0)$, $\vec b = (1, 2, 2)$, $\vec c = (1, 1, 2)$, и $\begin{vmatrix} 2 & 1 & 0 \\ 1 & 2 & 2 \\ 1 & 1 & 2 \end{vmatrix} = 2 \cdot 2 - 1 \cdot 0 + 0 = 4$.
 :::
@@ -343,10 +339,6 @@ $$\vec r_G = \frac{1 \cdot \vec r_A + 2 \cdot \frac{\vec r_B + \vec r_C}{2}}{3} 
 Найдите площадь треугольника с вершинами $A(1, 0, 1)$, $B(2, 1, 3)$, $C(0, 2, 1)$ и длину его высоты, опущенной из вершины $C$.
 :::
 
-::: answer
-$S = \frac{\sqrt{29}}{2}$, $h_C = \sqrt{\frac{29}{6}}$.
-:::
-
 ::: solution
 $\overrightarrow{AB} = (1, 1, 2)$, $\overrightarrow{AC} = (-1, 2, 0)$. По [-@eq:lec13:cross-coords]
 $$[\overrightarrow{AB}, \overrightarrow{AC}] = (1 \cdot 0 - 2 \cdot 2, \; 2 \cdot (-1) - 1 \cdot 0, \; 1 \cdot 2 - 1 \cdot (-1)) = (-4, -2, 3).$$
@@ -355,10 +347,6 @@ $$[\overrightarrow{AB}, \overrightarrow{AC}] = (1 \cdot 0 - 2 \cdot 2, \; 2 \cdo
 
 ::: {.problem #prob:lec13:tetra}
 Для точек из задачи [-@prob:lec13:triangle-area] и $D(1, 1, 4)$ найдите объём тетраэдра $ABCD$, высоту, опущенную из вершины $D$ на грань $ABC$, и ориентацию тройки $\overrightarrow{AB}, \overrightarrow{AC}, \overrightarrow{AD}$.
-:::
-
-::: answer
-$V = \frac76$, $h_D = \frac{7}{\sqrt{29}}$, тройка правая.
 :::
 
 ::: solution
@@ -371,20 +359,14 @@ $$\langle \overrightarrow{AB}, \overrightarrow{AC}, \overrightarrow{AD} \rangle 
 При каком $\lambda$ векторы $\vec a = (1, 2, \lambda)$, $\vec b = (0, 1, 1)$, $\vec c = (2, \lambda, 1)$ компланарны? При каких $\lambda$ тройка $\vec a, \vec b, \vec c$ правая?
 :::
 
-::: answer
-Компланарны при $\lambda = \frac53$; тройка правая при $\lambda < \frac53$.
-:::
-
 ::: solution
 $\langle \vec a, \vec b, \vec c \rangle = \begin{vmatrix} 1 & 2 & \lambda \\ 0 & 1 & 1 \\ 2 & \lambda & 1 \end{vmatrix} = 1 \cdot (1 - \lambda) - 2 \cdot (0 - 2) + \lambda \cdot (0 - 2) = 5 - 3\lambda$ (разложение по первой строке). По следствию [-@cor:lec13:coplanar] векторы компланарны при $5 - 3\lambda = 0$. *Ключ:* ориентация — знак того же определителя: тройка правая при $5 - 3\lambda > 0$, левая при $\lambda > \frac53$. Проверка при $\lambda = \frac53$: $2\vec a - \frac73 \vec b = \left(2, \; 4 - \frac73, \; \frac{10}{3} - \frac73\right) = \left(2, \frac53, 1\right) = \vec c$ — векторы действительно зависимы.
+
+*Ответ:* Компланарны при $\lambda = \frac53$; тройка правая при $\lambda < \frac53$.
 :::
 
 ::: {.problem #prob:lec13:cross-algebra}
 Известно, что $|\vec a| = 3$, $|\vec b| = 4$, $(\vec a, \vec b) = 6$. Найдите $|[2\vec a - \vec b, \vec a + 3\vec b]|$.
-:::
-
-::: answer
-$42\sqrt3$.
 :::
 
 ::: solution
@@ -393,10 +375,6 @@ $42\sqrt3$.
 
 ::: {.problem #prob:lec13:any-basis}
 Базис $\vec e_1, \vec e_2, \vec e_3$ таков, что объём параллелепипеда на нём равен $5$, и тройка $\vec e_1, \vec e_2, \vec e_3$ левая. Векторы заданы координатами в этом базисе: $\vec a = (1, 0, 2)$, $\vec b = (2, 1, 0)$, $\vec c = (0, 1, 1)$. Найдите объём параллелепипеда на $\vec a, \vec b, \vec c$ и ориентацию этой тройки.
-:::
-
-::: answer
-Объём $25$; тройка левая.
 :::
 
 ::: solution
@@ -409,12 +387,10 @@ $$\det(a \; b \; c) = \begin{vmatrix} 1 & 2 & 0 \\ 0 & 1 & 1 \\ 2 & 0 & 1 \end{v
 Даны $A(1, -2, 3)$ и $B(4, 1, 0)$. Найдите точку $M$, делящую отрезок $AB$ в отношении $2 : 1$ от $A$, и точку $C$, для которой $B$ — середина отрезка $AC$.
 :::
 
-::: answer
-$M(3, 0, 1)$, $C(7, 4, -3)$.
-:::
-
 ::: solution
 По [-@eq:lec13:division] с $p = 2$, $q = 1$: $\vec r_M = \frac{1 \cdot \vec r_A + 2 \vec r_B}{3} = \left(\frac{1 + 8}{3}, \frac{-2 + 2}{3}, \frac{3 + 0}{3}\right) = (3, 0, 1)$. Проверка: $\overrightarrow{AM} = (2, 2, -2)$, $\overrightarrow{MB} = (1, 1, -1)$, $\overrightarrow{AM} = 2 \overrightarrow{MB}$. *Ключ:* во второй части неизвестен конец отрезка; из $\vec r_B = \frac{\vec r_A + \vec r_C}{2}$ выражаем $\vec r_C = 2\vec r_B - \vec r_A = (8 - 1, 2 + 2, 0 - 3) = (7, 4, -3)$.
+
+*Ответ:* $M(3, 0, 1)$, $C(7, 4, -3)$.
 :::
 
 # Итоги

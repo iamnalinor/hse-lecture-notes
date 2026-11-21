@@ -458,15 +458,6 @@ local function render_proof_like(div, name)
   return pandoc.Div(blocks, { class = cls })
 end
 
-local function render_answer(div)
-  local blocks = pandoc.Blocks(div.content)
-  prefix_first_para(blocks, pandoc.Inlines { pandoc.Strong { pandoc.Str('Ответ:') } })
-  if FORMAT_LATEX then
-    return wrap_raw('latex', '\\begin{nbanswer}', blocks, '\\end{nbanswer}')
-  end
-  return pandoc.Div(blocks, { class = 'nb-answer' })
-end
-
 local function render_answers(div)
   if FORMAT_LATEX then
     return wrap_raw('latex', '\\begin{nbanswers}', div.content, '\\end{nbanswers}')
@@ -536,7 +527,6 @@ local function render(doc)
       end
       if has_class(div, 'proof') then return render_proof_like(div, 'Доказательство') end
       if has_class(div, 'solution') then return render_proof_like(div, 'Решение') end
-      if has_class(div, 'answer') then return render_answer(div) end
       if has_class(div, 'answers') then return render_answers(div) end
     end,
     CodeBlock = function(cb)

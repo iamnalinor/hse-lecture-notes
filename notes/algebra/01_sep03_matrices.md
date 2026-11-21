@@ -249,9 +249,9 @@ $$c_{ij} = \sum_{r=1}^{n} a_{ir} b_{rj} = a_{i1} b_{1j} + a_{i2} b_{2j} + \dots 
 ::: {.example #ex:lec01:product}
 Найдём $\begin{pmatrix} 1 & 2 \\ 3 & 4 \\ 0 & -1 \end{pmatrix} \begin{pmatrix} 1 \\ -2 \end{pmatrix}$.
 
-*Ответ:* $\begin{pmatrix} -3 \\ -5 \\ 2 \end{pmatrix}$.
-
 Сначала размеры: $3 \times 2$ на $2 \times 1$ — внутренние размеры совпадают, произведение существует и имеет размер $3 \times 1$. Каждая строка первой матрицы сворачивается с единственным столбцом второй: $1 \cdot 1 + 2 \cdot (-2) = -3$, $3 \cdot 1 + 4 \cdot (-2) = -5$, $0 \cdot 1 + (-1) \cdot (-2) = 2$.
+
+*Ответ:* $\begin{pmatrix} -3 \\ -5 \\ 2 \end{pmatrix}$.
 :::
 
 Перед вычислением полезно выписать размеры сомножителей: так сразу видно, существует ли произведение и какой размер у ответа, и в длинных выкладках не возникает путаницы.
@@ -337,10 +337,6 @@ $$\sum_{s=1}^{n} a_{is} \Bigl( \sum_{r=1}^{k} b_{sr} c_{rj} \Bigr) = \sum_{s=1}^
 При каких $x, y$ выполнено равенство $\begin{pmatrix} x + y & 2 \\ 1 & x - y \end{pmatrix} = \begin{pmatrix} 5 & 2 \\ 1 & 1 \end{pmatrix}$?
 :::
 
-::: answer
-$x = 3$, $y = 2$.
-:::
-
 ::: solution
 Размеры совпадают ($2 \times 2$), поэтому по определению [-@def:lec01:equal] равенство матриц равносильно равенству всех четырёх пар элементов. Элементы $(1, 2)$ и $(2, 1)$ совпадают при любых $x, y$, остаются $x + y = 5$ и $x - y = 1$. Складывая, $2x = 6$, $x = 3$, откуда $y = 2$.
 :::
@@ -349,22 +345,16 @@ $x = 3$, $y = 2$.
 Даны $A = \begin{pmatrix} 1 & -2 & 0 \\ 3 & 1 & 4 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 0 & -1 \\ 2 & 1 & 2 \end{pmatrix}$. Найдите $2A - 3B$ и матрицу $X$ такую, что $2X + B = A$.
 :::
 
-::: answer
-$2A - 3B = \begin{pmatrix} -1 & -4 & 3 \\ 0 & -1 & 2 \end{pmatrix}$, $X = \begin{pmatrix} 0 & -1 & \frac12 \\ \frac12 & 0 & 1 \end{pmatrix}$.
-:::
-
 ::: solution
 $2A = \begin{pmatrix} 2 & -4 & 0 \\ 6 & 2 & 8 \end{pmatrix}$, $3B = \begin{pmatrix} 3 & 0 & -3 \\ 6 & 3 & 6 \end{pmatrix}$, вычитаем поэлементно.
 
 *Ключ:* уравнение решается так же, как для чисел, потому что свойства 1–8 разрешают все нужные шаги. Прибавим к обеим частям $-B$: $2X = A - B$ (свойства 2–4). Умножим на $\frac12$: $\frac12(2X) = (\frac12 \cdot 2)X = 1 \cdot X = X$ (свойства 5 и 8), то есть $X = \frac12(A - B)$. Здесь $A - B = \begin{pmatrix} 0 & -2 & 1 \\ 1 & 0 & 2 \end{pmatrix}$. Проверка: $2X + B = \begin{pmatrix} 0 & -2 & 1 \\ 1 & 0 & 2 \end{pmatrix} + B = A$.
+
+*Ответ:* $2A - 3B = \begin{pmatrix} -1 & -4 & 3 \\ 0 & -1 & 2 \end{pmatrix}$, $X = \begin{pmatrix} 0 & -1 & \frac12 \\ \frac12 & 0 & 1 \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec01:two-products}
 Даны $A = \begin{pmatrix} 1 & 0 & 2 \\ -1 & 3 & 1 \end{pmatrix}$ и $B = \begin{pmatrix} 3 & 1 \\ 2 & 1 \\ 1 & 0 \end{pmatrix}$. Найдите $AB$ и $BA$.
-:::
-
-::: answer
-$AB = \begin{pmatrix} 5 & 1 \\ 4 & 2 \end{pmatrix}$, $BA = \begin{pmatrix} 2 & 3 & 7 \\ 1 & 3 & 5 \\ 1 & 0 & 2 \end{pmatrix}$.
 :::
 
 ::: solution
@@ -373,14 +363,12 @@ $AB = \begin{pmatrix} 5 & 1 \\ 4 & 2 \end{pmatrix}$, $BA = \begin{pmatrix} 2 & 3
 $AB$: $1 \cdot 3 + 0 \cdot 2 + 2 \cdot 1 = 5$, $1 \cdot 1 + 0 \cdot 1 + 2 \cdot 0 = 1$, $-3 + 6 + 1 = 4$, $-1 + 3 + 0 = 2$.
 
 *Ключ:* для $BA$ удобно считать сразу строками: $i$-я строка произведения — это $i$-я строка $B$, «свёрнутая» со всеми столбцами $A$, то есть $b_{i1} \cdot (\text{1-я строка } A) + b_{i2} \cdot (\text{2-я строка } A)$. Первая строка: $3 \cdot (1, 0, 2) + 1 \cdot (-1, 3, 1) = (2, 3, 7)$; вторая: $2 \cdot (1, 0, 2) + (-1, 3, 1) = (1, 3, 5)$; третья: $1 \cdot (1, 0, 2) + 0 = (1, 0, 2)$.
+
+*Ответ:* $AB = \begin{pmatrix} 5 & 1 \\ 4 & 2 \end{pmatrix}$, $BA = \begin{pmatrix} 2 & 3 & 7 \\ 1 & 3 & 5 \\ 1 & 0 & 2 \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec01:one-element}
 Пусть $A = \begin{pmatrix} 1 & 2 & 0 & -1 \\ 3 & -1 & 2 & 1 \\ 0 & 4 & 5 & 2 \end{pmatrix}$, $B = \begin{pmatrix} 2 & 0 & 1 \\ 1 & 1 & -2 \\ 0 & 3 & 1 \\ 5 & 1 & 4 \end{pmatrix}$. Найдите элемент $[AB]_{23}$, не вычисляя всё произведение.
-:::
-
-::: answer
-$[AB]_{23} = 11$.
 :::
 
 ::: solution
@@ -391,20 +379,14 @@ $[AB]_{23} = 11$.
 Упростите суммы $\sum_{r=1}^{n} \delta_{ir} \delta_{rj}$ и $\sum_{r=1}^{n} a_{ir} \delta_{rj}$ (здесь $1 \le i, j \le n$). Что это означает для матриц?
 :::
 
-::: answer
-$\sum_{r=1}^{n} \delta_{ir} \delta_{rj} = \delta_{ij}$, $\sum_{r=1}^{n} a_{ir} \delta_{rj} = a_{ij}$. Для матриц порядка $n$ (при $A \in M_n(\R)$): $[EE]_{ij} = [E]_{ij}$ и $[AE]_{ij} = a_{ij}$, то есть $EE = E$ и $AE = A$.
-:::
-
 ::: solution
 *Ключ:* $\delta_{rj} = 0$ при всех $r \ne j$, поэтому в сумме по $r$ выживает не более одного слагаемого — с $r = j$. В первой сумме оно равно $\delta_{ij} \delta_{jj} = \delta_{ij} \cdot 1 = \delta_{ij}$, во второй — $a_{ij} \delta_{jj} = a_{ij}$. По определению [-@def:lec01:product] вторая сумма — это элемент $(i, j)$ произведения $A$ на $E$ (для $A \in M_n(\R)$), первая — элемент $(i, j)$ произведения $EE$.
+
+*Ответ:* $\sum_{r=1}^{n} \delta_{ir} \delta_{rj} = \delta_{ij}$, $\sum_{r=1}^{n} a_{ir} \delta_{rj} = a_{ij}$. Для матриц порядка $n$ (при $A \in M_n(\R)$): $[EE]_{ij} = [E]_{ij}$ и $[AE]_{ij} = a_{ij}$, то есть $EE = E$ и $AE = A$.
 :::
 
 ::: {.problem #prob:lec01:scalar-product}
 Докажите, что для $A \in M_{m \times n}(\R)$, $B \in M_{n \times k}(\R)$ и $\lambda \in \R$ выполнено $(\lambda A) B = \lambda (AB) = A (\lambda B)$.
-:::
-
-::: answer
-Все три матрицы имеют размер $m \times k$, и элемент $(i, j)$ каждой равен $\lambda \sum_{r=1}^{n} a_{ir} b_{rj}$.
 :::
 
 ::: solution
@@ -417,12 +399,10 @@ $$[(\lambda A) B]_{ij} = \sum_{r=1}^{n} (\lambda a_{ir}) b_{rj} = \lambda \sum_{
 Даны $A = \begin{pmatrix} 1 \\ 2 \\ 3 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 1 & 1 \end{pmatrix}$, $C = \begin{pmatrix} 2 \\ 0 \\ -1 \end{pmatrix}$. Найдите $ABC$ двумя способами и сравните число умножений.
 :::
 
-::: answer
-$ABC = \begin{pmatrix} 1 \\ 2 \\ 3 \end{pmatrix}$; способ $A(BC)$ требует $3 + 3 = 6$ умножений, способ $(AB)C$ — $9 + 9 = 18$.
-:::
-
 ::: solution
 *Ключ:* по теореме [-@thm:lec01:assoc] ответ от расстановки скобок не зависит, поэтому выбираем ту, где промежуточная матрица меньше. $BC = \begin{pmatrix} 1 \cdot 2 + 1 \cdot 0 + 1 \cdot (-1) \end{pmatrix} = \begin{pmatrix} 1 \end{pmatrix}$ — три умножения; $A \begin{pmatrix} 1 \end{pmatrix} = A$ — ещё три. Другой способ: $AB = \begin{pmatrix} 1 & 1 & 1 \\ 2 & 2 & 2 \\ 3 & 3 & 3 \end{pmatrix}$ — девять умножений, затем $(AB)C$: каждая строка $(t, t, t)$ на $C$ даёт $t(2 + 0 - 1) = t$, всего ещё девять умножений; получается тот же столбец с элементами $1, 2, 3$.
+
+*Ответ:* $ABC = \begin{pmatrix} 1 \\ 2 \\ 3 \end{pmatrix}$; способ $A(BC)$ требует $3 + 3 = 6$ умножений, способ $(AB)C$ — $9 + 9 = 18$.
 :::
 
 # Итоги

@@ -30,8 +30,8 @@ export const extractPreview = (fragment: string, id: string): string | undefined
     .join("");
 };
 
-/** A problem's answer and solution follow it in the fragment; the problem card draws them inside. */
-const ATTACHED = ["nb-answer", "nb-solution"];
+/** A problem's solution follows it in the fragment; the problem card draws it inside. */
+const ATTACHED = ["nb-solution"];
 
 const withoutIds = (element: Element): string => {
   const copy = element.cloneNode(true);

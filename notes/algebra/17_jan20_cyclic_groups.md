@@ -64,8 +64,6 @@ $$a^m a^n = a^{m + n}, \qquad (a^m)^n = a^{mn}, \qquad (a^n)^{-1} = a^{-n}.$$ {#
 ::: {.example #ex:lec17:orders}
 Найдём порядки: (а) $\bar 1, \bar 2, \bar 3$ в $\Z_4$; (б) $i$, $-1$, $2$ в $(\mathbb{C} \setminus \{0\}, \cdot)$; (в) $5$ в $(\Z, +)$; (г) $R = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}$ и $A = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$ в $GL_2(\R)$.
 
-*Ответ:* (а) $4, 2, 4$; (б) $4, 2, \infty$; (в) $\infty$; (г) $\operatorname{ord} R = 4$, $\operatorname{ord} A = \infty$.
-
 (а) Кратные $\bar 1$: $\bar 1, \bar 2, \bar 3, \bar 0$ — впервые $\bar 0$ на четвёртом шаге; $\bar 2 + \bar 2 = \bar 0$; кратные $\bar 3$: $\bar 3, \bar 2, \bar 1, \bar 0$. (б) $i, -1, -i, 1$; $(-1)^2 = 1$; $|2^q| = 2^q \ne 1$. (в) $q \cdot 5 \ne 0$ при $q \ge 1$; в $(\Z, +)$ конечный порядок только у $0$. (г) $R^2 = -E$, $R^3 = -R$, $R^4 = E$ — это поворот плоскости на $\frac{\pi}{2}$. $A^k = \begin{pmatrix} 1 & k \\ 0 & 1 \end{pmatrix} \ne E$ при $k \ge 1$ (задача [-@prob:lec16:unitriangular]: $X_a X_b = X_{a + b}$).
 :::
 
@@ -128,8 +126,6 @@ $\langle g \rangle$ называется *циклической подгруп�
 
 ::: {.example #ex:lec17:q-not-cyclic}
 Докажем, что группа $(\Q, +)$ не циклическая.
-
-*Ответ:* порождающего элемента нет: число $\frac{a}{2}$ не кратно никакому $a$.
 
 Пусть $\Q = \langle a \rangle = \{na \mid n \in \Z\}$. Тогда $a \ne 0$ (иначе $\langle a \rangle = \{0\}$), и $\frac{a}{2} \in \Q$ должно равняться $na$ при некотором целом $n$. Но $na = \frac{a}{2}$ даёт $n = \frac12 \notin \Z$ — противоречие.
 :::
@@ -250,8 +246,6 @@ $$\varphi(a)^q = e_2 \;\Leftrightarrow\; \varphi(a^q) = \varphi(e_1) \;\Leftrigh
 ::: {.example #ex:lec17:generated}
 Найдём наименьшую подгруппу $(\Z, +)$, содержащую $12$ и $18$, и подгруппу $12\Z \cap 18\Z$.
 
-*Ответ:* $6\Z$ и $36\Z$.
-
 Это частный случай утверждения [-@prop:lec17:gcd], проследим его на числах. Пусть $H$ — любая подгруппа, содержащая $12$ и $18$. *Ключ:* $18 - 12 = 6 \in H$, поэтому $6\Z \subseteq H$. А сама $6\Z$ — подгруппа, содержащая $12$ и $18$. Значит, $6\Z$ — наименьшая такая подгруппа, $\text{НОД}(12, 18) = 6$.
 
 Пересечение $12\Z \cap 18\Z$ — подгруппа $k\Z$, где $k$ — наименьшее положительное число, кратное и $12$, и $18$, то есть $k = 36 = \text{НОК}(12, 18)$.
@@ -273,34 +267,26 @@ $$\varphi(a)^q = e_2 \;\Leftrightarrow\; \varphi(a^q) = \varphi(e_1) \;\Leftrigh
 Найдите порядки всех элементов группы $(\Z_6, +)$ и все её порождающие. Найдите все порождающие группы корней шестой степени из единицы.
 :::
 
-::: answer
-$\operatorname{ord} \bar 0 = 1$, $\operatorname{ord} \bar 1 = \operatorname{ord} \bar 5 = 6$, $\operatorname{ord} \bar 2 = \operatorname{ord} \bar 4 = 3$, $\operatorname{ord} \bar 3 = 2$; порождающие $\bar 1$, $\bar 5$; для корней — $\varepsilon_1$ и $\varepsilon_5$.
-:::
-
 ::: solution
 $q \bar k = \overline{qk} = \bar 0$ ровно тогда, когда $qk$ делится на $6$ (или сразу по утверждению [-@prop:lec17:zn-order]: $\operatorname{ord} \bar k = \frac{6}{\text{НОД}(k, 6)}$). Для $k = 1, 5$ наименьшее такое $q$ — $6$; для $k = 2, 4$ — $3$ ($3 \cdot 2 = 6$, $3 \cdot 4 = 12$); для $k = 3$ — $2$. По следствию [-@cor:lec17:generator] порождающие — элементы порядка $6$: $\bar 1$, $\bar 5$. *Ключ:* корни шестой степени из единицы $\cong \Z_6$ через $\varepsilon_k \mapsto \bar k$ (теорема [-@thm:lec17:cyclic-iso]), а изоморфизм сохраняет порядки элементов (утверждение [-@prop:lec17:iso-order]). Поэтому порождающие — $\varepsilon_1 = \frac12 + \frac{\sqrt3}{2} i$ и $\varepsilon_5 = \frac12 - \frac{\sqrt3}{2} i$.
+
+*Ответ:* $\operatorname{ord} \bar 0 = 1$, $\operatorname{ord} \bar 1 = \operatorname{ord} \bar 5 = 6$, $\operatorname{ord} \bar 2 = \operatorname{ord} \bar 4 = 3$, $\operatorname{ord} \bar 3 = 2$; порождающие $\bar 1$, $\bar 5$; для корней — $\varepsilon_1$ и $\varepsilon_5$.
 :::
 
 ::: {.problem #prob:lec17:power}
 Пусть $\sigma = (1\,2\,3\,4)(5\,6\,7) \in S_7$. Найдите $\operatorname{ord} \sigma$, $\sigma^{50}$ и $|\langle \sigma \rangle|$. Найдите порядок элемента $\bar 2$ в группе $\Z_7^* = \Z_7 \setminus \{\bar 0\}$ с умножением и вычислите $\bar 2^{100}$.
 :::
 
-::: answer
-$\operatorname{ord} \sigma = 12$, $\sigma^{50} = (1\,3)(2\,4)(5\,7\,6)$, $|\langle \sigma \rangle| = 12$; $\operatorname{ord} \bar 2 = 3$, $\bar 2^{100} = \bar 2$.
-:::
-
 ::: solution
 Циклы независимы, их длины $4$ и $3$, $\operatorname{ord} \sigma = \operatorname{lcm}(4, 3) = 12$ (раздел [-@sec:lec03:powers]). *Ключ:* по утверждению [-@prop:lec17:divides] показатель можно заменить остатком: $50 = 12 \cdot 4 + 2$, $\sigma^{50} = \sigma^2 = (1\,2\,3\,4)^2 (5\,6\,7)^2 = (1\,3)(2\,4) \cdot (5\,7\,6)$. Проверим: $(5\,6\,7)^2$ переводит $5 \mapsto 7$, $7 \mapsto 6$, $6 \mapsto 5$ — это $(5\,7\,6)$. Итак, $\sigma^{50} = (1\,3)(2\,4)(5\,7\,6)$. По теореме [-@thm:lec17:order-cyclic] $|\langle \sigma \rangle| = 12$.
 
 $\Z_7^*$ — группа (утверждение [-@prop:lec16:units]): все ненулевые вычеты обратимы, $\bar 1 \cdot \bar 1 = \bar 2 \cdot \bar 4 = \bar 3 \cdot \bar 5 = \bar 6 \cdot \bar 6 = \bar 1$. В ней $\bar 2^1 = \bar 2$, $\bar 2^2 = \bar 4$, $\bar 2^3 = \bar 8 = \bar 1$, так что $\operatorname{ord} \bar 2 = 3$; $100 = 3 \cdot 33 + 1$, $\bar 2^{100} = \bar 2$.
+
+*Ответ:* $\operatorname{ord} \sigma = 12$, $\sigma^{50} = (1\,3)(2\,4)(5\,7\,6)$, $|\langle \sigma \rangle| = 12$; $\operatorname{ord} \bar 2 = 3$, $\bar 2^{100} = \bar 2$.
 :::
 
 ::: {.problem #prob:lec17:is-cyclic}
 Какие из групп циклические: (а) $\Z_5^* = \Z_5 \setminus \{\bar 0\}$ с умножением; (б) $\Z_8^* = \{\bar 1, \bar 3, \bar 5, \bar 7\}$ с умножением; (в) $\langle R \rangle \subseteq GL_2(\R)$ для $R = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}$; (г) $(\R \setminus \{0\}, \cdot)$? Для циклических укажите изоморфизм с $\Z$ или $\Z_n$.
-:::
-
-::: answer
-(а) да, $\bar 2^k \mapsto \bar k \in \Z_4$; (б) нет; (в) да, $R^k \mapsto \bar k \in \Z_4$; (г) нет.
 :::
 
 ::: solution
@@ -311,30 +297,28 @@ $\Z_7^*$ — группа (утверждение [-@prop:lec16:units]): все 
 (в) $\langle R \rangle = \{E, R, -E, -R\}$ (пример [-@ex:lec17:orders]) — циклическая по определению, порядка $4$.
 
 (г) *Ключ:* сравниваем порядки элементов. Группа бесконечна, поэтому, будь она циклической, она была бы изоморфна $(\Z, +)$ (теорема [-@thm:lec17:cyclic-iso]). Изоморфизм сохраняет порядки элементов (утверждение [-@prop:lec17:iso-order]). Но $\operatorname{ord}(-1) = 2$, а в $(\Z, +)$ элементов порядка $2$ нет: $q \cdot k = 0$ при $q \ge 1$ только для $k = 0$, а его порядок $1$. Значит, группа не циклическая.
+
+*Ответ:* (а) да, $\bar 2^k \mapsto \bar k \in \Z_4$; (б) нет; (в) да, $R^k \mapsto \bar k \in \Z_4$; (г) нет.
 :::
 
 ::: {.problem #prob:lec17:subgroups-z}
 Найдите наименьшую подгруппу $(\Z, +)$, содержащую $20$ и $-35$, и пересечение $20\Z \cap 35\Z$. Верно ли, что $10\Z \cup 15\Z$ — подгруппа?
 :::
 
-::: answer
-$5\Z$; $140\Z$; нет.
-:::
-
 ::: solution
 Подгруппа, содержащая $-35$, содержит и $35$. *Ключ:* вычитаем, как в алгоритме Евклида: $35 - 20 = 15$, $20 - 15 = 5$ — всё это лежит в искомой подгруппе $H$, значит, $5\Z \subseteq H$; а $20, -35 \in 5\Z$, и $H = 5\Z$ (как в примере [-@ex:lec17:generated]). Пересечение — $k\Z$ с $k$, наименьшим положительным кратным $20$ и $35$: $k = 140$ (утверждение [-@prop:lec17:gcd]). Объединение: $10 + 15 = 25$ не делится ни на $10$, ни на $15$ — не замкнуто по сложению.
+
+*Ответ:* $5\Z$; $140\Z$; нет.
 :::
 
 ::: {.problem #prob:lec17:iso-subgroup}
 Докажите, что подгруппа $\langle \sigma \rangle$ группы $S_5$, порождённая $\sigma = (1\,2\,3)(4\,5)$, изоморфна $\Z_6$, и найдите все её элементы. Изоморфна ли она $S_3$?
 :::
 
-::: answer
-$\langle \sigma \rangle = \{\Id, \sigma, \sigma^2, \dots, \sigma^5\}$, где $\sigma^2 = (1\,3\,2)$, $\sigma^3 = (4\,5)$, $\sigma^4 = (1\,2\,3)$, $\sigma^5 = (1\,3\,2)(4\,5)$; изоморфизм $\sigma^k \mapsto \bar k$. С $S_3$ не изоморфна.
-:::
-
 ::: solution
 $\operatorname{ord} \sigma = \operatorname{lcm}(3, 2) = 6$, поэтому $|\langle \sigma \rangle| = 6$ (теорема [-@thm:lec17:order-cyclic]), и по теореме [-@thm:lec17:cyclic-iso] $\langle \sigma \rangle \cong \Z_6$. Степени — по циклам: $\sigma^k = (1\,2\,3)^k (4\,5)^k$, где $(1\,2\,3)^k$ зависит от остатка $k$ при делении на $3$, а $(4\,5)^k$ — от чётности $k$. *Ключ:* с $S_3$ сравниваем коммутативность: циклическая группа абелева (утверждение [-@prop:lec17:cyclic-abelian]), $S_3$ — нет, порядки одинаковы, но по утверждению [-@prop:lec16:invariants] изоморфизма нет.
+
+*Ответ:* $\langle \sigma \rangle = \{\Id, \sigma, \sigma^2, \dots, \sigma^5\}$, где $\sigma^2 = (1\,3\,2)$, $\sigma^3 = (4\,5)$, $\sigma^4 = (1\,2\,3)$, $\sigma^5 = (1\,3\,2)(4\,5)$; изоморфизм $\sigma^k \mapsto \bar k$. С $S_3$ не изоморфна.
 :::
 
 # Итоги

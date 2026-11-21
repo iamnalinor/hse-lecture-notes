@@ -87,38 +87,17 @@ describe("FragmentView proofs and problems", () => {
     expect(document.querySelector("details > div p")).toBeNull();
   });
 
-  it("keeps the solution behind a button while the answer is open", async () => {
+  it("keeps the solution, its answer in the last line, behind a button", async () => {
     view(`<div class="nb nb-problem" data-type="problem" data-number="4.26">
       <div class="nb-head"><span class="nb-name">Задача 4.26</span></div>
       <div class="nb-body"><p>Вычислите.</p></div></div>
-      <div class="nb-answer"><p>Ответ: 10.</p></div>
-      <div class="nb-solution"><p>Решение: долго.</p></div>`);
-    expect(screen.getByText("Ответ: 10.")).toBeVisible();
+      <div class="nb-solution"><p>Решение: долго.</p><p>Ответ: 10.</p></div>`);
     expect(screen.getByText("Решение: долго.")).not.toBeVisible();
+    expect(screen.getByText("Ответ: 10.")).not.toBeVisible();
+    expect(screen.queryByRole("button", { name: /Показать ответ/ })).toBeNull();
 
     await userEvent.click(screen.getByRole("button", { name: /Показать решение/ }));
-    expect(screen.getByText("Решение: долго.")).toBeVisible();
-  });
-
-  it("hides the answer too on a test preparation page", async () => {
-    renderWithApp(
-      <FragmentView
-        course="algebra"
-        docId="kr1"
-        html={`<div class="nb nb-problem" data-type="problem" data-number="3">
-          <div class="nb-head"><span class="nb-name">Задача 3</span></div>
-          <div class="nb-body"><p>Найдите ранг.</p></div></div>
-          <div class="nb-answer"><p>Ответ: 2.</p></div>
-          <div class="nb-solution"><p>Решение: Гаусс.</p></div>`}
-        lecture={undefined}
-        variant="prep"
-      />,
-    );
-    expect(screen.getByText("Ответ: 2.")).not.toBeVisible();
-    expect(screen.getByText("Решение: Гаусс.")).not.toBeVisible();
-
-    await userEvent.click(screen.getByRole("button", { name: /Показать ответ/ }));
-    expect(screen.getByText("Ответ: 2.")).toBeVisible();
+    expect(screen.getByText("Ответ: 10.")).toBeVisible();
   });
 
   it("links a test preparation page's own labels to anchors on the page", () => {

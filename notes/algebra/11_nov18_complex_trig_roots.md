@@ -133,9 +133,9 @@ $$r_1(\cos \varphi_1 + i \sin \varphi_1) = r_2(\cos \varphi_2 + i \sin \varphi_2
 ::: {.example #ex:lec11:trig-forms}
 Запишем в тригонометрической форме $1 + i\sqrt3$, $-1 - i$, $-5$ и $3i$.
 
-*Ответ:* $2(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3})$, $\sqrt2 (\cos(-\frac{3\pi}{4}) + i \sin(-\frac{3\pi}{4}))$, $5(\cos \pi + i \sin \pi)$, $3(\cos \frac{\pi}{2} + i \sin \frac{\pi}{2})$.
-
 Для $1 + i\sqrt3$: $r = \sqrt{1 + 3} = 2$, $\cos \varphi = \frac12$, $\sin \varphi = \frac{\sqrt3}{2}$, $\varphi = \frac{\pi}{3}$. Для $-1 - i$: $r = \sqrt2$, $\cos \varphi = \sin \varphi = -\frac{1}{\sqrt2}$; оба отрицательны, точка в третьей четверти, $\varphi = -\frac{3\pi}{4}$. Числа $-5$ и $3i$ лежат на осях: $\arg(-5) = \pi$, $\arg(3i) = \frac{\pi}{2}$, модули $5$ и $3$.
+
+*Ответ:* $2(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3})$, $\sqrt2 (\cos(-\frac{3\pi}{4}) + i \sin(-\frac{3\pi}{4}))$, $5(\cos \pi + i \sin \pi)$, $3(\cos \frac{\pi}{2} + i \sin \frac{\pi}{2})$.
 :::
 
 ::: {.remark #rem:lec11:arctan-trap tag="подводный камень"}
@@ -166,8 +166,6 @@ $$\begin{aligned} z_1 z_2 &= r_1 r_2 \big( (\cos \varphi_1 \cos \varphi_2 - \sin
 
 ::: {.example #ex:lec11:product}
 Перемножим $z_1 = 1 + i\sqrt3$ и $z_2 = 1 + i$ в обеих формах.
-
-*Ответ:* $z_1 z_2 = 2\sqrt2 \big(\cos \frac{7\pi}{12} + i \sin \frac{7\pi}{12}\big) = (1 - \sqrt3) + i(1 + \sqrt3)$.
 
 $z_1 = 2(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3})$ (пример [-@ex:lec11:trig-forms]), $z_2 = \sqrt2(\cos \frac{\pi}{4} + i \sin \frac{\pi}{4})$. По теореме [-@thm:lec11:trig-mult] модуль произведения $2\sqrt2$, аргумент $\frac{\pi}{3} + \frac{\pi}{4} = \frac{7\pi}{12}$. В алгебраической форме $(1 + i\sqrt3)(1 + i) = 1 + i + i\sqrt3 + i^2\sqrt3 = (1 - \sqrt3) + i(1 + \sqrt3)$. Проверка модуля: $(1 - \sqrt3)^2 + (1 + \sqrt3)^2 = 2 + 2 \cdot 3 = 8 = (2\sqrt2)^2$. Попутно получилось значение, которого нет в школьной таблице: $\cos \frac{7\pi}{12} = \frac{1 - \sqrt3}{2\sqrt2} = \frac{\sqrt2 - \sqrt6}{4}$.
 :::
@@ -215,8 +213,6 @@ $$z^{k+1} = z^k \cdot z = r^k r \big(\cos(k\varphi + \varphi) + i \sin(k\varphi 
 ::: {.example #ex:lec11:moivre}
 Вычислим $(1 + i\sqrt3)^{20}$.
 
-*Ответ:* $-2^{19} + 2^{19}\sqrt3 \, i$.
-
 $1 + i\sqrt3 = 2(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3})$, поэтому $(1 + i\sqrt3)^{20} = 2^{20} (\cos \frac{20\pi}{3} + i \sin \frac{20\pi}{3})$. Угол $\frac{20\pi}{3} = 6\pi + \frac{2\pi}{3}$, $\cos \frac{2\pi}{3} = -\frac12$, $\sin \frac{2\pi}{3} = \frac{\sqrt3}{2}$, откуда $2^{20}(-\frac12 + \frac{\sqrt3}{2} i) = -2^{19} + 2^{19}\sqrt3 \, i$. Проверка на маленькой степени: по формуле $(1 + i\sqrt3)^3 = 8 (\cos \pi + i \sin \pi) = -8$; напрямую $(1 + i\sqrt3)^2 = 1 + 2i\sqrt3 - 3 = -2 + 2i\sqrt3$ и $(-2 + 2i\sqrt3)(1 + i\sqrt3) = -2 - 2i\sqrt3 + 2i\sqrt3 + 2 \cdot 3 \, i^2 = -8$. Значит, $(1 + i\sqrt3)^{20} = (-8)^6 (1 + i\sqrt3)^2 = 2^{18}(-2 + 2i\sqrt3)$ — то же самое.
 :::
 
@@ -254,8 +250,6 @@ $$r^n = \rho, \qquad n\varphi = \psi + 2\pi k, \quad k \in \Z.$$
 
 ::: {.example #ex:lec11:cube-roots}
 Найдём все корни уравнения $z^3 = 8i$.
-
-*Ответ:* $\sqrt3 + i$, $\; -\sqrt3 + i$, $\; -2i$.
 
 $8i = 8(\cos \frac{\pi}{2} + i \sin \frac{\pi}{2})$, $\rho = 8$, $\psi = \frac{\pi}{2}$. По [-@eq:lec11:roots] $z_k = 2\big(\cos(\frac{\pi}{6} + \frac{2\pi k}{3}) + i \sin(\frac{\pi}{6} + \frac{2\pi k}{3})\big)$: при $k = 0$ угол $\frac{\pi}{6}$, $z_0 = 2(\frac{\sqrt3}{2} + \frac{i}{2}) = \sqrt3 + i$; при $k = 1$ угол $\frac{5\pi}{6}$, $z_1 = -\sqrt3 + i$; при $k = 2$ угол $\frac{3\pi}{2}$, $z_2 = -2i$. Проверка: $(-2i)^3 = -8i^3 = -8 \cdot (-i) = 8i$. Корни — вершины правильного треугольника на окружности радиуса $2$ (рис. [-@fig:lec11:roots]).
 :::
@@ -334,11 +328,11 @@ $e^{-i\varphi} = \cos(-\varphi) + i \sin(-\varphi) = \cos \varphi - i \sin \varp
 ::: {.example #ex:lec11:linearize}
 Выразим $\cos^3 \varphi$ через $\cos \varphi$ и $\cos 3\varphi$.
 
-*Ответ:* $\cos^3 \varphi = \frac{3\cos \varphi + \cos 3\varphi}{4}$.
-
 Обозначим $u = e^{i\varphi}$; тогда $e^{-i\varphi} = u^{-1}$ и по биному
 $$\begin{aligned} \cos^3 \varphi &= \left(\frac{u + u^{-1}}{2}\right)^3 = \frac{u^3 + 3u + 3u^{-1} + u^{-3}}{8} \\ &= \frac{(u^3 + u^{-3}) + 3(u + u^{-1})}{8} = \frac{2\cos 3\varphi + 6\cos \varphi}{8}. \end{aligned}$$
 *Ключ:* после раскрытия скобок слагаемые группируются в пары $u^k + u^{-k} = 2\cos k\varphi$. Проверка: это та же формула [-@eq:lec11:triple], решённая относительно $\cos^3 \varphi$.
+
+*Ответ:* $\cos^3 \varphi = \frac{3\cos \varphi + \cos 3\varphi}{4}$.
 :::
 
 ## Многочлены и их корни {#sec:lec11:polynomials}
@@ -441,22 +435,16 @@ $$f(z) = a_n (z - z_1)^{\alpha_1} (z - z_2)^{\alpha_2} \cdots (z - z_s)^{\alpha_
 Запишите в тригонометрической и показательной форме числа $z_1 = -\sqrt3 + i$, $z_2 = -2 - 2i$, $z_3 = -4i$, $z_4 = -3\left(\cos \frac{\pi}{5} - i \sin \frac{\pi}{5}\right)$.
 :::
 
-::: answer
-$z_1 = 2\left(\cos \frac{5\pi}{6} + i \sin \frac{5\pi}{6}\right) = 2e^{5\pi i/6}$; $z_2 = 2\sqrt2 \left(\cos\left(-\frac{3\pi}{4}\right) + i \sin\left(-\frac{3\pi}{4}\right)\right) = 2\sqrt2 \, e^{-3\pi i/4}$; $z_3 = 4\left(\cos\left(-\frac{\pi}{2}\right) + i \sin\left(-\frac{\pi}{2}\right)\right) = 4e^{-\pi i/2}$; $z_4 = 3\left(\cos \frac{4\pi}{5} + i \sin \frac{4\pi}{5}\right) = 3e^{4\pi i/5}$.
-:::
-
 ::: solution
 $z_1$: $r = \sqrt{3 + 1} = 2$, $\cos \varphi = -\frac{\sqrt3}{2}$, $\sin \varphi = \frac12$ — вторая четверть, $\varphi = \frac{5\pi}{6}$ (а не $\operatorname{arctg}(-\frac{1}{\sqrt3}) = -\frac{\pi}{6}$, замечание [-@rem:lec11:arctan-trap]). $z_2$: $r = \sqrt{8} = 2\sqrt2$, $\cos \varphi = \sin \varphi = -\frac{1}{\sqrt2}$ — третья четверть, $\varphi = -\frac{3\pi}{4}$. $z_3$ лежит на отрицательной мнимой полуоси: $r = 4$, $\varphi = -\frac{\pi}{2}$.
 
 $z_4$: *ключ:* запись не тригонометрическая (замечание [-@rem:lec11:not-trig]) — множитель отрицателен и перед синусом минус. Раскроем: $z_4 = -3\cos \frac{\pi}{5} + 3i \sin \frac{\pi}{5}$. Нужен угол с косинусом $-\cos \frac{\pi}{5}$ и синусом $\sin \frac{\pi}{5}$; это $\pi - \frac{\pi}{5} = \frac{4\pi}{5}$ (формулы приведения). Модуль $3$.
+
+*Ответ:* $z_1 = 2\left(\cos \frac{5\pi}{6} + i \sin \frac{5\pi}{6}\right) = 2e^{5\pi i/6}$; $z_2 = 2\sqrt2 \left(\cos\left(-\frac{3\pi}{4}\right) + i \sin\left(-\frac{3\pi}{4}\right)\right) = 2\sqrt2 \, e^{-3\pi i/4}$; $z_3 = 4\left(\cos\left(-\frac{\pi}{2}\right) + i \sin\left(-\frac{\pi}{2}\right)\right) = 4e^{-\pi i/2}$; $z_4 = 3\left(\cos \frac{4\pi}{5} + i \sin \frac{4\pi}{5}\right) = 3e^{4\pi i/5}$.
 :::
 
 ::: {.problem #prob:lec11:power}
 Вычислите $\dfrac{(1 - i)^{10}}{(\sqrt3 + i)^6}$.
-:::
-
-::: answer
-$\dfrac{i}{2}$.
 :::
 
 ::: solution
@@ -467,20 +455,12 @@ $\dfrac{i}{2}$.
 Найдите все корни уравнения $z^4 = -8 + 8\sqrt3 \, i$ и опишите их расположение на комплексной плоскости.
 :::
 
-::: answer
-$\sqrt3 + i$, $\; -1 + i\sqrt3$, $\; -\sqrt3 - i$, $\; 1 - i\sqrt3$ — вершины квадрата, вписанного в окружность радиуса $2$.
-:::
-
 ::: solution
 $|w| = \sqrt{64 + 192} = 16$, $\cos \psi = -\frac{8}{16} = -\frac12$, $\sin \psi = \frac{8\sqrt3}{16} = \frac{\sqrt3}{2}$, $\psi = \frac{2\pi}{3}$. По теореме [-@thm:lec11:roots] $z_k = 2\left(\cos\left(\frac{\pi}{6} + \frac{\pi k}{2}\right) + i \sin\left(\frac{\pi}{6} + \frac{\pi k}{2}\right)\right)$, $k = 0, 1, 2, 3$. *Ключ:* $\sqrt[4]{16} = 2$ — арифметический корень, а угол делится на $4$ вместе с $2\pi k$: шаг $\frac{2\pi}{4} = \frac{\pi}{2}$. Углы $\frac{\pi}{6}, \frac{2\pi}{3}, \frac{7\pi}{6}, \frac{5\pi}{3}$ дают $\sqrt3 + i$, $-1 + i\sqrt3$, $-\sqrt3 - i$, $1 - i\sqrt3$. Каждый следующий корень — предыдущий, умноженный на $i$ (поворот на $\frac{\pi}{2}$), поэтому это квадрат. Проверка: $(\sqrt3 + i)^2 = 2 + 2\sqrt3 \, i$, $(2 + 2\sqrt3 \, i)^2 = 4 + 8\sqrt3 \, i - 12 = -8 + 8\sqrt3 \, i$.
 :::
 
 ::: {.problem #prob:lec11:quadratic}
 Решите уравнение $z^2 - (3 - i) z + 4 = 0$.
-:::
-
-::: answer
-$z = 2 - 2i$ и $z = 1 + i$.
 :::
 
 ::: solution
@@ -491,20 +471,12 @@ $z = 2 - 2i$ и $z = 1 + i$.
 Выразите $\sin^3 \varphi$ через $\sin \varphi$ и $\sin 3\varphi$.
 :::
 
-::: answer
-$\sin^3 \varphi = \dfrac{3\sin \varphi - \sin 3\varphi}{4}$.
-:::
-
 ::: solution
 По [-@eq:lec11:cos-sin] при $u = e^{i\varphi}$: $\sin^3 \varphi = \dfrac{(u - u^{-1})^3}{(2i)^3}$. Числитель по биному: $u^3 - 3u + 3u^{-1} - u^{-3} = (u^3 - u^{-3}) - 3(u - u^{-1}) = 2i \sin 3\varphi - 6i \sin \varphi$. *Ключ:* $(2i)^3 = 8i^3 = -8i$ — не забыть, что $i^3 = -i$. Итого $\sin^3 \varphi = \dfrac{2i \sin 3\varphi - 6i \sin \varphi}{-8i} = \dfrac{3\sin \varphi - \sin 3\varphi}{4}$. Проверка при $\varphi = \frac{\pi}{2}$: слева $1$, справа $\frac{3 - (-1)}{4} = 1$.
 :::
 
 ::: {.problem #prob:lec11:multiplicity}
 Найдите кратность корня $-1$ многочлена $f(z) = z^4 + 2z^3 - 2z - 1$ и разложите $f$ на линейные множители.
-:::
-
-::: answer
-Кратность $3$; $f(z) = (z + 1)^3 (z - 1)$.
 :::
 
 ::: solution
@@ -524,14 +496,12 @@ $\sin^3 \varphi = \dfrac{3\sin \varphi - \sin 3\varphi}{4}$.
 Найдите остаток от деления $f(z) = z^{2026} + 3z + 1$ (а) на $z - i$; (б) на $z^2 + 1$.
 :::
 
-::: answer
-(а) $3i$; (б) $3z$.
-:::
-
 ::: solution
 (а) По теореме Безу остаток равен $f(i)$. Степени $i$ повторяются с периодом $4$: $i^2 = -1$, $i^4 = 1$; $2026 = 4 \cdot 506 + 2$, поэтому $i^{2026} = i^2 = -1$ и $f(i) = -1 + 3i + 1 = 3i$.
 
 (б) Остаток $r$ имеет степень меньше $2$: $r(z) = az + b$. *Ключ:* $z^2 + 1 = (z - i)(z + i)$, поэтому в равенство $f(z) = (z^2 + 1) q(z) + az + b$ подставляем корни делителя, $z = \pm i$, и первое слагаемое пропадает: $f(i) = ai + b$, $f(-i) = -ai + b$. Здесь $f(i) = 3i$, $f(-i) = (-i)^{2026} - 3i + 1 = -1 - 3i + 1 = -3i$. Система $ai + b = 3i$, $-ai + b = -3i$ даёт $b = 0$, $a = 3$. Проверка: $z^{2026} + 1 = (z^2)^{1013} + 1$ делится на $z^2 + 1$ — так же, как $t^{1013} + 1$ делится на $t + 1$ при $t = z^2$ (теорема Безу: значение в $t = -1$ равно $0$), — и $f - 3z$ есть ровно этот многочлен.
+
+*Ответ:* (а) $3i$; (б) $3z$.
 :::
 
 # Итоги

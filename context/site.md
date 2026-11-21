@@ -45,7 +45,6 @@ PDF лежат в `build/pdf/<course>/<week_id>.pdf` (теория — `theory.p
 </div>
 <div class="nb nb-remark nb-style-remark nb-tag-pitfall" data-tag="pitfall" data-number="4.4">…</div>
 <div class="nb-proof"><p><em>Доказательство.</em> …</p></div>
-<div class="nb-answer"><p><strong>Ответ:</strong> …</p></div>
 <details class="nb-answers"><summary>Ответы</summary>…</details>
 <figure class="nb-figure" id="fig:lec04:x" data-number="4.5"><img src="fig/<sha1>.svg"><figcaption>…</figcaption></figure>
 <span id="eq:lec04:x" class="nb-eq" data-number="4.6"><span class="math display">\[ … \tag{4.6} \]</span></span>

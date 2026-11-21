@@ -58,12 +58,10 @@ $$((AB)C)_{ij} = \sum_k \sum_l a_{il} b_{lk} c_{kj} = (A(BC))_{ij}.$$ {#eq:lec01
 Найдите $AB$ для $A = \begin{pmatrix} 1 & 0 \\ 0 & 2 \end{pmatrix}$, $B = \begin{pmatrix} 1 \\ 1 \end{pmatrix}$.
 :::
 
-::: answer
-$\begin{pmatrix} 1 \\ 2 \end{pmatrix}$.
-:::
-
 ::: solution
 *Ключ:* строка на столбец. $1 \cdot 1 + 0 \cdot 1 = 1$, $0 \cdot 1 + 2 \cdot 1 = 2$.
+
+*Ответ:* $\begin{pmatrix} 1 \\ 2 \end{pmatrix}$.
 :::
 
 # Итоги

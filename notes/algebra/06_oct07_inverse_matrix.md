@@ -44,11 +44,11 @@ $$\Delta_n = f(\Delta_{n-1}, \Delta_{n-2}, \dots, \Delta_{n-k}),$$
 $$D_n = \begin{vmatrix} x & -1 & 0 & \dots & 0 \\ 0 & x & -1 & \dots & 0 \\ \vdots & & \ddots & \ddots & \vdots \\ 0 & 0 & \dots & x & -1 \\ a_n & a_{n-1} & \dots & a_2 & a_1 \end{vmatrix},$$
 где на диагонали в первых $n - 1$ строках стоит $x$, над ней $-1$, а последняя строка — $(a_n, a_{n-1}, \dots, a_1)$; при $n = 1$ это $D_1 = a_1$.
 
-*Ответ:* $D_n = a_1 x^{n-1} + a_2 x^{n-2} + \dots + a_{n-1} x + a_n$.
-
 *Ключ:* разложить по первому столбцу — в нём два ненулевых элемента, $x$ и $a_n$. Вычеркнув первую строку и первый столбец, получаем матрицу того же вида порядка $n - 1$ с последней строкой $(a_{n-1}, \dots, a_1)$, то есть $D_{n-1}$. Вычеркнув последнюю строку и первый столбец, получаем нижнетреугольную матрицу с числами $-1$ на диагонали: её определитель $(-1)^{n-1}$. Знак позиции $(n, 1)$ равен $(-1)^{n+1}$. Итого
 $$D_n = x D_{n-1} + a_n (-1)^{n+1} (-1)^{n-1} = x D_{n-1} + a_n.$$
 Это соотношение глубины $1$. Раскручиваем его от $D_1 = a_1$: $D_2 = a_1 x + a_2$, $D_3 = a_1 x^2 + a_2 x + a_3$, и по индукции получаем ответ. Например, при $n = 2$: $\begin{vmatrix} x & -1 \\ a_2 & a_1 \end{vmatrix} = a_1 x + a_2$.
+
+*Ответ:* $D_n = a_1 x^{n-1} + a_2 x^{n-2} + \dots + a_{n-1} x + a_n$.
 :::
 
 ### Соотношения глубины 2 (метод, разобранный на семинаре) {#sec:lec06:depth2}
@@ -69,13 +69,13 @@ $$D_n = a D_{n-1} - bc D_{n-2}, \qquad D_1 = a, \quad D_2 = a^2 - bc.$$ {#eq:lec
 ::: {.example #ex:lec06:tridiag-two-ways}
 Вычислим трёхдиагональный определитель порядка $n$ с $a = 2$, $b = c = 1$.
 
-*Ответ:* $D_n = n + 1$.
-
 По [-@eq:lec06:tridiagonal] $D_n = 2 D_{n-1} - D_{n-2}$, $D_1 = 2$, $D_2 = 3$.
 
 *Способ 1: угадать и доказать по индукции.* Первые значения $2, 3, 4, 5, \dots$ ($D_3 = 2 \cdot 3 - 2 = 4$, $D_4 = 2 \cdot 4 - 3 = 5$) подсказывают $D_n = n + 1$. Для $n = 1, 2$ верно; если верно для $n - 1$ и $n - 2$, то $D_n = 2n - (n - 1) = n + 1$.
 
 *Способ 2: характеристическое уравнение.* Ищем решения вида $D_n = \lambda^n$: подстановка в $D_n = 2D_{n-1} - D_{n-2}$ даёт $\lambda^2 = 2\lambda - 1$, корень $\lambda = 1$ кратности $2$. По правилу ниже $D_n = (c_1 + c_2 n) \cdot 1^n$; из $D_1 = c_1 + c_2 = 2$ и $D_2 = c_1 + 2c_2 = 3$ находим $c_1 = c_2 = 1$.
+
+*Ответ:* $D_n = n + 1$.
 :::
 
 Правило для соотношения $D_n = p D_{n-1} + q D_{n-2}$ с $q \ne 0$. Составим *характеристическое уравнение* $\lambda^2 = p \lambda + q$.
@@ -115,8 +115,6 @@ $$x_i = \frac{\Delta_i}{\det A}, \qquad i = 1, \dots, n \quad \text{(форму�
 
 ::: {.example #ex:lec06:cramer}
 Решим по правилу Крамера систему $3x + 2y = 7$, $x + 4y = 9$.
-
-*Ответ:* $x = 1$, $y = 2$.
 
 $\det A = \begin{vmatrix} 3 & 2 \\ 1 & 4 \end{vmatrix} = 10 \ne 0$, формулы Крамера применимы. Для $x$ (первая неизвестная) первый столбец заменяем на $b = (7, 9)^T$, для $y$ — второй:
 $$x = \frac{1}{10} \begin{vmatrix} 7 & 2 \\ 9 & 4 \end{vmatrix} = \frac{28 - 18}{10} = 1, \qquad y = \frac{1}{10} \begin{vmatrix} 3 & 7 \\ 1 & 9 \end{vmatrix} = \frac{27 - 7}{10} = 2.$$
@@ -257,8 +255,6 @@ $$A^T (A^{-1})^T = (A^{-1} A)^T = E^T = E, \qquad (A^{-1})^T A^T = (A A^{-1})^T 
 ::: {.example #ex:lec06:product-inverse}
 Для $A = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 0 \\ 1 & 1 \end{pmatrix}$ найдём $(AB)^{-1}$ и сравним с $A^{-1} B^{-1}$.
 
-*Ответ:* $(AB)^{-1} = B^{-1} A^{-1} = \begin{pmatrix} 1 & -1 \\ -1 & 2 \end{pmatrix}$, а $A^{-1} B^{-1} = \begin{pmatrix} 2 & -1 \\ -1 & 1 \end{pmatrix}$.
-
 $A$ и $B$ — матрицы элементарных преобразований $\rw{I} + \rw{II}$ и $\rw{II} + \rw{I}$, поэтому $A^{-1} = \begin{pmatrix} 1 & -1 \\ 0 & 1 \end{pmatrix}$, $B^{-1} = \begin{pmatrix} 1 & 0 \\ -1 & 1 \end{pmatrix}$ (матрицы обратных преобразований). Тогда
 $$B^{-1} A^{-1} = \begin{pmatrix} 1 & 0 \\ -1 & 1 \end{pmatrix} \begin{pmatrix} 1 & -1 \\ 0 & 1 \end{pmatrix} = \begin{pmatrix} 1 & -1 \\ -1 & 2 \end{pmatrix}.$$
 Проверка: $AB = \begin{pmatrix} 2 & 1 \\ 1 & 1 \end{pmatrix}$, и произведение $AB \cdot B^{-1}A^{-1}$ равно $E$: $(2, 1) \cdot (1, -1)^T = 1$, $(2, 1) \cdot (-1, 2)^T = 0$, $(1, 1) \cdot (1, -1)^T = 0$, $(1, 1) \cdot (-1, 2)^T = 1$. А $A^{-1} B^{-1} = \begin{pmatrix} 1 & -1 \\ 0 & 1 \end{pmatrix} \begin{pmatrix} 1 & 0 \\ -1 & 1 \end{pmatrix} = \begin{pmatrix} 2 & -1 \\ -1 & 1 \end{pmatrix}$ — это обратная к $BA$, а не к $AB$.
@@ -281,8 +277,6 @@ $$\begin{pmatrix} a & b \\ c & d \end{pmatrix}^{-1} = \frac{1}{ad - bc} \begin{p
 ::: {.example #ex:lec06:formula3}
 Найдём по формуле обратную к $A = \begin{pmatrix} 1 & 2 & 3 \\ 0 & 1 & 4 \\ 5 & 6 & 0 \end{pmatrix}$.
 
-*Ответ:* $A^{-1} = \begin{pmatrix} -24 & 18 & 5 \\ 20 & -15 & -4 \\ -5 & 4 & 1 \end{pmatrix}$.
-
 Разложение по первому столбцу: $\det A = 1 \cdot \begin{vmatrix} 1 & 4 \\ 6 & 0 \end{vmatrix} + 5 \cdot \begin{vmatrix} 2 & 3 \\ 1 & 4 \end{vmatrix} = -24 + 25 = 1$. Дополнения (знак позиции — в шахматном порядке):
 $$\begin{aligned} &A_{11} = \begin{vmatrix} 1 & 4 \\ 6 & 0 \end{vmatrix} = -24, && A_{12} = -\begin{vmatrix} 0 & 4 \\ 5 & 0 \end{vmatrix} = 20, && A_{13} = \begin{vmatrix} 0 & 1 \\ 5 & 6 \end{vmatrix} = -5, \\ &A_{21} = -\begin{vmatrix} 2 & 3 \\ 6 & 0 \end{vmatrix} = 18, && A_{22} = \begin{vmatrix} 1 & 3 \\ 5 & 0 \end{vmatrix} = -15, && A_{23} = -\begin{vmatrix} 1 & 2 \\ 5 & 6 \end{vmatrix} = 4, \\ &A_{31} = \begin{vmatrix} 2 & 3 \\ 1 & 4 \end{vmatrix} = 5, && A_{32} = -\begin{vmatrix} 1 & 3 \\ 0 & 4 \end{vmatrix} = -4, && A_{33} = \begin{vmatrix} 1 & 2 \\ 0 & 1 \end{vmatrix} = 1. \end{aligned}$$
 *Ключ:* дополнения первой строки $(-24, 20, -5)$ записываем в первый *столбец* $\tilde A$, второй строки — во второй столбец, третьей — в третий; $\det A = 1$, так что $A^{-1} = \tilde A$. Проверка первой строки произведения: $(1, 2, 3) \cdot (-24, 20, -5)^T = -24 + 40 - 15 = 1$, $(1, 2, 3) \cdot (18, -15, 4)^T = 18 - 30 + 12 = 0$, $(1, 2, 3) \cdot (5, -4, 1)^T = 5 - 8 + 3 = 0$.
@@ -300,10 +294,10 @@ $$(A \mid E) \to \dots \to (E \mid A^{-1}).$$ {#eq:lec06:gauss-inverse}
 ::: {.example #ex:lec06:gauss2}
 Найдём методом Гаусса обратную к $\begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}$.
 
-*Ответ:* $\begin{pmatrix} -2 & 1 \\ \frac32 & -\frac12 \end{pmatrix}$ — то же, что по формуле [-@eq:lec06:inverse2].
-
 $$\begin{pmatrix} 1 & 2 & | & 1 & 0 \\ 3 & 4 & | & 0 & 1 \end{pmatrix} \to \begin{pmatrix} 1 & 2 & | & 1 & 0 \\ 0 & -2 & | & -3 & 1 \end{pmatrix} \to \begin{pmatrix} 1 & 0 & | & -2 & 1 \\ 0 & -2 & | & -3 & 1 \end{pmatrix} \to \begin{pmatrix} 1 & 0 & | & -2 & 1 \\ 0 & 1 & | & \frac32 & -\frac12 \end{pmatrix}.$$
 Преобразования: $\rw{II} - 3 \cdot \rw{I}$; $\rw{I} + \rw{II}$; $\rw{II} \cdot \left(-\frac12\right)$.
+
+*Ответ:* $\begin{pmatrix} -2 & 1 \\ \frac32 & -\frac12 \end{pmatrix}$ — то же, что по формуле [-@eq:lec06:inverse2].
 :::
 
 Почему это работает? Сначала выясним, во что превращается левая половина.
@@ -349,8 +343,6 @@ $$(S_p \cdots S_1 A \mid S_p \cdots S_1 E) = (E \mid B).$$
 
 ::: {.example #ex:lec06:gauss3}
 Найдём методом Гаусса обратную к $A = \begin{pmatrix} 1 & 2 & 3 \\ 0 & 1 & 4 \\ 5 & 6 & 0 \end{pmatrix}$ из примера [-@ex:lec06:formula3].
-
-*Ответ:* тот же, $A^{-1} = \begin{pmatrix} -24 & 18 & 5 \\ 20 & -15 & -4 \\ -5 & 4 & 1 \end{pmatrix}$.
 
 Прямой ход: $\rw{III} - 5 \cdot \rw{I}$, затем $\rw{III} + 4 \cdot \rw{II}$:
 $$\begin{pmatrix} 1 & 2 & 3 & | & 1 & 0 & 0 \\ 0 & 1 & 4 & | & 0 & 1 & 0 \\ 5 & 6 & 0 & | & 0 & 0 & 1 \end{pmatrix} \to \begin{pmatrix} 1 & 2 & 3 & | & 1 & 0 & 0 \\ 0 & 1 & 4 & | & 0 & 1 & 0 \\ 0 & -4 & -15 & | & -5 & 0 & 1 \end{pmatrix} \to \begin{pmatrix} 1 & 2 & 3 & | & 1 & 0 & 0 \\ 0 & 1 & 4 & | & 0 & 1 & 0 \\ 0 & 0 & 1 & | & -5 & 4 & 1 \end{pmatrix}.$$
@@ -428,13 +420,13 @@ $$\to \begin{pmatrix} 1 & 2 & 0 & | & 16 & -12 & -3 \\ 0 & 1 & 0 & | & 20 & -15 
 ::: {.example #ex:lec06:two-types}
 Для $A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}$, $B = \begin{pmatrix} -1 & 0 \\ 1 & 2 \end{pmatrix}$ решим уравнения $AX = B$ и $XA = B$ методом Гаусса.
 
-*Ответ:* $AX = B$: $X = \begin{pmatrix} 3 & 2 \\ -2 & -1 \end{pmatrix}$; $XA = B$: $X = \begin{pmatrix} 2 & -1 \\ 1 & 0 \end{pmatrix}$.
-
 $AX = B$: $\begin{pmatrix} 1 & 2 & | & -1 & 0 \\ 3 & 4 & | & 1 & 2 \end{pmatrix} \to \begin{pmatrix} 1 & 2 & | & -1 & 0 \\ 0 & -2 & | & 4 & 2 \end{pmatrix} \to \begin{pmatrix} 1 & 2 & | & -1 & 0 \\ 0 & 1 & | & -2 & -1 \end{pmatrix} \to \begin{pmatrix} 1 & 0 & | & 3 & 2 \\ 0 & 1 & | & -2 & -1 \end{pmatrix}$ (преобразования $\rw{II} - 3 \cdot \rw{I}$, $\rw{II} \cdot \left(-\frac12\right)$, $\rw{I} - 2 \cdot \rw{II}$).
 
 $XA = B$: *ключ* — транспонировать: $A^T = \begin{pmatrix} 1 & 3 \\ 2 & 4 \end{pmatrix}$, $B^T = \begin{pmatrix} -1 & 1 \\ 0 & 2 \end{pmatrix}$, и
 $$\begin{pmatrix} 1 & 3 & | & -1 & 1 \\ 2 & 4 & | & 0 & 2 \end{pmatrix} \to \begin{pmatrix} 1 & 3 & | & -1 & 1 \\ 0 & -2 & | & 2 & 0 \end{pmatrix} \to \begin{pmatrix} 1 & 3 & | & -1 & 1 \\ 0 & 1 & | & -1 & 0 \end{pmatrix} \to \begin{pmatrix} 1 & 0 & | & 2 & 1 \\ 0 & 1 & | & -1 & 0 \end{pmatrix}.$$
 Справа $X^T = \begin{pmatrix} 2 & 1 \\ -1 & 0 \end{pmatrix}$, откуда $X = \begin{pmatrix} 2 & -1 \\ 1 & 0 \end{pmatrix}$. Проверка: $\begin{pmatrix} 2 & -1 \\ 1 & 0 \end{pmatrix} \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix} = \begin{pmatrix} -1 & 0 \\ 1 & 2 \end{pmatrix} = B$.
+
+*Ответ:* $AX = B$: $X = \begin{pmatrix} 3 & 2 \\ -2 & -1 \end{pmatrix}$; $XA = B$: $X = \begin{pmatrix} 2 & -1 \\ 1 & 0 \end{pmatrix}$.
 :::
 
 ::: {.remark #rem:lec06:equation-trap tag="подводный камень"}
@@ -475,10 +467,6 @@ $$[\tilde A b]_i = \sum_{k=1}^{n} [\tilde A]_{ik} b_k = \sum_{k=1}^{n} b_k A_{ki
 Вычислите определитель порядка $n$, у которого на главной диагонали стоят пятёрки, непосредственно над ней — двойки, непосредственно под ней — тройки, а остальные элементы равны нулю.
 :::
 
-::: answer
-$D_n = 3^{n+1} - 2^{n+1}$.
-:::
-
 ::: solution
 По утверждению [-@prop:lec06:tridiagonal] с $a = 5$, $bc = 6$: $D_n = 5D_{n-1} - 6D_{n-2}$ при $n \ge 3$, $D_1 = 5$, $D_2 = 25 - 6 = 19$.
 
@@ -488,10 +476,6 @@ $D_n = 3^{n+1} - 2^{n+1}$.
 ::: {.problem #prob:lec06:inverse-slau}
 Решите систему с помощью обратной матрицы:
 $$\begin{cases} x_1 + x_2 + x_3 = 20, \\ 2x_1 - x_3 = 14, \\ x_2 + 2x_3 = 15. \end{cases}$$
-:::
-
-::: answer
-$x_1 = 9$, $x_2 = 7$, $x_3 = 4$.
 :::
 
 ::: solution
@@ -506,24 +490,18 @@ $$A^{-1} = \frac{1}{-1} \begin{pmatrix} 1 & -1 & -1 \\ -4 & 2 & 3 \\ 2 & -1 & -2
 Решите матричное уравнение $X \cdot \begin{pmatrix} 2 & 2 & -1 \\ 2 & -1 & 2 \\ -1 & 2 & 2 \end{pmatrix} = \begin{pmatrix} 5 & 5 & 2 \\ 5 & 5 & -1 \end{pmatrix}$.
 :::
 
-::: answer
-$X = \begin{pmatrix} 2 & 1 & 1 \\ \frac73 & \frac13 & \frac13 \end{pmatrix}$.
-:::
-
 ::: solution
 Уравнение второго типа: $X = BA^{-1}$, и $X$ имеет размер $2 \times 3$. Неверный путь — $A^{-1} B$: произведение матрицы $3 \times 3$ на $2 \times 3$ не определено.
 
 *Ключ:* матрица $A$ симметрична, а её строки попарно «перпендикулярны»: $(2, 2, -1) \cdot (2, -1, 2) = 4 - 2 - 2 = 0$ и т. д. Поэтому $A \cdot A = A A^T = 9E$ (каждая строка в квадрате даёт $4 + 4 + 1 = 9$), и по следствию [-@cor:lec06:one-side] $A^{-1} = \frac19 A$. Тогда
 $$X = \frac19 BA = \frac19 \begin{pmatrix} 5 & 5 & 2 \\ 5 & 5 & -1 \end{pmatrix} \begin{pmatrix} 2 & 2 & -1 \\ 2 & -1 & 2 \\ -1 & 2 & 2 \end{pmatrix} = \frac19 \begin{pmatrix} 18 & 9 & 9 \\ 21 & 3 & 3 \end{pmatrix}.$$
 Без этого наблюдения работает общий способ: $(A^T \mid B^T) \to (E \mid X^T)$; здесь $A^T = A$. Проверка первой строки: $(2, 1, 1) A = (4 + 2 - 1, 4 - 1 + 2, -2 + 2 + 2) = (5, 5, 2)$.
+
+*Ответ:* $X = \begin{pmatrix} 2 & 1 & 1 \\ \frac73 & \frac13 & \frac13 \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec06:expression}
 Вычислите $(3B)^2 - 2 (BA^{-1} - E)^T$, где $A = \begin{pmatrix} 0 & -2 \\ 1 & -3 \end{pmatrix}$, $B = \begin{pmatrix} 5 & 1 \\ -1 & 0 \end{pmatrix}$.
-:::
-
-::: answer
-$\begin{pmatrix} 234 & 42 \\ -55 & -5 \end{pmatrix}$.
 :::
 
 ::: solution
@@ -536,22 +514,16 @@ $\det A = 0 + 2 = 2$, по формуле [-@eq:lec06:inverse2] $A^{-1} = \frac1
 При каких значениях параметра $t$ система $tx + y = 1$, $x + ty = 1$ имеет единственное решение? Найдите его. Что происходит при остальных $t$?
 :::
 
-::: answer
-При $t \ne \pm 1$ решение единственно: $x = y = \frac{1}{t + 1}$. При $t = 1$ решений бесконечно много ($x + y = 1$), при $t = -1$ решений нет.
-:::
-
 ::: solution
 $\det A = t^2 - 1$, $\Delta_1 = \begin{vmatrix} 1 & 1 \\ 1 & t \end{vmatrix} = t - 1$, $\Delta_2 = \begin{vmatrix} t & 1 \\ 1 & 1 \end{vmatrix} = t - 1$. При $t \ne \pm 1$ по утверждению [-@prop:lec06:unique-solution] решение единственно, и по Крамеру $x = y = \frac{t - 1}{t^2 - 1} = \frac{1}{t + 1}$.
 
 *Ключ:* при $\det A = 0$ правило Крамера даёт только необходимое условие $x_i \cdot 0 = \Delta_i$. При $t = -1$: $\Delta_1 = -2 \ne 0$, равенство $x \cdot 0 = -2$ невозможно — решений нет (и правда, уравнения $-x + y = 1$ и $x - y = 1$ в сумме дают $0 = 2$). При $t = 1$ все $\Delta_i = 0$, и это ничего не решает (замечание [-@rem:lec06:cramer-degenerate]); смотрим на систему: оба уравнения совпадают с $x + y = 1$, решений бесконечно много.
+
+*Ответ:* При $t \ne \pm 1$ решение единственно: $x = y = \frac{1}{t + 1}$. При $t = 1$ решений бесконечно много ($x + y = 1$), при $t = -1$ решений нет.
 :::
 
 ::: {.problem #prob:lec06:cayley}
 Докажите, что матрица $A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$ удовлетворяет уравнению $A^2 - (a + d) A + (ad - bc) E = O$, и выведите отсюда формулу обратной матрицы [-@eq:lec06:inverse2].
-:::
-
-::: answer
-Проверка прямым вычислением; при $ad - bc \ne 0$ из равенства $A\bigl((a + d)E - A\bigr) = (ad - bc) E$ получается $A^{-1} = \frac{1}{ad - bc} \bigl((a + d) E - A\bigr) = \frac{1}{ad - bc} \begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$.
 :::
 
 ::: solution
@@ -564,16 +536,14 @@ $A^2 = \begin{pmatrix} a^2 + bc & ab + bd \\ ac + cd & bc + d^2 \end{pmatrix}$, 
 *LU-разложением* квадратной матрицы называется представление $A = LU$, где $L$ — нижнетреугольная матрица с единицами на диагонали, а $U$ — верхнетреугольная. Постройте LU-разложение матрицы $A = \begin{pmatrix} 1 & -2 & 1 \\ 2 & -3 & 5 \\ -1 & 5 & 2 \end{pmatrix}$.
 :::
 
-::: answer
-$L = \begin{pmatrix} 1 & 0 & 0 \\ 2 & 1 & 0 \\ -1 & 3 & 1 \end{pmatrix}$, $U = \begin{pmatrix} 1 & -2 & 1 \\ 0 & 1 & 3 \\ 0 & 0 & -6 \end{pmatrix}$.
-:::
-
 ::: solution
 *Ключ:* прямой ход метода Гаусса без перестановок строк и без умножения строк на числа — это умножение слева на матрицы преобразований вида $\rwv{i} + \lambda \cdot \rwv{k}$ с $k < i$; они нижнетреугольные с единицами на диагонали. Если $S_3 S_2 S_1 A = U$, то $A = (S_3 S_2 S_1)^{-1} U = S_1^{-1} S_2^{-1} S_3^{-1} U$ по формуле [-@eq:lec06:product-inverse], и $L = S_1^{-1} S_2^{-1} S_3^{-1}$.
 
 Прямой ход: $S_1$: $\rw{II} - 2 \cdot \rw{I}$ даёт вторую строку $(0, 1, 3)$; $S_2$: $\rw{III} + \rw{I}$ даёт третью строку $(0, 3, 3)$; $S_3$: $\rw{III} - 3 \cdot \rw{II}$ даёт $(0, 0, -6)$. Получили $U$. Обратные преобразования (утверждение [-@prop:lec02:inverse]): $S_1^{-1}$ — это $\rw{II} + 2 \cdot \rw{I}$, $S_2^{-1}$ — $\rw{III} - \rw{I}$, $S_3^{-1}$ — $\rw{III} + 3 \cdot \rw{II}$. Произведение $S_1^{-1}\bigl(S_2^{-1}(S_3^{-1} E)\bigr)$ получим, применяя их к $E$ начиная с последнего: $S_3^{-1}$ даёт третью строку $(0, 3, 1)$, $S_2^{-1}$ — $(-1, 3, 1)$, $S_1^{-1}$ — вторую строку $(2, 1, 0)$. Под диагональю $L$ оказались коэффициенты исключения с обратным знаком. Проверка третьей строки $LU$: $-1 \cdot (1, -2, 1) + 3 \cdot (0, 1, 3) + (0, 0, -6) = (-1, 5, 2)$.
 
 Когда такое разложение существует и почему множители всегда встают в $L$ на свои места — теорема [-@thm:lec08:lu-criterion] и утверждение [-@prop:lec08:lu-construction].
+
+*Ответ:* $L = \begin{pmatrix} 1 & 0 & 0 \\ 2 & 1 & 0 \\ -1 & 3 & 1 \end{pmatrix}$, $U = \begin{pmatrix} 1 & -2 & 1 \\ 0 & 1 & 3 \\ 0 & 0 & -6 \end{pmatrix}$.
 :::
 
 # Итоги
