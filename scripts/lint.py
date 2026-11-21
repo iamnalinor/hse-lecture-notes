@@ -105,7 +105,8 @@ class Report:
         self.warnings.append(f"{path}: WARN: {msg}")
 
 
-def stringify(inlines) -> str:
+def stringify(inlines, code: bool = True) -> str:
+    """Текст инлайнов; code=False — без `кода` (в нём законны «!», «!=» и т. п.)."""
     out = []
 
     def go(x):
@@ -122,7 +123,8 @@ def stringify(inlines) -> str:
             elif t == "Math":
                 out.append("$" + c[1] + "$")
             elif t == "Code":
-                out.append(c[1])
+                if code:
+                    out.append(c[1])
             elif t == "Cite":
                 go(c[1])
             elif c is not None:
@@ -167,13 +169,13 @@ def split_sections(blocks: list) -> list[tuple[str, list]]:
     return sections
 
 
-def text_of_block(b) -> str:
+def text_of_block(b, code: bool = True) -> str:
     parts = []
 
     def fn(n):
         if n["t"] in ("Para", "Plain", "Header"):
             inl = n["c"][2] if n["t"] == "Header" else n["c"]
-            parts.append(stringify(inl))
+            parts.append(stringify(inl, code))
 
     walk(b, fn)
     return "\n".join(parts)
@@ -281,10 +283,11 @@ def check_texts(rep: Report, rel: str, blocks: list) -> None:
                     rel,
                     f"символов {''.join(missing)} нет в шрифте PDF (будут квадраты): пиши их в формуле, например $\\Rightarrow$",
                 )
-        if "!" in no_math:
+        prose = re.sub(r"\$[^$]*\$", "", text_of_block(b, code=False))
+        if "!" in prose:
             rep.warn(
                 rel,
-                f"восклицательный знак вне формулы: «{no_math[max(0, no_math.find('!') - 40) : no_math.find('!') + 1]}»",
+                f"восклицательный знак вне формулы: «{prose[max(0, prose.find('!') - 40) : prose.find('!') + 1]}»",
             )
 
 

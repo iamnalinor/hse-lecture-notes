@@ -449,6 +449,16 @@ def test_lint_missing_glyph(demo: Path):
     assert "нет в шрифте PDF" in res.stdout, res.stdout
 
 
+def test_lint_exclamation_only_in_prose(demo: Path):
+    """«!» в тексте — предупреждение, а оператор C в `коде` (`!=`, `!x`) — нет."""
+    p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
+    src = p.read_text(encoding="utf-8")
+    p.write_text(src.replace("Первая лекция курса", "Условие `a != 0` и `!x`. Первая лекция курса", 1), encoding="utf-8")
+    assert "восклицательный знак" not in lint(demo).stdout
+    p.write_text(src.replace("Первая лекция курса", "Отлично! Первая лекция курса", 1), encoding="utf-8")
+    assert "восклицательный знак" in lint(demo).stdout
+
+
 def test_lint_weekday(demo: Path):
     src = demo / "notes" / "algebra" / "02_sep09_gauss.md"
     dst = src.with_name("02_sep10_gauss.md")

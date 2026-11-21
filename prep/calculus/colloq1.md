@@ -416,6 +416,8 @@ $a_n \to a \Leftrightarrow a_n = a + \alpha_n$, где $\alpha_n \to 0$.
 *Ключ:* оценить сумму наибольшим слагаемым снизу и удвоенным наибольшим сверху: $3^n \le 2^n + 3^n \le 2 \cdot 3^n$. Корень $n$-й степени сохраняет неравенства между положительными числами, поэтому
 $$3 \le \sqrt[n]{2^n + 3^n} \le 3\sqrt[n]{2}.$$
 По стандартному пределу $\sqrt[n]{2} \to 1$ (утверждение [-@prop:lec04:standard]) правая часть стремится к $3$, и по теореме о двух милиционерах предел равен $3$.
+
+*Ответ:* $3$.
 :::
 
 Ещё задачи: [-@prob:lec04:sum-n], [-@prob:lec04:roots].
@@ -482,6 +484,8 @@ $s = \sup A$ $\Leftrightarrow$ (1) $a \le s$ для всех $a \in A$ и (2) $\
 Для любых $m, n \in \N$ имеем $|m - n| < m + n$, поэтому $-1 < \frac{m - n}{m + n} < 1$: число $1$ — верхняя грань, $-1$ — нижняя, и ни одно из них не принадлежит $X$.
 
 Условие 2 для $\sup$: пусть $\varepsilon > 0$. *Ключ:* взять $n = 1$ и большое $m$: $\frac{m - 1}{m + 1} = 1 - \frac{2}{m + 1}$. При $m = \left[\frac2\varepsilon\right] + 1 > \frac2\varepsilon$ имеем $\frac{2}{m + 1} < \varepsilon$, то есть элемент больше $1 - \varepsilon$. По утверждению [-@prop:lec05:sup-eps] $\sup X = 1$. Для $\inf$ — симметрично: $m = 1$, $n = \left[\frac2\varepsilon\right] + 1$ даёт элемент $-1 + \frac{2}{n + 1} < -1 + \varepsilon$, и $\inf X = -1$.
+
+*Ответ:* $\sup X = 1$, $\inf X = -1$; ни один не достигается.
 :::
 
 ::: {.problem #prob:colloq1:sup-sum}
@@ -490,6 +494,8 @@ $s = \sup A$ $\Leftrightarrow$ (1) $a \le s$ для всех $a \in A$ и (2) $\
 
 ::: solution
 Обозначим $\alpha = \sup A$, $\beta = \sup B$ (существуют по теореме [-@thm:lec05:sup-exists]). Условие 1: для любых $a \in A$, $b \in B$ имеем $a \le \alpha$, $b \le \beta$, поэтому $a + b \le \alpha + \beta$. Условие 2: пусть $\varepsilon > 0$. По утверждению [-@prop:lec05:sup-eps] для $\frac\varepsilon2$ найдутся $a \in A$ с $a > \alpha - \frac\varepsilon2$ и $b \in B$ с $b > \beta - \frac\varepsilon2$. Тогда $a + b \in A + B$ и $a + b > \alpha + \beta - \varepsilon$. По тому же утверждению $\sup(A + B) = \alpha + \beta$. *Ключ:* снова половина $\varepsilon$ на каждое слагаемое.
+
+*Ответ:* Проверить для $s = \sup A + \sup B$ оба условия характеризации: $a + b \le s$; для $\varepsilon > 0$ взять $a > \sup A - \frac\varepsilon2$, $b > \sup B - \frac\varepsilon2$.
 :::
 
 ::: {.problem #prob:colloq1:example-inf}
@@ -500,6 +506,8 @@ $s = \sup A$ $\Leftrightarrow$ (1) $a \le s$ для всех $a \in A$ и (2) $\
 Сначала: $m_n$ существует. Множество $\{x_k \mid k \ge n\}$ непусто и ограничено снизу: при $k > N_0$, где $N_0 = N(1)$ — номер из определения $x_k \to +\infty$ для уровня $1$, имеем $x_k > 1$, а членов с $n \le k \le N_0$ конечное число. По теореме [-@thm:lec05:sup-exists] (для нижней грани — следствие [-@cor:lec05:inf-exists]) $m_n$ существует.
 
 Пусть $M > 0$. По определению $x_k \to +\infty$ найдётся $N$ с $x_k > M + 1$ при всех $k > N$. При $n > N$ все члены $x_k$ с $k \ge n$ больше $M + 1$, то есть $M + 1$ — нижняя грань множества $\{x_k \mid k \ge n\}$. Точная нижняя грань — наибольшая из нижних граней, поэтому $m_n \ge M + 1 > M$. Это и есть $m_n \to +\infty$. *Ключ:* оценка для всех $k \ge n$ сразу превращается в оценку для их точной нижней грани.
+
+*Ответ:* Для $M > 0$ возьмём номер $N$, после которого $x_k > M + 1$; при $n > N$ получаем $m_n \ge M + 1 > M$.
 :::
 
 Ещё задачи: [-@prob:lec05:sup-sets].
@@ -548,6 +556,8 @@ $(a_n)$ возрастает, если $a_n < a_{n+1}$ при всех $n$, не
 *Монотонность:* $x_{n+1} > x_n \Leftrightarrow 2 + x_n > x_n^2$ (обе части положительны) $\Leftrightarrow (2 - x_n)(1 + x_n) > 0$, что верно при $0 < x_n < 2$.
 
 По теореме Вейерштрасса $x_n \to L$, и $x_{n+1} \to L$. Переходим к пределу в $x_{n+1}^2 = 2 + x_n$: $L^2 = 2 + L$, $L \in \{2, -1\}$. Из $x_n > 0$ следует $L \ge 0$ (следствие [-@cor:lec04:bound-limit]), значит, $L = 2$.
+
+*Ответ:* $2$: последовательность возрастает и ограничена числом $2$.
 :::
 
 Ещё задачи: [-@prob:lec05:kr-recurrent], [-@prob:lec05:monotone-sums].
@@ -784,6 +794,8 @@ $\lim\limits_{x \to x_0} f(x) = A$ по Гейне, если для любой �
 
 ::: solution
 $|x^2 + x - 2| = |x - 1| \cdot |x + 2|$. *Ключ:* заранее потребовать $\delta \le 1$: из $|x - 1| < 1$ следует $0 < x < 2$, и $|x + 2| < 4$. Тогда $|x^2 + x - 2| < 4|x - 1| < \varepsilon$ при $|x - 1| < \frac\varepsilon4$. Итак, при $\delta = \min\left(1, \frac\varepsilon4\right)$ и $0 < |x - 1| < \delta$ получаем $|x^2 + x - 2| < \varepsilon$. Схема — раздел [-@sec:lec07:delta].
+
+*Ответ:* Годится $\delta(\varepsilon) = \min\left(1, \frac\varepsilon4\right)$.
 :::
 
 ::: {.problem #prob:colloq1:no-limit}
@@ -792,6 +804,8 @@ $|x^2 + x - 2| = |x - 1| \cdot |x + 2|$. *Ключ:* заранее потреб
 
 ::: solution
 Обе последовательности ненулевые и стремятся к нулю, то есть это последовательности Гейне для точки $0$. $f(x_n) = \cos(2\pi n) = 1 \to 1$, $f(y_n) = \cos\left(\frac\pi2 + \pi n\right) = 0 \to 0$. Пределы разные, по следствию [-@cor:lec07:two-sequences] предела нет.
+
+*Ответ:* На $x_n = \frac{1}{2\pi n}$ значения равны $1$, на $y_n = \frac{1}{\frac\pi2 + \pi n}$ — равны $0$.
 :::
 
 Ещё задачи: [-@prob:lec07:x2-25], [-@prob:lec07:rational], [-@prob:lec07:x-dirichlet].
@@ -858,6 +872,8 @@ $|x^2 + x - 2| = |x - 1| \cdot |x + 2|$. *Ключ:* заранее потреб
 Внутренняя функция $f(x) = 1 + x^2 \to 1 = A$ при $x \to 0$ (арифметика предела функции). Внешняя: $\lim\limits_{y \to 1} g(y) = 1 = B$, потому что в проколотой окрестности единицы $g(y) = y^2$, а $y^2 \to 1$; значение $g(1) = 5$ на предел не влияет. Условие (1) нарушено: $g(A) = 5 \ne B$. Зато $f(x) = 1 + x^2 \ne 1$ при всех $x \ne 0$ — выполнено условие (2) с любым $\delta_0$, и по теореме [-@thm:lec07:composite] предел равен $1$.
 
 *Ключ:* важно не то, «хорошая» ли $g$ в точке $A$, а то, попадает ли $f$ в саму точку $A$. Если заменить $f$ на $1 + x \sin\frac1x$, она будет принимать значение $1$ в точках $\frac{1}{\pi k}$, сколь угодно близких к нулю, на них $g(f(x)) = 5$, и предела не будет (сравните с задачей [-@prob:lec07:composite]).
+
+*Ответ:* $1$. Работает условие (2): $1 + x^2 \ne 1$ при $x \ne 0$; условие (1) нарушено: $g(1) = 5 \ne 1$.
 :::
 
 Ещё задачи: [-@prob:lec07:composite], [-@prob:lec08:composite].
@@ -908,6 +924,8 @@ $\lim\limits_{x \to x_0} \sin x = \sin x_0$, $\lim\limits_{x \to x_0} \cos x = \
 *Ключ:* разделить числитель и знаменатель на $x$:
 $$\frac{\sin 3x - \sin x}{\operatorname{tg} 2x} = \frac{\frac{\sin 3x}{x} - \frac{\sin x}{x}}{\frac{\operatorname{tg} 2x}{x}}.$$
 По следствию [-@cor:lec08:consequences] $\frac{\sin 3x}{x} \to 3$, $\frac{\sin x}{x} \to 1$, а $\frac{\operatorname{tg} 2x}{x} = 2 \cdot \frac{\operatorname{tg} 2x}{2x} \to 2$ (замена $y = 2x \ne 0$, условие (2) теоремы о сложной функции). Знаменатель стремится к $2 \ne 0$ и не обращается в ноль при $0 < |x| < \frac\pi4$, поэтому по теореме об арифметике предела функции ответ $\frac{3 - 1}{2} = 1$.
+
+*Ответ:* $1$.
 :::
 
 Ещё задачи: [-@prob:lec08:trig].
@@ -969,6 +987,31 @@ $$\left(1 + \frac{1}{n+1}\right)^{n} < \left(1 + \frac1x\right)^x < \left(1 + \f
 $\frac{x + 3}{x - 1} = 1 + \frac{4}{x - 1}$. *Ключ:* выделить показатель $t = x - 1$:
 $$\left(1 + \frac{4}{x - 1}\right)^{x} = \left(1 + \frac4t\right)^{t} \cdot \left(1 + \frac4t\right).$$
 При $x \to +\infty$ и $t \to +\infty$; первый множитель стремится к $e^4$ по следствию [-@cor:lec08:e-alpha] (с $\alpha = 4$; предел при $t \to \infty$ даёт и предел при $t \to +\infty$) и теореме о сложной функции, второй — к $1$. Ответ: $e^4$.
+
+*Ответ.*
+
+1. Утверждение с переменными, которое становится высказыванием при подстановке значений; само по себе истинным или ложным не является.
+2. Кванторы слева направо меняются на противоположные, ограничения на переменные ($\varepsilon > 0$, $n > N$) сохраняются, предикат в конце заменяется отрицанием.
+3. $P(1)$ и $\forall k\ (P(k) \Rightarrow P(k+1))$ влекут $\forall n\ P(n)$. $(1 + x)^n \ge 1 + nx$ при $n \in \N$, $x \ge -1$.
+4. $(a + b)^n = \sum_{k=0}^n C_n^k a^k b^{n-k}$; $P_n = n!$, $A_n^k = \frac{n!}{(n-k)!}$, $C_n^k = \frac{n!}{k!(n-k)!}$.
+5. $\exists C > 0\ \forall n\colon |a_n| < C$; не ограничена сверху: $\forall C\ \exists n\colon a_n \ge C$.
+6. $\forall \varepsilon > 0\ \exists N\ \forall n > N\colon |a_n - a| < \varepsilon$; отрицание: $\exists \varepsilon > 0\ \forall N\ \exists n > N\colon |a_n - a| \ge \varepsilon$.
+7. Б.м.: $a_n \to 0$; б.б.: $\forall M > 0\ \exists N\ \forall n > N\colon |a_n| > M$ (для $+\infty$ — $a_n > M$); отделимая: $\exists \delta > 0\ \forall n\colon |a_n| > \delta$.
+8. Огр. $\cdot$ б.м. — б.м.; $\frac{1}{\text{б.б.}}$ — б.м.; $\frac{1}{\text{отд.}}$ — ограниченная; сходящаяся к $a \ne 0$ с ненулевыми членами отделима от нуля.
+9. $a_n \to a$, $b_n \to b$ $\Rightarrow$ $a_n \pm b_n \to a \pm b$, $a_n b_n \to ab$, $\frac{a_n}{b_n} \to \frac ab$ при $b \ne 0$, $b_n \ne 0$.
+10. $a_n \ge b_n$ при $n > N$, $a_n \to a$, $b_n \to b$ $\Rightarrow$ $a \ge b$. $a_n \le b_n \le c_n$ при $n > N$, $a_n, c_n \to a$ $\Rightarrow$ $b_n \to a$.
+11. $A, B \ne \varnothing$, $a \le b$ для всех $a \in A$, $b \in B$ $\Rightarrow$ $\exists c\colon a \le c \le b$ для всех $a \in A$, $b \in B$.
+12. Верхняя грань: $c \ge a$ для всех $a \in A$; $\sup A$ — наименьшая верхняя грань; $s = \sup A$ $\Leftrightarrow$ $a \le s$ для всех $a$ и $\forall \varepsilon > 0\ \exists a \in A\colon a > s - \varepsilon$.
+13. Непустое ограниченное сверху множество имеет $\sup$. Неубывающая ограниченная сверху последовательность сходится к $\sup a_n$.
+14. $e = \lim\left(1 + \frac1n\right)^n$; $2 < e \le 3$ (точнее, $\frac94 \le e \le 3$; $e \approx 2{,}718$).
+15. $b_k = a_{n_k}$ с $n_1 < n_2 < \dots$; у ограниченной последовательности есть сходящаяся подпоследовательность.
+16. Частичный предел — предел подпоследовательности; предельная точка — в любой её окрестности бесконечно много членов; для чисел это одно и то же.
+17. $\lim\limits_{x \to 0} \frac{\sin x}{x} = 1$; $\cos x < \frac{\sin x}{x} < 1$ при $0 < |x| < \frac\pi2$.
+18. $\forall \varepsilon > 0\ \exists N\ \forall m, n > N\colon |a_m - a_n| < \varepsilon$; отрицание: $\exists \varepsilon > 0\ \forall N\ \exists m, n > N\colon |a_m - a_n| \ge \varepsilon$; сходится $\Leftrightarrow$ фундаментальна.
+19. $\mathring{U}_\delta(x_0) = \{x\colon 0 < |x - x_0| < \delta\}$. Коши: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x) - A| < \varepsilon$. Гейне: для любой $x_n \to x_0$, $x_n \ne x_0$, $x_n \in D_f$ — $f(x_n) \to A$.
+20. $\exists \varepsilon_0 > 0\ \forall \delta > 0\ \exists x\colon 0 < |x - x_0| < \delta,\ |f(x) - A| \ge \varepsilon_0$.
+21. $f \to A$ при $x \to x_0$, $g \to B$ при $y \to A$, и либо $g(A) = B$, либо $f(x) \ne A$ около $x_0$ $\Rightarrow$ $g(f(x)) \to B$. Без условий неверно: $f \equiv 0$, $g = |\operatorname{sign} y|$.
+22. $\forall \varepsilon > 0\ \exists C > 0\ \forall x > C\colon |f(x) - A| < \varepsilon$; $\forall M > 0\ \exists \delta > 0\ \forall x\colon 0 < |x - x_0| < \delta \Rightarrow |f(x)| > M$; $\lim\limits_{x \to \infty} \left(1 + \frac1x\right)^x = e$.
 :::
 
 Ещё задачи: [-@prob:lec08:definition], [-@prob:lec08:infinity], [-@prob:lec08:e-limits].

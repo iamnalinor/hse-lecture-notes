@@ -416,6 +416,8 @@ $B^2 = \begin{pmatrix} 5 & 1 \\ -1 & 0 \end{pmatrix} \begin{pmatrix} 5 & 1 \\ -1
 $BA = \begin{pmatrix} 5 & 1 \\ -1 & 0 \end{pmatrix} \begin{pmatrix} 0 & -2 \\ 1 & -3 \end{pmatrix} = \begin{pmatrix} 1 & -13 \\ 0 & 2 \end{pmatrix}$, $BA - E = \begin{pmatrix} 0 & -13 \\ 0 & 1 \end{pmatrix}$, $(BA - E)^T = \begin{pmatrix} 0 & 0 \\ -13 & 1 \end{pmatrix}$.
 
 Итог: $\begin{pmatrix} 216 & 45 \\ -45 & -9 \end{pmatrix} - \begin{pmatrix} 0 & 0 \\ -26 & 2 \end{pmatrix} = \begin{pmatrix} 216 & 45 \\ -19 & -11 \end{pmatrix}$. Порядок в $BA$ важен: $AB = \begin{pmatrix} 2 & 0 \\ 8 & 1 \end{pmatrix} \ne BA$.
+
+*Ответ:* $\begin{pmatrix} 216 & 45 \\ -19 & -11 \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec02:commute}
@@ -438,6 +440,8 @@ $$AX = \begin{pmatrix} a + c & b + d \\ c & d \end{pmatrix}, \qquad XA = \begin{
 *Ключ:* по ассоциативности $ABC = (AB)C$, и свойство 4 применяется к двум сомножителям $AB$ и $C$:
 $$(ABC)^T = ((AB)C)^T = C^T (AB)^T = C^T (B^T A^T) = C^T B^T A^T.$$
 Размеры: $A_{m \times n}$, $A^T_{n \times m}$, значит, $AA^T$ — размера $m \times m$. По свойствам 4 и 1: $(AA^T)^T = (A^T)^T A^T = AA^T$.
+
+*Ответ:* Двукратное применение свойства 4 теоремы [-@thm:lec02:transpose-props] и ассоциативность; $AA^T$ имеет размер $m \times m$.
 :::
 
 ::: {.problem #prob:lec02:chain}

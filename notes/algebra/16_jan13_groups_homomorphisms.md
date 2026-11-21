@@ -299,6 +299,8 @@ $D_n$ — группа: последовательное выполнение а
 $\det X_a = 1$, поэтому $U \subseteq GL_2(\R)$, и $U$ непусто ($E = X_0$). *Ключ:* одно вычисление даёт всё сразу:
 $$X_a X_b = \begin{pmatrix} 1 & a \\ 0 & 1 \end{pmatrix} \begin{pmatrix} 1 & b \\ 0 & 1 \end{pmatrix} = \begin{pmatrix} 1 & a + b \\ 0 & 1 \end{pmatrix} = X_{a + b}.$$
 Отсюда $X_b^{-1} = X_{-b}$ ($X_b X_{-b} = X_0 = E$), и $X_a X_b^{-1} = X_{a - b} \in U$ — по критерию [-@thm:lec16:criterion] $U$ — подгруппа. $X_a X_b = X_{a + b} = X_b X_a$ — абелева. Отображение $f(a) = X_a$ — гомоморфизм $(\R, +) \to U$ (это то же равенство: $f(a + b) = f(a) f(b)$), сюръективно по определению $U$ и инъективно ($X_a = X_b \Rightarrow a = b$, сравнить элементы в правом верхнем углу). Значит, $f$ — изоморфизм.
+
+*Ответ:* Изоморфизм $(\R, +) \to U$: $a \mapsto X_a = \begin{pmatrix} 1 & a \\ 0 & 1 \end{pmatrix}$; ключевое равенство $X_a X_b = X_{a + b}$.
 :::
 
 ::: {.problem #prob:lec16:gl-subsets}

@@ -554,6 +554,8 @@ $$\frac{\cos 3x^3 - 1}{\sin^6 2x} = -\frac{1 - \cos 3x^3}{(3x^3)^2} \cdot \frac{
 \(a) $\left|\frac{2x + 1}{x - 3} - 2\right| = \frac{7}{|x - 3|}$. *Ключ:* огрубить знаменатель: при $x < 0$ имеем $|x - 3| = 3 - x > -x = |x|$, поэтому $\frac{7}{|x - 3|} < \frac{7}{|x|}$. Неравенство $\frac{7}{|x|} < \varepsilon$ выполнено при $|x| > \frac7\varepsilon$, то есть при $x < -\frac7\varepsilon$. Годится $C = \frac7\varepsilon$.
 
 \(b) $\frac{1}{(x - 2)^2} > M$ равносильно $(x - 2)^2 < \frac1M$, то есть $0 < |x - 2| < \frac{1}{\sqrt M}$ (точка $x = 2$ выколота). Годится $\delta = \frac{1}{\sqrt M}$. Дробь положительна с обеих сторон от $2$, поэтому предел именно $+\infty$, а не просто $\infty$.
+
+*Ответ:* \(a) $C = \frac7\varepsilon$; (b) $\delta = \frac{1}{\sqrt M}$.
 :::
 
 ::: {.problem #prob:lec08:infinity}

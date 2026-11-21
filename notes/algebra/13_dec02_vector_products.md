@@ -343,6 +343,8 @@ $$\vec r_G = \frac{1 \cdot \vec r_A + 2 \cdot \frac{\vec r_B + \vec r_C}{2}}{3} 
 $\overrightarrow{AB} = (1, 1, 2)$, $\overrightarrow{AC} = (-1, 2, 0)$. По [-@eq:lec13:cross-coords]
 $$[\overrightarrow{AB}, \overrightarrow{AC}] = (1 \cdot 0 - 2 \cdot 2, \; 2 \cdot (-1) - 1 \cdot 0, \; 1 \cdot 2 - 1 \cdot (-1)) = (-4, -2, 3).$$
 Проверка: $(-4, -2, 3) \cdot (1, 1, 2) = 0$, $(-4, -2, 3) \cdot (-1, 2, 0) = 0$. Площадь $S = \frac12 \sqrt{16 + 4 + 9} = \frac{\sqrt{29}}{2}$ (утверждение [-@prop:lec13:collinear]). *Ключ:* высоту находим из той же площади: $S = \frac12 |AB| \cdot h_C$, $|AB| = \sqrt{1 + 1 + 4} = \sqrt6$, $h_C = \frac{2S}{|AB|} = \frac{\sqrt{29}}{\sqrt6}$.
+
+*Ответ:* $S = \frac{\sqrt{29}}{2}$, $h_C = \sqrt{\frac{29}{6}}$.
 :::
 
 ::: {.problem #prob:lec13:tetra}
@@ -353,6 +355,8 @@ $$[\overrightarrow{AB}, \overrightarrow{AC}] = (1 \cdot 0 - 2 \cdot 2, \; 2 \cdo
 $\overrightarrow{AD} = (0, 1, 3)$. По теореме [-@thm:lec13:mixed-coords]
 $$\langle \overrightarrow{AB}, \overrightarrow{AC}, \overrightarrow{AD} \rangle = \begin{vmatrix} 1 & 1 & 2 \\ -1 & 2 & 0 \\ 0 & 1 & 3 \end{vmatrix} = 1 \cdot 6 - 1 \cdot (-3) + 2 \cdot (-1) = 7.$$
 Проверка через задачу [-@prob:lec13:triangle-area]: $\big((-4, -2, 3), (0, 1, 3)\big) = -2 + 9 = 7$. Произведение положительно — тройка правая (следствие [-@cor:lec13:coplanar]). Объём тетраэдра $\frac16 \cdot 7 = \frac76$. *Ключ:* высоту даёт формула объёма пирамиды $V = \frac13 S_{ABC} \, h_D$: $h_D = \frac{3V}{S_{ABC}} = \frac{7/2}{\sqrt{29}/2} = \frac{7}{\sqrt{29}}$.
+
+*Ответ:* $V = \frac76$, $h_D = \frac{7}{\sqrt{29}}$, тройка правая.
 :::
 
 ::: {.problem #prob:lec13:coplanar-param}
@@ -371,6 +375,8 @@ $\langle \vec a, \vec b, \vec c \rangle = \begin{vmatrix} 1 & 2 & \lambda \\ 0 &
 
 ::: solution
 *Ключ:* раскрываем по линейности, следя за порядком: $[2\vec a - \vec b, \vec a + 3\vec b] = 2[\vec a, \vec a] + 6[\vec a, \vec b] - [\vec b, \vec a] - 3[\vec b, \vec b] = 6[\vec a, \vec b] + [\vec a, \vec b] = 7[\vec a, \vec b]$ (теорема [-@thm:lec13:cross-props]). Угол: $\cos \varphi = \frac{6}{3 \cdot 4} = \frac12$, $\sin \varphi = \frac{\sqrt3}{2}$, $|[\vec a, \vec b]| = 3 \cdot 4 \cdot \frac{\sqrt3}{2} = 6\sqrt3$. Ответ $7 \cdot 6\sqrt3 = 42\sqrt3$.
+
+*Ответ:* $42\sqrt3$.
 :::
 
 ::: {.problem #prob:lec13:any-basis}
@@ -381,6 +387,8 @@ $\langle \vec a, \vec b, \vec c \rangle = \begin{vmatrix} 1 & 2 & \lambda \\ 0 &
 По следствию [-@cor:lec13:coplanar] $\langle \vec e_1, \vec e_2, \vec e_3 \rangle = -5$ (левая тройка, объём $5$). *Ключ:* по [-@eq:lec13:mixed-any] координаты дают только определитель, а масштаб и знак вносит базис:
 $$\det(a \; b \; c) = \begin{vmatrix} 1 & 2 & 0 \\ 0 & 1 & 1 \\ 2 & 0 & 1 \end{vmatrix} = 1 \cdot (1 - 0) - 2 \cdot (0 - 2) + 0 = 5, \qquad \langle \vec a, \vec b, \vec c \rangle = 5 \cdot (-5) = -25.$$
 Объём $|-25| = 25$, знак минус — тройка левая. Считать объём как $|\det| = 5$, «как в ортонормированном базисе», — ошибка в $5$ раз.
+
+*Ответ:* Объём $25$; тройка левая.
 :::
 
 ::: {.problem #prob:lec13:division}

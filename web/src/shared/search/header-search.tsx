@@ -175,7 +175,7 @@ type PanelProps = {
 
 /** Right under the bar: full width on a phone, a dropdown under the field on a wide screen. */
 const SearchPanel = ({ active, hits, limit, onHover, onMore, onPick, status }: PanelProps) => (
-  <div className="absolute inset-x-0 top-full z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border">
+  <div className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border">
     <p className="px-5 text-subhead text-muted not-empty:py-5" role="status">
       {status}
     </p>
@@ -224,7 +224,7 @@ const PhoneFold = ({ children, isOpen, onCancel, onOpen }: PhoneProps) => (
     <div
       className={
         isOpen
-          ? "max-md:absolute max-md:inset-0 max-md:z-30 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4"
+          ? "max-md:absolute max-md:inset-0 max-md:z-50 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4"
           : "max-md:sr-only"
       }
     >

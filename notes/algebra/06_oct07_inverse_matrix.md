@@ -471,6 +471,8 @@ $$[\tilde A b]_i = \sum_{k=1}^{n} [\tilde A]_{ik} b_k = \sum_{k=1}^{n} b_k A_{ki
 По утверждению [-@prop:lec06:tridiagonal] с $a = 5$, $bc = 6$: $D_n = 5D_{n-1} - 6D_{n-2}$ при $n \ge 3$, $D_1 = 5$, $D_2 = 25 - 6 = 19$.
 
 *Ключ:* характеристическое уравнение $\lambda^2 = 5\lambda - 6$ имеет корни $2$ и $3$, поэтому $D_n = c_1 2^n + c_2 3^n$. Из начальных значений: $2c_1 + 3c_2 = 5$, $4c_1 + 9c_2 = 19$. Вычитая из второго удвоенное первое, получаем $3c_2 = 9$, $c_2 = 3$, $c_1 = -2$. Итого $D_n = -2 \cdot 2^n + 3 \cdot 3^n = 3^{n+1} - 2^{n+1}$. Проверка: $D_3 = 5 \cdot 19 - 6 \cdot 5 = 65 = 81 - 16$.
+
+*Ответ:* $D_n = 3^{n+1} - 2^{n+1}$.
 :::
 
 ::: {.problem #prob:lec06:inverse-slau}
@@ -484,6 +486,8 @@ $$\begin{aligned} &A_{11} = \begin{vmatrix} 0 & -1 \\ 1 & 2 \end{vmatrix} = 1, &
 *Ключ:* определитель уже почти посчитан — это разложение по первой строке через те же дополнения: $\det A = 1 \cdot 1 + 1 \cdot (-4) + 1 \cdot 2 = -1$. Записывая дополнения строк в столбцы,
 $$A^{-1} = \frac{1}{-1} \begin{pmatrix} 1 & -1 & -1 \\ -4 & 2 & 3 \\ 2 & -1 & -2 \end{pmatrix} = \begin{pmatrix} -1 & 1 & 1 \\ 4 & -2 & -3 \\ -2 & 1 & 2 \end{pmatrix}, \qquad x = A^{-1} b = \begin{pmatrix} -20 + 14 + 15 \\ 80 - 28 - 45 \\ -40 + 14 + 30 \end{pmatrix} = \begin{pmatrix} 9 \\ 7 \\ 4 \end{pmatrix}.$$
 Проверка: $9 + 7 + 4 = 20$, $18 - 4 = 14$, $7 + 8 = 15$.
+
+*Ответ:* $x_1 = 9$, $x_2 = 7$, $x_3 = 4$.
 :::
 
 ::: {.problem #prob:lec06:matrix-eq}
@@ -508,6 +512,8 @@ $$X = \frac19 BA = \frac19 \begin{pmatrix} 5 & 5 & 2 \\ 5 & 5 & -1 \end{pmatrix}
 $\det A = 0 + 2 = 2$, по формуле [-@eq:lec06:inverse2] $A^{-1} = \frac12 \begin{pmatrix} -3 & 2 \\ -1 & 0 \end{pmatrix}$. Тогда $BA^{-1} = \frac12 \begin{pmatrix} -16 & 10 \\ 3 & -2 \end{pmatrix} = \begin{pmatrix} -8 & 5 \\ \frac32 & -1 \end{pmatrix}$, $BA^{-1} - E = \begin{pmatrix} -9 & 5 \\ \frac32 & -2 \end{pmatrix}$, после транспонирования и умножения на $2$: $\begin{pmatrix} -18 & 3 \\ 10 & -4 \end{pmatrix}$.
 
 *Ключ:* $(3B)^2 = 9B^2$, а не $3B^2$: число выносится из каждого множителя. $B^2 = \begin{pmatrix} 24 & 5 \\ -5 & -1 \end{pmatrix}$, $9B^2 = \begin{pmatrix} 216 & 45 \\ -45 & -9 \end{pmatrix}$. Итого $\begin{pmatrix} 216 + 18 & 45 - 3 \\ -45 - 10 & -9 + 4 \end{pmatrix} = \begin{pmatrix} 234 & 42 \\ -55 & -5 \end{pmatrix}$.
+
+*Ответ:* $\begin{pmatrix} 234 & 42 \\ -55 & -5 \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec06:cramer-param}
@@ -530,6 +536,8 @@ $\det A = t^2 - 1$, $\Delta_1 = \begin{vmatrix} 1 & 1 \\ 1 & t \end{vmatrix} = t
 $A^2 = \begin{pmatrix} a^2 + bc & ab + bd \\ ac + cd & bc + d^2 \end{pmatrix}$, $(a + d) A = \begin{pmatrix} a^2 + ad & ab + bd \\ ac + cd & ad + d^2 \end{pmatrix}$. Разность $A^2 - (a + d)A = \begin{pmatrix} bc - ad & 0 \\ 0 & bc - ad \end{pmatrix} = -(ad - bc) E$, что и требовалось.
 
 *Ключ:* перенесём $A^2 - (a+d)A$ в другую часть и вынесем $A$: $A\bigl((a + d)E - A\bigr) = (ad - bc)E$. При $ad - bc \ne 0$ делим на это число; по следствию [-@cor:lec06:one-side] одного равенства $A \cdot B = E$ достаточно, чтобы $B = \frac{1}{ad - bc}\bigl((a + d)E - A\bigr) = \frac{1}{ad - bc}\begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$ было обратной. Заодно видно, что $(a + d)E - A = \tilde A$.
+
+*Ответ:* Проверка прямым вычислением; при $ad - bc \ne 0$ из равенства $A\bigl((a + d)E - A\bigr) = (ad - bc) E$ получается $A^{-1} = \frac{1}{ad - bc} \bigl((a + d) E - A\bigr) = \frac{1}{ad - bc} \begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec06:lu}

@@ -365,6 +365,8 @@ b) $\{x \in \Z \mid 4 \mid x \vee x \equiv 1 \pmod 3\}$; из $\{0, \dots, 11\}$
 *Способ 2 (приём Рассела, замечание [-@rem:lec09:nonexistence]).* *Ключ:* рассмотреть $R_S = \{x \in S \mid x \notin x\}$. По следствию [-@cor:lec09:no-universal] $R_S \notin S$, а по свойству $S$ это значит, что $R_S = \varnothing$. Но $\{\varnothing\} \in S$ и $\{\varnothing\} \notin \{\varnothing\}$ (иначе $\{\varnothing\} = \varnothing$, а у $\{\varnothing\}$ есть элемент). Поэтому $\{\varnothing\} \in R_S$ и $R_S \ne \varnothing$ — противоречие.
 
 Первый способ короче, второй не опирается на аксиому основания и поэтому годится, если её запрещено использовать.
+
+*Ответ:* Такого $S$ нет; с аксиомой — получаем $S \in S$, без неё — приём Рассела.
 :::
 
 ::: {.problem #prob:lec09:lnp-formula}

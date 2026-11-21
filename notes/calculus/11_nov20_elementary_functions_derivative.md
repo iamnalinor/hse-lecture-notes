@@ -529,6 +529,8 @@ $$\frac{\sqrt{x + h} - \sqrt x}{h} = \frac{(x + h) - x}{h\left(\sqrt{x + h} + \s
 
 При $x < 0$ по нечётности арктангенса (утверждение [-@prop:lec11:arc]) сумма равна
 $$-\left(\operatorname{arctg}(-x) + \operatorname{arctg}\frac{1}{-x}\right) = -\frac\pi2.$$ Функция $\operatorname{arctg} x + \operatorname{arctg}\frac1x$ постоянна на каждом из лучей, но в нуле не определена и «перескакивает» с $-\frac\pi2$ на $\frac\pi2$.
+
+*Ответ:* При $x < 0$ сумма равна $-\frac\pi2$.
 :::
 
 ## Пределы с новыми функциями
