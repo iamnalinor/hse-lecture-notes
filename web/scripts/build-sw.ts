@@ -61,10 +61,10 @@ const docsOf = (paths: readonly string[]): OfflineDoc[] => {
   const byId = new Map<string, { files: string[]; kind: OfflineDocKind }>();
   for (const file of paths) {
     const groups = DOC_FILE.exec(file)?.groups;
-    if (groups?.["course"] === undefined) {
+    const doc = groups?.["doc"];
+    if (doc === undefined || groups?.["course"] === undefined) {
       continue;
     }
-    const doc = groups["doc"] ?? "";
     const id = `${groups["course"]}/${doc}`;
     const entry = byId.get(id) ?? { files: [], kind: offlineDocKind(doc) };
     entry.files.push(file);

@@ -27,7 +27,7 @@ export const LectureHeader = ({ info, meta, minutes, next, prev, weekId }: Props
       aria-label="Лекции курса"
       className="flex items-center gap-3 pt-6 text-subhead text-muted lg:pt-12"
     >
-      <p className="min-w-0 flex-1 truncate">
+      <p className="min-w-0 flex-1 text-pretty">
         <Link className="text-muted no-underline hover:text-ink" to={paths.course(info.id)}>
           {info.short}
         </Link>

@@ -11,13 +11,14 @@ mkdir -p "$dest"
 while read -r repo sha; do
   [[ -z "$repo" || "$repo" == \#* ]] && continue
   dir="$dest/${repo/\//_}"
-  if [[ ! -d "$dir/.git" ]]; then
-    git init -q "$dir"
-    git -C "$dir" remote add origin "https://github.com/$repo.git"
+  [[ -d "$dir/.git" ]] || git init -q "$dir"
+  git -C "$dir" remote get-url origin >/dev/null 2>&1 \
+    || git -C "$dir" remote add origin "https://github.com/$repo.git"
+  if git -C "$dir" fetch -q --depth 1 origin "$sha" && git -C "$dir" checkout -q FETCH_HEAD; then
+    echo "$repo @ ${sha:0:7} → $dir"
+  else
+    echo "WARN: $repo @ ${sha:0:7} не скачался, пропускаю" >&2
   fi
-  git -C "$dir" fetch -q --depth 1 origin "$sha"
-  git -C "$dir" checkout -q FETCH_HEAD
-  echo "$repo @ ${sha:0:7} → $dir"
 done <<'EOF'
 obra/superpowers            22f0b463e7a5e579904dd6211a520321035526f7
 pbakaus/impeccable          b49177d32788f2dc585c42831d845dacf1ebed2c
