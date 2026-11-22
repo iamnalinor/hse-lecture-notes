@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from test_pipeline import ROOT, build, demo, lint  # noqa: F401  (demo — фикстура)
 
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -35,13 +34,13 @@ def test_real_plan_scope():
     assert next(d for d in data["disciplines"] if d["id"] == "practice")["no_module_hours"] is True
 
 
-def put_plan(demo: Path, text: str | None = None) -> None:
+def put_plan(demo: Path, text: str | None = None) -> None:  # noqa: F811 (фикстура pytest)
     dst = demo / curriculum.FILE
     dst.parent.mkdir(exist_ok=True)
     dst.write_text(text if text is not None else PLAN.read_text(encoding="utf-8"), encoding="utf-8")
 
 
-def test_build_writes_curriculum_json(demo: Path):
+def test_build_writes_curriculum_json(demo: Path):  # noqa: F811 (фикстура pytest)
     put_plan(demo)
     res = build(demo, "--no-pdf")
     assert res.returncode == 0, res.stderr
@@ -51,7 +50,7 @@ def test_build_writes_curriculum_json(demo: Path):
     assert [c["label"] for c in out["categories"]] == ["Матеша", "Прога", "Непрофильное"]
 
 
-def test_build_without_plan_has_no_file(demo: Path):
+def test_build_without_plan_has_no_file(demo: Path):  # noqa: F811 (фикстура pytest)
     res = build(demo, "--no-pdf")
     assert res.returncode == 0, res.stderr
     assert not (demo / "build" / "site-data" / "curriculum.json").exists()
@@ -60,14 +59,30 @@ def test_build_without_plan_has_no_file(demo: Path):
 @pytest.mark.parametrize(
     ("old", "new", "expected"),
     [
-        ("hours: [28, 28, 44, 44], attestations: [2, 4] }", "hours: [29, 28, 44, 44], attestations: [2, 4] }", "не равна строке плана"),
-        ("category: math, credits: 8, hours: [28, 28, 44", "category: art, credits: 8, hours: [28, 28, 44", "неизвестная категория"),
-        ("hours: [24, 0, 0, 0], attestations: [1]", "hours: [24, 0, 0], attestations: [1]", "4 неотрицательных"),
-        ("hours: [24, 0, 0, 0], attestations: [1]", "hours: [24, 0, 0, 0], attestations: [2]", "аттестация в модуле без часов"),
+        (
+            "hours: [28, 28, 44, 44], attestations: [2, 4] }",
+            "hours: [29, 28, 44, 44], attestations: [2, 4] }",
+            "не равна строке плана",
+        ),
+        (
+            "category: math, credits: 8, hours: [28, 28, 44",
+            "category: art, credits: 8, hours: [28, 28, 44",
+            "неизвестная категория",
+        ),
+        (
+            "hours: [24, 0, 0, 0], attestations: [1]",
+            "hours: [24, 0, 0], attestations: [1]",
+            "4 неотрицательных",
+        ),
+        (
+            "hours: [24, 0, 0, 0], attestations: [1]",
+            "hours: [24, 0, 0, 0], attestations: [2]",
+            "аттестация в модуле без часов",
+        ),
         ("id: calculus", "id: algebra", "повтор id"),
     ],
 )
-def test_curriculum_errors(demo: Path, old: str, new: str, expected: str):
+def test_curriculum_errors(demo: Path, old: str, new: str, expected: str):  # noqa: F811 (фикстура pytest)
     text = PLAN.read_text(encoding="utf-8")
     assert old in text
     put_plan(demo, text.replace(old, new, 1))
@@ -79,4 +94,6 @@ def test_curriculum_errors(demo: Path, old: str, new: str, expected: str):
 
 def test_yaml_is_plain_data():
     """Даты в yaml — строки: json.dump не умеет date."""
-    assert all(isinstance(s["from"], str) for s in yaml.safe_load(PLAN.read_text(encoding="utf-8"))["module_spans"])
+    assert all(
+        isinstance(s["from"], str) for s in yaml.safe_load(PLAN.read_text(encoding="utf-8"))["module_spans"]
+    )
