@@ -130,7 +130,7 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
   <>
     <button
       aria-label="Поиск"
-      className={`size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink md:hidden ${isOpen ? "hidden" : "flex"}`}
+      className={`size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink md:hidden ${isOpen ? "hidden" : "flex"}`}
       onClick={onOpen}
       ref={magnifierRef}
       type="button"
