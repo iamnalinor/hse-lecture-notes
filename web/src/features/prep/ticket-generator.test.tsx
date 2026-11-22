@@ -50,7 +50,7 @@ it("renders formulas in topic titles", async () => {
   const bank = { ...BANK, topics: { det: "Определитель $\\det A$", matrix: "Матрицы" } };
   vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(bank));
   renderWithApp(<TicketGenerator course="algebra" prepId="colloq1" />, "/algebra/colloq1");
-  await userEvent.click(await screen.findByText("Темы: все (2)"));
+  expect(await screen.findByText("Темы: все 2")).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: /Определитель/u }).querySelector(".katex"),
   ).not.toBeNull();
@@ -121,9 +121,9 @@ describe("TicketGenerator", () => {
     expect(document.querySelector(".katex")).not.toBeNull();
   });
 
-  it("draws only from the chosen topics, and «Ничего» leaves nothing to draw", async () => {
+  it("draws only from the chosen topics, and «Сбросить все» leaves nothing to draw", async () => {
     view();
-    await userEvent.click(await screen.findByText("Темы: все (2)"));
+    expect(await screen.findByText("Темы: все 2")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Определитель" }));
     expect(screen.getByRole("button", { name: "Определитель" })).toHaveAttribute(
       "aria-pressed",
@@ -133,7 +133,7 @@ describe("TicketGenerator", () => {
     await newTicket();
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.queryByText("Теорема с доказательством")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Ничего" }));
+    await userEvent.click(screen.getByRole("button", { name: "Сбросить все" }));
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toHaveAccessibleDescription(
       "Выберите хотя бы одну тему.",
@@ -142,7 +142,7 @@ describe("TicketGenerator", () => {
 
   it("keeps the chosen topics after a reload", async () => {
     const first = view();
-    await userEvent.click(await screen.findByText("Темы: все (2)"));
+    expect(await screen.findByText("Темы: все 2")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Матрицы" }));
     first.unmount();
     view();

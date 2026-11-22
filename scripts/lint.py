@@ -49,7 +49,10 @@ TAGS = {"корнер-кейс", "подводный камень", "часто�
 LABEL_RE = re.compile(r"^(def|ax|thm|lem|prop|cor|ex|rem|prob|fig|eq|sec):lec(\d{2}):[a-z0-9][a-z0-9-]*$")
 REQUIRED_META = ["course", "lecture", "date", "title"]
 TYPE_OF_PREFIX = {v: k for k, v in PREFIX.items()} | {"fig": "figure", "eq": "equation", "sec": "section"}
-PREP_LABEL_RE = re.compile(r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq)\d+):[a-z0-9][a-z0-9-]*$")
+# средняя часть — id страницы: kr1, colloq1, quiz-o-symbols (дефисы в ней однозначны: разделитель — «:»)
+PREP_LABEL_RE = re.compile(
+    r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq)\d+|quiz-[a-z0-9][a-z0-9-]*):[a-z0-9][a-z0-9-]*$"
+)
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 PIPELINE_WORDS = re.compile(
@@ -321,6 +324,8 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
         if k in meta:
             rep.err(rel, f"поле {k} больше не используется: убери его из front matter")
     check_name_and_date(rep, rel, path, meta, cfg, course)
+    if "synced" in meta and meta["synced"] is not True:
+        rep.err(rel, f"synced={meta['synced']!r}: допустимо только synced: true (сверено с лекцией); не сверено — убери поле")
 
     lecture = meta.get("lecture")
     lec_nn = f"{int(lecture):02d}" if isinstance(lecture, int) else None
@@ -567,9 +572,9 @@ PREP_GONE = re.compile(r"(Вопросы для самопроверки|Сам�
 
 
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
-    """Подготовка к КР или коллоквиуму (prep/<course>/krN.md, colloqN.md).
+    """Подготовка к КР, коллоквиуму или квизу (prep/<course>/krN.md, colloqN.md, quiz-<slug>.md).
 
-    Свои метки prob:krN:… (prob:colloqN:…), теория — ref= на блоки конспектов.
+    Свои метки prob:krN:… (prob:colloqN:…, prob:quiz-<slug>:…), теория — ref= на блоки конспектов.
     """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem
@@ -585,8 +590,14 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         return
     if exam not in build.PREP_IDS:
         rep.err(rel, f"имя файла подготовки — {build.PREP_FILES} (маршруты сайта)")
-    colloq = build.prep_kind(exam) == "colloq"
-    event = "коллоквиума" if colloq else "КР"
+    kind = build.prep_kind(exam)
+    colloq = kind == "colloq"
+    event = {"colloq": "коллоквиума", "quiz": "квиза"}.get(kind, "КР")
+    # тема квиза — его имя на сайте («Квиз: О-символика»): номеров у квизов нет
+    if kind == "quiz" and meta.get("quiz_topic") in (None, ""):
+        rep.err(rel, "в front matter нет поля quiz_topic (тема квиза: на сайте «Квиз: <тема>»)")
+    elif kind != "quiz" and meta.get("quiz_topic") not in (None, ""):
+        rep.err(rel, "поле quiz_topic — только у квиза (prep/<course>/quiz-<slug>.md)")
     dates: dict[str, dt.date] = {}
     for k in ("date", "active_until", "highlight_from"):
         value = meta.get(k)
@@ -687,7 +698,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     check_texts(rep, rel, blocks)
     check_practice(rep, rel, blocks)
     h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
-    first = "О коллоквиуме" if colloq else "О контрольной"
+    first = {"colloq": "О коллоквиуме", "quiz": "О квизе"}.get(kind, "О контрольной")
     if not h1 or h1[0] != first:
         rep.err(rel, f"первый раздел — «# {first}»")
     h2 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 2]

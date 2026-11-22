@@ -11,9 +11,27 @@ type Dates = { activeUntil: string; date: string; highlightFrom: string };
 const prep = (id: string, dates: Dates) => ({ ...dates, cheatsheets: [], id, title: "" });
 
 const LECTURES = [
-  { date: "2026-10-16", lecture: 7, title: "Предел функции", weekId: "07_oct16_limits" },
-  { date: "2026-10-23", lecture: 8, title: "Непрерывность", weekId: "08_oct23_continuity" },
-  { date: "2026-10-30", lecture: 9, title: "Производная", weekId: "09_oct30_derivative" },
+  {
+    date: "2026-10-16",
+    lecture: 7,
+    synced: true,
+    title: "Предел функции",
+    weekId: "07_oct16_limits",
+  },
+  {
+    date: "2026-10-23",
+    lecture: 8,
+    synced: false,
+    title: "Непрерывность",
+    weekId: "08_oct23_continuity",
+  },
+  {
+    date: "2026-10-30",
+    lecture: 9,
+    synced: false,
+    title: "Производная",
+    weekId: "09_oct30_derivative",
+  },
 ];
 
 const PREPS = [
@@ -54,6 +72,16 @@ const page = (programs: readonly string[]) => {
 describe("course page", () => {
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("marks only the synced lectures with a check", () => {
+    calculusOn("2026-10-20");
+    const hint = /Сверено с лекцией: содержание и темп/;
+    const marked = screen
+      .getAllByRole("row")
+      .filter((row) => within(row).queryByText(hint) !== null)
+      .map((row) => within(row).getByRole("link", { name: /Предел|Непрерывность|Производная/ }));
+    expect(marked.map((link) => link.textContent)).toEqual(["Предел функции"]);
   });
 
   it("links the program page of the course next to the theory", () => {

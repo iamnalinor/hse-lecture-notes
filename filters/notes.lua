@@ -649,8 +649,10 @@ end
 -- метаданные для шаблона
 -- ---------------------------------------------------------------------------
 
--- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1» (как prepGoal на сайте)
+-- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1», quiz-o-symbols → «Подготовка
+-- к квизу» (как prepGoal на сайте)
 local function prep_goal(id)
+  if id:match('^quiz%-') then return 'Подготовка к квизу' end
   local n = id:match('%d+') or ''
   if id:match('^colloq') then return 'Подготовка к коллоквиуму ' .. n end
   return 'Подготовка к КР-' .. n
@@ -670,11 +672,12 @@ local function set_template_meta(doc, config)
     meta['header_line'] = pandoc.MetaString((config.program or '') .. ' · ' .. course_name .. ' · План учебной дисциплины')
     meta['is_program'] = true  -- notes.latex: таблицы плотнее и мельче
   elseif S.kind == 'prep' then
-    -- коллоквиум с окном дат (active_until) — диапазон «2.11–30.12.2026», а не один день
+    -- коллоквиум или квиз с окном дат (active_until) — диапазон «2.11–30.12.2026», а не один день
     -- (коротко, чтобы колонтитул остался в одну строку)
     local when = date_ru(date)
     local last_day = meta_str(meta, 'active_until')
-    if (S.week_id or ''):match('^colloq') and last_day and date and last_day ~= date then
+    local windowed = (S.week_id or ''):match('^colloq') or (S.week_id or ''):match('^quiz%-')
+    if windowed and last_day and date and last_day ~= date then
       local y1, m1, d1 = date:match('^(%d+)-(%d+)-(%d+)$')
       local y2, m2, d2 = last_day:match('^(%d+)-(%d+)-(%d+)$')
       if y1 and y2 then
@@ -688,8 +691,10 @@ local function set_template_meta(doc, config)
     if when ~= '' then line = line .. ' · ' .. when end
     meta['header_line'] = pandoc.MetaString(line)
   else
-    meta['header_line'] = pandoc.MetaString(string.format('%s · %s · Лекция %s · %s',
-      config.program or '', course_name, tostring(S.lecture), date_ru(date)))
+    local line = string.format('%s · %s · Лекция %s · %s',
+      config.program or '', course_name, tostring(S.lecture), date_ru(date))
+    if meta['synced'] == true then line = line .. ' · сверено с лекцией' end
+    meta['header_line'] = pandoc.MetaString(line)
   end
   -- pandoc не должен печатать дату/заголовок своими средствами
   meta['notes_title'] = meta['title']
@@ -736,7 +741,7 @@ function Pandoc(doc)
     -- своих меток нет: теория ссылается на блоки конспектов, программа — справочная страница
     S.lecture = '0'
   else
-    -- подготовка к КР/коллоквиуму: свои метки (prob:kr1:…, prob:colloq1:…), номера без лекции, в индекс курса не идут
+    -- подготовка к КР/коллоквиуму/квизу: свои метки (prob:kr1:…, prob:colloq1:…, prob:quiz-o-symbols:…), номера без лекции, в индекс курса не идут
     if S.kind == 'prep' then S.lecture = '0' end
     collect(doc)
   end
@@ -784,6 +789,7 @@ function Pandoc(doc)
       title = meta_str(meta, 'title'), date = meta_str(meta, 'date'),
       active_until = meta_str(meta, 'active_until'),
       highlight_from = meta_str(meta, 'highlight_from'),
+      quiz_topic = meta_str(meta, 'quiz_topic'),
       date_ru = meta_str(doc.meta, 'date_ru'),
       header_line = meta_str(doc.meta, 'header_line'),
       toc = S.toc, labels = labels, figures = S.figures,

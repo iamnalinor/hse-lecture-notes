@@ -3,6 +3,7 @@ course: algebra
 lecture: 1
 date: 2026-09-03
 title: Матрицы и операции над ними
+synced: true
 ---
 
 # Контекст

@@ -26,6 +26,11 @@ describe("test preparation pages", () => {
     ["kr12", true],
     ["colloq1", true],
     ["colloq", false],
+    ["quiz-o-symbols", true],
+    ["quiz-limits", true],
+    ["quiz", false],
+    ["quiz-", false],
+    ["quiz1", false],
     ["theory", false],
     ["01_sep04_logic", false],
   ])("isPrepId(%s) → %s", (doc, expected) => {
@@ -42,11 +47,23 @@ describe("test preparation pages", () => {
   it("names a colloquium without «КР»", () => {
     expect(prepName("colloq1")).toBe("Коллоквиум 1");
     expect(prepGoal("colloq1")).toBe("Подготовка к коллоквиуму 1");
+    expect(prepGoal("quiz-o-symbols", "О-символика")).toBe("Подготовка к квизу «О-символика»");
     expect(prepContents("colloq1")).not.toContain("задачи с ответами");
     expect(prepDescription("colloq1")).toContain("коллоквиум");
   });
 
+  it("names a quiz by its topic, not by a number", () => {
+    expect(prepName("quiz-o-symbols", "О-символика")).toBe("Квиз: О-символика");
+    expect(prepName("quiz-o-symbols")).toBe("Квиз");
+    expect(prepGoal("quiz-o-symbols")).toBe("Подготовка к квизу");
+    expect(prepContents("quiz-o-symbols")).toBe("Типы задач, как решать, разобранные примеры");
+    expect(prepDescription("quiz-o-symbols")).toBe("типы задач и разобранные примеры к квизу");
+    // the topic names only a quiz: a test keeps its number
+    expect(prepName("kr2", "О-символика")).toBe("КР-2");
+  });
+
   it("routes every prep id the build accepts", () => {
+    expect(PREP_IDS).toContain("quiz-o-symbols");
     expect(PREP_IDS).toContain("colloq1");
     expect(PREP_IDS.every((id) => isPrepId(id))).toBe(true);
   });
@@ -103,6 +120,17 @@ describe("test preparation pages", () => {
         title: "",
       }),
     ).toBe("22.10");
+    // a quiz announced for a week, without the day: the whole week
+    expect(
+      prepWhen({
+        activeUntil: "2026-11-27",
+        highlightFrom: "2026-11-20",
+        cheatsheets: [],
+        date: "2026-11-23",
+        id: "quiz-o-symbols",
+        title: "",
+      }),
+    ).toBe("23.11–27.11");
   });
 
   it("keeps a colloquium upcoming through its whole window", () => {

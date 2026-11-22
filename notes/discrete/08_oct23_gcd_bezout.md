@@ -3,6 +3,7 @@ course: discrete
 lecture: 8
 date: 2026-10-23
 title: НОД и НОК. Взаимно простые числа. Тождество Безу
+synced: true
 ---
 
 # Контекст

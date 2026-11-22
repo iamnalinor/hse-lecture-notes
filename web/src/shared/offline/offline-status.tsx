@@ -24,11 +24,30 @@ const progressText = (download: DownloadState): string | undefined => {
   }
 };
 
+type DownloadButtonProps = {
+  readonly missingBytes: number | undefined;
+  readonly onClick: () => void;
+};
+
+const DownloadButton = ({ missingBytes, onClick }: DownloadButtonProps) => (
+  <button
+    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-footnote font-semibold text-ink hover:bg-wash"
+    onClick={onClick}
+    type="button"
+  >
+    <DownloadIcon size={14} />
+    Скачать все
+    {missingBytes !== undefined && missingBytes > 0 && (
+      <span className="font-normal text-muted">· {formatSize(missingBytes)}</span>
+    )}
+  </button>
+);
+
 /**
 Footer line: how many lecture notes open without internet, and a button to save the rest (with
 the traffic it costs). On
-Wi-Fi the rest is saved in the background (the counter grows as files arrive); the button then
-takes over and downloads faster.
+Wi-Fi the rest is saved in the background (the counter grows as files arrive). While anything is
+being saved, its progress stands in the button's place: the footer does not reflow.
 */
 export const OfflineStatus = () => {
   const { canDownload, count, download, startDownload } = useOfflineStatus();
@@ -39,26 +58,22 @@ export const OfflineStatus = () => {
   // With every note saved, the background run only tops up theory and glossaries: no need to say.
   const progress =
     isEverything && download.kind === "background" ? undefined : progressText(download);
+  // While saving, the progress takes the button's place; after a failure, both: the reason and a retry.
+  const canRetry =
+    canDownload && !isEverything && (progress === undefined || download.kind === "failed");
   return (
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
       <span>
         Офлайн: {count.saved} из {count.total}{" "}
         {plural(count.total, ["конспекта", "конспектов", "конспектов"])}
       </span>
-      {progress !== undefined && <span aria-live="polite">{progress}</span>}
-      {!isEverything && download.kind !== "running" && canDownload && (
-        <button
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-footnote font-semibold text-ink hover:bg-wash"
-          onClick={startDownload}
-          type="button"
-        >
-          <DownloadIcon size={14} />
-          Скачать все
-          {count.missingBytes !== undefined && count.missingBytes > 0 && (
-            <span className="font-normal text-muted">· {formatSize(count.missingBytes)}</span>
-          )}
-        </button>
+      {progress !== undefined && (
+        // In the button's place while saving, so the footer keeps its lines.
+        <span aria-live="polite" className="py-1 whitespace-nowrap tabular-nums">
+          {progress}
+        </span>
       )}
+      {canRetry && <DownloadButton missingBytes={count.missingBytes} onClick={startDownload} />}
     </span>
   );
 };

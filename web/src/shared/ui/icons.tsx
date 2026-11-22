@@ -71,3 +71,10 @@ export const ChevronLeftIcon = (props: IconProps) => (
     <path d="m15 6-6 6 6 6" />
   </Svg>
 );
+
+/** «Checked»: a tick. */
+export const CheckIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Svg>
+);

@@ -3,6 +3,7 @@ course: discrete
 lecture: 3
 date: 2026-09-18
 title: Пустая истина, рассуждения с кванторами и принцип индукции
+synced: true
 ---
 
 # Контекст

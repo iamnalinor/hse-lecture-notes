@@ -94,7 +94,7 @@ page for a test or colloquium (`context/site.md` reminds of this too).
 const OFFER: Readonly<Record<CourseId, string>> = {
   aiya: "Теория · ПУД",
   algebra: "Теория · ПУД · подготовка к КР",
-  calculus: "Теория · ПУД · подготовка к КР и коллоквиуму",
+  calculus: "Теория · ПУД · подготовка к КР, коллоквиуму и квизам",
   discrete: "Теория · ПУД · подготовка к КР",
 };
 

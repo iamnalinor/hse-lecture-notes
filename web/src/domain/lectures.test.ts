@@ -7,6 +7,7 @@ import { latestLecture, neighbours, resolveLecture } from "./lectures.ts";
 const lecture = (n: number, date: string): LectureEntry => ({
   date,
   lecture: n,
+  synced: false,
   title: `Лекция ${String(n)}`,
   weekId: `0${String(n)}`,
 });
@@ -40,6 +41,7 @@ describe("lecture lists", () => {
 const named = (n: number, weekId: string): LectureEntry => ({
   date: "2026-11-11",
   lecture: n,
+  synced: false,
   title: `Лекция ${String(n)}`,
   weekId,
 });

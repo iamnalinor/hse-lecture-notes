@@ -43,6 +43,7 @@ const openPdf = (entry: string) => {
         {
           date: "2026-09-16",
           lecture: 3,
+          synced: false,
           title: "Перестановки",
           weekId: "03_sep16_permutations_determinant",
         },

@@ -1,5 +1,4 @@
 import { TexText } from "#web/shared/reader/tex-text.tsx";
-import { ChevronIcon } from "#web/shared/ui/icons.tsx";
 
 type Props = {
   /** Topics a set can come from, in page order. */
@@ -11,17 +10,49 @@ type Props = {
 };
 
 const CHIP =
-  "min-h-10 cursor-pointer rounded-md border px-3 py-1.5 text-left text-subhead pointer-coarse:min-h-11";
+  "cursor-pointer rounded-full border px-2.5 py-0.5 text-left text-footnote pointer-coarse:py-1.5";
 const BULK =
-  "min-h-10 cursor-pointer rounded-md px-2 text-subhead text-muted underline hover:text-ink disabled:cursor-default disabled:no-underline disabled:opacity-50 pointer-coarse:min-h-11";
+  "cursor-pointer px-2.5 py-0.5 text-footnote font-semibold text-ink hover:bg-wash disabled:cursor-default disabled:text-faint disabled:hover:bg-transparent pointer-coarse:py-1.5";
 
 const summary = (chosen: number, total: number): string =>
-  chosen === total ? `Темы: все (${String(total)})` : `Темы: ${String(chosen)} из ${String(total)}`;
+  chosen === total ? `все ${String(total)}` : `${String(chosen)} из ${String(total)}`;
+
+type BulkProps = {
+  readonly chosen: number;
+  readonly topics: readonly string[];
+  readonly onChange: (chosen: ReadonlySet<string>) => void;
+};
+
+/** «Выбрать все» / «Сбросить все» as one segmented control: two halves of a pill, the one that would change nothing greyed. */
+const BulkButtons = ({ chosen, onChange, topics }: BulkProps) => (
+  <span className="inline-flex divide-x divide-rule overflow-hidden rounded-full border border-rule bg-card">
+    <button
+      className={BULK}
+      disabled={chosen === topics.length}
+      onClick={() => {
+        onChange(new Set(topics));
+      }}
+      type="button"
+    >
+      Выбрать все
+    </button>
+    <button
+      className={BULK}
+      disabled={chosen === 0}
+      onClick={() => {
+        onChange(new Set());
+      }}
+      type="button"
+    >
+      Сбросить все
+    </button>
+  </span>
+);
 
 /**
 Which topics a generated set may come from: all by default; a press turns one topic off or on (a
-turned-off chip is also struck through, not only paler). Folded, it is one line; a student revising
-a single topic opens it, presses «Ничего» and picks the topic.
+turned-off chip is also struck through, not only paler). Always open and compact: a line with the
+count and «Выбрать все / Сбросить все», then small chips.
 */
 export const TopicFilter = ({ chosen, names, onChange, topics }: Props) => {
   const toggle = (topic: string): void => {
@@ -34,14 +65,14 @@ export const TopicFilter = ({ chosen, names, onChange, topics }: Props) => {
     onChange(next);
   };
   return (
-    <details className="group mt-4">
-      <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1.5 text-subhead text-muted hover:text-ink pointer-coarse:min-h-11 [&::-webkit-details-marker]:hidden">
-        {summary(chosen.size, topics.length)}
-        <span className="transition-transform duration-200 group-open:rotate-90">
-          <ChevronIcon size={14} />
+    <div className="mt-4">
+      <div className="flex items-center gap-3">
+        <span className="text-footnote text-muted">
+          Темы: {summary(chosen.size, topics.length)}
         </span>
-      </summary>
-      <div aria-label="Темы для генерации" className="mt-2 flex flex-wrap gap-2" role="group">
+        <BulkButtons chosen={chosen.size} onChange={onChange} topics={topics} />
+      </div>
+      <div aria-label="Темы для генерации" className="mt-2 flex flex-wrap gap-1.5" role="group">
         {topics.map((topic) => {
           const isOn = chosen.has(topic);
           return (
@@ -58,27 +89,7 @@ export const TopicFilter = ({ chosen, names, onChange, topics }: Props) => {
             </button>
           );
         })}
-        <button
-          className={BULK}
-          disabled={chosen.size === topics.length}
-          onClick={() => {
-            onChange(new Set(topics));
-          }}
-          type="button"
-        >
-          Все
-        </button>
-        <button
-          className={BULK}
-          disabled={chosen.size === 0}
-          onClick={() => {
-            onChange(new Set());
-          }}
-          type="button"
-        >
-          Ничего
-        </button>
       </div>
-    </details>
+    </div>
   );
 };
