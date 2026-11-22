@@ -568,7 +568,9 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem
-    for k in ("course", "title", "date"):
+    # date можно не ставить: событие ещё не объявлено — страница есть, но неактивна (сайт: без дня,
+    # без цвета, не на главной); тогда active_until и highlight_from не к чему привязать
+    for k in ("course", "title"):
         if meta.get(k) in (None, ""):
             rep.err(rel, f"в front matter нет поля {k}")
     if meta.get("course") != course:
@@ -595,6 +597,10 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
                 rep.err(rel, f"{k}={value!r}: такой даты нет")
         else:
             rep.err(rel, f"{k}={value!r} не в формате YYYY-MM-DD")
+    if meta.get("date") in (None, ""):
+        for k in ("active_until", "highlight_from"):
+            if meta.get(k) not in (None, ""):
+                rep.err(rel, f"{k} без date: у неактивной подготовки (без даты) дней активности нет")
     if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
         rep.err(rel, f"active_until={dates['active_until']} раньше даты {event} {dates['date']}")
     # выделение цветом на сайте идёт с highlight_from до последнего активного дня включительно
@@ -685,9 +691,11 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         if PREP_GONE.match(title):
             rep.err(rel, f"раздела «{title}» на странице подготовки нет: тренируются генератором билетов")
     # коллоквиум — устная теория: задачи по желанию, обязательны разделы «Что нужно знать»
-    need = "Что нужно знать" if colloq else "Прототипы"
-    if need not in h2:
-        rep.err(rel, f"нет ни одного подраздела «## {need}»")
+    # КР по новой схеме (context/prompts/prep.md): задачи по типам в «# Задачи»; по старой — «## Прототипы»
+    if colloq and "Что нужно знать" not in h2:
+        rep.err(rel, "нет ни одного подраздела «## Что нужно знать»")
+    elif not colloq and "Задачи" not in h1 and "Прототипы" not in h2:
+        rep.err(rel, "нет задач: ни раздела «# Задачи», ни одного подраздела «## Прототипы»")
     lint_bank(path, course, exam, labels, own, rep)
     # на сайте генератор встаёт в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
     generator = f"sec:{exam}:{ticket_bank.GENERATOR_SECTION}"

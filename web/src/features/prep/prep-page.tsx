@@ -2,7 +2,14 @@ import { useMemo } from "react";
 import { useLocation, useParams } from "react-router";
 
 import { notFound, useCourse } from "#web/api/use-course.ts";
-import { cheatsheetDocs, prepContents, prepGoal, prepName, prepWhen } from "#web/domain/preps.ts";
+import {
+  cheatsheetDocs,
+  isDated,
+  prepContents,
+  prepGoal,
+  prepName,
+  prepWhen,
+} from "#web/domain/preps.ts";
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
@@ -45,7 +52,11 @@ export const Component = () => {
       courseName={info.name}
       docId={prep.id}
       downloads={cheatsheetDocs(prep)}
-      note={`${name} — ${prepWhen(prep)}. ${prepContents(prep.id)}`}
+      note={
+        isDated(prep)
+          ? `${name} — ${prepWhen(prep)}. ${prepContents(prep.id)}`
+          : `${name}. ${prepContents(prep.id)}`
+      }
       pageName={prepGoal(prep.id)}
       slots={slots}
       variant="prep"

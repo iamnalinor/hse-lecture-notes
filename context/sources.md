@@ -87,15 +87,22 @@
 | --- | --- | --- |
 | ПУД 2026/27 (программа дисциплины) | текст из HSE.Reg прислан владельцем 26.10.2026; полезная часть — страница «План учебной дисциплины» `program/discrete.md`, выводы для агентов — `context/courses/discrete.md` → «Что следует из ПУД» | Приоритетный источник по контролю: формула оценки и автомат, что проверяют КР2 и экзамен 1 семестра, разделы курса |
 | Лектор | Е. В. Дашков | — |
-| Конспект «Elements of Discrete Mathematics» (LN.pdf, англ., актуальный) | [LN.pdf на Drive](https://drive.google.com/file/d/1YFYHP3oHlv6zPI6d0k96Intjyu0qZpus/view) | Главный источник: 1 пятница = 1 неделя = 1 глава по порядку; первая пара 04.09 — гл. 1, 25.09 — гл. 4, 23.10 — гл. 8, 06.11 — гл. 9, 18.12 — гл. 15 |
+| Конспект «Elements of Discrete Mathematics» (LN.pdf, англ., актуальный) | [LN.pdf на Drive](https://drive.google.com/file/d/1YFYHP3oHlv6zPI6d0k96Intjyu0qZpus/view) | Главный источник по содержанию и подаче. Темп — не «глава в неделю»: какая глава на какой лекции — таблица плана в `context/courses/discrete.md` |
 | Русский перевод 2023 (LNmTranslation.pdf) | [папка LN_in_Ru](https://drive.google.com/file/d/19ofoTdWUNepPDDdRfV-FfTF_Ug71YYot/view) | Главы 1–7 и 9 (8 и 10+ — на английском); только как словарь терминов: нумерация гл. 6–7 не совпадает с LN 2026 |
 | Папка Дашкова на Drive | [folder](https://drive.google.com/drive/folders/1vJQkWLMxA-3_T9pb3EelOCd_3wsUvcXC) | Остальные материалы |
-| **ДЗ 2026/27 (главный ориентир по видам задач)** | [wiki курса](https://wiki.cs.hse.ru/Дискретная_математика_26/27), Drive id: ДЗ 1a `1MBgx-j_J_P1X85FYNqrhkim5n1Jd1S0Q`, 1b `18g-6QRhwdt-zSCTbkVwHU5FMKAZb0MWx`, 1c `11t8_j6Hu_gI--Nt6cqvP1GuCCNg3XlIV`, 2a `1OFYkx_ziIqczlHXfDjZqYhqlW8x045N5` (новые ДЗ появляются на wiki) | Каждый вид задачи ДЗ по теме лекции разобран в «Практике» конспекта; основа прототипов подготовки к КР |
+| **ДЗ 2026/27 (главный ориентир по видам задач: похожие задачи — в «Практику» релевантных конспектов; о темпе дедлайны говорят только грубо)** | [wiki курса](https://wiki.cs.hse.ru/Дискретная_математика_26/27), Drive id: ДЗ 1a `1MBgx-j_J_P1X85FYNqrhkim5n1Jd1S0Q`, 1b `18g-6QRhwdt-zSCTbkVwHU5FMKAZb0MWx`, 1c `11t8_j6Hu_gI--Nt6cqvP1GuCCNg3XlIV`, 2a `1OFYkx_ziIqczlHXfDjZqYhqlW8x045N5` (новые ДЗ появляются на wiki) | Каждый вид задачи ДЗ по теме лекции разобран в «Практике» конспекта; основа прототипов подготовки к КР |
 | Семинарские листки 2026 (`cw` = classwork, не контрольные) | [wiki курса](https://wiki.cs.hse.ru/Дискретная_математика_26/27), Drive id: 1 `19WyCIkbPZPN0_VA4ZBz6kIyU46b0A8Sy`, 1а `14NheOt3B2JCwOkaaS25hLm569tVI0pX0`, 2 `1jHm9GSAlLz-vhs6yDZM4MBZ5xm0dTgSk`, 3 `1DyXwHak6eYG3OIk2_fhwhCeouHXJSD0g`, 4 `1Qu1_GTbkUk4wXS2ZTOzI_LxqjIq38rPO`, 5 `1vCcv09JTfWEqKF44VDqAarpgTEh64BZq`, 6 `1RRMfxKqPI0aeRPL8vrTafrVQsXh6Fgaj`, 7 `1g_JOH2C5W1JFtWjsWWqP0M91CP3rNn2Y`, 8 `1o9JLaCS4Md9qpOqtSVA0IrZGX54_H0AW`, 9 `1LOvCzvy26LvMJmItyBTet5K4ge0-R4op`, 10 `1_eeOvZ4nfF3MN1N9JNisD9th9f4Ncpjl`, 11 `1BE6frUTfQfdOF4wXgQApWxCLDdLIgha_`, 12 `1quTya5nBVmx82Rx_YTR5CFob1Rv4ki6n` | Типовые задачи для практики и самопроверки |
 | КР прошлых лет | КР-1 2025/26 с решениями (прислал владелец; локально `sources/discrete/kr1/`), КР-2 и КР-4 2023/24 ПИ — vasyukov1 `Дискра/Control Works/` | Подготовка к КР (`prep/discrete/`) |
 | Ведомость «ДМ ПИ 26/27 — Успеваемость» | [таблица](https://docs.google.com/spreadsheets/d/1VYuya5wrXJsGSMeNf5dkHnk9SZmKUg20oUZc1FImKrI/edit) | Оценки ДЗ/КР; тем по датам нет |
 | Программа дисциплины 2026/27 (ПИ) | [hse.ru](https://www.hse.ru/ba/se/courses/1163594128.html) (ссылка `hse.ru/edu/courses/1163618691` из ТЗ ведёт на программу другой ОП) | Официальные темы и формат контроля |
 
+
+**Просмотрено 21.11.2026:**
+
+| Что | Ссылка | Вывод |
+| --- | --- | --- |
+| Материалы потока ПИ 2025/26 (обновлён 25.04.2026) | [Misss-Lacoste/HSE-FCS-SE-1-year](https://github.com/Misss-Lacoste/HSE-FCS-SE-1-year) | **Дискра:** полный набор ДЗ 2025/26 (1а–9) и листков семинаров 1–14 (Дашков), рукописные решения ДЗ (82 с.), LN версии 08.12.2025, сканы лекций `discra-lecNN` (имена как у vasyukov1, скорее 2023/24). Дат лекций нет — по темпу ничего, только порядок и задачи. Локально: `sources/discrete/2025-26/`. **Алгебра:** решённые КР 2023 и демоверсия экзамена (фото), ИДЗ, списки определений и доказательств (`materials/`) — не скачаны, смотреть при нормировке алгебры |
+| Конспекты по дискре, январь 2024 | [vdovetzi/Discrete_Mathematics](https://github.com/vdovetzi/Discrete_Mathematics) | **Не наш курс:** теория вероятностей (лекции 13+, коллоквиум 2023), другая программа. Не использовать |
 
 ## Что не нашлось
 

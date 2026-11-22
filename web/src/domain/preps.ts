@@ -9,6 +9,11 @@ The build accepts the same ids (`PREP_IDS` in `scripts/build.py`).
 */
 export const PREP_IDS = ["kr1", "kr2", "kr3", "colloq1", "colloq2"] as const;
 
+type DatedPrep = Extract<PrepEntry, { readonly date: string }>;
+
+/** A prep with a day; one without (`undatedPreps`) never names a day anywhere on the site. */
+export const isDated = (prep: PrepEntry): prep is DatedPrep => "date" in prep;
+
 const PREP_ID = /^(?<kind>kr|colloq)(?<number>\d+)$/u;
 
 const parse = (id: string) => {
@@ -53,7 +58,8 @@ A test is upcoming through its `activeUntil` day inclusive (front matter `active
 unless set — a stream that writes on two consecutive days sets the second one), then it hides itself:
 no tile on the home page, no button on the course page.
 */
-export const isUpcoming = (prep: PrepEntry, today: string): boolean => prep.activeUntil >= today;
+export const isUpcoming = (prep: PrepEntry, today: string): boolean =>
+  isDated(prep) && prep.activeUntil >= today;
 
 /**
 A prep is drawn in the accent colour (home tile, course page button) only near the event: from
@@ -62,7 +68,7 @@ Before that it is shown, but neutral — a colloquium whose window opens in Nove
 December session should not shout from the page for two months.
 */
 export const isHighlighted = (prep: PrepEntry, today: string): boolean =>
-  prep.highlightFrom <= today && isUpcoming(prep, today);
+  isDated(prep) && prep.highlightFrom <= today && isUpcoming(prep, today);
 
 const CHEATSHEET_LABELS: Readonly<Record<string, string>> = {
   "1side": "Шпаргалка, 1 сторона",
@@ -83,24 +89,35 @@ export const cheatsheetDocs = (prep: PrepEntry): readonly PdfDoc[] =>
 When a prep is shown: a test — its day (`02.11`); a colloquium with a window — the whole window
 (`02.11–30.12`), so that in December the tile does not read like a past day.
 */
-export const prepWhen = (prep: PrepEntry): string =>
+export const prepWhen = (prep: DatedPrep): string =>
   parse(prep.id)?.colloq === true && prep.activeUntil !== prep.date
     ? `${shortDate(prep.date)}–${shortDate(prep.activeUntil)}`
     : shortDate(prep.date);
 
 /** The next day that matters: the first day while it is ahead, then the last active day. */
-const nextDay = (prep: PrepEntry, today: string): string =>
+const nextDay = (prep: DatedPrep, today: string): string =>
   prep.date >= today ? prep.date : prep.activeUntil;
 
 /**
 Upcoming preps, the nearest first: a test that falls inside a colloquium's long window comes
 before the colloquium once the window has opened (the home tile shows the first one).
 */
-export const upcomingPreps = (preps: readonly PrepEntry[], today: string): readonly PrepEntry[] =>
+export const upcomingPreps = (preps: readonly PrepEntry[], today: string): readonly DatedPrep[] =>
   preps
+    .filter(isDated)
     .filter((prep) => isUpcoming(prep, today))
     .toSorted((a, b) => nextDay(a, today).localeCompare(nextDay(b, today)));
 
 /** Preps whose last active day has passed, in the order they happened: kept on the course page for revision. */
-export const pastPreps = (preps: readonly PrepEntry[], today: string): readonly PrepEntry[] =>
-  preps.filter((prep) => !isUpcoming(prep, today)).toSorted((a, b) => a.date.localeCompare(b.date));
+export const pastPreps = (preps: readonly PrepEntry[], today: string): readonly DatedPrep[] =>
+  preps
+    .filter(isDated)
+    .filter((prep) => !isUpcoming(prep, today))
+    .toSorted((a, b) => a.date.localeCompare(b.date));
+
+/**
+Preps of events not announced yet (no `date`): shown on the course page, neutral and without a day,
+so one can start early; never on the home page and never in the accent colour.
+*/
+export const undatedPreps = (preps: readonly PrepEntry[]): readonly PrepEntry[] =>
+  preps.filter((prep) => !isDated(prep));

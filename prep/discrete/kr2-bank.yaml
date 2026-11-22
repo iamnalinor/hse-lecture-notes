@@ -1,0 +1,408 @@
+# Банк вопросов генератора вариантов к КР-2 (сайт: /discrete/kr2, раздел «Генератор вариантов»).
+# Формат — context/markup.md §11, «Банк билетов». В PDF банк не попадает.
+#
+# about — подпись генератора: одна короткая фраза, что варианты неофициальные и тренировочные.
+# ticket — шесть задач, по блоку тем на номер: остатки, линейное уравнение, НОД и взаимная простота,
+# Эйлер и Ферма, сравнения и системы, множества. Баллов нет: каждая задача — от 0 до 1, как на КР.
+# questions — id, kind (из ticket), topic (раздел sec:kr2:<topic> страницы), text, refs (задачи страницы
+# и конспектов — с их решениями) и/или answer (ответ и ключевой шаг для новых задач).
+# Каждый answer пересчитан (python).
+# Строки с обратной косой чертой — без кавычек, в '…' или блоком >-; в "…" YAML съест «\».
+
+about: Неофициальные тренировочные варианты; задачи на КР будут другие.
+
+ticket:
+  - kind: residues
+    title: Остатки и перебор
+    count: 1
+  - kind: diophantine
+    title: Линейное уравнение в целых числах
+    count: 1
+  - kind: gcd
+    title: НОД и взаимная простота
+    count: 1
+  - kind: powers
+    title: Теоремы Эйлера и Ферма
+    count: 1
+  - kind: systems
+    title: Сравнения и системы сравнений
+    count: 1
+  - kind: sets
+    title: Множества
+    count: 1
+
+questions:
+  # ------------------------------------------------------------------ 1. остатки и перебор
+  - id: res-digits-cube
+    kind: residues
+    topic: residues
+    text: Может ли сумма цифр числа $n^3$ равняться $2027$ при целом $n$?
+    refs: [prob:kr2:digits-cube]
+  - id: res-three-squares
+    kind: residues
+    topic: residues
+    text: Докажите, что уравнение $x^2 + y^2 + z^2 = 2031$ не имеет решений в целых числах.
+    refs: [prob:kr2:three-squares]
+  - id: res-digits-square
+    kind: residues
+    topic: residues
+    text: Может ли сумма цифр числа $n^2$ равняться $2030$ при целом $n$?
+    answer: >-
+      Не может. Сумма цифр сравнима с числом по модулю $9$; квадраты по модулю $9$ дают
+      $0, 1, 4, 7$ (перебор $n \equiv 0, \pm 1, \pm 2, \pm 3, \pm 4$), а $2030 \equiv 2 + 0 + 3 + 0 = 5 \pmod 9$.
+  - id: res-quadratic-5
+    kind: residues
+    topic: residues
+    text: Может ли число $n^2 + n + 1$ делиться на $5$ при целом $n$?
+    answer: >-
+      Не может: при $n \equiv 0, 1, 2, 3, 4 \pmod 5$ значения $n^2 + n + 1$ дают остатки $1, 3, 2, 3, 1$,
+      нуля среди них нет.
+  - id: res-pell-5
+    kind: residues
+    topic: residues
+    text: Докажите, что уравнение $x^2 - 5y^2 = 2027$ не имеет решений в целых числах.
+    answer: >-
+      По модулю $5$: $x^2 \equiv 2027 \equiv 2$, а квадраты по модулю $5$ дают только $0, 1, 4$
+      (перебор $x \equiv 0, \pm 1, \pm 2$).
+  - id: res-power2-7
+    kind: residues
+    topic: residues
+    text: Докажите, что $2^n + 1$ не делится на $7$ ни при каком $n \in \N$.
+    answer: >-
+      $2^3 = 8 \equiv 1 \pmod 7$, поэтому остатки $2^n$ повторяются с периодом $3$: $1, 2, 4, 1, 2, 4, \dots$
+      Тогда $2^n + 1 \equiv 2, 3, 5 \pmod 7$, нуля нет.
+  - id: res-cubic-3
+    kind: residues
+    topic: residues
+    text: Докажите, что $n^3 + 2n$ делится на $3$ при любом целом $n$.
+    answer: >-
+      Перебор остатков: при $n \equiv 0, 1, 2 \pmod 3$ получаем $n^3 + 2n \equiv 0, 3, 12 \equiv 0 \pmod 3$.
+  - id: res-two-squares
+    kind: residues
+    topic: residues
+    text: >-
+      Докажите, что сумма двух квадратов целых чисел не может давать остаток $3$ при делении на $4$.
+      Представимо ли число $2027$ в виде суммы двух квадратов?
+    refs: [prob:lec07:two-squares]
+  - id: res-sixth-powers
+    kind: residues
+    topic: residues
+    text: Докажите, что уравнение $x^6 + y^6 = 7z + 3$ не имеет решений в целых числах.
+    refs: [prob:lec09:sixth-powers]
+
+  # ------------------------------------------------------------------ 2. линейное уравнение
+  - id: dio-integer
+    kind: diophantine
+    topic: diophantine
+    text: Найдите все решения уравнения $143x + 187y = -33$ в целых числах.
+    refs: [prob:kr2:dioph-integer]
+  - id: dio-natural
+    kind: diophantine
+    topic: diophantine
+    text: Найдите все решения уравнения $17x + 23y = 1000$ в натуральных числах.
+    refs: [prob:kr2:dioph-natural]
+  - id: dio-77-119
+    kind: diophantine
+    topic: diophantine
+    text: Найдите все решения уравнения $77x - 119y = -63$ в целых числах.
+    refs: [prob:lec10:kr-diophantine]
+  - id: dio-coins
+    kind: diophantine
+    topic: diophantine
+    text: >-
+      Сколькими способами можно набрать $100$ рублей монетами по $3$ и по $5$ рублей?
+      Монет одного из видов может не быть совсем.
+    refs: [prob:lec10:coins]
+  - id: dio-52-91
+    kind: diophantine
+    topic: diophantine
+    text: Найдите все решения уравнения $52x - 91y = 39$ в целых числах.
+    answer: >-
+      $\{(6 + 7t,\ 3 + 4t) \mid t \in \Z\}$. $\gcd(52, 91) = 13 \mid 39$, сокращённое уравнение
+      $4x - 7y = 3$ имеет решение $(-1, -1)$, шаг $(7, 4)$; при $t = 1$ получаем $(6, 3)$: $312 - 273 = 39$.
+  - id: dio-47-29
+    kind: diophantine
+    topic: diophantine
+    text: Найдите все решения уравнения $47x + 29y = 3$ в целых числах.
+    answer: >-
+      $\{(5 - 29t,\ -8 + 47t) \mid t \in \Z\}$. Расширенный алгоритм Евклида (частные $1, 1, 1, 1, 1, 1, 3$)
+      даёт $47 \cdot (-8) + 29 \cdot 13 = 1$, умножаем на $3$: $(-24, 39)$; сдвиг $t = -1$ даёт $(5, -8)$:
+      $235 - 232 = 3$.
+  - id: dio-no-solution
+    kind: diophantine
+    topic: diophantine
+    text: Найдите все решения уравнения $35x + 56y = 30$ в целых числах.
+    answer: >-
+      Решений нет: $\gcd(35, 56) = 7$ делит левую часть при любых $x, y$, а $7 \nmid 30$.
+  - id: dio-banknotes
+    kind: diophantine
+    topic: diophantine
+    text: Сколькими способами можно уплатить $500$ рублей купюрами по $20$ и по $50$ рублей без сдачи?
+    answer: >-
+      $6$ способов. Уравнение $20x + 50y = 500$ равносильно $2x + 5y = 50$; все целые решения —
+      $(25 - 5t,\ 2t)$, натуральность даёт $0 \le t \le 5$.
+
+  # ------------------------------------------------------------------ 3. НОД и взаимная простота
+  - id: gcd-fraction
+    kind: gcd
+    topic: gcd
+    text: Докажите, что дробь $\frac{15n + 4}{35n + 9}$ несократима при любом целом $n$.
+    refs: [prob:kr2:fraction]
+  - id: gcd-values-7
+    kind: gcd
+    topic: gcd
+    text: >-
+      Какие значения принимает $\gcd(n + 2, n^2 + 3)$ при целых $n$? При каких $n$ дробь
+      $\frac{n^2 + 3}{n + 2}$ сократима?
+    refs: [prob:kr2:gcd-values]
+  - id: gcd-fraction-2
+    kind: gcd
+    topic: gcd
+    text: Докажите, что дробь $\frac{2n + 3}{5n + 7}$ несократима при любом целом $n$.
+    answer: >-
+      $\gcd(2n + 3, 5n + 7) = \gcd(2n + 3, n + 1) = \gcd(1, n + 1) = 1$: сначала вычитаем $2(2n + 3)$
+      из $5n + 7$, затем $2(n + 1)$ из $2n + 3$.
+  - id: gcd-values-4
+    kind: gcd
+    topic: gcd
+    text: Какие значения принимает $\gcd(3n + 1, 5n + 3)$ при целых $n$?
+    answer: >-
+      $1$, $2$ и $4$. Сдвигами $\gcd(3n + 1, 5n + 3) = \gcd(3n + 1, 2n + 2) = \gcd(n - 1, 2n + 2) =
+      \gcd(n - 1, 4)$: НОД равен $4$ при $n \equiv 1 \pmod 4$, $2$ при $n \equiv 3 \pmod 4$ и $1$ при чётном $n$.
+  - id: gcd-shift-notes
+    kind: gcd
+    topic: gcd
+    text: >-
+      Докажите, что при любом целом $n$ числа $2n + 1$ и $3n + 1$ взаимно просты. Можно ли сократить дробь
+      $\frac{3n + 1}{2n + 1}$ при каком-нибудь $n$?
+    refs: [prob:lec08:shift]
+  - id: cop-sum-product
+    kind: gcd
+    topic: coprime
+    text: Пусть $a$ и $b$ взаимно просты. Докажите, что $a + b$ и $ab$ взаимно просты.
+    refs: [prob:kr2:sum-product]
+  - id: cop-frobenius
+    kind: gcd
+    topic: coprime
+    text: >-
+      Пусть $a, b > 0$ взаимно просты. Докажите, что уравнение $ax + by = ab - a - b$ не имеет решений
+      в натуральных числах.
+    refs: [prob:kr2:frobenius]
+  - id: cop-12-35
+    kind: gcd
+    topic: coprime
+    text: Имеет ли уравнение $12x + 35y = 420$ решения в целых положительных числах?
+    answer: >-
+      Нет. $\gcd(12, 35) = 1$ и $420 = 12 \cdot 35$. Из $35y = 12(35 - x)$ следует $12 \mid y$, из
+      $12x = 35(12 - y)$ — $35 \mid x$; при $x = 35m$, $y = 12k$ с $m, k \ge 1$ получаем $420(m + k) = 420$,
+      то есть $m + k = 1$ — противоречие.
+  - id: cop-sum-diff
+    kind: gcd
+    topic: coprime
+    text: Пусть $a$ и $b$ взаимно просты. Какие значения может принимать $\gcd(a + b, a - b)$?
+    answer: >-
+      $1$ или $2$. Общий делитель $d$ чисел $a + b$ и $a - b$ делит их сумму $2a$ и разность $2b$, а при
+      $au + bv = 1$ (Безу) и $2au + 2bv = 2$. Оба значения бывают: $a = 2$, $b = 1$ дают $\gcd(3, 1) = 1$,
+      $a = 3$, $b = 1$ — $\gcd(4, 2) = 2$.
+  - id: cop-product-divides
+    kind: gcd
+    topic: coprime
+    text: Пусть $a$ и $b$ взаимно просты, $a \mid c$ и $b \mid c$. Докажите, что $ab \mid c$.
+    answer: >-
+      $c = ak$; тогда $b \mid ak$ и $\gcd(a, b) = 1$, поэтому $b \mid k$ (лемма [-@lem:lec08:coprime-divides]),
+      $k = bl$ и $c = abl$.
+
+  # ------------------------------------------------------------------ 4. Эйлер и Ферма
+  - id: pow-tower
+    kind: powers
+    topic: powers
+    text: Найдите остаток от деления $5^{3^{2026}}$ на $13$.
+    refs: [prob:kr2:tower]
+  - id: pow-n13
+    kind: powers
+    topic: powers
+    text: Докажите, что $n^{13} - n$ делится на $2730$ при любом целом $n$.
+    refs: [prob:kr2:n13]
+  - id: pow-n7
+    kind: powers
+    topic: powers
+    text: Докажите, что $n^7 - n$ делится на $42$ при любом целом $n$.
+    refs: [prob:lec09:n7]
+  - id: pow-tower-59
+    kind: powers
+    topic: powers
+    text: Найдите остаток от деления $123^{71^{428}}$ на $59$.
+    refs: [prob:lec09:tower]
+  - id: pow-last-digits
+    kind: powers
+    topic: powers
+    text: Найдите две последние цифры числа $3^{2026}$.
+    refs: [prob:lec09:powers]
+  - id: pow-sum-13
+    kind: powers
+    topic: powers
+    text: Докажите, что $2^{70} + 3^{70}$ делится на $13$.
+    answer: >-
+      По малой теореме Ферма $2^{12} \equiv 1$, $70 = 12 \cdot 5 + 10$, и $2^{70} \equiv 2^{10} = 1024 \equiv 10
+      \pmod{13}$. Для тройки короче: $3^3 = 27 \equiv 1$, $3^{70} = (3^3)^{23} \cdot 3 \equiv 3$. Сумма
+      $10 + 3 = 13 \equiv 0$.
+  - id: pow-7-40
+    kind: powers
+    topic: powers
+    text: Найдите остаток от деления $7^{2027}$ на $40$.
+    answer: >-
+      $23$. $\gcd(7, 40) = 1$; уже $7^4 = 2401 \equiv 1 \pmod{40}$ (это делит и $\varphi(40) = 16$),
+      $2027 = 4 \cdot 506 + 3$, поэтому $7^{2027} \equiv 7^3 = 343 \equiv 23$.
+  - id: pow-65
+    kind: powers
+    topic: powers
+    text: Докажите, что $a^{25} \equiv a \pmod{65}$ при любом целом $a$.
+    answer: >-
+      $65 = 5 \cdot 13$, и $24$ делится на $5 - 1 = 4$ и на $13 - 1 = 12$. По модулю $p \in \{5, 13\}$: при
+      $p \mid a$ обе части $\equiv 0$, иначе $a^{24} = (a^{p-1})^{24/(p-1)} \equiv 1$ по малой теореме Ферма.
+      Сравнения по $5$ и $13$ дают сравнение по их НОК $65$.
+
+  # ------------------------------------------------------------------ 5. сравнения и системы
+  - id: sys-crt3
+    kind: systems
+    topic: systems
+    text: Решите систему $x \equiv 2 \pmod 5$, $x \equiv 3 \pmod 7$, $x \equiv 4 \pmod 9$.
+    refs: [prob:kr2:crt3]
+  - id: sys-count
+    kind: systems
+    topic: systems
+    text: >-
+      Сколько решений имеет система $x^2 + x \equiv 2 \pmod{12}$, $6x \equiv 3 \pmod{15}$? Найдите их.
+    refs: [prob:kr2:count]
+  - id: sys-count-notes
+    kind: systems
+    topic: systems
+    text: >-
+      Сколько различных решений имеет система $154x \equiv -42 \pmod{546}$, $-2x^2 \equiv 760 \pmod{389}$?
+    refs: [prob:lec11:count]
+  - id: sys-noncoprime-notes
+    kind: systems
+    topic: systems
+    text: Решите систему $x \equiv 3 \pmod{18}$, $x \equiv 7 \pmod{26}$.
+    refs: [prob:lec11:noncoprime]
+  - id: sys-squares15
+    kind: systems
+    topic: systems
+    text: Решите сравнение $x^2 \equiv 1 \pmod{15}$ с помощью китайской теоремы об остатках.
+    refs: [prob:lec11:squares15]
+  - id: sys-linear-98
+    kind: systems
+    topic: systems
+    text: Сколько решений имеет сравнение $35x \equiv 21 \pmod{98}$? Найдите их.
+    answer: >-
+      $7$ решений: $9, 23, 37, 51, 65, 79, 93$. $\gcd(35, 98) = 7 \mid 21$; после сокращения
+      $5x \equiv 3 \pmod{14}$, $5^{-1} = 3$ ($15 \equiv 1$), $x \equiv 9 \pmod{14}$.
+  - id: sys-12-18
+    kind: systems
+    topic: systems
+    text: Решите систему $x \equiv 5 \pmod{12}$, $x \equiv 11 \pmod{18}$.
+    answer: >-
+      $x \equiv 29 \pmod{36}$. $\gcd(12, 18) = 6 \mid 11 - 5$, поэтому система совместна; $x = 5 + 12t$,
+      $12t \equiv 6 \pmod{18}$, после сокращения на $6$: $2t \equiv 1 \pmod 3$, $t \equiv 2$.
+  - id: sys-incompatible
+    kind: systems
+    topic: systems
+    text: Решите систему $x \equiv 5 \pmod{12}$, $x \equiv 10 \pmod{18}$.
+    answer: >-
+      Решений нет: из первого сравнения $x$ нечётно, из второго — чётно (вообще, $\gcd(12, 18) = 6 \nmid 10 - 5$).
+  - id: sys-crt-8-9-5
+    kind: systems
+    topic: systems
+    text: Решите систему $x \equiv 3 \pmod 8$, $x \equiv -2 \pmod 9$, $x \equiv 4 \pmod 5$.
+    answer: >-
+      $x \equiv 259 \pmod{360}$. Подстановкой: $x = 3 + 8t$, $8t \equiv -5 \pmod 9$, $-t \equiv 4$, $t \equiv 5$,
+      $x = 43 + 72s$; $43 + 72s \equiv 3 + 2s \equiv 4 \pmod 5$, $s \equiv 3$, $x = 259$.
+
+  # ------------------------------------------------------------------ 6. множества
+  - id: set-identity
+    kind: sets
+    topic: set-identities
+    text: >-
+      Докажите или опровергните: a) $(A \cup B) \setminus C = (A \setminus C) \cup (B \setminus C)$;
+      b) $A \cup (B \setminus C) = (A \cup B) \setminus C$.
+    refs: [prob:kr2:identity]
+  - id: set-diff-symmetric
+    kind: sets
+    topic: set-identities
+    text: Докажите, что $A \setminus B = B \setminus A$ тогда и только тогда, когда $A = B$.
+    refs: [prob:kr2:diff-symmetric]
+  - id: set-identities-notes
+    kind: sets
+    topic: set-identities
+    text: >-
+      Докажите или опровергните: a) $(A \setminus B) \setminus C = A \setminus (B \cup C)$;
+      b) $A \setminus (B \setminus C) = (A \setminus B) \setminus C$.
+    refs: [prob:lec13:identities]
+  - id: set-disjoint-diff
+    kind: sets
+    topic: set-identities
+    text: Докажите, что $A \setminus B = A$ тогда и только тогда, когда $A$ и $B$ не пересекаются.
+    refs: [prob:lec13:disjoint-diff]
+  - id: set-product-union
+    kind: sets
+    topic: set-identities
+    text: Докажите, что $(A \cup B) \times C = (A \times C) \cup (B \times C)$.
+    refs: [prob:lec14:product-union]
+  - id: set-demorgan-diff
+    kind: sets
+    topic: set-identities
+    text: Докажите, что $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$.
+    answer: >-
+      $A \setminus (B \cap C) = A \cap \overline{B \cap C} = A \cap (\bar B \cup \bar C) =
+      (A \cap \bar B) \cup (A \cap \bar C)$: закон де Моргана, затем дистрибутивность.
+  - id: set-two-diffs
+    kind: sets
+    topic: set-identities
+    text: Верно ли, что $(A \setminus B) \cup (B \setminus C) = (A \cup B) \setminus (B \cap C)$?
+    answer: >-
+      Верно. По таблице принадлежности обе части — элементы $A \cup B$, кроме лежащих одновременно в $B$ и $C$:
+      если $x \in B$, обе части требуют $x \notin C$; если $x \notin B$, обе требуют $x \in A$.
+  - id: set-absorb-criterion
+    kind: sets
+    topic: set-identities
+    text: Докажите, что $A \cup (B \cap C) = (A \cup B) \cap C$ тогда и только тогда, когда $A \subseteq C$.
+    answer: >-
+      По дистрибутивности левая часть равна $(A \cup B) \cap (A \cup C)$. Если $A \subseteq C$, то $A \cup C = C$
+      (лемма [-@lem:lec13:subset-equiv]), и части совпадают. Обратно, $A \subseteq A \cup (B \cap C) =
+      (A \cup B) \cap C \subseteq C$.
+  - id: set-powerset-in
+    kind: sets
+    topic: set-elements
+    text: a) Может ли быть $\mathcal{P}(A) \subseteq A$? b) Может ли быть $\mathcal{P}(A) \in A$?
+    refs: [prob:kr2:powerset-in]
+  - id: set-powerset-diff
+    kind: sets
+    topic: set-elements
+    text: >-
+      Верно ли, что $\mathcal{P}(A \setminus B) = \bigl(\mathcal{P}(A) \setminus \mathcal{P}(B)\bigr) \cup
+      \{\varnothing\}$ при любых $A$, $B$?
+    refs: [prob:kr2:powerset-diff]
+  - id: set-powerset-ops
+    kind: sets
+    topic: set-elements
+    text: >-
+      a) Всегда ли $\mathcal{P}(A \cap B) = \mathcal{P}(A) \cap \mathcal{P}(B)$?
+      b) Всегда ли $\mathcal{P}(A \cup B) = \mathcal{P}(A) \cup \mathcal{P}(B)$?
+    refs: [prob:lec13:powerset-ops]
+  - id: set-union-in-diff
+    kind: sets
+    topic: set-elements
+    text: Может ли быть так, что $A \cup B \in A \setminus B$?
+    refs: [prob:lec13:union-in-diff]
+  - id: set-powerset-mono
+    kind: sets
+    topic: set-elements
+    text: Докажите, что если $A \subseteq B$, то $\mathcal{P}(A) \subseteq \mathcal{P}(B)$. Верно ли обратное?
+    refs: [prob:lec12:powerset-mono]
+  - id: set-in-and-sub
+    kind: sets
+    topic: set-elements
+    text: Приведите пример множеств $A$ и $B$, для которых одновременно $A \in B$ и $A \subseteq B$.
+    answer: >-
+      $A = \varnothing$, $B = \{\varnothing\}$: $\varnothing \in \{\varnothing\}$ по перечислению, а
+      $\varnothing \subseteq B$ для любого $B$.

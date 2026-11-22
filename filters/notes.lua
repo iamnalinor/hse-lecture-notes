@@ -667,8 +667,10 @@ local function set_template_meta(doc, config)
         when = first .. '–' .. tonumber(d2) .. '.' .. m2 .. '.' .. y2
       end
     end
-    meta['header_line'] = pandoc.MetaString(string.format('%s · %s · %s · %s',
-      config.program or '', course_name, prep_goal(S.week_id or ''), when))
+    -- без date (событие ещё не объявлено) — без дня в колонтитуле
+    local line = string.format('%s · %s · %s', config.program or '', course_name, prep_goal(S.week_id or ''))
+    if when ~= '' then line = line .. ' · ' .. when end
+    meta['header_line'] = pandoc.MetaString(line)
   else
     meta['header_line'] = pandoc.MetaString(string.format('%s · %s · Лекция %s · %s',
       config.program or '', course_name, tostring(S.lecture), date_ru(date)))

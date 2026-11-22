@@ -71,15 +71,15 @@ $[A \wedge B] = \min = [A][B]$, $[A \vee B] = \max$, $[\neg A] = 1 - [A]$, $[A \
 $F$ выполнима $\iff$ $\neg F$ не тавтология; $F$ — тавтология $\iff$ $\neg F$ невыполнима $\iff$ $F \equiv T$ для тавтологии $T$; $F \equiv G \iff F \leftrightarrow G$ — тавтология. *Идея:* отрицание меняет «при всех наборах» на «при некотором наборе».
 :::
 
-::: {.definition ref="def:lec01:valid"}
+# 2. Рассуждения, предикаты и кванторы
+
+::: {.definition ref="def:lec02:valid"}
 **Корректное рассуждение**: рассуждение «$A_1, \dots, A_n$; следовательно, $C$» корректно, если не бывает истинных посылок при ложном выводе.
 :::
 
-::: {.proposition ref="prop:lec01:valid-taut"}
+::: {.proposition ref="prop:lec02:valid-taut"}
 Если $(A_1 \wedge \ldots \wedge A_n) \to C$ — тавтология, рассуждение корректно; обратное неверно (опровергающий набор значений может не реализовываться ни в какой ситуации). *Идея:* при истинных посылках истинная импликация даёт истинный вывод.
 :::
-
-# 2. Предикаты и кванторы
 
 ::: {.definition ref="def:lec02:predicate"}
 **$n$-местный предикат** — выражение с переменными $x_1, \dots, x_n$, которое становится высказыванием после подстановки подходящих объектов вместо всех переменных; высказывание — нульместный предикат.
@@ -109,11 +109,11 @@ $\exists x\, A \equiv \neg\forall x\, \neg A$, $\forall x\, A \equiv \neg\exists
 $\exists y\, \forall x\, A(x, y)$ влечёт $\forall x\, \exists y\, A(x, y)$; обратное неверно. *Идея:* один свидетель $y_0$ годится для всех $x$; контрпример к обратному — $\forall x\, \exists y\, (y > x)$ в $\N$.
 :::
 
-::: {.definition ref="def:lec02:vacuous"}
+# 3. Пустая истина и принцип индукции
+
+::: {.definition ref="def:lec03:vacuous"}
 **Пустая истина** — $\forall x\, (A(x) \to B(x))$, истинное потому, что $A(x)$ ложно для всех $x$.
 :::
-
-# 3. Индукция
 
 ::: {.axiom ref="ax:lec03:induction"}
 ПМИ: $\varphi(0) \wedge \forall n \in \N\, (\varphi(n) \to \varphi(n + 1)) \to \forall n \in \N\ \varphi(n)$; для множеств: если $X \subseteq \N$, $0 \in X$ и $n \in X \Rightarrow n + 1 \in X$ при всех $n$, то $X = \N$.
@@ -123,1116 +123,1122 @@ $\exists y\, \forall x\, A(x, y)$ влечёт $\forall x\, \exists y\, A(x, y)$
 Если $\varphi(n_0)$ и $\varphi(n) \to \varphi(n + 1)$ при всех $n \ge n_0$, то $\varphi(n)$ при всех $n \ge n_0$. *Идея:* ПМИ для $\psi(n) := (n \ge n_0 \to \varphi(n))$; при $n < n_0$ — пустая истина.
 :::
 
-::: {.definition ref="def:lec03:progressive"}
+# 4. Сильная индукция и принцип наименьшего числа
+
+::: {.definition ref="def:lec04:progressive"}
 **Прогрессивное** множество: $X \subseteq \N$ прогрессивно, $\mathrm{Prog}(X)$, если $\forall n\, \bigl(\forall m < n\ (m \in X) \to n \in X\bigr)$.
 :::
 
-::: {.proposition ref="prop:lec03:strong"}
+::: {.proposition ref="prop:lec04:strong"}
 ПСИ: всякое прогрессивное $X \subseteq \N$ равно $\N$.
 :::
 
-::: {.lemma ref="lem:lec03:prog-zero"}
+::: {.lemma ref="lem:lec04:prog-zero"}
 Если $\mathrm{Prog}(X)$, то $0 \in X$. *Идея:* при $n = 0$ посылка $\forall m < 0\ (m \in X)$ — пустая истина.
 :::
 
-::: {.proposition ref="prop:lec03:lnp"}
+::: {.proposition ref="prop:lec04:lnp"}
 ПНЧ: всякое непустое $X \subseteq \N$ имеет наименьший элемент $\min X$. Для $\Z$ и для $\{x \in \Q \mid x > 0\}$ неверно.
 :::
 
-::: {.theorem ref="thm:lec03:equiv"}
+# 5. Равносильность принципов индукции
+
+::: {.theorem ref="thm:lec05:equiv"}
 ПСИ, ПНЧ и ПМИ равносильны. *Идея:* ПСИ $\Rightarrow$ ПНЧ — если у $X$ нет минимума, то $\overline{X}$ прогрессивно; ПНЧ $\Rightarrow$ ПМИ — $n = \min \overline{X} = m + 1$ с $m \in X$; ПМИ $\Rightarrow$ ПСИ — индукция для $Y = \{n \mid \forall m < n\ (m \in X)\}$.
 :::
 
-# 4. Делимость и сравнения
+# 6. Делимость и сравнения
 
-::: {.definition ref="def:lec04:divides"}
+::: {.definition ref="def:lec06:divides"}
 **Делимость**: $a \mid b \iff \exists k \in \Z\ b = ak$; делитель, кратное. $0 \mid 0$ верно. Если $a \mid b$ и $b \ne 0$, то $|a| \le |b|$, поэтому у ненулевого числа конечно много делителей.
 :::
 
-::: {.lemma ref="lem:lec04:basic"}
+::: {.lemma ref="lem:lec06:basic"}
 $a \mid 0$; $1 \mid a$; $0 \mid a \Rightarrow a = 0$; $a \mid 1 \Rightarrow a = \pm 1$. *Идея:* последнее — из $1 = |a| \cdot |k| \ge |a| \ge 1$.
 :::
 
-::: {.lemma ref="lem:lec04:order"}
+::: {.lemma ref="lem:lec06:order"}
 $a \mid a$; $a \mid b \wedge b \mid c \Rightarrow a \mid c$; $a \mid b \wedge b \mid a \Rightarrow a = \pm b$. *Идея:* в третьем $a = a k_1 k_2$, случаи $a = 0$ и $k_1 k_2 = 1$.
 :::
 
-::: {.lemma ref="lem:lec04:sum"}
+::: {.lemma ref="lem:lec06:sum"}
 $a \mid b \wedge a \mid c \Rightarrow a \mid b \pm c$.
 :::
 
-::: {.corollary ref="cor:lec04:sum"}
+::: {.corollary ref="cor:lec06:sum"}
 Если $a \mid b$ и $a \mid b + c$ (или $a \mid b - c$), то $a \mid c$.
 :::
 
-::: {.theorem ref="thm:lec04:division-nat"}
+::: {.theorem ref="thm:lec06:division-nat"}
 Для $a, b \in \N$, $b \ne 0$, существует единственная пара $(q, r) \in \N^2$ с $a = bq + r$, $0 \le r < b$. *Идея:* $q + 1 = \min\{s \in \N \mid a < bs\}$ по ПНЧ; единственность — из $r - r' = b(q' - q) \ge b$.
 :::
 
-::: {.definition ref="def:lec04:quotient"}
+::: {.definition ref="def:lec06:quotient"}
 **Деление с остатком**: $q$ — неполное частное, $r$ — остаток от деления $a$ на $b$. Если $x > 0$ даёт остаток $r > 0$ при делении на $m$, то остаток $-x$ равен $m - r$ (при $r = 0$ — тоже $0$): остаток отрицательного числа — не его последняя цифра.
 :::
 
-::: {.corollary ref="cor:lec04:division"}
+::: {.corollary ref="cor:lec06:division"}
 Для $a$ и $b \ne 0$ существует единственная пара $(q, r) \in \Z \times \N$ с $a = bq + r$, $0 \le r < |b|$. *Идея:* делим $|a|$ на $|b|$; при $a < 0$, $r' > 0$ берём $-q' - 1$ и $|b| - r'$.
 :::
 
-::: {.definition ref="def:lec04:congruence"}
+::: {.definition ref="def:lec06:congruence"}
 **Сравнимость по модулю**. При $m > 1$: $a \equiv b \pmod m \iff m \mid a - b$. Если $a \equiv b \pmod m$, $n \mid m$ и $n > 1$, то $a \equiv b \pmod n$.
 :::
 
-::: {.lemma ref="lem:lec04:same-rem"}
+::: {.lemma ref="lem:lec06:same-rem"}
 $a \equiv b \pmod m$ тогда и только тогда, когда остатки от деления $a$ и $b$ на $m$ равны. *Идея:* $m \mid r - r'$ и $|r - r'| < m$.
 :::
 
-::: {.corollary ref="cor:lec04:distinct"}
+::: {.corollary ref="cor:lec06:distinct"}
 Числа $0, 1, \dots, m - 1$ попарно несравнимы по модулю $m$.
 :::
 
-::: {.corollary ref="cor:lec04:to-rem"}
+::: {.corollary ref="cor:lec06:to-rem"}
 $a \equiv r \pmod m$, где $r$ — остаток от деления $a$ на $m$.
 :::
 
-::: {.corollary ref="cor:lec04:equivalence"}
+::: {.corollary ref="cor:lec06:equivalence"}
 Сравнимость по модулю $m$ рефлексивна, симметрична и транзитивна.
 :::
 
-::: {.lemma ref="lem:lec04:arith"}
+::: {.lemma ref="lem:lec06:arith"}
 Если $a \equiv b$ и $c \equiv d \pmod m$, то $a \pm c \equiv b \pm d$, $ac \equiv bd$, $a^n \equiv b^n \pmod m$ ($n \in \N$). *Идея:* $ac - bd = m(bk_2 + dk_1 + mk_1k_2)$; степень — индукцией.
 :::
 
-# 5. Простые числа
+# 7. Простые числа
 
-::: {.definition ref="def:lec05:prime"}
+::: {.definition ref="def:lec07:prime"}
 **Простое** число: $p > 1$, делители только $\pm 1, \pm p$; составное: $n > 1$, не простое. Отрицательные числа, $0$ и $1$ — ни то ни другое.
 :::
 
-::: {.lemma ref="lem:lec05:composite"}
+::: {.lemma ref="lem:lec07:composite"}
 $n > 1$ составное тогда и только тогда, когда $n = km$ с $1 < k, m < n$.
 :::
 
-::: {.definition ref="def:lec05:factorization"}
+::: {.definition ref="def:lec07:factorization"}
 **Разложение** $n \ge 1$: $n = p_1^{a_1} \cdots p_s^{a_s}$, $p_i$ — попарно различные простые, $a_i \in \N$; степень простого $p$ в разложении ($0$, если $p$ нет в списке); разложения существенно одинаковы, если степени всех простых совпадают.
 :::
 
-::: {.theorem ref="thm:lec05:fta"}
+::: {.theorem ref="thm:lec07:fta"}
 Каждое $n \ge 1$ имеет разложение на простые, и любые два его разложения существенно одинаковы. *Идея:* обе части доказываются минимальным контрпримером. Единственность: у наименьшего «плохого» $n$ общих простых в двух разложениях нет; для $p > q$ из разных разложений число $m = (p - q) \cdot \frac{n}{p} < n$ имеет разложения с разной степенью $q$, если $q \nmid p - q$, а $q \mid p - q$ даёт $q \mid p$.
 :::
 
-::: {.definition ref="def:lec05:deg"}
+::: {.definition ref="def:lec07:deg"}
 **Степень простого** $\deg(p, n)$ для $n \ne 0$ — степень простого $p$ в любом разложении $\pm p_1^{a_1} \cdots p_s^{a_s}$ числа $n$; $\deg(p, ab) = \deg(p, a) + \deg(p, b)$.
 :::
 
-::: {.theorem ref="thm:lec05:infinite"}
+::: {.theorem ref="thm:lec07:infinite"}
 Простых чисел бесконечно много. *Идея:* простой делитель числа $p_1 \cdots p_n + 1$ не может быть ни одним из $p_i$.
 :::
 
-::: {.lemma ref="lem:lec05:criterion"}
+::: {.lemma ref="lem:lec07:criterion"}
 Для $a, b \ne 0$ $a \mid b$ тогда и только тогда, когда $\deg(p, a) \le \deg(p, b)$ для всех простых $p$. *Идея:* $\deg(p, ak) = \deg(p, a) + \deg(p, k)$; обратно $b = a \cdot (\pm \prod p_i^{\beta_i - \alpha_i})$.
 :::
 
-# 6. НОД, НОК и тождество Безу
+# 8. НОД, НОК и тождество Безу
 
-::: {.definition ref="def:lec06:gcd"}
+::: {.definition ref="def:lec08:gcd"}
 **Наибольший общий делитель**: $d = \gcd(a, b)$ (НОД), если $d \in \N$, $d \mid a$, $d \mid b$ и каждый общий делитель $a$ и $b$ делит $d$.
 :::
 
-::: {.lemma ref="lem:lec06:gcd-exists"}
+::: {.lemma ref="lem:lec08:gcd-exists"}
 НОД существует и единствен; $\gcd(0, b) = |b|$; для ненулевых $a = \pm \prod p_i^{\alpha_i}$, $b = \pm \prod p_i^{\beta_i}$: $\gcd(a, b) = \prod p_i^{\min(\alpha_i, \beta_i)}$. *Идея:* единственность — два НОД делят друг друга; существование — признак делимости.
 :::
 
-::: {.definition ref="def:lec06:lcm"}
+::: {.definition ref="def:lec08:lcm"}
 **Наименьшее общее кратное**: $m = \operatorname{lcm}(a, b)$ (НОК), если $m \in \N$, $a \mid m$, $b \mid m$ и $m$ делит каждое общее кратное $a$ и $b$. Значит, из $a \mid c$ и $b \mid c$ следует $\operatorname{lcm}(a, b) \mid c$, но не $ab \mid c$ (это верно лишь при $\gcd(a, b) = 1$: $4 \mid 12$, $6 \mid 12$, $24 \nmid 12$).
 :::
 
-::: {.lemma ref="lem:lec06:lcm-exists"}
+::: {.lemma ref="lem:lec08:lcm-exists"}
 НОК существует и единственно; $\operatorname{lcm}(0, a) = 0$; для ненулевых $a, b$: $\operatorname{lcm}(a, b) = \prod p_i^{\max(\alpha_i, \beta_i)}$.
 :::
 
-::: {.proposition ref="prop:lec06:gcd-lcm-props"}
+::: {.proposition ref="prop:lec08:gcd-lcm-props"}
 НОД и НОК симметричны и ассоциативны. Кроме того, $\gcd(a, a) = \operatorname{lcm}(a, a) = |a|$, а также $\gcd(a, \operatorname{lcm}(a, b)) = |a|$ и $\operatorname{lcm}(a, \gcd(a, b)) = |a|$. Главное: $\gcd(a, b) \cdot \operatorname{lcm}(a, b) = |ab|$. *Идея:* последнее — $\min + \max = \alpha + \beta$.
 :::
 
-::: {.lemma ref="lem:lec06:gcd-shift"}
+::: {.lemma ref="lem:lec08:gcd-shift"}
 $\gcd(a, b) = \gcd(a + bq, b)$ для любых $a, b, q$. *Идея:* у двух пар одни и те же общие делители.
 :::
 
-::: {.corollary ref="cor:lec06:gcd-rem"}
+::: {.corollary ref="cor:lec08:gcd-rem"}
 Если $r$ — остаток от деления $a$ на $b$, то $\gcd(r, b) = \gcd(a, b)$.
 :::
 
-::: {.definition ref="def:lec06:coprime"}
+::: {.definition ref="def:lec08:coprime"}
 **Взаимно простые** числа: $a$ и $b$ взаимно просты, если $\gcd(a, b) = 1$.
 :::
 
-::: {.lemma ref="lem:lec06:coprime-equiv"}
+::: {.lemma ref="lem:lec08:coprime-equiv"}
 Равносильны: $\gcd(a, b) = 1$; каждый общий делитель равен $\pm 1$; нет общего простого делителя; (при $a, b \ne 0$) $\min(\deg(p, a), \deg(p, b)) = 0$ для всех простых $p$.
 :::
 
-::: {.corollary ref="cor:lec06:divide-gcd"}
+::: {.corollary ref="cor:lec08:divide-gcd"}
 Если $(a, b) \ne (0, 0)$, то $\frac{a}{\gcd(a, b)}$ и $\frac{b}{\gcd(a, b)}$ — целые взаимно простые.
 :::
 
-::: {.lemma ref="lem:lec06:coprime-divides"}
+::: {.lemma ref="lem:lec08:coprime-divides"}
 Если $a \mid bc$ и $\gcd(a, b) = 1$, то $a \mid c$. *Идея:* $\alpha_i \le \beta_i + \gamma_i$ и $\min(\alpha_i, \beta_i) = 0$ дают $\alpha_i \le \gamma_i$; другое доказательство — умножить $au + bv = 1$ на $c$.
 :::
 
-::: {.corollary ref="cor:lec06:cancel"}
+::: {.corollary ref="cor:lec08:cancel"}
 Если $ax \equiv ay \pmod m$ и $\gcd(a, m) = 1$, то $x \equiv y \pmod m$.
 :::
 
-::: {.theorem ref="thm:lec06:bezout"}
+::: {.theorem ref="thm:lec08:bezout"}
 Если $\gcd(a, b) = 1$, то $au + bv = 1$ для некоторых $u, v \in \Z$. *Идея:* по ПНЧ берём наименьшее $d > 0$ вида $as + bt$; остаток от деления $a$ (и $b$) на $d$ того же вида и меньше $d$, поэтому равен $0$; значит, $d$ — общий делитель, $d = 1$.
 :::
 
-::: {.corollary ref="cor:lec06:bezout-gcd"}
+::: {.corollary ref="cor:lec08:bezout-gcd"}
 Для любых $a, b$ существуют $u, v$ с $au + bv = \gcd(a, b)$. *Идея:* Безу для $a / \gcd$ и $b / \gcd$, затем умножить на $\gcd$.
 :::
 
-# 7. Теоремы Эйлера и Ферма
+# 9. Теоремы Эйлера и Ферма
 
-::: {.lemma ref="lem:lec07:inverse-exists"}
+::: {.lemma ref="lem:lec09:inverse-exists"}
 При $m > 1$ сравнение $ax \equiv 1 \pmod m$ разрешимо тогда и только тогда, когда $\gcd(a, m) = 1$. *Идея:* $ax + my = 1$ — Безу в одну сторону, общий делитель делит $1$ — в другую.
 :::
 
-::: {.corollary ref="cor:lec07:inverse-unique"}
+::: {.corollary ref="cor:lec09:inverse-unique"}
 При $m > 1$ и $\gcd(a, m) = 1$ существует единственное $x \in \{0, \dots, m - 1\}$ с $ax \equiv 1 \pmod m$; любое решение сравнимо с ним.
 :::
 
-::: {.definition ref="def:lec07:inverse"}
+::: {.definition ref="def:lec09:inverse"}
 **Обратный** элемент: $a^{-1}$ — обратный к $a$ по модулю $m$: единственное $x \in \{0, \dots, m - 1\}$ с $ax \equiv 1 \pmod m$ (при $m > 1$ и $\gcd(a, m) = 1$); $(a^{-1})^{-1} \equiv a$.
 :::
 
-::: {.definition ref="def:lec07:totient"}
+::: {.definition ref="def:lec09:totient"}
 **Функция Эйлера**: $\varphi(m)$ при $m > 1$ — количество чисел из $\{0, 1, \dots, m - 1\}$, взаимно простых с $m$; $\varphi(p) = p - 1$, а для различных простых $p$, $q$: $\varphi(pq) = (p - 1)(q - 1)$, $\varphi(p^2) = p^2 - p$.
 :::
 
-::: {.theorem ref="thm:lec07:euler"}
+::: {.theorem ref="thm:lec09:euler"}
 Если $m > 1$ и $\gcd(a, m) = 1$, то $a^{\varphi(m)} \equiv 1 \pmod m$. *Идея:* остатки чисел $aq_1, \dots, aq_s$ ($q_i$ — взаимно простые с $m$ остатки) попарно различны и взаимно просты с $m$, то есть совпадают с $q_1, \dots, q_s$; перемножить и сократить на $q_1 \cdots q_s$.
 :::
 
-::: {.corollary ref="cor:lec07:fermat"}
+::: {.corollary ref="cor:lec09:fermat"}
 Если $p$ простое и $p \nmid a$, то $a^{p-1} \equiv 1 \pmod p$. Обращение неверно, но верен критерий простоты (без доказательства): $m > 1$ простое тогда и только тогда, когда для некоторого $a$ выполнено $a^{m-1} \equiv 1 \pmod m$ и $a^{(m-1)/q} \not\equiv 1 \pmod m$ для каждого простого $q \mid m - 1$.
 :::
 
-::: {.proposition ref="prop:lec07:fermat-alt"}
+::: {.proposition ref="prop:lec09:fermat-alt"}
 Если $p$ простое, то $a^p \equiv a \pmod p$ для любого $a$; равносильно МТФ.
 :::
 
-::: {.corollary ref="cor:lec07:exp-mod"}
+::: {.corollary ref="cor:lec09:exp-mod"}
 Если $m > 1$, $\gcd(a, m) = 1$, $x, y \in \N$ и $\varphi(m) \mid x - y$, то $a^x \equiv a^y \pmod m$.
 :::
 
-::: {.definition ref="def:lec07:neg-power"}
+::: {.definition ref="def:lec09:neg-power"}
 **Отрицательная степень** по модулю. При $m > 1$, $\gcd(a, m) = 1$ и $k \in \N$: $a^{-k} = (a^{-1})^k$ по модулю $m$; $a^{-k} \equiv (a^k)^{-1}$.
 :::
 
-::: {.lemma ref="lem:lec07:neg-power"}
+::: {.lemma ref="lem:lec09:neg-power"}
 При $m > 1$ и $\gcd(a, m) = 1$ для всех $x, y \in \Z$: $a^{x+y} \equiv a^x a^y$, $a^{xy} \equiv (a^x)^y \pmod m$. *Идея:* разбор знаков $x$ и $y$ через $(a^{-1})^k \equiv (a^k)^{-1}$.
 :::
 
-::: {.corollary ref="cor:lec07:exp-mod-int"}
+::: {.corollary ref="cor:lec09:exp-mod-int"}
 Если $m > 1$, $\gcd(a, m) = 1$, $x, y \in \Z$ и $\varphi(m) \mid x - y$, то $a^x \equiv a^y \pmod m$.
 :::
 
-# 8. Линейные сравнения и КТО
+# 10. Алгоритм Евклида и диофантовы уравнения
 
-::: {.definition ref="def:lec08:euclid"}
+::: {.definition ref="def:lec10:euclid"}
 **Алгоритм Евклида** для $a$ и $b \ne 0$: $r_0 = a$, $r_1 = b$, $r_k = r_{k+1} q_{k+1} + r_{k+2}$ с $0 \le r_{k+2} < |r_{k+1}|$, пока очередной остаток не равен $0$; $r_s$ — последний ненулевой остаток.
 :::
 
-::: {.lemma ref="lem:lec08:euclid-stops"}
+::: {.lemma ref="lem:lec10:euclid-stops"}
 Алгоритм Евклида останавливается для любых $a$ и $b \ne 0$. *Идея:* остатки — строго убывающие натуральные числа; по ПНЧ среди них есть наименьший, и он может быть только нулём.
 :::
 
-::: {.lemma ref="lem:lec08:euclid-gcd"}
+::: {.lemma ref="lem:lec10:euclid-gcd"}
 $\gcd(a, b) = |r_s|$ (при $s \ge 2$ просто $r_s$). *Идея:* $\gcd(r_k, r_{k+1}) = \gcd(r_{k+1}, r_{k+2})$ на каждом шаге, в конце $\gcd(r_s, 0) = |r_s|$.
 :::
 
-::: {.definition ref="def:lec08:extended"}
+::: {.definition ref="def:lec10:extended"}
 **Расширенный алгоритм Евклида**: $u_0 = 1$, $v_0 = 0$, $u_1 = 0$, $v_1 = 1$, $u_{k+2} = u_k - u_{k+1} q_{k+1}$, $v_{k+2} = v_k - v_{k+1} q_{k+1}$.
 :::
 
-::: {.proposition ref="prop:lec08:extended"}
+::: {.proposition ref="prop:lec10:extended"}
 $r_k = a u_k + b v_k$ для всех $k$; в частности, $\gcd(a, b) = \pm(a u_s + b v_s)$. *Идея:* сильная индукция по $k$ — коэффициенты пересчитываются той же формулой, что и остатки.
 :::
 
-::: {.theorem ref="thm:lec08:diophantine"}
+::: {.theorem ref="thm:lec10:diophantine"}
 При $a, b \ne 0$ уравнение $ax + by = c$ разрешимо в целых числах тогда и только тогда, когда $d = \gcd(a, b) \mid c$; тогда все решения — $(x_0 - b't, y_0 + a't)$, $t \in \Z$, где $a' = \frac{a}{d}$, $b' = \frac{b}{d}$, $(x_0, y_0)$ — любое решение. *Идея:* сократить на $d$; частное решение — Безу, умноженное на $\frac{c}{d}$; из $a'(x_0 - x) = b'(y - y_0)$ и $\gcd(a', b') = 1$ следует $b' \mid x_0 - x$.
 :::
 
-::: {.definition ref="def:lec08:congruence-solution"}
+# 11. Линейные сравнения и КТО
+
+::: {.definition ref="def:lec11:congruence-solution"}
 **Решение сравнения** $ax \equiv c \pmod m$ ($m > 1$) — число $x_0$ с $ax_0 \equiv c \pmod m$ и $0 \le x_0 < m$.
 :::
 
-::: {.theorem ref="thm:lec08:linear-congruence"}
+::: {.theorem ref="thm:lec11:linear-congruence"}
 При $a \ne 0$, $m > 1$, $d = \gcd(a, m)$ сравнение $ax \equiv c \pmod m$ разрешимо тогда и только тогда, когда $d \mid c$; тогда у него ровно $d$ решений $x_0, x_0 + m', \dots, x_0 + (d - 1)m'$, где $m' = \frac{m}{d}$, а $x_0$ — единственное число из $[0, m')$ с $m' \mid \frac{a}{d} x_0 - \frac{c}{d}$. *Идея:* сравнение — уравнение $ax - my = c$; после сокращения на $d$ решение по модулю $m'$ единственно (сокращение на $a'$, взаимно простое с $m'$), а в $[0, m)$ лежат $d$ сравнимых с ним чисел.
 :::
 
-::: {.proposition ref="prop:lec08:pouring"}
+::: {.proposition ref="prop:lec11:pouring"}
 Сосудами на $a$ и $b$ литров ($a, b \in \N_+$) можно отмерить $c$ литров тогда и только тогда, когда $\gcd(a, b) \mid c$ и $0 \le c \le \max(a, b)$. *Идея:* все объёмы всегда имеют вид $ax + by$; при $a \le b$ переливание малого сосуда в большой даёт в большом остатки чисел $ka$ по модулю $b$, а $ak \equiv c \pmod b$ разрешимо при $\gcd(a, b) \mid c$.
 :::
 
-::: {.proposition ref="prop:lec08:brute-force"}
+::: {.proposition ref="prop:lec11:brute-force"}
 Значение многочлена с целыми коэффициентами по модулю $m$ зависит только от остатков аргументов; поэтому все решения полиномиального сравнения находятся перебором кортежей остатков $0, \dots, m - 1$.
 :::
 
-::: {.definition ref="def:lec08:lcm-many"}
+::: {.definition ref="def:lec11:lcm-many"}
 **НОК** нескольких чисел: $\mu = \operatorname{lcm}(c_1, \dots, c_n)$, если $\mu \in \N$, все $c_i \mid \mu$ и $\mu$ делит каждое общее кратное $c_1, \dots, c_n$.
 :::
 
-::: {.lemma ref="lem:lec08:lcm-many"}
+::: {.lemma ref="lem:lec11:lcm-many"}
 НОК нескольких чисел существует и единственно; равен $0$, если некоторое $c_i = 0$, и $\prod_j p_j^{\max_i \gamma_{ij}}$ для ненулевых $c_i = \pm \prod_j p_j^{\gamma_{ij}}$.
 :::
 
-::: {.corollary ref="cor:lec08:mod-lcm"}
+::: {.corollary ref="cor:lec11:mod-lcm"}
 При $m_1, \dots, m_n > 1$: $x \equiv y \pmod{m_i}$ для всех $i$ тогда и только тогда, когда $x \equiv y \pmod{\operatorname{lcm}(m_1, \dots, m_n)}$.
 :::
 
-::: {.definition ref="def:lec08:system"}
+::: {.definition ref="def:lec11:system"}
 **Решение системы сравнений** $P_i(x_1, \dots, x_k) \equiv 0 \pmod{m_i}$, $i = 1, \dots, n$, — кортеж, удовлетворяющий всем сравнениям, с $0 \le x_j < \mu = \operatorname{lcm}(m_1, \dots, m_n)$.
 :::
 
-::: {.lemma ref="lem:lec08:system-reduce"}
+::: {.lemma ref="lem:lec11:system-reduce"}
 Целый кортеж удовлетворяет системе тогда и только тогда, когда он покомпонентно сравним по модулю $\mu$ с некоторым решением. *Идея:* взять остатки по модулю $\mu$; так как $m_i \mid \mu$, значения многочленов по модулю $m_i$ не меняются.
 :::
 
-::: {.corollary ref="cor:lec08:system-disjunction"}
+::: {.corollary ref="cor:lec11:system-disjunction"}
 Система с одной переменной $x$ и решениями $z_1, \dots, z_s$ равносильна совокупности $x \equiv z_1 \pmod \mu$ или … или $x \equiv z_s \pmod \mu$.
 :::
 
-::: {.definition ref="def:lec08:pairwise"}
+::: {.definition ref="def:lec11:pairwise"}
 **Попарно взаимно простые** числа: $c_1, \dots, c_n$ попарно взаимно просты, если $\gcd(c_i, c_j) = 1$ при всех $i \ne j$.
 :::
 
-::: {.lemma ref="lem:lec08:lcm-coprime"}
+::: {.lemma ref="lem:lec11:lcm-coprime"}
 Для попарно взаимно простых $c_1, \dots, c_n$: $\operatorname{lcm}(c_1, \dots, c_n) = |c_1 \cdots c_n|$. *Идея:* у каждого простого положительна степень не более чем в одном $c_i$, поэтому сумма степеней равна максимуму.
 :::
 
-::: {.theorem ref="thm:lec08:crt"}
+::: {.theorem ref="thm:lec11:crt"}
 Если $m_1, \dots, m_n > 1$ попарно взаимно просты, то для любых $a_1, \dots, a_n$ система $x \equiv a_i \pmod{m_i}$ имеет единственное решение $x$ с $0 \le x < m_1 \cdots m_n$. *Идея:* единственность — НОК модулей равен произведению; существование — индукция по $n$: первые $n$ сравнений сворачиваются в $x \equiv x_0 \pmod \mu$, и при $\mu u + mv = 1$ число $x_1 = a\mu u + x_0 mv$ решает пару $x \equiv x_0 \pmod \mu$, $x \equiv a \pmod m$.
 :::
 
-# 9. Множества и булеан
+# 12. Множества и булеан
 
-::: {.axiom ref="ax:lec09:foundation"}
+::: {.axiom ref="ax:lec12:foundation"}
 Нет бесконечных цепочек $x_0 \ni x_1 \ni x_2 \ni \dots$
 :::
 
-::: {.proposition ref="prop:lec09:not-self"}
+::: {.proposition ref="prop:lec12:not-self"}
 $a \notin a$ для любого $a$; отсюда $a \ne \{a\}$. *Идея:* иначе цепочка $a \ni a \ni \dots$
 :::
 
-::: {.definition ref="def:lec09:equal"}
+::: {.definition ref="def:lec12:equal"}
 **Равенство множеств**: $A = B \iff \forall x\, (x \in A \iff x \in B)$.
 :::
 
-::: {.axiom ref="ax:lec09:equality"}
+::: {.axiom ref="ax:lec12:equality"}
 $A = B \wedge B \in C \Rightarrow A \in C$; равные множества взаимозаменяемы.
 :::
 
-::: {.definition ref="def:lec09:subset"}
+::: {.definition ref="def:lec12:subset"}
 **Подмножество**: $A \subseteq B \iff \forall x\, (x \in A \Rightarrow x \in B)$; собственное подмножество — $A \subseteq B$, $A \ne B$.
 :::
 
-::: {.lemma ref="lem:lec09:subset"}
+::: {.lemma ref="lem:lec12:subset"}
 $A \subseteq A$; $A \subseteq B \subseteq C \Rightarrow A \subseteq C$; $A = B \iff A \subseteq B \wedge B \subseteq A$. *Идея:* произвольный элемент.
 :::
 
-::: {.corollary ref="cor:lec09:equal"}
+::: {.corollary ref="cor:lec12:equal"}
 $A = A$; $A = B \wedge B = C \Rightarrow A = C$; $A = B \Rightarrow B = A$. *Идея:* свести к двум включениям и применить свойства $\subseteq$.
 :::
 
-::: {.axiom ref="ax:lec09:listing"}
+::: {.axiom ref="ax:lec12:listing"}
 Существует $\{a_1, \dots, a_n\}$: $x \in \{a_1, \dots, a_n\} \iff x = a_1 \vee \ldots \vee x = a_n$; синглетон $\{a\}$. Двух элементов запись не гарантирует: $\{a, b\} = \{a\} \iff a = b$.
 :::
 
-::: {.axiom ref="ax:lec09:specification"}
+::: {.axiom ref="ax:lec12:specification"}
 Существует $\{x \in A \mid \varphi(x)\}$: $y \in \{x \in A \mid \varphi(x)\} \iff y \in A \wedge \varphi(y)$.
 :::
 
-::: {.definition ref="def:lec09:empty"}
+::: {.definition ref="def:lec12:empty"}
 **Пустое** множество: $E$ пусто, если $\forall x\, (x \notin E)$; $\varnothing = \{x \in \N \mid x \ne x\}$.
 :::
 
-::: {.lemma ref="lem:lec09:empty"}
+::: {.lemma ref="lem:lec12:empty"}
 Пустое множество — подмножество любого; любые два пустых множества равны. *Идея:* пустая истина.
 :::
 
-::: {.corollary ref="cor:lec09:empty-unique"}
+::: {.corollary ref="cor:lec12:empty-unique"}
 $\varnothing$ — единственное пустое множество: например, $\{x \in \Z \mid x^2 = -1\} = \{x \in \R \mid x \ne x\} = \varnothing$.
 :::
 
-::: {.definition ref="def:lec09:bounded"}
+::: {.definition ref="def:lec12:bounded"}
 **Ограниченные кванторы**: $\forall x \in A\ \varphi \equiv \forall x\, (x \in A \to \varphi)$, $\exists x \in A\ \varphi \equiv \exists x\, (x \in A \wedge \varphi)$.
 :::
 
-::: {.proposition ref="prop:lec09:bounded-neg"}
+::: {.proposition ref="prop:lec12:bounded-neg"}
 $\neg\forall x \in A\ \varphi \equiv \exists x \in A\ \neg\varphi$, $\neg\exists x \in A\ \varphi \equiv \forall x \in A\ \neg\varphi$. *Идея:* отрицание кванторов и $\neg(P \to Q) \equiv P \wedge \neg Q$.
 :::
 
-::: {.lemma ref="lem:lec09:russell"}
+::: {.lemma ref="lem:lec12:russell"}
 Нет $R$ с $\forall x\, (x \in R \iff x \notin x)$. *Идея:* подставить $x := R$.
 :::
 
-::: {.corollary ref="cor:lec09:no-universal"}
+::: {.corollary ref="cor:lec12:no-universal"}
 $\{x \in A \mid x \notin x\} \notin A$; множества всех множеств нет. *Идея:* рассуждение Рассела внутри $A$.
 :::
 
-::: {.axiom ref="ax:lec09:powerset"}
+::: {.axiom ref="ax:lec12:powerset"}
 Существует $\mathcal{P}(A)$: $x \in \mathcal{P}(A) \iff x \subseteq A$.
 :::
 
-# 10. Алгебра множеств
+# 13. Алгебра множеств
 
-::: {.axiom ref="ax:lec10:union"}
+::: {.axiom ref="ax:lec13:union"}
 Существует $\bigcup A$: $x \in \bigcup A \iff \exists \alpha\, (x \in \alpha \wedge \alpha \in A)$. Индексная запись: $\bigcup_{i \in I} A_i := \bigcup\{A_i \mid i \in I\}$, то есть $x \in \bigcup_{i \in I} A_i \iff \exists i \in I\ (x \in A_i)$. Пересечение непустого семейства $A$ аксиомы не требует: $\bigcap A = \{x \in \alpha_0 \mid \forall \alpha \in A\ (x \in \alpha)\}$ для любого $\alpha_0 \in A$; $\bigcap \varnothing$ не определено.
 :::
 
-::: {.definition ref="def:lec10:operations"}
+::: {.definition ref="def:lec13:operations"}
 **Операции** над множествами: $A \cup B = \bigcup\{A, B\}$, $A \cap B = \{x \in A \mid x \in B\}$, $A \setminus B = \{x \in A \mid x \notin B\}$; непересекающиеся — $A \cap B = \varnothing$.
 :::
 
-::: {.lemma ref="lem:lec10:basic-incl"}
+::: {.lemma ref="lem:lec13:basic-incl"}
 $A \cap B \subseteq A \subseteq A \cup B$, $A \cap B \subseteq B \subseteq A \cup B$; $A \setminus B \subseteq A$ и $(A \setminus B) \cap B = \varnothing$. *Идея:* каждое включение — тавтология о принадлежности.
 :::
 
-::: {.lemma ref="lem:lec10:subset-equiv"}
+::: {.lemma ref="lem:lec13:subset-equiv"}
 $A \subseteq B \iff A \cap B = A \iff A \cup B = B$; для $A, B \subseteq U$ ещё $\iff A \setminus B = \varnothing \iff \bar B \subseteq \bar A$. *Идея:* доказательство по кругу; две последние формы — через тождества алгебры множеств.
 :::
 
-::: {.definition ref="def:lec10:complement"}
+::: {.definition ref="def:lec13:complement"}
 **Дополнение**: $\bar A = U \setminus A$ для $A \subseteq U$; $A \setminus B = A \cap \bar B$.
 :::
 
-::: {.theorem ref="thm:lec10:identities"}
+::: {.theorem ref="thm:lec13:identities"}
 Коммутативность, ассоциативность, идемпотентность, поглощение, $\bar{\bar A} = A$, две дистрибутивности, законы де Моргана, свойства $\varnothing$ и $U$, $A \cap \bar A = \varnothing$, $A \cup \bar A = U$. Де Морган для разности (без универсума): $A \setminus (B \cup C) = (A \setminus B) \cap (A \setminus C)$, $A \setminus (B \cap C) = (A \setminus B) \cup (A \setminus C)$. *Идея:* поэлементный перевод в логические эквивалентности; на практике — таблица принадлежности из $2^k$ строк.
 :::
 
-# 11. Пары и декартово произведение
+# 14. Пары и декартово произведение
 
-::: {.definition ref="def:lec11:pair"}
+::: {.definition ref="def:lec14:pair"}
 **Упорядоченная пара**: $(a, b) = \{\{a\}, \{a, b\}\}$ (по Куратовскому); $(a, a) = \{\{a\}\}$. Компоненты восстанавливаются: $\bigcup (a, b) = \{a, b\}$, $\bigcap (a, b) = \{a\}$.
 :::
 
-::: {.lemma ref="lem:lec11:pair"}
+::: {.lemma ref="lem:lec14:pair"}
 $(a, b) = (c, d) \iff a = c \wedge b = d$. *Идея:* из $\{a\} \in (c, d)$ получить $a = c$, затем разобрать $\{a, b\} = \{c\}$ и $\{a, b\} = \{c, d\}$.
 :::
 
-::: {.corollary ref="cor:lec11:pair-swap"}
+::: {.corollary ref="cor:lec14:pair-swap"}
 $(a, b) = (b, a) \iff a = b$.
 :::
 
-::: {.definition ref="def:lec11:product"}
+::: {.definition ref="def:lec14:product"}
 **Декартово произведение**: $A \times B = \{z \in \mathcal{P}(\mathcal{P}(A \cup B)) \mid \exists a \in A\ \exists b \in B\ z = (a, b)\}$; $A_1 \times \ldots \times A_n$ — скобки слева.
 :::
 
-::: {.definition ref="def:lec11:power"}
+::: {.definition ref="def:lec14:power"}
 **Декартова степень**: $A^0 = \{\varnothing\}$, $A^1 = A$, $A^n = A \times \ldots \times A$ при $n \ge 2$; $A^{n+1} = A^n \times A$ только при $n \ge 1$. Так, $\R^3 = \R^2 \times \R$ и $(x, y, z) = ((x, y), z)$, но $\R \times \R^2 \ne \R^3$.
 :::
 
-::: {.definition ref="def:lec11:tuple"}
+::: {.definition ref="def:lec14:tuple"}
 **Кортеж**: $(a_1, \dots, a_n) = ((\dots(a_1, a_2), \dots), a_n)$ при $n \ge 2$.
 :::
 
-::: {.lemma ref="lem:lec11:tuple"}
+::: {.lemma ref="lem:lec14:tuple"}
 $(a_1, \dots, a_n) = (b_1, \dots, b_n) \iff \forall i\ a_i = b_i$. *Идея:* критерий равенства пар $n - 1$ раз.
 :::
 
-# 12. Бинарные отношения
+# 15. Бинарные отношения
 
-::: {.definition ref="def:lec12:relation"}
+::: {.definition ref="def:lec15:relation"}
 **Бинарное отношение** между $A$ и $B$ — любое $R \subseteq A \times B$; при $A = B$ — отношение на $A$. Запись $xRy$ означает $(x, y) \in R$.
 :::
 
-::: {.definition ref="def:lec12:dom-rng"}
+::: {.definition ref="def:lec15:dom-rng"}
 **Область определения и значений**: $\operatorname{dom} R = \{a \mid \exists b\, (a, b) \in R\}$, $\operatorname{rng} R = \{b \mid \exists a\, (a, b) \in R\}$, поле — $\operatorname{dom} R \cup \operatorname{rng} R$.
 :::
 
-::: {.definition ref="def:lec12:identity"}
+::: {.definition ref="def:lec15:identity"}
 **Тождественное отношение**: $\mathrm{id}_A = \{(x, x) \mid x \in A\}$.
 :::
 
-::: {.definition ref="def:lec12:converse"}
+::: {.definition ref="def:lec15:converse"}
 **Обратное отношение**: $R^{-1} = \{(b, a) \mid (a, b) \in R\}$; $(b, a) \in R^{-1} \iff (a, b) \in R$, $\operatorname{dom} R^{-1} = \operatorname{rng} R$, $\operatorname{rng} R^{-1} = \operatorname{dom} R$.
 :::
 
-::: {.definition ref="def:lec12:complement"}
+::: {.definition ref="def:lec15:complement"}
 **Дополнение** отношения. Для $R \subseteq A \times B$: $\overline{R} = (A \times B) \setminus R$ (зависит от выбора $A$ и $B$).
 :::
 
-::: {.lemma ref="lem:lec12:converse-props"}
+::: {.lemma ref="lem:lec15:converse-props"}
 $(P^{-1})^{-1} = P$; $(P \cup Q)^{-1} = P^{-1} \cup Q^{-1}$; $(P \cap Q)^{-1} = P^{-1} \cap Q^{-1}$; для $P \subseteq A \times B$: $(\overline{P})^{-1} = \overline{P^{-1}}$ (дополнения до $A \times B$ и $B \times A$). *Идея:* цепочка равносильностей для произвольной пары.
 :::
 
-::: {.corollary ref="cor:lec12:converse-mono"}
+::: {.corollary ref="cor:lec15:converse-mono"}
 Если $P \subseteq Q$, то $P^{-1} \subseteq Q^{-1}$. *Идея:* $Q = P \cup Q$ и обращение объединения.
 :::
 
-::: {.proposition ref="prop:lec12:converse-ne-complement"}
+::: {.proposition ref="prop:lec15:converse-ne-complement"}
 Если $R \subseteq A \times B$, $A \ne \varnothing$, $B \ne \varnothing$, то $R^{-1} \ne \overline{R}$. *Идея:* $R = \varnothing$ не подходит; из $(a, b) \in R$ получаем $b \in A \cap B$, и для пары $(b, b)$ выходит $(b, b) \in R \iff (b, b) \notin R$.
 :::
 
-::: {.definition ref="def:lec12:composition"}
+::: {.definition ref="def:lec15:composition"}
 **Композиция**: $Q \circ P = \{(a, c) \mid \exists b\, (aPb \wedge bQc)\}$ — сначала $P$, потом $Q$.
 :::
 
-::: {.proposition ref="prop:lec12:identity-unit"}
+::: {.proposition ref="prop:lec15:identity-unit"}
 Если $R \subseteq A \times B$, то $R \circ \mathrm{id}_A = R = \mathrm{id}_B \circ R$.
 :::
 
-::: {.theorem ref="thm:lec12:assoc"}
+::: {.theorem ref="thm:lec15:assoc"}
 $R \circ (Q \circ P) = (R \circ Q) \circ P$. *Идея:* обе части — «путь $P$, $Q$, $R$»; переставить $\exists b\, \exists c$ и вносить/выносить конъюнкт, не зависящий от переменной квантора.
 :::
 
-::: {.theorem ref="thm:lec12:converse-comp"}
+::: {.theorem ref="thm:lec15:converse-comp"}
 $(Q \circ P)^{-1} = P^{-1} \circ Q^{-1}$. *Идея:* $(c, a) \in Q \circ P \iff \exists b\, (cPb \wedge bQa) \iff \exists b\, (aQ^{-1}b \wedge bP^{-1}c)$.
 :::
 
-::: {.lemma ref="lem:lec12:distrib"}
+::: {.lemma ref="lem:lec15:distrib"}
 $(P \cup Q) \circ R = (P \circ R) \cup (Q \circ R)$; $(P \cap Q) \circ R \subseteq (P \circ R) \cap (Q \circ R)$, и включение бывает строгим. Так же слева: $R \circ (P \cup Q) = (R \circ P) \cup (R \circ Q)$. *Идея:* $\exists$ проходит сквозь $\vee$, но из $\exists (A \wedge B)$ следует лишь $\exists A \wedge \exists B$; левая версия — обращением.
 :::
 
-::: {.definition ref="def:lec12:image"}
+::: {.definition ref="def:lec15:image"}
 **Образ** $R[X] = \{b \mid \exists a \in X\ aRb\}$, прообраз $R^{-1}[X] = \{a \mid \exists b \in X\ aRb\}$.
 :::
 
-::: {.proposition ref="prop:lec12:image-props"}
+::: {.proposition ref="prop:lec15:image-props"}
 $R[X \cup Y] = R[X] \cup R[Y]$; $X \subseteq Y \Rightarrow R[X] \subseteq R[Y]$; $R[\varnothing] = \varnothing$; $R[X \cap Y] \subseteq R[X] \cap R[Y]$ (бывает строго); $(R \circ Q)[X] = R[Q[X]]$. *Идея:* те же законы о кванторах, что и для композиции; включение для $\cap$ — из монотонности.
 :::
 
-# 13. Функции
+# 16. Функции
 
-::: {.definition ref="def:lec13:functional-injective"}
+::: {.definition ref="def:lec16:functional-injective"}
 **Функциональное** и **инъективное** отношения: $R$ функционально, если $(xRy \wedge xRz) \Longrightarrow y = z$; инъективно, если $(yRx \wedge zRx) \Longrightarrow y = z$ (для всех $x$, $y$, $z$).
 :::
 
-::: {.definition ref="def:lec13:total-surjective"}
+::: {.definition ref="def:lec16:total-surjective"}
 **Тотальное** и **сюръективное** отношения: $R$ тотально для $Z$, если $\forall x \in Z\ \exists y\ xRy$ (то есть $Z \subseteq \operatorname{dom} R$); сюръективно для $Z$, если $\forall x \in Z\ \exists y\ yRx$ (то есть $Z \subseteq \operatorname{rng} R$). Для $R \subseteq A \times B$ по умолчанию $Z = A$ для тотальности и $Z = B$ для сюръективности.
 :::
 
-::: {.lemma ref="lem:lec13:duality"}
+::: {.lemma ref="lem:lec16:duality"}
 $R$ функционально $\iff$ $R^{-1}$ инъективно; $R$ инъективно $\iff$ $R^{-1}$ функционально; $R$ тотально для $Z$ $\iff$ $R^{-1}$ сюръективно для $Z$; $R$ сюръективно для $Z$ $\iff$ $R^{-1}$ тотально для $Z$. *Идея:* $xRy \iff yR^{-1}x$ превращает одно определение в другое; вторые половины — применением первых к $R^{-1}$.
 :::
 
-::: {.lemma ref="lem:lec13:composition"}
+::: {.lemma ref="lem:lec16:composition"}
 Пусть $Q \subseteq A \times B$, $R \subseteq B \times C$. Если $Q$ и $R$ функциональны (инъективны), то $R \circ Q$ функционально (инъективно); если $Q$ тотально для $A$, а $R$ — для $B$, то $R \circ Q$ тотально для $A$; если $Q$ сюръективно для $B$, а $R$ — для $C$, то $R \circ Q$ сюръективно для $C$. *Идея:* функциональность и тотальность — прямо по путям из двух стрелок; инъективность и сюръективность — двойственностью и $(R \circ Q)^{-1} = Q^{-1} \circ R^{-1}$.
 :::
 
-::: {.proposition ref="prop:lec13:cap"}
+::: {.proposition ref="prop:lec16:cap"}
 Если $R$ инъективно, то $R[X \cap Y] = R[X] \cap R[Y]$; если $R$ функционально, то $R^{-1}[X \cap Y] = R^{-1}[X] \cap R^{-1}[Y]$. *Идея:* две стрелки в общую точку образа выходят из одной точки; для прообраза — применить к инъективному $R^{-1}$.
 :::
 
-::: {.proposition ref="prop:lec13:preimage-image"}
+::: {.proposition ref="prop:lec16:preimage-image"}
 Если $R \subseteq A \times B$ тотально и $X \subseteq A$, то $X \subseteq R^{-1}[R[X]]$ (равенство не обязательно даже для функций).
 :::
 
-::: {.definition ref="def:lec13:function"}
+::: {.definition ref="def:lec16:function"}
 **Функция**: $f \subseteq A \times B$ — функция из $A$ в $B$ ($f\colon A \to B$), если $f$ функционально и тотально для $A$. Тогда $\operatorname{dom} f = A$, $\operatorname{rng} f \subseteq B$; множество $B$ функцией не определяется.
 :::
 
-::: {.definition ref="def:lec13:value"}
+::: {.definition ref="def:lec16:value"}
 **Значение функции**. Для $f\colon A \to B$ и $x \in A$ значение $f(x)$ — единственный $y$ с $(x, y) \in f$; $f[\{x\}] = \{f(x)\}$.
 :::
 
-::: {.lemma ref="lem:lec13:equality"}
+::: {.lemma ref="lem:lec16:equality"}
 Для $f\colon A \to B$, $g\colon C \to D$: $f = g \iff A = C \wedge \forall x \in A\ f(x) = g(x)$. *Идея:* $A = \operatorname{dom} f$; при равных значениях каждая пара $f$ лежит в $g$ и наоборот.
 :::
 
-::: {.proposition ref="prop:lec13:comp-values"}
+::: {.proposition ref="prop:lec16:comp-values"}
 Если $f\colon A \to B$, $g\colon B \to C$, то $g \circ f\colon A \to C$ и $(g \circ f)(a) = g(f(a))$. *Идея:* лемма о композиции; путь $a \to f(a) \to g(f(a))$.
 :::
 
-::: {.definition ref="def:lec13:functions-set"}
+::: {.definition ref="def:lec16:functions-set"}
 **Множество функций**: $B^A = \{f \in \mathcal{P}(A \times B) \mid f\colon A \to B\}$; $B^\varnothing = \{\varnothing\}$, $\varnothing^A = \varnothing$ при $A \ne \varnothing$.
 :::
 
-::: {.definition ref="def:lec13:bijection"}
+::: {.definition ref="def:lec16:bijection"}
 **Инъекция**, **сюръекция**, **биекция**. Функция $f\colon A \to B$ — инъекция, если инъективна; сюръекция, если сюръективна для $B$; биекция (взаимно однозначное соответствие), если и то и другое.
 :::
 
-::: {.proposition ref="prop:lec13:by-values"}
+::: {.proposition ref="prop:lec16:by-values"}
 $f\colon A \to B$ инъективна тогда и только тогда, когда из $f(x) = f(y)$ при $x, y \in A$ следует $x = y$; сюръективна тогда и только тогда, когда $\forall y \in B\ \exists x \in A\ f(x) = y$.
 :::
 
-::: {.lemma ref="lem:lec13:bijection-converse"}
+::: {.lemma ref="lem:lec16:bijection-converse"}
 $R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1}$ — биекция из $B$ в $A$ (обратная функция $f^{-1}$). *Идея:* двойственность переставляет четыре свойства.
 :::
 
-::: {.corollary ref="cor:lec13:bijection-comp"}
+::: {.corollary ref="cor:lec16:bijection-comp"}
 Если $f\colon A \to B$ и $g\colon B \to C$ — биекции (инъекции, сюръекции), то $g \circ f\colon A \to C$ — биекция (инъекция, сюръекция); для биекций $(g \circ f)^{-1} = f^{-1} \circ g^{-1}$.
 :::
 
-::: {.lemma ref="lem:lec13:criteria"}
+::: {.lemma ref="lem:lec16:criteria"}
 Для $R \subseteq A \times B$: функционально $\iff$ $R \circ R^{-1} \subseteq \mathrm{id}_B$; инъективно $\iff$ $R^{-1} \circ R \subseteq \mathrm{id}_A$; сюръективно $\iff$ $\mathrm{id}_B \subseteq R \circ R^{-1}$; тотально $\iff$ $\mathrm{id}_A \subseteq R^{-1} \circ R$. *Идея:* $(x, y) \in R \circ R^{-1} \iff \exists z\, (zRx \wedge zRy)$; пункты 2 и 4 — применить 1 и 3 к $R^{-1}$.
 :::
 
-::: {.corollary ref="cor:lec13:bijection-inverse"}
+::: {.corollary ref="cor:lec16:bijection-inverse"}
 $R \subseteq A \times B$ — биекция из $A$ в $B$ $\iff$ $R^{-1} \circ R = \mathrm{id}_A$ и $R \circ R^{-1} = \mathrm{id}_B$.
 :::
 
-# 14. Равномощность и теорема Кантора
+# 17. Равномощность и теорема Кантора
 
-::: {.definition ref="def:lec14:equinumerous"}
+::: {.definition ref="def:lec17:equinumerous"}
 **Равномощные** множества: $A \sim B$ ($A$ и $B$ равномощны), если существует биекция $f\colon A \to B$; запись $A \sim_f B$.
 :::
 
-::: {.lemma ref="lem:lec14:equiv"}
+::: {.lemma ref="lem:lec17:equiv"}
 $A \sim A$; $A \sim B \Rightarrow B \sim A$; $A \sim B \wedge B \sim C \Rightarrow A \sim C$. *Идея:* $\mathrm{id}_A$, обратная биекция, композиция биекций.
 :::
 
-::: {.proposition ref="prop:lec14:onto-image"}
+::: {.proposition ref="prop:lec17:onto-image"}
 Если $f\colon A \to B$ — инъекция, то $A \sim_f f[A]$ и $X \sim f[X]$ для всех $X \subseteq A$.
 :::
 
-::: {.proposition ref="prop:lec14:glue"}
+::: {.proposition ref="prop:lec17:glue"}
 Если $A \cap C = \varnothing$, $B \cap D = \varnothing$, $A \sim_f B$ и $C \sim_g D$, то $A \cup C \sim_{f \cup g} B \cup D$. *Идея:* $f \cup g$ — функция, так как области не пересекаются; инъективность внутри куска — от $f$ или $g$, между кусками — из $B \cap D = \varnothing$.
 :::
 
-::: {.theorem ref="thm:lec14:cantor"}
+::: {.theorem ref="thm:lec17:cantor"}
 $A \nsim \mathcal{P}(A)$ для любого $A$; более того, сюръекции $A \to \mathcal{P}(A)$ нет. *Идея:* диагональное множество $X = \{a \in A \mid a \notin \varphi(a)\}$ отличается от каждого $\varphi(a)$ в точке $a$.
 :::
 
-::: {.theorem ref="thm:lec14:arithmetic"}
+::: {.theorem ref="thm:lec17:arithmetic"}
 Если $A \sim B$, то $A \times C \sim B \times C$, $A^C \sim B^C$, $C^A \sim C^B$; $A \times B \sim B \times A$; $(A \times B) \times C \sim A \times (B \times C)$; $(A \times B)^C \sim A^C \times B^C$; $(C^B)^A \sim C^{A \times B}$. *Идея:* явные биекции; $C^A \to C^B$ — $f \mapsto f \circ \varphi^{-1}$; последний пункт — каррирование $f \mapsto ((a, b) \mapsto (f(a))(b))$.
 :::
 
-# 15. Индикаторы и теорема КШБ
+# 18. Индикаторы и теорема КШБ
 
-::: {.definition ref="def:lec15:n-set"}
+::: {.definition ref="def:lec18:n-set"}
 **Множество** $\mathbf{n}$: $\mathbf{n} = \{k \in \N \mid k < n\} = \{0, \dots, n - 1\}$; $\mathbf{0} = \varnothing$, $\mathbf{2} = \{0, 1\}$.
 :::
 
-::: {.definition ref="def:lec15:indicator"}
+::: {.definition ref="def:lec18:indicator"}
 **Индикатор**. Для $A \subseteq X$ индикатор $1_A\colon X \to \mathbf{2}$: $1_A(x) = 1$ при $x \in A$, $0$ при $x \notin A$.
 :::
 
-::: {.lemma ref="lem:lec15:indicator-eq"}
+::: {.lemma ref="lem:lec18:indicator-eq"}
 Для $A, B \subseteq X$: $A = B \iff 1_A = 1_B$.
 :::
 
-::: {.lemma ref="lem:lec15:powerset"}
+::: {.lemma ref="lem:lec18:powerset"}
 $\mathcal{P}(X) \sim \mathbf{2}^X$. *Идея:* $A \mapsto 1_A$; прообраз функции $g$ — множество $g^{-1}[\{1\}]$.
 :::
 
-::: {.proposition ref="prop:lec15:indicator-ops"}
+::: {.proposition ref="prop:lec18:indicator-ops"}
 $1_{B \cap C} = 1_B 1_C$, $1_{B \cup C} = 1_B + 1_C - 1_B 1_C$, $1_{\overline{B}} = 1 - 1_B$; $B \subseteq C \iff 1_B \le 1_C$ всюду. *Идея:* перебор четырёх случаев; $1_B^2 = 1_B$.
 :::
 
-::: {.theorem ref="thm:lec15:tuples"}
+::: {.theorem ref="thm:lec18:tuples"}
 $A^n \sim A^{\mathbf{n}}$ для любого $A$ и $n \in \N$; биекция $A^{\mathbf{n}} \to A^n$ — $f \mapsto (f(0), \dots, f(n - 1))$. *Идея:* индукция по $n$: функция на $\mathbf{m + 1}$ — это её сужение на $\mathbf{m}$ плюс значение в точке $m$, а кортеж длины $m + 1$ — кортеж длины $m$ плюс компонента.
 :::
 
-::: {.definition ref="def:lec15:embedding"}
+::: {.definition ref="def:lec18:embedding"}
 **Вложение**: $A \lesssim B$ ($A$ вкладывается в $B$), если существует инъекция $f\colon A \to B$ (вложение); запись $A \lesssim_f B$.
 :::
 
-::: {.lemma ref="lem:lec15:embed-props"}
+::: {.lemma ref="lem:lec18:embed-props"}
 $A \lesssim A$; $A \lesssim B \wedge B \lesssim C \Rightarrow A \lesssim C$; $A \sim B \Rightarrow A \lesssim B \wedge B \lesssim A$; $A \lesssim B \iff \exists D \subseteq B\ A \sim D$.
 :::
 
-::: {.theorem ref="thm:lec15:csb" status="без доказательства"}
+::: {.theorem ref="thm:lec18:csb" status="без доказательства"}
 Если $A \lesssim B$ и $B \lesssim A$, то $A \sim B$.
 :::
 
-::: {.corollary ref="cor:lec15:powerset-not-embed"}
+::: {.corollary ref="cor:lec18:powerset-not-embed"}
 $\mathcal{P}(A) \not\lesssim A$ ни для какого $A$. *Идея:* $A \lesssim \mathcal{P}(A)$ через $x \mapsto \{x\}$, затем теорема Кантора — Шрёдера — Бернштейна и теорема Кантора.
 :::
 
-::: {.definition ref="def:lec15:strict"}
+::: {.definition ref="def:lec18:strict"}
 **Строгое вложение**: $A \lnsim B$, если $A \lesssim B$ и $A \nsim B$; по теореме Кантора — Шрёдера — Бернштейна это то же, что $A \lesssim B$ и $B \not\lesssim A$.
 :::
 
-::: {.definition ref="def:lec15:countable"}
+::: {.definition ref="def:lec18:countable"}
 **Счётное** множество: $X$ счётно, если $X \sim \N$. Счётны $\Z$, $\Q$ и $\N^k$ при $k \ge 1$; $\mathcal{P}(\N) \sim \R$ (принимается без доказательства) — нет.
 :::
 
-# 16. Конечные множества
+# 19. Конечные множества
 
-::: {.definition ref="def:lec16:finite"}
+::: {.definition ref="def:lec19:finite"}
 **Конечное** множество: $A$ конечно, если $A \sim \mathbf{n}$ для некоторого $n \in \N$; иначе бесконечно.
 :::
 
-::: {.definition ref="def:lec16:restriction"}
+::: {.definition ref="def:lec19:restriction"}
 **Сужение** $f\colon A \to B$ на $X \subseteq A$: $f \restriction X = f \cap (X \times B)\colon X \to B$.
 :::
 
-::: {.lemma ref="lem:lec16:n1-n"}
+::: {.lemma ref="lem:lec19:n1-n"}
 Инъекции $\mathbf{n + 1} \to \mathbf{n}$ не существует. *Идея:* наименьший контрпример $n = m + 1$; переставив $f(n)$ и $m$, получаем инъекцию $\mathbf{m + 1} \to \mathbf{m}$.
 :::
 
-::: {.theorem ref="thm:lec16:pigeonhole"}
+::: {.theorem ref="thm:lec19:pigeonhole"}
 При $m > n$ никакая $f\colon \mathbf{m} \to \mathbf{n}$ не инъективна, $\mathbf{m} \not\lesssim \mathbf{n}$. *Идея:* $\mathbf{n + 1} \subseteq \mathbf{m}$.
 :::
 
-::: {.corollary ref="cor:lec16:distinct"}
+::: {.corollary ref="cor:lec19:distinct"}
 $m \ne n \Rightarrow \mathbf{m} \nsim \mathbf{n}$.
 :::
 
-::: {.corollary ref="cor:lec16:unique"}
+::: {.corollary ref="cor:lec19:unique"}
 Для конечного $A$ число $n$ с $A \sim \mathbf{n}$ единственно.
 :::
 
-::: {.definition ref="def:lec16:cardinality"}
+::: {.definition ref="def:lec19:cardinality"}
 **Мощность**: $|A|$ — единственное $n$ с $A \sim \mathbf{n}$ (мощность, число элементов конечного $A$); для конечных $A \sim B \iff |A| = |B|$.
 :::
 
-::: {.theorem ref="thm:lec16:no-surjection"}
+::: {.theorem ref="thm:lec19:no-surjection"}
 При $m > n$ никакая $f\colon \mathbf{n} \to \mathbf{m}$ не сюръективна. *Идея:* наименьший прообраз даёт инъекцию $\mathbf{m} \to \mathbf{n}$.
 :::
 
-::: {.lemma ref="lem:lec16:invariant"}
+::: {.lemma ref="lem:lec19:invariant"}
 Конечность, бесконечность и счётность сохраняются при $\sim$.
 :::
 
-::: {.lemma ref="lem:lec16:countable-infinite"}
+::: {.lemma ref="lem:lec19:countable-infinite"}
 Если $A$ счётно и $A \lesssim B$, то $B$ бесконечно.
 :::
 
-::: {.lemma ref="lem:lec16:subset-n" status="набросок доказательства"}
+::: {.lemma ref="lem:lec19:subset-n" status="набросок доказательства"}
 Любое $A \subseteq \N$ конечно или счётно. *Идея:* перечислить элементы по возрастанию.
 :::
 
-::: {.corollary ref="cor:lec16:sub-countable"}
+::: {.corollary ref="cor:lec19:sub-countable"}
 $A \lesssim B$, $B$ счётно $\Rightarrow$ $A$ конечно или счётно.
 :::
 
-::: {.corollary ref="cor:lec16:sub-finite"}
+::: {.corollary ref="cor:lec19:sub-finite"}
 $A \lesssim B$, $B$ конечно $\Rightarrow$ $A$ конечно и $|A| \le |B|$.
 :::
 
-::: {.definition ref="def:lec16:uncountable"}
+::: {.definition ref="def:lec19:uncountable"}
 **Несчётное множество** — бесконечное и не счётное; конечные и счётные вместе — не более чем счётные (это ровно $A \lesssim \N$).
 :::
 
-::: {.lemma ref="lem:lec16:infinite-n" status="набросок доказательства"}
+::: {.lemma ref="lem:lec19:infinite-n" status="набросок доказательства"}
 Если $A$ бесконечно, то $\N \lesssim A$.
 :::
 
-::: {.corollary ref="cor:lec16:infinite-iff"}
+::: {.corollary ref="cor:lec19:infinite-iff"}
 $A$ бесконечно $\iff$ $\N \lesssim A$.
 :::
 
-::: {.theorem ref="thm:lec16:sum"}
+::: {.theorem ref="thm:lec19:sum"}
 Для конечных $A$, $B$ с $A \cap B = \varnothing$: $|A \cup B| = |A| + |B|$. *Идея:* $h = f$ на $A$, $h = n + g$ на $B$.
 :::
 
-::: {.corollary ref="cor:lec16:union"}
+::: {.corollary ref="cor:lec19:union"}
 Для конечных $A$, $B$: $|A \cup B| = |A| + |B| - |A \cap B|$.
 :::
 
-::: {.corollary ref="cor:lec16:union-le"}
+::: {.corollary ref="cor:lec19:union-le"}
 $|A \cup B| \le |A| + |B|$.
 :::
 
-::: {.corollary ref="cor:lec16:proper"}
+::: {.corollary ref="cor:lec19:proper"}
 Если $B$ конечно и $A \subsetneq B$, то $|A| < |B|$.
 :::
 
-::: {.theorem ref="thm:lec16:product"}
+::: {.theorem ref="thm:lec19:product"}
 $|A \times B| = |A| \cdot |B|$ для конечных $A$, $B$. *Идея:* $h(x, y) = m f(x) + g(y)$ и единственность деления с остатком.
 :::
 
-::: {.corollary ref="cor:lec16:power"}
+::: {.corollary ref="cor:lec19:power"}
 $|A^n| = |A|^n$.
 :::
 
-::: {.corollary ref="cor:lec16:functions"}
+::: {.corollary ref="cor:lec19:functions"}
 $|B^A| = |B|^{|A|}$ (с $0^0 = 1$). *Идея:* $B^A \sim \mathbf{m}^{\mathbf{n}} \sim \mathbf{m}^n$.
 :::
 
-::: {.corollary ref="cor:lec16:powerset"}
+::: {.corollary ref="cor:lec19:powerset"}
 $|\mathcal{P}(A)| = 2^{|A|}$.
 :::
 
-::: {.proposition ref="prop:lec16:image-le"}
+::: {.proposition ref="prop:lec19:image-le"}
 Для конечного $A$ и $f\colon A \to B$: $|f[A]| \le |A|$.
 :::
 
-::: {.theorem ref="thm:lec16:inj-surj"}
+::: {.theorem ref="thm:lec19:inj-surj"}
 Если $A$, $B$ конечны и $|A| = |B|$, то $f\colon A \to B$ инъективна $\iff$ сюръективна. *Идея:* инъекция — образ равномощен $A$ и не может быть собственной частью $B$; сюръекция со склейкой — выброшенная точка уменьшает образ.
 :::
 
-# 17. Размещения и сочетания
+# 20. Размещения и сочетания
 
-::: {.definition ref="def:lec17:inj"}
+::: {.definition ref="def:lec20:inj"}
 **Обозначение** $\mathrm{Inj}(A, B)$ — множество всех инъекций из $A$ в $B$.
 :::
 
-::: {.lemma ref="lem:lec17:only-size"}
+::: {.lemma ref="lem:lec20:only-size"}
 Если $A' \sim A$ и $B' \sim B$, то $\mathrm{Inj}(A', B') \sim \mathrm{Inj}(A, B)$. *Идея:* $f \mapsto \psi \circ f \circ \varphi^{-1}$.
 :::
 
-::: {.definition ref="def:lec17:factorial"}
+::: {.definition ref="def:lec20:factorial"}
 **Факториал**: $0! = 1$, $(n + 1)! = (n + 1) \cdot n!$.
 :::
 
-::: {.lemma ref="lem:lec17:inj-count"}
+::: {.lemma ref="lem:lec20:inj-count"}
 $|\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = \frac{n!}{(n - m)!}$ при $m \le n$ и $0$ при $m > n$. *Идея:* индукция по $m$; инъекции из $\mathbf{m + 1}$ делятся на $n$ равных групп по значению в точке $m$.
 :::
 
-::: {.definition ref="def:lec17:arrangement"}
+::: {.definition ref="def:lec20:arrangement"}
 **Размещение** длины $m$ — кортеж из попарно различных элементов; $A_n^m = |\mathrm{Inj}(\mathbf{m}, \mathbf{n})| = n(n - 1) \cdots (n - m + 1) = n^{(m)}$ при $m \le n$, $A_n^m = 0$ при $m > n$.
 :::
 
-::: {.definition ref="def:lec17:permutation"}
+::: {.definition ref="def:lec20:permutation"}
 **Перестановка** множества $A$ — биекция $A \to A$.
 :::
 
-::: {.lemma ref="lem:lec17:perm-count"}
+::: {.lemma ref="lem:lec20:perm-count"}
 У $n$-элементного множества $n!$ перестановок. *Идея:* инъекция $\mathbf{n} \to \mathbf{n}$ — биекция.
 :::
 
-::: {.definition ref="def:lec17:binomial"}
+::: {.definition ref="def:lec20:binomial"}
 **Сочетание**: $\mathcal{P}_k(A)$ — $k$-элементные подмножества ($k$-сочетания) $A$; $C_n^k = |\mathcal{P}_k(\mathbf{n})|$ — число сочетаний из $n$ по $k$; $C_n^k = 0$ при $k > n$. Сочетание с повторениями — выбор $m$ предметов из $n$ видов с повторениями и без учёта порядка; их $C_{n + m - 1}^m$ (шары и перегородки).
 :::
 
-::: {.lemma ref="lem:lec17:pascal"}
+::: {.lemma ref="lem:lec20:pascal"}
 $C_{n + 1}^{k + 1} = C_n^{k + 1} + C_n^k$ для любых $n, k \in \N$. *Идея:* делим подмножества $\mathbf{n + 1}$ по тому, содержат ли они $n$.
 :::
 
-::: {.lemma ref="lem:lec17:binom-formula"}
+::: {.lemma ref="lem:lec20:binom-formula"}
 $C_n^k = \frac{n!}{k!\,(n - k)!}$ при $k \le n$. *Идея:* индукция по $n$ через тождество Паскаля.
 :::
 
-::: {.lemma ref="lem:lec17:symmetry"}
+::: {.lemma ref="lem:lec20:symmetry"}
 $C_n^k = C_n^{n - k}$ при $0 \le k \le n$. *Идея:* биекция $X \mapsto \mathbf{n} \setminus X$.
 :::
 
-::: {.theorem ref="thm:lec17:binomial"}
+::: {.theorem ref="thm:lec20:binomial"}
 $(a + b)^n = \sum_{k = 0}^n C_n^k a^k b^{n - k}$ для $a, b \in \R$, $n \in \N$. *Идея:* $(1 + x)^n$ индукцией с тождеством Паскаля, затем вынести $b^n$.
 :::
 
-# 18. Формула включений-исключений
+# 21. Формула включений-исключений
 
-::: {.theorem ref="thm:lec18:dependent"}
+::: {.theorem ref="thm:lec21:dependent"}
 Если $P$ конечно, $S \subseteq P \times Q$ и каждое $S[\{x\}]$ конечно, $|S[\{x\}]| = f(x)$, то $S$ конечно и $|S| = \sum_{x \in P} f(x)$. *Идея:* индукция по $|P|$ и правило суммы.
 :::
 
-::: {.corollary ref="cor:lec18:dependent-const"}
+::: {.corollary ref="cor:lec21:dependent-const"}
 Если $|S[\{x\}]| = k$ для всех $x \in P$, то $|S| = |P| \cdot k$.
 :::
 
-::: {.definition ref="def:lec18:multinomial"}
+::: {.definition ref="def:lec21:multinomial"}
 **Мультиномиальный коэффициент**: при $a_1 + \dots + a_k = n$ (все $a_i \in \N$) $P(n; a_1, \dots, a_k) = \frac{n!}{a_1! \cdots a_k!}$.
 :::
 
-::: {.proposition ref="prop:lec18:multinomial-count"}
+::: {.proposition ref="prop:lec21:multinomial-count"}
 При $a_1 + \dots + a_k = n$ кортежей $(A_1, \dots, A_k)$ попарно непересекающихся множеств с $A_1 \cup \dots \cup A_k = \mathbf{n}$ и $|A_i| = a_i$ ровно $P(n; a_1, \dots, a_k)$. Части *нумерованы* и могут быть пустыми; для ненумерованных частей ответ меньше: разбить $6$ человек на три пары можно $15$ способами, а не $P(6; 2, 2, 2) = 90$. *Идея:* индукция по $k$: $A_1$ выбирается $C_n^{a_1}$ способами, при любом выборе остальные части — такой же кортеж для $\mathbf{n} \setminus A_1$; правило зависимого произведения с постоянным числом вариантов.
 :::
 
-::: {.proposition ref="prop:lec18:multinomial-thm" status="без доказательства"}
+::: {.proposition ref="prop:lec21:multinomial-thm" status="без доказательства"}
 $(x_1 + \dots + x_k)^n = \sum_{a_1 + \dots + a_k = n} P(n; a_1, \dots, a_k)\, x_1^{a_1} \cdots x_k^{a_k}$ для $x_i \in \R$, $n \in \N$; сумма — по всем $(a_1, \dots, a_k) \in \N^k$ с $a_1 + \dots + a_k = n$.
 :::
 
-::: {.lemma ref="lem:lec18:sum-indicator"}
+::: {.lemma ref="lem:lec21:sum-indicator"}
 $|B| = \sum_{x \in U} 1_B(x)$ для конечного $U$ и $B \subseteq U$.
 :::
 
-::: {.theorem ref="thm:lec18:incl-excl"}
+::: {.theorem ref="thm:lec21:incl-excl"}
 $|A_1 \cup \dots \cup A_n| = \sum_{\varnothing \ne I \subseteq \{1, \dots, n\}} (-1)^{|I| - 1} |A_I|$. *Идея:* сравнить вклад каждой точки через индикаторы; точка из $t \ge 1$ множеств учтена $\sum_{k \ge 1} (-1)^{k - 1} C_t^k = 1$ раз.
 :::
 
-::: {.corollary ref="cor:lec18:symmetric"}
+::: {.corollary ref="cor:lec21:symmetric"}
 Если $X$ конечно, $A_1, \dots, A_n \subseteq X$, $|A_I| = a_k$ для всех $I$ с $|I| = k$ и $a_0 = |X|$, то $|X \setminus (A_1 \cup \dots \cup A_n)| = \sum_{k = 0}^n (-1)^k C_n^k a_k$. *Идея:* наборов $I$ размера $k$ ровно $C_n^k$; вычесть формулу включений-исключений из $|X|$.
 :::
 
-::: {.proposition ref="prop:lec18:totient"}
+::: {.proposition ref="prop:lec21:totient"}
 $\varphi(m) = m \prod_{i} \bigl(1 - \frac{1}{p_i}\bigr)$ по всем простым делителям $p_i$ числа $m > 1$. *Идея:* включения-исключения по свойствам «$p_i \mid x$» на $\mathbf{m}$.
 :::
 
-# 19. Порядки
+# 22. Порядки
 
-::: {.definition ref="def:lec19:properties"}
+::: {.definition ref="def:lec22:properties"}
 **Рефлексивность**, **иррефлексивность**, **симметричность**, **антисимметричность**, **транзитивность**. $R$ рефлексивно для $Z$: $\forall x \in Z\ xRx$; иррефлексивно: $\forall x\ \neg xRx$; симметрично: $xRy \Rightarrow yRx$; антисимметрично: $xRy \wedge yRx \Rightarrow x = y$; транзитивно: $xRy \wedge yRz \Rightarrow xRz$.
 :::
 
-::: {.lemma ref="lem:lec19:algebraic"}
+::: {.lemma ref="lem:lec22:algebraic"}
 Для $R \subseteq A^2$: рефлексивно $\iff$ $\mathrm{id}_A \subseteq R$; иррефлексивно $\iff$ $\mathrm{id}_A \cap R = \varnothing$; симметрично $\iff$ $R = R^{-1}$; антисимметрично $\iff$ $R \cap R^{-1} \subseteq \mathrm{id}_A$; транзитивно $\iff$ $R \circ R \subseteq R$.
 :::
 
-::: {.definition ref="def:lec19:strict"}
+::: {.definition ref="def:lec22:strict"}
 **Строгий (частичный) порядок** — иррефлексивное транзитивное отношение; он асимметричен.
 :::
 
-::: {.definition ref="def:lec19:nonstrict"}
+::: {.definition ref="def:lec22:nonstrict"}
 **Нестрогий (частичный) порядок** — рефлексивное антисимметричное транзитивное отношение.
 :::
 
-::: {.definition ref="def:lec19:poset"}
+::: {.definition ref="def:lec22:poset"}
 **Частично упорядоченное множество** (ч.у.м.) $(A, <)$ — множество с порядком; $(A, <, \le)$ — со строгой и нестрогой версиями.
 :::
 
-::: {.theorem ref="thm:lec19:strict-nonstrict"}
+::: {.theorem ref="thm:lec22:strict-nonstrict"}
 $\varphi(P) = P \cup \mathrm{id}_A$ и $\psi(Q) = Q \setminus \mathrm{id}_A$ — взаимно обратные биекции между строгими и нестрогими порядками на $A$.
 :::
 
-::: {.definition ref="def:lec19:maximal"}
+::: {.definition ref="def:lec22:maximal"}
 **Максимальный** и **минимальный** элементы: $x \in B$ максимален в $B$, если $\forall y \in B\ \neg\, x < y$; минимален, если $\forall y \in B\ \neg\, y < x$.
 :::
 
-::: {.definition ref="def:lec19:greatest"}
+::: {.definition ref="def:lec22:greatest"}
 **Наибольший** и **наименьший** элементы: $x \in B$ наибольший в $B$, если $\forall y \in B\ y \le x$; наименьший — если $\forall y \in B\ x \le y$.
 :::
 
-::: {.lemma ref="lem:lec19:greatest-unique"}
+::: {.lemma ref="lem:lec22:greatest-unique"}
 Если $x$ — наибольший в $B$, то $\max B = \{x\}$; наибольший элемент единствен.
 :::
 
-::: {.definition ref="def:lec19:bounds"}
+::: {.definition ref="def:lec22:bounds"}
 **Верхние и нижние грани**: $B^{\triangle}$ — верхние грани $B$ (все $x$ с $y \le x$ при $y \in B$), $B^{\triangledown}$ — нижние.
 :::
 
-::: {.definition ref="def:lec19:sup"}
+::: {.definition ref="def:lec22:sup"}
 **Супремум и инфимум**: $\sup B$ — наименьший элемент $B^{\triangle}$, $\inf B$ — наибольший элемент $B^{\triangledown}$ (если существуют).
 :::
 
-::: {.definition ref="def:lec19:lattice"}
+::: {.definition ref="def:lec22:lattice"}
 **Решётка** — ч.у.м., где у любых двух элементов есть $\sup$ и $\inf$; например $(\mathcal{P}(A), \subsetneq)$ и $(\N, \mid)$.
 :::
 
-::: {.definition ref="def:lec19:linear"}
+::: {.definition ref="def:lec22:linear"}
 **Линейный** порядок: порядок линеен, если $\forall x, y\ (x \le y \vee y \le x)$.
 :::
 
-::: {.definition ref="def:lec19:chain"}
+::: {.definition ref="def:lec22:chain"}
 **Цепь** — подмножество из попарно сравнимых элементов; антицепь — из попарно несравнимых различных.
 :::
 
-::: {.definition ref="def:lec19:isomorphism"}
+::: {.definition ref="def:lec22:isomorphism"}
 **Изоморфизм ч.у.м.** — биекция $\alpha$ с $x <_A y \iff \alpha(x) <_B \alpha(y)$; запись $\mathcal{A} \cong \mathcal{B}$.
 :::
 
-::: {.lemma ref="lem:lec19:iso-equiv"}
+::: {.lemma ref="lem:lec22:iso-equiv"}
 $\cong$ рефлексивно, симметрично и транзитивно (через $\mathrm{id}$, $\alpha^{-1}$, $\beta \circ \alpha$).
 :::
 
-::: {.lemma ref="lem:lec19:iso-preserves"}
+::: {.lemma ref="lem:lec22:iso-preserves"}
 Изоморфизм $\alpha$ сохраняет линейность, $\max \alpha[X] = \alpha[\max X]$ и $\sup \alpha[X] = \alpha(\sup X)$; так же для минимумов и инфимумов.
 :::
 
-# 20. Эквивалентности и разбиения
+# 23. Эквивалентности и разбиения
 
-::: {.definition ref="def:lec20:equivalence"}
+::: {.definition ref="def:lec23:equivalence"}
 **Эквивалентность** на $A$ — рефлексивное, симметричное и транзитивное отношение $E \subseteq A^2$; иначе $\mathrm{id}_A \subseteq E$, $E = E^{-1}$, $E \circ E \subseteq E$. Сравнимость по модулю как отношение: ${\equiv_m} = \{(x, y) \in \Z^2 \mid x \equiv y \pmod m\}$.
 :::
 
-::: {.definition ref="def:lec20:kernel"}
+::: {.definition ref="def:lec23:kernel"}
 **Ядро** функции $f\colon A \to B$: $\ker f = \{(x, y) \in A^2 \mid f(x) = f(y)\}$ — эквивалентность на $A$; $\ker f = \mathrm{id}_A$ $\iff$ $f$ инъективна.
 :::
 
-::: {.proposition ref="prop:lec20:criterion"}
+::: {.proposition ref="prop:lec23:criterion"}
 $R \subseteq A^2$ — эквивалентность $\iff$ $(R \circ R^{-1}) \cup \mathrm{id}_A = R$. *Идея:* для эквивалентности $R \subseteq R \circ R \subseteq R$; обратно — обратить обе части равенства.
 :::
 
-::: {.definition ref="def:lec20:class"}
+::: {.definition ref="def:lec23:class"}
 **Класс** $[x]_E = \{z \in A \mid xEz\} = E[\{x\}]$; фактор-множество $A/E = \{[x]_E \mid x \in A\}$.
 :::
 
-::: {.lemma ref="lem:lec20:classes"}
+::: {.lemma ref="lem:lec23:classes"}
 $x \in [x]_E$; $[x]_E \cap [y]_E \ne \varnothing \iff xEy \iff [x]_E = [y]_E$.
 :::
 
-::: {.proposition ref="prop:lec20:projection"}
+::: {.proposition ref="prop:lec23:projection"}
 Проекция $p(x) = [x]_E$ — сюръекция $A \to A/E$ с $\ker p = E$; для $f\colon A \to B$ отображение $[x]_{\ker f} \mapsto f(x)$ — биекция $A/\ker f \to f[A]$. *Идея:* значение $f(x)$ не зависит от представителя класса.
 :::
 
-::: {.definition ref="def:lec20:partition"}
+::: {.definition ref="def:lec23:partition"}
 **Разбиение** $A$ — $\Sigma \subseteq \mathcal{P}(A)$ с $\varnothing \notin \Sigma$, $\bigcup \Sigma = A$ и $\sigma \cap \tau \ne \varnothing \Rightarrow \sigma = \tau$ для $\sigma, \tau \in \Sigma$.
 :::
 
-::: {.theorem ref="thm:lec20:eq-partitions"}
+::: {.theorem ref="thm:lec23:eq-partitions"}
 $\pi(E) = A/E$ и $\varepsilon(\Sigma) = \{(x, y) \mid \exists \sigma \in \Sigma\ (x, y \in \sigma)\}$ переводят эквивалентности в разбиения и обратно, и $\varepsilon(\pi(E)) = E$, $\pi(\varepsilon(\Sigma)) = \Sigma$. *Идея:* класс $x$ относительно $\varepsilon(\Sigma)$ — единственная часть $\Sigma$, содержащая $x$.
 :::
 
-::: {.corollary ref="cor:lec20:bijection"}
+::: {.corollary ref="cor:lec23:bijection"}
 $\pi\colon \mathrm{Eq}(A) \to \Pi(A)$ — биекция, $\varepsilon = \pi^{-1}$.
 :::
 
-::: {.proposition ref="prop:lec20:sum-classes"}
+::: {.proposition ref="prop:lec23:sum-classes"}
 Для конечного $A$: $|A| = \sum_{\sigma \in A/E} |\sigma|$; если все классы из $k$ элементов, то $|A| = k \cdot |A/E|$. *Идея:* правило зависимого произведения для пар (класс, его элемент).
 :::
 
-::: {.definition ref="def:lec20:bell"}
+::: {.definition ref="def:lec23:bell"}
 **Число Белла** $B_n$ — число разбиений (эквивалентностей) $n$-элементного множества: $1, 1, 2, 5, 15, 52, 203, \dots$
 :::
 
-::: {.theorem ref="thm:lec20:bell"}
+::: {.theorem ref="thm:lec23:bell"}
 $B_0 = 1$, $B_{n + 1} = \sum_{k = 0}^{n} C_n^k B_k$. *Идея:* разбиение $\mathbf{n + 1}$ задаётся «попутчиками» $X' \subseteq \mathbf{n}$ элемента $n$ и разбиением $\mathbf{n} \setminus X'$; группируем по $|X'|$.
 :::
 
-::: {.definition ref="def:lec20:chain-partition"}
+::: {.definition ref="def:lec23:chain-partition"}
 **Длина цепи (антицепи)** — число её элементов; разбиение на цепи (антицепи) — разбиение ч.у.м., все части которого цепи (антицепи).
 :::
 
-::: {.lemma ref="lem:lec20:antichain-le"}
+::: {.lemma ref="lem:lec23:antichain-le"}
 В конечном ч.у.м. длина любой антицепи не больше числа частей любого разбиения на цепи.
 :::
 
-::: {.lemma ref="lem:lec20:min-max"}
+::: {.lemma ref="lem:lec23:min-max"}
 В конечном ч.у.м. для любого $x$ есть минимальный $u \le x$ и максимальный $v \ge x$. *Идея:* иначе строится цепочка $x_0 < \dots < x_n$ из $n + 1$ различных элементов.
 :::
 
-::: {.theorem ref="thm:lec20:dilworth"}
+::: {.theorem ref="thm:lec23:dilworth"}
 Дилуорс: если $D$ — антицепь наибольшей длины в конечном ч.у.м., то оно разбивается на $|D|$ цепей. *Идея:* индукция по $|A|$; удаляем $m \le M$ (минимальный и максимальный); если наибольшая антицепь не укоротилась, режем по ней $A$ на $A^-$ и $A^+$ и склеиваем цепи через элементы $D$.
 :::
 
-::: {.corollary ref="cor:lec20:dilworth-minmax"}
+::: {.corollary ref="cor:lec23:dilworth-minmax"}
 Наибольшая длина антицепи = наименьшее число цепей в разбиении на цепи.
 :::
 
-::: {.corollary ref="cor:lec20:long-chain"}
+::: {.corollary ref="cor:lec23:long-chain"}
 Если $|A| > nm$, то в конечном ч.у.м. есть антицепь длины $n + 1$ или цепь длины $m + 1$.
 :::
 
-::: {.theorem ref="thm:lec20:erdos-szekeres"}
+::: {.theorem ref="thm:lec23:erdos-szekeres"}
 Эрдёш–Секереш: среди $nm + 1$ попарно различных чисел есть возрастающая подпоследовательность длины $m + 1$ или убывающая длины $n + 1$. *Идея:* порядок $(i, a_i) \prec (j, a_j) \iff i < j \wedge a_i < a_j$, цепи — возрастающие, антицепи — убывающие подпоследовательности.
 :::
 
-::: {.theorem ref="thm:lec20:mirsky"}
+::: {.theorem ref="thm:lec23:mirsky"}
 Мирский: наибольшая длина цепи конечного ч.у.м. = наименьшее число антицепей в разбиении на антицепи. *Идея:* $\min A$ — антицепь, пересекающая каждую самую длинную цепь; снимаем её и применяем индукцию.
 :::
 
-# 21. Графы
+# 24. Графы
 
-::: {.definition ref="def:lec21:graph"}
+::: {.definition ref="def:lec24:graph"}
 **Граф** $G = (V, E)$: $V$ — конечное непустое множество вершин, $E \subseteq V^2$ — симметричное иррефлексивное отношение смежности.
 :::
 
-::: {.definition ref="def:lec21:edge"}
+::: {.definition ref="def:lec24:edge"}
 **Ребро** $xy = \{x, y\}$ — пара смежных вершин; порядок — $|V|$, размер — число рёбер ($= |E|/2$); $(n, m)$-граф — порядка $n$ и размера $m$.
 :::
 
-::: {.lemma ref="lem:lec21:nm"}
+::: {.lemma ref="lem:lec24:nm"}
 $(n, m)$-граф существует $\iff$ $m \le C_n^2$ ($n \ge 1$). *Идея:* рёбра — двухэлементные подмножества; пример — $K_n$ без $C_n^2 - m$ рёбер.
 :::
 
-::: {.definition ref="def:lec21:degree"}
+::: {.definition ref="def:lec24:degree"}
 **Степень вершины**: $N_G(x) = \{y \mid xEy\}$ — окрестность, $d_G(x) = |N_G(x)|$ — степень, $0 \le d(x) \le n - 1$; степенная последовательность — степени по невозрастанию.
 :::
 
-::: {.lemma ref="lem:lec21:handshake"}
+::: {.lemma ref="lem:lec24:handshake"}
 $\sum_{v \in V} d(v) = 2m$. *Идея:* правило зависимого произведения для $E \subseteq V \times V$ с $E[\{v\}] = N(v)$.
 :::
 
-::: {.corollary ref="cor:lec21:odd"}
+::: {.corollary ref="cor:lec24:odd"}
 Число вершин нечётной степени чётно.
 :::
 
-::: {.definition ref="def:lec21:iso"}
+::: {.definition ref="def:lec24:iso"}
 **Изоморфизм графов** — биекция $\varphi\colon V \to V'$ с $xEy \iff \varphi(x) E' \varphi(y)$; $G \cong G'$.
 :::
 
-::: {.lemma ref="lem:lec21:iso-equiv"}
+::: {.lemma ref="lem:lec24:iso-equiv"}
 $\cong$ рефлексивно, симметрично и транзитивно (через $\mathrm{id}$, $\varphi^{-1}$, $\psi \circ \varphi$).
 :::
 
-::: {.lemma ref="lem:lec21:invariants"}
+::: {.lemma ref="lem:lec24:invariants"}
 У изоморфных графов одинаковы порядок, размер и степенная последовательность. *Идея:* $N_H(\varphi(v)) = \varphi[N_G(v)]$.
 :::
 
-::: {.definition ref="def:lec21:subgraph"}
+::: {.definition ref="def:lec24:subgraph"}
 **Подграф**: $V' \subseteq V$, $E' \subseteq E$; порождённый множеством $V'$ подграф: $E' = E \cap (V' \times V')$.
 :::
 
-::: {.definition ref="def:lec21:complement"}
+::: {.definition ref="def:lec24:complement"}
 **Дополнение** $\overline{G} = (V, (V^2 \setminus \mathrm{id}_V) \setminus E)$; самодополнительный граф — $G \cong \overline{G}$.
 :::
 
-::: {.proposition ref="prop:lec21:complement-size"}
+::: {.proposition ref="prop:lec24:complement-size"}
 Дополнение $(n, m)$-графа — $(n, C_n^2 - m)$-граф.
 :::
 
-::: {.definition ref="def:lec21:path"}
+::: {.definition ref="def:lec24:path"}
 **Путь** $v_1 \dots v_n$ — соседние вершины смежны; длина $n - 1$ (число рёбер); простой путь — без повторов вершин.
 :::
 
-::: {.lemma ref="lem:lec21:simple-path"}
+::: {.lemma ref="lem:lec24:simple-path"}
 Кратчайший путь из $x$ в $y$ прост. *Идея:* иначе выбрасываем кусок между двумя вхождениями одной вершины.
 :::
 
-::: {.definition ref="def:lec21:cycle"}
+::: {.definition ref="def:lec24:cycle"}
 **Цикл** — путь $v_1 \dots v_n v_1$ ($n \ge 1$) с попарно различными рёбрами (в нём не меньше трёх рёбер); простой — без повторов вершин $v_1, \dots, v_n$.
 :::
 
-::: {.lemma ref="lem:lec21:conn-equiv"}
+::: {.lemma ref="lem:lec24:conn-equiv"}
 Соединённость путём $\sim_G$ — эквивалентность на $V$.
 :::
 
-::: {.definition ref="def:lec21:component"}
+::: {.definition ref="def:lec24:component"}
 **Компоненты связности** — классы $\sim_G$; граф связен, если компонента одна.
 :::
 
-::: {.proposition ref="prop:lec21:iso-components"}
+::: {.proposition ref="prop:lec24:iso-components"}
 Изоморфизм переводит компоненты в компоненты; у изоморфных графов одинаковое число компонент.
 :::
 
-::: {.lemma ref="lem:lec21:edge-removal"}
+::: {.lemma ref="lem:lec24:edge-removal"}
 Удаление ребра $xy$ связного графа: если $xy$ на цикле, граф остаётся связным; если нет, компонент ровно две — $[x]$ и $[y]$. *Идея:* объезд по остатку цикла; во втором случае кратчайший путь до ближайшей из $x$, $y$ не проходит по $xy$, а общая компонента дала бы цикл.
 :::
 
-::: {.corollary ref="cor:lec21:components-removal"}
+::: {.corollary ref="cor:lec24:components-removal"}
 Удаление ребра на цикле сохраняет число компонент $k$, удаление моста даёт $k + 1$.
 :::
 
-::: {.lemma ref="lem:lec21:connected-edges"}
+::: {.lemma ref="lem:lec24:connected-edges"}
 В связном $(n, m)$-графе $m \ge n - 1$. *Идея:* индукция по $m$ с удалением ребра.
 :::
 
-::: {.definition ref="def:lec21:min-connected"}
+::: {.definition ref="def:lec24:min-connected"}
 **Минимально связный граф** — связный, теряющий связность при удалении любого ребра.
 :::
 
-::: {.lemma ref="lem:lec21:min-connected-edges"}
+::: {.lemma ref="lem:lec24:min-connected-edges"}
 В минимально связном $(n, m)$-графе $m = n - 1$. *Идея:* удаление ребра даёт две минимально связные компоненты, к ним — индукция.
 :::
 
-# 22. Деревья и раскраски
+# 25. Деревья и раскраски
 
-::: {.definition ref="def:lec22:tree"}
+::: {.definition ref="def:lec25:tree"}
 **Дерево** — связный ацикличный граф; лес — ацикличный граф (его компоненты — деревья).
 :::
 
-::: {.theorem ref="thm:lec22:tree-equiv"}
+::: {.theorem ref="thm:lec25:tree-equiv"}
 Для $(n, m)$-графа равносильны: дерево; минимально связен; связен и $m = n - 1$; любые две вершины соединены единственным простым путём. *Идея:* леммы об удалении ребра и о числе рёбер; два различных простых пути склеиваются в простой цикл.
 :::
 
-::: {.corollary ref="cor:lec22:forest"}
+::: {.corollary ref="cor:lec25:forest"}
 В лесу с $n$ вершинами и $k$ компонентами $n - k$ рёбер; граф — дерево $\iff$ ацикличен и $m = n - 1$.
 :::
 
-::: {.proposition ref="prop:lec22:leaves"}
+::: {.proposition ref="prop:lec25:leaves"}
 В дереве с $n \ge 2$ вершинами не меньше двух листьев; удаление листа оставляет дерево. *Идея:* концы самого длинного простого пути.
 :::
 
-::: {.definition ref="def:lec22:spanning-tree"}
+::: {.definition ref="def:lec25:spanning-tree"}
 **Остовное дерево** графа $G = (V, E)$ — дерево $(V, E')$ с $E' \subseteq E$.
 :::
 
-::: {.theorem ref="thm:lec22:spanning"}
+::: {.theorem ref="thm:lec25:spanning"}
 У каждого связного графа есть остовное дерево. *Идея:* удаляем рёбра, лежащие на циклах (индукция по $m$).
 :::
 
-::: {.definition ref="def:lec22:bipartite"}
+::: {.definition ref="def:lec25:bipartite"}
 **Двудольный граф** — вершины разбиваются на две непустые доли без рёбер внутри долей; $k$-дольный — на $k$ долей; $K_{a, b}$ — полный двудольный граф.
 :::
 
-::: {.definition ref="def:lec22:coloring"}
+::: {.definition ref="def:lec25:coloring"}
 **Раскраска** в $k$ цветов — $c\colon V \to \mathbf{k}$ с $c(x) \ne c(y)$ для смежных $x$, $y$.
 :::
 
-::: {.definition ref="def:lec22:distance"}
+::: {.definition ref="def:lec25:distance"}
 **Расстояние** $d(x, y)$ между вершинами одной компоненты — длина кратчайшего пути из $x$ в $y$.
 :::
 
-::: {.theorem ref="thm:lec22:bipartite-criterion"}
+::: {.theorem ref="thm:lec25:bipartite-criterion"}
 Граф с $|V| \ge 2$ двудолен $\iff$ нет циклов нечётной длины $\iff$ нет простых циклов нечётной длины. *Идея:* доли — чётность расстояния до фиксированной вершины; смежные вершины одной чётности дают простой нечётный цикл.
 :::
 
-::: {.proposition ref="prop:lec22:two-colorings"}
+::: {.proposition ref="prop:lec25:two-colorings"}
 У графа с $k$ компонентами, раскрашиваемого в два цвета, ровно $2^k$ таких раскрасок; у дерева — две. *Идея:* в связном графе цвет одной вершины определяет все.
 :::
 
-::: {.lemma ref="lem:lec22:bipartite-handshake"}
+::: {.lemma ref="lem:lec25:bipartite-handshake"}
 В двудольном $(n, m)$-графе с долями $V_1$, $V_2$: $\sum_{v \in V_1} d(v) = \sum_{v \in V_2} d(v) = m$.
 :::
