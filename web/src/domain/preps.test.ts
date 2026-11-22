@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import type { PrepEntry } from "./schemas.ts";
+
 import {
   cheatsheetDocs,
+  chronologicalPreps,
   isDated,
   isHighlighted,
   isPrepId,
@@ -217,5 +220,21 @@ describe("test preparation pages", () => {
     expect(pastPreps(preps, "2026-11-20").map((prep) => prep.id)).toStrictEqual(["kr1"]);
     expect(undatedPreps(preps).map((prep) => prep.id)).toStrictEqual(["kr2"]);
     expect(isDated(undated)).toBe(false);
+  });
+});
+
+const at = (id: string, date?: string): PrepEntry =>
+  date === undefined
+    ? { cheatsheets: [], id, title: id }
+    : { activeUntil: date, cheatsheets: [], date, highlightFrom: date, id, title: id };
+
+describe("chronologicalPreps", () => {
+  it("orders by day, the undated after the dated", () => {
+    const ids = chronologicalPreps([
+      at("kr3"),
+      at("kr2", "2026-12-10"),
+      at("kr1", "2026-10-24"),
+    ]).map((prep) => prep.id);
+    expect(ids).toStrictEqual(["kr1", "kr2", "kr3"]);
   });
 });

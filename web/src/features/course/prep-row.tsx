@@ -4,12 +4,12 @@ import type { PrepEntry } from "#web/domain/schemas.ts";
 
 import { paths } from "#web/domain/paths.ts";
 import {
+  chronologicalPreps,
+  isDated,
   isHighlighted,
-  pastPreps,
+  isUpcoming,
   prepName,
   prepWhen,
-  undatedPreps,
-  upcomingPreps,
 } from "#web/domain/preps.ts";
 import { BUTTON_SECONDARY, BUTTON_SIGNAL } from "#web/shared/ui/button.ts";
 
@@ -19,9 +19,19 @@ type Props = {
   readonly today: string;
 };
 
+const style = (prep: PrepEntry, today: string): string => {
+  if (!isDated(prep)) {
+    return BUTTON_SECONDARY;
+  }
+  if (!isUpcoming(prep, today)) {
+    return `${BUTTON_SECONDARY} text-muted`;
+  }
+  return isHighlighted(prep, today) ? BUTTON_SIGNAL : BUTTON_SECONDARY;
+};
+
 /**
-Every prep stays on the course page: those ahead first with their day (accented near the event),
-then those whose event has no day yet (neutral, to start early), then past ones, quieter, for
+Every prep stays on the course page, in the order of the events (owner, 22.11.2026), each styled by
+its state: ahead — with its day, accented near the event; no day yet — neutral; past — quieter, for
 revision before the exam. The home page shows only those ahead with a day.
 */
 export const PrepRow = ({ course, preps, today }: Props) =>
@@ -34,27 +44,12 @@ export const PrepRow = ({ course, preps, today }: Props) =>
         Подготовка
       </h2>
       <nav aria-labelledby="course-preps" className="flex flex-wrap items-center gap-2">
-        {upcomingPreps(preps, today).map((prep) => (
-          <Link
-            className={isHighlighted(prep, today) ? BUTTON_SIGNAL : BUTTON_SECONDARY}
-            key={prep.id}
-            to={paths.prep(course, prep.id)}
-          >
-            {prepName(prep.id)} <span className="font-normal">· {prepWhen(prep)}</span>
-          </Link>
-        ))}
-        {undatedPreps(preps).map((prep) => (
-          <Link className={BUTTON_SECONDARY} key={prep.id} to={paths.prep(course, prep.id)}>
+        {chronologicalPreps(preps).map((prep) => (
+          <Link className={style(prep, today)} key={prep.id} to={paths.prep(course, prep.id)}>
             {prepName(prep.id)}
-          </Link>
-        ))}
-        {pastPreps(preps, today).map((prep) => (
-          <Link
-            className={`${BUTTON_SECONDARY} text-muted`}
-            key={prep.id}
-            to={paths.prep(course, prep.id)}
-          >
-            {prepName(prep.id)}
+            {isDated(prep) && isUpcoming(prep, today) && (
+              <span className="font-normal"> · {prepWhen(prep)}</span>
+            )}
           </Link>
         ))}
       </nav>
