@@ -189,7 +189,10 @@ $$\langle \alpha \vec a_1 + \beta \vec a_2, \vec b, \vec c \rangle = \langle \ve
 
 ::: {.theorem #thm:lec13:cross-props title="свойства векторного произведения"}
 1. *Антикоммутативность:* $[\vec b, \vec a] = -[\vec a, \vec b]$.
-2. *Линейность:* $[\alpha \vec a_1 + \beta \vec a_2, \vec b] = \alpha [\vec a_1, \vec b] + \beta [\vec a_2, \vec b]$, и так же по второму аргументу.
+2. *Однородность:* $[\lambda \vec a, \vec b] = \lambda [\vec a, \vec b]$.
+3. *Дистрибутивность:* $[\vec a_1 + \vec a_2, \vec b] = [\vec a_1, \vec b] + [\vec a_2, \vec b]$.
+
+По второму аргументу однородность и дистрибутивность тоже верны. Вместе пункты 2 и 3 — *линейность*: $[\alpha \vec a_1 + \beta \vec a_2, \vec b] = \alpha [\vec a_1, \vec b] + \beta [\vec a_2, \vec b]$.
 :::
 
 ::: proof
@@ -197,12 +200,14 @@ $$\langle \alpha \vec a_1 + \beta \vec a_2, \vec b, \vec c \rangle = \langle \ve
 
 1. Для любого $\vec c$: $([\vec b, \vec a] + [\vec a, \vec b], \vec c) = \langle \vec b, \vec a, \vec c \rangle + \langle \vec a, \vec b, \vec c \rangle = 0$ по кососимметричности. Значит, $[\vec b, \vec a] + [\vec a, \vec b] = \vec 0$.
 
-2. Пусть $\vec d = [\alpha \vec a_1 + \beta \vec a_2, \vec b] - \alpha [\vec a_1, \vec b] - \beta [\vec a_2, \vec b]$. По линейности скалярного произведения и смешанного произведения по первому аргументу для любого $\vec c$
-$$(\vec d, \vec c) = \langle \alpha \vec a_1 + \beta \vec a_2, \vec b, \vec c \rangle - \alpha \langle \vec a_1, \vec b, \vec c \rangle - \beta \langle \vec a_2, \vec b, \vec c \rangle = 0,$$
-поэтому $\vec d = \vec 0$. Линейность по второму аргументу следует из линейности по первому и антикоммутативности.
-:::
+2. Пусть $\vec d = [\lambda \vec a, \vec b] - \lambda [\vec a, \vec b]$. По линейности скалярного произведения и смешанного произведения по первому аргументу для любого $\vec c$
+$$(\vec d, \vec c) = \langle \lambda \vec a, \vec b, \vec c \rangle - \lambda \langle \vec a, \vec b, \vec c \rangle = 0,$$
+поэтому $\vec d = \vec 0$.
 
-Линейность по первому аргументу часто записывают двумя равенствами: $[\lambda \vec a, \vec b] = \lambda [\vec a, \vec b]$ (однородность) и $[\vec a_1 + \vec a_2, \vec b] = [\vec a_1, \vec b] + [\vec a_2, \vec b]$ (дистрибутивность). Вместе с антикоммутативностью это три алгебраических свойства векторного произведения; по второму аргументу однородность и дистрибутивность следуют из них же.
+3. Так же для $\vec d = [\vec a_1 + \vec a_2, \vec b] - [\vec a_1, \vec b] - [\vec a_2, \vec b]$: $(\vec d, \vec c) = \langle \vec a_1 + \vec a_2, \vec b, \vec c \rangle - \langle \vec a_1, \vec b, \vec c \rangle - \langle \vec a_2, \vec b, \vec c \rangle = 0$.
+
+По второму аргументу: $[\vec a, \lambda \vec b] = -[\lambda \vec b, \vec a] = -\lambda [\vec b, \vec a] = \lambda [\vec a, \vec b]$ по пунктам 1 и 2; дистрибутивность — так же по пунктам 1 и 3.
+:::
 
 На числах: если $|\vec a| = 2$, $|\vec b| = 3$, $\angle(\vec a, \vec b) = \frac{\pi}{6}$, то площадь параллелограмма на векторах $\vec a + 2\vec b$ и $3\vec a - \vec b$ вычисляется без координат. Раскроем по линейности: $[\vec a + 2\vec b, 3\vec a - \vec b] = 3[\vec a, \vec a] - [\vec a, \vec b] + 6[\vec b, \vec a] - 2[\vec b, \vec b] = -[\vec a, \vec b] - 6[\vec a, \vec b] = -7[\vec a, \vec b]$. Площадь $7 |[\vec a, \vec b]| = 7 \cdot 2 \cdot 3 \cdot \frac12 = 21$.
 
