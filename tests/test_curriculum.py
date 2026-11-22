@@ -56,7 +56,8 @@ def test_build_writes_curriculum_json(demo: Path):  # noqa: F811 (фикстур
     assert set(out) == {"title", "categories", "module_spans", "disciplines", "excluded"}
     assert sum(x["credits"] for x in out["excluded"] if x["in_plan_total"]) == 3
     assert sum(x["credits"] for x in out["excluded"] if not x["in_plan_total"]) == 8
-    assert out["module_spans"] == [{"module": 2, "from": "2026-11-05", "to": "2026-12-30"}]
+    assert [s["module"] for s in out["module_spans"]] == [1, 2, 3, 4]
+    assert out["module_spans"][1] == {"module": 2, "from": "2026-11-01", "study_to": "2026-12-20", "to": "2026-12-30"}
     assert [c["label"] for c in out["categories"]] == ["Математика", "Программирование", "Непрофильные дисциплины"]
 
 

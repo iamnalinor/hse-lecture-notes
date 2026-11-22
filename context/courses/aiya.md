@@ -88,9 +88,9 @@
 
 ## Источники
 
-- **Семинары (два репозитория семинаристов, прислал владелец; склонированы 22.11.2026, shallow).**
-  - [AndreyVV-100/HSE-C-seminars](https://github.com/AndreyVV-100/HSE-C-seminars) → `sources/aiya/seminars/HSE-C-seminars/` (последний коммит 20.11.2026: «Add seminar 3»). Папки `Seminar 1..3`: PDF-презентация, `examples/*.c` + `Makefile`, лайфкодинг. Автор благодарит Д. Е. Калинина за идеи (https://github.com/DKay7/seminars-on-c). Даты семинаров в репозитории не указаны.
-  - [VladikNeVladik/algorithms-seminars](https://github.com/VladikNeVladik/algorithms-seminars) → `sources/aiya/seminars/algorithms-seminars/` (последний коммит 19.11.2026: «add 06_sorting»). `slides/ALGS_01..06.pdf` (семинары 1–6 2026/27; в шапках 05.11.2026, 05.11.2026, «12.11.2025», «12.11.2025», «19.11.2025», «19.11.2025» — год в 3–6, видимо, опечатка, читать как 2026), `examples/NN_name/` (код с `Makefile` и `tests/`; номера до 40 — на весь год, часть — прошлогодние заготовки: C++, ассемблер), `homework/contest-01..10` (задачи ДЗ). `slides/legacy/` — слайды 2025/26 (ALGS_HSE_01–16, ASM_HSE_28–40).
+- **Семинары (два репозитория семинаристов, прислал владелец 21.11.2026).** Получить: `git clone --depth 1 <URL> sources/aiya/seminars/<имя репо>`.
+  - [AndreyVV-100/HSE-C-seminars](https://github.com/AndreyVV-100/HSE-C-seminars) → `sources/aiya/seminars/HSE-C-seminars/` (на 22.11.2026 последний коммит 20.11.2026: «Add seminar 3»). Папки `Seminar 1..3`: PDF-презентация, `examples/*.c` + `Makefile`, лайфкодинг. Автор благодарит Д. Е. Калинина за идеи (https://github.com/DKay7/seminars-on-c). Даты семинаров в репозитории не указаны.
+  - [VladikNeVladik/algorithms-seminars](https://github.com/VladikNeVladik/algorithms-seminars) → `sources/aiya/seminars/algorithms-seminars/` (на 22.11.2026 последний коммит 19.11.2026: «add 06_sorting»). `slides/ALGS_01..06.pdf` (семинары 1–6 2026/27; в шапках 05.11.2026, 05.11.2026, «12.11.2025», «12.11.2025», «19.11.2025», «19.11.2025» — год в 3–6, видимо, опечатка, читать как 2026), `examples/NN_name/` (код с `Makefile` и `tests/`; номера до 40 — на весь год, часть — прошлогодние заготовки: C++, ассемблер), `homework/contest-01..10` (задачи ДЗ). `slides/legacy/` — слайды 2025/26 (ALGS_HSE_01–16, ASM_HSE_28–40).
 
   | Семинар | Тема | Лекции, к которой относится |
   |---|---|---|
