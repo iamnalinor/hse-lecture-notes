@@ -20,7 +20,7 @@ export const HomeHero = ({ courses, lectures, statements }: Props) => (
         определения и теоремы с номерами, доказательства, разобранные примеры и задачи с решениями,
         а у каждого курса — сводка теории.
       </p>
-      <dl className="flex flex-wrap gap-x-8.5 gap-y-5 border-t border-rule pt-6">
+      <dl className="flex flex-wrap gap-x-8.5 gap-y-5 border-t border-rule pt-6 max-sm:hidden">
         {(
           [
             [lectures, plural(lectures, ["конспект", "конспекта", "конспектов"])],

@@ -53,8 +53,8 @@ const INDEX: readonly SearchEntry[] = [
 ];
 
 const Location = () => {
-  const { hash, pathname } = useLocation();
-  return <output data-testid="location">{decodeURIComponent(pathname + hash)}</output>;
+  const { hash, pathname, search } = useLocation();
+  return <output data-testid="location">{decodeURIComponent(pathname + search + hash)}</output>;
 };
 
 const MANY: readonly SearchEntry[] = Array.from({ length: 20 }, (_, index) => ({
@@ -68,13 +68,13 @@ const MANY: readonly SearchEntry[] = Array.from({ length: 20 }, (_, index) => ({
 
 const field = () => screen.getByRole("combobox", { name: "Поиск по конспектам" });
 
-const mount = () => {
+const mount = (route = "/") => {
   renderWithApp(
     <>
       <HeaderSearch />
       <Location />
     </>,
-    "/",
+    route,
   );
   return field();
 };
@@ -204,6 +204,26 @@ describe("HeaderSearch", () => {
     expect(field()).not.toHaveAttribute("tabindex");
     await userEvent.keyboard("{Escape}");
     expect(screen.getByRole("button", { name: "Поиск" })).toHaveFocus();
+  });
+
+  it("keeps the query in the address and drops it on Esc", async () => {
+    await userEvent.type(mount("/discrete#x"), "миноры");
+    expect(screen.getByTestId("location")).toHaveTextContent("/discrete?q=миноры#x");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByTestId("location").textContent).toBe("/discrete#x");
+  });
+
+  it("opens with the query from the address", async () => {
+    mount("/?q=миноры");
+    expect(field()).toHaveValue("миноры");
+    expect(await screen.findByRole("option")).toHaveTextContent("Алгебра · Теория");
+  });
+
+  it("does not drag the query of a folded panel to other pages", async () => {
+    await userEvent.type(mount(), "миноры");
+    await screen.findByRole("option");
+    fireEvent.pointerDown(document.body);
+    expect(screen.getByTestId("location").textContent).toBe("/?q=миноры");
   });
 
   it("does not fetch the index until the field is touched", async () => {
