@@ -96,25 +96,33 @@ const Run = (props: {
     .map((hours, offset) => intensity(hoursPerWeek(hours, start + offset, scale.weeks), scale.max));
   return (
     <div
-      className="flex p-1.5"
+      className="flex items-center p-1.5"
       style={{ gridColumn: `${String(start + 2)} / span ${String(end - start)}`, gridRow: 1 }}
     >
-      <div
-        className="flex h-8 w-full overflow-hidden rounded-md border text-footnote font-semibold text-ink tabular-nums"
-        style={{
-          background: runBackground(row.category, strengths),
-          borderColor: barBorder(row.category, Math.max(...strengths)),
-        }}
-      >
-        {strengths.map((_, offset) => (
-          <span
-            className="flex flex-1 items-center justify-center"
-            key={MODULES[start + offset]}
-            title={barTitle(row, start + offset, scale)}
-          >
-            {row.hours[start + offset]}
-          </span>
-        ))}
+      <div className="relative h-8 w-full">
+        <div
+          aria-hidden="true"
+          className="size-full rounded-md border"
+          style={{
+            background: runBackground(row.category, strengths),
+            borderColor: barBorder(row.category, Math.max(...strengths)),
+          }}
+        />
+        {/* Labels sit on the module columns, not on the bar: the bar is inset by the padding, its thirds are off-centre. */}
+        <div
+          className="absolute -inset-x-1.5 inset-y-0 grid text-footnote font-semibold text-ink tabular-nums"
+          style={{ gridTemplateColumns: `repeat(${String(end - start)}, minmax(0, 1fr))` }}
+        >
+          {strengths.map((_, offset) => (
+            <span
+              className="flex items-center justify-center"
+              key={MODULES[start + offset]}
+              title={barTitle(row, start + offset, scale)}
+            >
+              {row.hours[start + offset]}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
