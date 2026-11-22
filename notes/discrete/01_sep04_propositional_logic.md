@@ -3,6 +3,7 @@ course: discrete
 lecture: 1
 date: 2026-09-04
 title: Истинность, ложность и высказывания
+synced: true
 ---
 
 # Контекст

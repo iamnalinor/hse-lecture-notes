@@ -15,11 +15,19 @@ import { Component } from "./lecture-page.tsx";
 
 const WEEK_ID = "03_sep16_permutations_determinant";
 
-const open = (entry: string) => {
+const open = (entry: string, isSynced = false) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(catalogQuery.queryKey, {
     lectures: {
-      algebra: [{ date: "2026-09-16", lecture: 3, title: "Перестановки", weekId: WEEK_ID }],
+      algebra: [
+        {
+          date: "2026-09-16",
+          lecture: 3,
+          synced: isSynced,
+          title: "Перестановки",
+          weekId: WEEK_ID,
+        },
+      ],
     },
     preps: {},
     programs: [],
@@ -73,6 +81,17 @@ describe("lecture page addresses", () => {
     expect(router.state.location.hash).toBe("#thm:lec03:sign");
     expect(router.state.location.search).toBe("?x=1");
     expect(router.state.historyAction).toBe("REPLACE");
+  });
+
+  it("says the note was synced with the lecture, with its date", async () => {
+    open(`/algebra/${WEEK_ID}`, true);
+    expect(await screen.findByText(/Сверено с лекцией 16\.09/)).toBeInTheDocument();
+  });
+
+  it("says nothing about syncing when the note is not synced", async () => {
+    open(`/algebra/${WEEK_ID}`);
+    await screen.findByText("Текст лекции");
+    expect(screen.queryByText(/Сверено с лекцией/)).toBeNull();
   });
 
   it("answers 404 for a lecture number the course does not have", async () => {

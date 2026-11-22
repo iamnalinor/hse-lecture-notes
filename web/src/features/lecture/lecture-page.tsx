@@ -60,12 +60,12 @@ const LecturePage = ({ entry, info, lectures }: LectureProps) => {
       </div>
       <div className="min-w-0">
         <LectureHeader
+          entry={entry}
           info={info}
           meta={meta}
           minutes={minutes}
           next={next}
           prev={prev}
-          weekId={entry.weekId}
         />
         <FragmentView
           course={info.id}

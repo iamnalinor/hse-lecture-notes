@@ -321,6 +321,8 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
         if k in meta:
             rep.err(rel, f"поле {k} больше не используется: убери его из front matter")
     check_name_and_date(rep, rel, path, meta, cfg, course)
+    if "synced" in meta and meta["synced"] is not True:
+        rep.err(rel, f"synced={meta['synced']!r}: допустимо только synced: true (сверено с лекцией); не сверено — убери поле")
 
     lecture = meta.get("lecture")
     lec_nn = f"{int(lecture):02d}" if isinstance(lecture, int) else None

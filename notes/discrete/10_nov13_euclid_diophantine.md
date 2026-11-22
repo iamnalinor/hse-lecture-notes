@@ -3,6 +3,7 @@ course: discrete
 lecture: 10
 date: 2026-11-13
 title: Алгоритм Евклида и линейные диофантовы уравнения
+synced: true
 ---
 
 # Контекст

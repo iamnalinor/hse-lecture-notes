@@ -237,6 +237,7 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
                 "week_id": doc.week_id,
                 "title": data.get("title"),
                 "date": data.get("date"),
+                "synced": doc.meta.get("synced") is True,
                 "file": doc.rel,
             }
         )

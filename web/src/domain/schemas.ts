@@ -8,6 +8,8 @@ const LectureEntrySchema = z
   .object({
     date: z.string(),
     lecture: z.number(),
+    /** Front matter `synced: true`: the note was checked against this year's real lecture. */
+    synced: z.boolean().default(false),
     title: z.string(),
     week_id: z.string(),
   })

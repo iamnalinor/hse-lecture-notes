@@ -339,6 +339,8 @@ def test_lint_demo_clean(demo: Path):
         ("# Теория", "# Теория за \\$5", "литеральный знак $ в заголовке"),
         ("# Теория", "# Теория\n\n::: remark\n## Цена `$x`\n\nТекст.\n:::", "литеральный знак $ в заголовке"),
         ("date: 2026-09-03", "date: 2026-09-03\nbasis: lecture", "поле basis больше не используется"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: false", "допустимо только synced: true"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: yes please", "допустимо только synced: true"),
         ("::: {.definition #def:lec01:matrix", "::: {.defenition #def:lec01:matrix", "неизвестный тип блока"),
     ],
 )
@@ -350,6 +352,13 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
     res = lint(demo)
     assert res.returncode != 0
     assert expected in res.stdout, res.stdout
+
+
+def test_lint_accepts_synced_true(demo: Path):
+    p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
+    p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-09-03", "date: 2026-09-03\nsynced: true", 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
 
 
 @pytest.mark.parametrize(

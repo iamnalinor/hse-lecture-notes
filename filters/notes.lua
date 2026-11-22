@@ -688,8 +688,10 @@ local function set_template_meta(doc, config)
     if when ~= '' then line = line .. ' · ' .. when end
     meta['header_line'] = pandoc.MetaString(line)
   else
-    meta['header_line'] = pandoc.MetaString(string.format('%s · %s · Лекция %s · %s',
-      config.program or '', course_name, tostring(S.lecture), date_ru(date)))
+    local line = string.format('%s · %s · Лекция %s · %s',
+      config.program or '', course_name, tostring(S.lecture), date_ru(date))
+    if meta['synced'] == true then line = line .. ' · сверено с лекцией' end
+    meta['header_line'] = pandoc.MetaString(line)
   end
   -- pandoc не должен печатать дату/заголовок своими средствами
   meta['notes_title'] = meta['title']
