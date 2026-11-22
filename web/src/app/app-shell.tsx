@@ -59,7 +59,9 @@ export const AppShell = () => {
           <Skeleton pathname={pending} />
         ) : (
           <Suspense fallback={<Skeleton pathname={location.pathname} />} key={location.pathname}>
-            <Outlet />
+            <div data-page="">
+              <Outlet />
+            </div>
           </Suspense>
         )}
       </main>

@@ -27,7 +27,7 @@ export const TicketQuestion = ({ course, number, prepId, proofs, question, topic
       <div className="[&_.prose-notes>p]:my-0">
         <FragmentView course={course} docId={prepId} html={question.text} lecture={undefined} />
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4">
         <Reveal
           accessibleName={`Показать ответ на вопрос ${String(number)}`}
           closedLabel="Показать ответ"
@@ -44,7 +44,7 @@ export const TicketQuestion = ({ course, number, prepId, proofs, question, topic
         </Reveal>
         {topicTitle !== undefined && (
           <Link
-            className="text-footnote text-muted underline decoration-rule underline-offset-4 hover:text-ink"
+            className="py-1.5 text-footnote text-muted underline decoration-rule underline-offset-4 hover:text-ink"
             to={{ hash: `#sec:${prepId}:${question.topic}` }}
           >
             К разделу «<TexText text={topicTitle} />»

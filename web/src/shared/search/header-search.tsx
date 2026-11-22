@@ -7,7 +7,7 @@ import { canAutoDownload, type ConnectionInfo, isDesktopDevice } from "#web/doma
 import { hitPath, prepareIndex, search, type SearchHit } from "#web/domain/search.ts";
 import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
-import { PhoneFold, SearchField, SearchPanel } from "./search-parts.tsx";
+import { PhoneFold, Popover, SearchField, SearchPanel } from "./search-parts.tsx";
 import { resultId } from "./search-results.tsx";
 
 /** Hits drawn at once: each one may hold formulas, and KaTeX is the slow part of a keystroke. */
@@ -228,8 +228,8 @@ const boxHandlers = (close: () => void, dismiss: () => void) => ({
 });
 
 /**
-Search lives in the top bar itself: a field that widens on focus, results unfold right under the bar
-(full width on a phone), no modal. Enter or a tap opens a hit and folds the panel. Esc (from the field
+Search lives in the top bar itself: a field of fixed width from `md` (a phone folds it behind a
+magnifier), results unfold right under the bar (full width on a phone), no modal. Enter or a tap opens a hit and folds the panel. Esc (from the field
 or any button of the panel) and «Отмена» fold it too and keep the focus: in the field on a wide screen,
 on the magnifier on a phone. Tab out of the search folds the panel.
 */
@@ -296,7 +296,7 @@ export const HeaderSearch = () => {
             query={state.query}
           />
         </div>
-        {hasPanel && (
+        <Popover isOpen={hasPanel}>
           <SearchPanel
             active={state.active}
             hits={hits}
@@ -310,7 +310,7 @@ export const HeaderSearch = () => {
             onPick={fold}
             status={status}
           />
-        )}
+        </Popover>
       </PhoneFold>
     </div>
   );
