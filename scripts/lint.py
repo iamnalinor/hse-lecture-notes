@@ -267,6 +267,11 @@ def check_sections(rep: Report, rel: str, blocks: list, has_practice: bool) -> d
 
 def check_texts(rep: Report, rel: str, blocks: list) -> None:
     """Тексты: служебные слова пайплайна, «очевидно», символы без глифа в шрифте, «!»."""
+    # заголовок уходит в оглавление и индекс как «текст $формула$»: литеральный $ там не отличить
+    for h in (n for n in iter_nodes(blocks) if n["t"] == "Header"):
+        literal = (n for n in iter_nodes(h["c"][2]) if n["t"] in ("Str", "Code", "RawInline"))
+        if any("$" in (n["c"] if n["t"] == "Str" else n["c"][1]) for n in literal):
+            rep.err(rel, f"литеральный знак $ в заголовке «{stringify(h['c'][2])}»: перефразируй без него")
     for b in blocks:
         text = text_of_block(b)
         no_math = re.sub(r"\$[^$]*\$", "", text)

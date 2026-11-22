@@ -55,17 +55,62 @@ const drawParts = (draw: Draw, entries: TicketBank["ticket"]): readonly TicketPa
     return [];
   }
   if ("oneOf" in first) {
-    // a choice of variants (problem: two short items or one problem): one of them, then the rest
-    return drawParts(draw, [...(pick(first.oneOf, draw.random) ?? []), ...rest]);
+    // a choice of variants (problem: two short items or one problem): one of them, then the rest;
+    // under a topic filter only a variant that still has questions, unless none has
+    const hasQuestions = (variant: (typeof first.oneOf)[number]): boolean =>
+      variant.some((entry) => draw.bank.questions.some((question) => question.kind === entry.kind));
+    const live = first.oneOf.filter((variant) => hasQuestions(variant));
+    const variants = live.length > 0 ? live : first.oneOf;
+    return drawParts(draw, [...(pick(variants, draw.random) ?? []), ...rest]);
   }
   const questions = drawKind(draw, first.kind, first.count);
+  const tail = drawParts({ ...draw, taken: [...draw.taken, ...questions] }, rest);
+  if (questions.length === 0) {
+    // the chosen topics have nothing of this kind: the part is left out, not shown empty
+    return tail;
+  }
   const { kind, points, proofs, title } = first;
-  const part = { kind, points, proofs, questions, title };
-  return [part, ...drawParts({ ...draw, taken: [...draw.taken, ...questions] }, rest)];
+  return [{ kind, points, proofs, questions, title }, ...tail];
 };
 
-export const drawTicket = (bank: TicketBank, random: Random = Math.random): readonly TicketPart[] =>
-  drawParts({ bank, random, taken: [] }, bank.ticket);
+/**
+`topics` narrows the draw to questions of these topics (the topic filter of the generator); parts
+with no question left are dropped. Without it — the whole bank.
+*/
+export const drawTicket = (
+  bank: TicketBank,
+  random: Random = Math.random,
+  topics?: ReadonlySet<string>,
+): readonly TicketPart[] => {
+  const questions =
+    topics === undefined
+      ? bank.questions
+      : bank.questions.filter((question) => topics.has(question.topic));
+  return drawParts({ bank: { ...bank, questions }, random, taken: [] }, bank.ticket);
+};
+
+const ticketKinds = (bank: TicketBank): ReadonlySet<string> =>
+  new Set(
+    bank.ticket
+      .flatMap((entry) => ("oneOf" in entry ? entry.oneOf.flat() : entry))
+      .map((part) => part.kind),
+  );
+
+/**
+Topics a ticket can be drawn from: those with a question of a kind the ticket uses. Page order
+(`bank.topics` follows the page's sections), then any topic missing from it.
+*/
+export const bankTopics = (bank: TicketBank): readonly string[] => {
+  const kinds = ticketKinds(bank);
+  const used = new Set(
+    bank.questions.filter((question) => kinds.has(question.kind)).map((question) => question.topic),
+  );
+  const listed = Object.keys(bank.topics);
+  return [
+    ...listed.filter((topic) => used.has(topic)),
+    ...[...used].filter((topic) => !listed.includes(topic)),
+  ];
+};
 
 /** A proof outline of the page itself: `rem:<prep>:proof-…` («ход доказательства»). */
 const isOwnOutline = (ref: TicketRef, prepId: string): boolean =>

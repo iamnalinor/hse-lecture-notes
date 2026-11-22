@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { TicketBank, TicketQuestion } from "./schemas.ts";
 
-import { drawTicket, refsWithProof } from "./tickets.ts";
+import { bankTopics, drawTicket, refsWithProof } from "./tickets.ts";
 
 const question = (id: string, kind: string, topic: string): TicketQuestion => ({
   answer: "",
@@ -120,6 +120,59 @@ describe("drawTicket", () => {
 });
 
 const ref = (doc: string, id: string) => ({ doc, id });
+
+describe("topic filter", () => {
+  it("draws only from the chosen topics and drops parts left without questions", () => {
+    const bank: TicketBank = {
+      ...BANK,
+      questions: [...BANK.questions, question("x1", "extra", "x")],
+      ticket: [
+        ...BANK.ticket,
+        { count: 1, kind: "extra", points: "", proofs: false, title: "Доп." },
+      ],
+    };
+    const parts = drawTicket(bank, seeded(3), new Set(["a"]));
+    expect(parts.map((part) => part.kind)).toStrictEqual(["proof", "definition"]);
+    expect(parts.flatMap((part) => part.questions).map((q) => q.topic)).toStrictEqual([
+      "a",
+      "a",
+      "a",
+    ]);
+  });
+
+  it("lists the topics in page order, only those a ticket can draw from", () => {
+    const bank: TicketBank = {
+      ...BANK,
+      questions: [question("late", "proof", "z"), ...BANK.questions, question("e1", "extra", "e")],
+      topics: { a: "A", b: "B", c: "C", d: "D", e: "E", z: "Z" },
+    };
+    expect(bankTopics(bank)).toStrictEqual(["a", "b", "c", "d", "z"]);
+  });
+
+  it("in a choice takes a variant that still has questions under the filter", () => {
+    const bank: TicketBank = {
+      ...BANK,
+      questions: [
+        question("t1", "task", "x"),
+        question("s1", "short", "y"),
+        question("s2", "short", "y"),
+      ],
+      ticket: [
+        {
+          oneOf: [
+            [{ count: 1, kind: "task", points: "", proofs: false, title: "Задача" }],
+            [{ count: 2, kind: "short", points: "", proofs: false, title: "Два вопроса" }],
+          ],
+        },
+      ],
+      topics: { x: "X", y: "Y" },
+    };
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const parts = drawTicket(bank, seeded(seed), new Set(["y"]));
+      expect(parts.map((part) => part.kind)).toStrictEqual(["short"]);
+    }
+  });
+});
 
 describe("refsWithProof", () => {
   it("drops the lecture proof of a statement the page outlines", () => {
