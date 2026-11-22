@@ -3,7 +3,7 @@ course: algebra
 lecture: 2
 date: 2026-09-09
 title: Свойства умножения, транспонирование, элементарные преобразования, метод Гаусса
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

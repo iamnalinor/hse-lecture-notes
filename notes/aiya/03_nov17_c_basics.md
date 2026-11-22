@@ -3,7 +3,7 @@ course: aiya
 lecture: 3
 date: 2026-11-17
 title: Язык C. Первая программа, классы памяти, базовые типы
-synced: true
+synced: [lecture, seminars]
 ---
 
 # Контекст

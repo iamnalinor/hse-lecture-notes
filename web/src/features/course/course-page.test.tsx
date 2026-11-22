@@ -2,6 +2,8 @@ import { screen, within } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { LectureEntry } from "#web/domain/schemas.ts";
+
 import { renderWithApp } from "#web/test/render.tsx";
 
 import { Component as CoursePage } from "./course-page.tsx";
@@ -10,25 +12,25 @@ type Dates = { activeUntil: string; date: string; highlightFrom: string };
 
 const prep = (id: string, dates: Dates) => ({ ...dates, cheatsheets: [], id, title: "" });
 
-const LECTURES = [
+const LECTURES: LectureEntry[] = [
   {
     date: "2026-10-16",
     lecture: 7,
-    synced: true,
+    synced: ["lecture"],
     title: "Предел функции",
     weekId: "07_oct16_limits",
   },
   {
     date: "2026-10-23",
     lecture: 8,
-    synced: false,
+    synced: [],
     title: "Непрерывность",
     weekId: "08_oct23_continuity",
   },
   {
     date: "2026-10-30",
     lecture: 9,
-    synced: false,
+    synced: [],
     title: "Производная",
     weekId: "09_oct30_derivative",
   },
@@ -83,6 +85,20 @@ describe("course page", () => {
       .map((row) => within(row).getByRole("link", { name: /Предел|Непрерывность|Производная/ }));
     expect(marked).toHaveLength(1);
     expect(marked[0]).toHaveTextContent(/^Предел функции/);
+  });
+
+  it("makes the whole row open the lecture, keeping the PDF link apart", () => {
+    calculusOn("2026-10-20");
+    const row = screen.getByRole("row", { name: /Непрерывность/ });
+    const title = within(row).getByRole("link", { name: "Непрерывность" });
+    expect(row).toHaveClass("relative");
+    // the title's ::after covers the row: the one real link per row
+    expect(title).toHaveClass("after:absolute", "after:inset-0");
+    expect(title).toHaveAttribute("href", "/calculus/08_oct23_continuity");
+    const pdf = within(row).getByRole("link", { name: "PDF" });
+    expect(pdf).toHaveAttribute("download");
+    expect(pdf.closest("td")).toHaveClass("relative", "z-10");
+    expect(within(row).getAllByRole("link")).toHaveLength(2);
   });
 
   it("links the program page of the course next to the theory", () => {

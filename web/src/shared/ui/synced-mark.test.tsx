@@ -5,7 +5,9 @@ import { SyncedTitle } from "./synced-mark.tsx";
 
 describe("SyncedTitle", () => {
   it("keeps the tick in one nowrap element with the last word", () => {
-    render(<SyncedTitle synced title="Предел функции: монотонность, ограниченность" />);
+    render(
+      <SyncedTitle synced={["lecture"]} title="Предел функции: монотонность, ограниченность" />,
+    );
     const tail = screen.getByTestId("title-tail");
     expect(tail).toHaveClass("whitespace-nowrap");
     expect(tail).toHaveTextContent("ограниченность");
@@ -14,13 +16,18 @@ describe("SyncedTitle", () => {
     expect(tail).toHaveTextContent("Сверено с лекцией");
   });
 
+  it("says in the tooltip what the note was synced with", () => {
+    render(<SyncedTitle synced={["lecture", "seminars"]} title="Пределы" />);
+    expect(screen.getByTestId("title-tail")).toHaveTextContent("Сверено с лекцией и семинарами");
+  });
+
   it("glues the tick to a one-word title", () => {
-    render(<SyncedTitle synced title="Пределы" />);
+    render(<SyncedTitle synced={["lecture"]} title="Пределы" />);
     expect(screen.getByTestId("title-tail")).toHaveTextContent("Пределы");
   });
 
   it("is the bare title without the mark", () => {
-    render(<SyncedTitle synced={false} title="Пределы функции" />);
+    render(<SyncedTitle synced={[]} title="Пределы функции" />);
     expect(screen.queryByTestId("title-tail")).toBeNull();
     expect(screen.getByText("Пределы функции")).toBeInTheDocument();
   });

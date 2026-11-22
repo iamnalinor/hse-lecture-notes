@@ -3,7 +3,7 @@ course: discrete
 lecture: 9
 date: 2026-11-06
 title: Обратный элемент по модулю. Теоремы Эйлера и Ферма
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

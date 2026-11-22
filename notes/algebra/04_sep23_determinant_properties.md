@@ -3,7 +3,7 @@ course: algebra
 lecture: 4
 date: 2026-09-23
 title: Свойства определителя. Вычисление определителя методом Гаусса
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

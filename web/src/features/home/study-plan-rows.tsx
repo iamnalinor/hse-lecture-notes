@@ -4,6 +4,7 @@ import {
   creditsText,
   type Discipline,
   hourRuns,
+  hoursPerWeek,
   intensity,
   MODULES,
 } from "#web/domain/curriculum.ts";
@@ -12,9 +13,12 @@ import { barBorder, categoryColor, runBackground } from "./study-plan-style.ts";
 
 export type PlanScale = {
   readonly current: number | undefined;
+  /** The highest load (hours per week, or hours without `weeks`): the top of the intensity scale. */
   readonly max: number;
   readonly maxTotal: number;
   readonly totals: readonly number[];
+  /** Teaching weeks of modules 1–4, when the plan knows them. */
+  readonly weeks: readonly number[] | undefined;
 };
 
 /** One name column plus four module columns; on a phone the name column is narrower and sticks to the left. */
@@ -52,11 +56,11 @@ export const TotalRow = ({ scale }: { readonly scale: PlanScale }) => (
     </div>
     {scale.totals.map((total, index) => (
       <div
-        className={`flex items-end p-1.5 ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
+        className={`flex items-center p-1.5 ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
         key={MODULES[index]}
       >
         <div
-          className="flex w-full items-start justify-center rounded-md border border-ink/25 bg-ink/15 pt-1 text-footnote font-semibold tabular-nums"
+          className="flex w-full items-center justify-center rounded-md border border-ink/25 bg-ink/15 text-footnote font-semibold tabular-nums"
           style={{ height: `${String(Math.max(28, Math.round((total / scale.maxTotal) * 64)))}px` }}
           title={`${String(total)} контактных часов в ${String(index + 1)} модуле`}
         >
@@ -87,7 +91,9 @@ const Run = (props: {
   readonly start: number;
 }) => {
   const { end, row, scale, start } = props;
-  const strengths = row.hours.slice(start, end).map((hours) => intensity(hours, scale.max));
+  const strengths = row.hours
+    .slice(start, end)
+    .map((hours, offset) => intensity(hoursPerWeek(hours, start + offset, scale.weeks), scale.max));
   return (
     <div
       className="flex p-1.5"
@@ -104,7 +110,7 @@ const Run = (props: {
           <span
             className="flex flex-1 items-center justify-center"
             key={MODULES[start + offset]}
-            title={barTitle(row, start + offset, scale.totals[start + offset] ?? 0)}
+            title={barTitle(row, start + offset, scale)}
           >
             {row.hours[start + offset]}
           </span>
@@ -118,10 +124,7 @@ const Run = (props: {
 const RowName = ({ row }: { readonly row: Discipline }) => (
   <div className={`${STICKY} flex flex-col justify-center px-3 py-2 sm:px-4`} title={row.name}>
     <div className="text-footnote/4 font-semibold sm:text-subhead/5">{row.short}</div>
-    <div className="text-caption text-muted">
-      {creditsText(row.credits)}
-      {row.variants === undefined ? "" : ` · один из ${String(row.variants)}`}
-    </div>
+    <div className="text-caption text-muted">{creditsText(row.credits)}</div>
   </div>
 );
 

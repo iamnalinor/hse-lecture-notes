@@ -27,7 +27,7 @@ export const DocSkeleton = () => (
   <div
     aria-busy="true"
     aria-label="Загрузка"
-    className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,800px)] justify-center gap-14 px-4 min-[1100px]:grid-cols-[230px_minmax(0,800px)] sm:px-8"
+    className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,860px)] justify-center gap-14 px-4 min-[1100px]:grid-cols-[230px_minmax(0,860px)] sm:px-8"
     role="status"
   >
     <div className="hidden pt-14 min-[1100px]:block">

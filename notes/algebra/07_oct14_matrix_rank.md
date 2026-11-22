@@ -3,7 +3,7 @@ course: algebra
 lecture: 7
 date: 2026-10-14
 title: Миноры и ранг матрицы. Линейная зависимость. Теорема о базисном миноре
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

@@ -3,8 +3,8 @@ import { Link } from "react-router";
 import type { CourseInfo } from "#web/domain/courses.ts";
 import type { DocMeta, LectureEntry } from "#web/domain/schemas.ts";
 
-import { shortDate } from "#web/domain/dates.ts";
 import { paths } from "#web/domain/paths.ts";
+import { syncedLabel } from "#web/domain/synced.ts";
 import { CheckIcon, ChevronIcon, ChevronLeftIcon } from "#web/shared/ui/icons.tsx";
 import { PdfLink } from "#web/shared/ui/pdf-link.tsx";
 
@@ -51,20 +51,26 @@ export const LectureHeader = ({ entry, info, meta, minutes, next, prev }: Props)
     </h1>
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-footnote text-muted">
       <span>~{minutes} мин чтения</span>
-      {entry.synced && (
-        <span className="inline-flex items-center gap-1">
-          <span className="text-ex">
-            <CheckIcon size={14} />
-          </span>
-          Сверено с лекцией {shortDate(entry.date)}
-        </span>
-      )}
+      <SyncedLine entry={entry} />
       <span className="ml-auto">
         <PdfLink course={info.id} docId={entry.weekId} variant="button" />
       </span>
     </div>
   </header>
 );
+
+/** «Сверено с лекцией…» with a green tick; nothing for a note that is not synced. */
+const SyncedLine = ({ entry }: { readonly entry: LectureEntry }) => {
+  const label = syncedLabel(entry.synced);
+  return label === null ? null : (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-ex">
+        <CheckIcon size={14} />
+      </span>
+      {label}
+    </span>
+  );
+};
 
 const STEP =
   "flex h-11 min-w-12 items-center justify-center gap-1 px-2.5 text-subhead font-semibold tabular-nums no-underline";

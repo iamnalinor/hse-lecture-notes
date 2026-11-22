@@ -12,7 +12,7 @@ const MAX_ROWS = 6;
 
 /** A row whose next row is from an earlier week gets the stronger rule: the list reads in weeks. */
 const ROW =
-  "border-b last:border-0 max-sm:grid max-sm:grid-cols-[auto_1fr] max-sm:px-4.5 max-sm:py-3";
+  "relative border-b last:border-0 max-sm:grid max-sm:grid-cols-[auto_1fr] max-sm:px-4.5 max-sm:py-3 hover:bg-wash/60";
 const rowClass = (items: readonly RecentItem[], index: number): string => {
   const next = items[index + 1];
   const isLastOfWeek =
@@ -55,7 +55,7 @@ export const RecentLectures = ({ items }: { readonly items: readonly RecentItem[
             </td>
             <td className="px-4.5 py-3.5 max-sm:col-span-2 max-sm:p-0 max-sm:pt-1">
               <Link
-                className="text-body text-ink no-underline"
+                className="text-body text-ink no-underline after:absolute after:inset-0 after:content-['']"
                 to={paths.lecture(course.id, lecture.weekId)}
               >
                 {lecture.title}

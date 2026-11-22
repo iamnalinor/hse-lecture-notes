@@ -3,7 +3,7 @@ course: discrete
 lecture: 7
 date: 2026-10-16
 title: Вычисления по модулю. Простые числа. Основная теорема арифметики
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

@@ -6,8 +6,10 @@ import {
   currentModule,
   type Curriculum,
   groupByCategory,
-  maxHours,
+  loadText,
+  maxLoad,
   moduleTotals,
+  moduleWeeks,
 } from "#web/domain/curriculum.ts";
 
 import { SectionTitle } from "./section-title.tsx";
@@ -20,11 +22,13 @@ const LEGEND_STEPS = [0, 0.33, 0.66, 1] as const;
 const Legend = ({
   current,
   max,
+  perWeek,
 }: {
   readonly current: number | undefined;
   readonly max: number;
+  readonly perWeek: boolean;
 }) => (
-  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-rule px-4 py-3 text-footnote text-muted">
+  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-rule px-4 py-3 text-footnote text-muted">
     <span className="flex items-center gap-2">
       <span className="whitespace-nowrap">меньше часов</span>
       <span className="flex gap-0.5">
@@ -36,7 +40,9 @@ const Legend = ({
           />
         ))}
       </span>
-      <span className="whitespace-nowrap">больше (до {max} ч)</span>
+      <span className="whitespace-nowrap">
+        больше (до {loadText(max)} {perWeek ? "ч/нед" : "ч"})
+      </span>
     </span>
     {current === undefined ? null : <span>подсвечен идущий модуль</span>}
   </div>
@@ -53,11 +59,13 @@ export const StudyPlan = ({
   const groups = groupByCategory(curriculum);
   const totals = moduleTotals(curriculum.disciplines);
   const sums = creditSums(curriculum);
+  const weeks = moduleWeeks(curriculum);
   const scale: PlanScale = {
     current: currentModule(curriculum, today),
-    max: maxHours(curriculum.disciplines),
+    max: maxLoad(curriculum.disciplines, weeks),
     maxTotal: Math.max(1, ...totals),
     totals,
+    weeks,
   };
   return (
     <figure
@@ -74,9 +82,9 @@ export const StudyPlan = ({
         </div>
       </div>
       <StudyPlanTable groups={groups} totals={totals} />
-      <Legend current={scale.current} max={scale.max} />
-      <figcaption className="px-4 pb-3 text-footnote text-muted">
-        По рабочему учебному плану 2026/27. Часы — контактные.{" "}
+      <Legend current={scale.current} max={scale.max} perWeek={weeks !== undefined} />
+      <figcaption className="px-4 pb-3 text-center text-footnote text-muted">
+        По рабочему учебному плану 2026/27. Часы — контактные; цвет полосы — часы в неделю.{" "}
         <span>
           Кредиты за год: {sums.shown} по дисциплинам выше · {sums.withHidden} с учебной практикой и
           физкультурой · {sums.withEnglish} с английским (факультатив).

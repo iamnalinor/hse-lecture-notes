@@ -29,7 +29,17 @@ const ExcludedSchema = z
   .object({ credits: z.number(), in_plan_total: z.boolean(), name: z.string() })
   .transform(({ in_plan_total: inPlanTotal, ...rest }) => ({ ...rest, inPlanTotal }));
 
-const ModuleSpanSchema = z.object({ from: z.string(), module: z.number(), to: z.string() });
+/**
+`from`…`to`: the module with its session (the current-module highlight); `study_to`: the last teaching day;
+`weeks`: teaching days (`from`…`study_to` without the breaks) / 7, to 0.1 — the module's length for hours per week.
+*/
+const ModuleSpanSchema = z.object({
+  from: z.string(),
+  module: z.number(),
+  study_to: z.string(),
+  to: z.string(),
+  weeks: z.number().positive(),
+});
 
 export const CurriculumSchema = z
   .object({
@@ -72,9 +82,34 @@ export const groupByCategory = (curriculum: Curriculum): readonly CategoryGroup[
 export const moduleTotals = (rows: readonly Discipline[]): readonly number[] =>
   MODULES.map((_, index) => rows.reduce((sum, row) => sum + (row.hours[index] ?? 0), 0));
 
-/** The most hours one discipline has in one module: the top of the single intensity scale. */
-export const maxHours = (rows: readonly Discipline[]): number =>
-  Math.max(0, ...rows.flatMap((row) => row.hours));
+/** Teaching weeks of modules 1–4; `undefined` unless the plan knows all four (then the scale falls back to hours). */
+export const moduleWeeks = (curriculum: Curriculum): readonly number[] | undefined => {
+  const weeks = MODULES.map(
+    (module) => curriculum.moduleSpans.find((span) => span.module === module)?.weeks,
+  );
+  return weeks.every((value) => value !== undefined) ? weeks : undefined;
+};
+
+/** Contact hours per teaching week of a module; plain hours when the module lengths are unknown. */
+export const hoursPerWeek = (
+  hours: number,
+  index: number,
+  weeks: readonly number[] | undefined,
+): number => hours / (weeks?.[index] ?? 1);
+
+/** The highest load of one discipline in one module (hours per week): the top of the single intensity scale. */
+export const maxLoad = (
+  rows: readonly Discipline[],
+  weeks: readonly number[] | undefined,
+): number =>
+  Math.max(
+    0,
+    ...rows.flatMap((row) => row.hours.map((hours, index) => hoursPerWeek(hours, index, weeks))),
+  );
+
+/** «3,5» — hours per week with a decimal comma, to 0.1. */
+export const loadText = (load: number): string =>
+  (Math.round(load * 10) / 10).toFixed(1).replace(".", ",");
 
 /** Whole percent of the module's hours, 0 for an empty module. */
 export const hoursShare = (hours: number, total: number): number =>
@@ -82,9 +117,12 @@ export const hoursShare = (hours: number, total: number): number =>
 
 const MIN_INTENSITY = 0.3;
 
-/** Bar strength 0.3…1 by absolute hours on the scale of the whole chart; 0 hours → 0 (no bar). */
-export const intensity = (hours: number, max: number): number =>
-  max <= 0 || hours <= 0 ? 0 : MIN_INTENSITY + (1 - MIN_INTENSITY) * Math.min(1, hours / max);
+/**
+Bar strength 0.3…1 by load (hours per week, so modules of different length compare fairly) on the scale
+of the whole chart; no load → 0 (no bar).
+*/
+export const intensity = (load: number, max: number): number =>
+  max <= 0 || load <= 0 ? 0 : MIN_INTENSITY + (1 - MIN_INTENSITY) * Math.min(1, load / max);
 
 /** The module that is under way today, if the repository knows its dates (`module_spans`). */
 export const currentModule = (curriculum: Curriculum, today: string): number | undefined =>
@@ -141,11 +179,18 @@ export const creditSums = (curriculum: Curriculum): CreditSums => {
 export const creditsText = (credits: number): string =>
   `${String(credits)} ${plural(credits, ["кредит", "кредита", "кредитов"])}`;
 
-/** «28 ч — 14% часов модуля · 8 кредитов за год» (the bar hint). */
-export const barTitle = (row: Discipline, index: number, total: number): string => {
+/** «28 ч · 3,5 ч/нед — 14% часов модуля · 8 кредитов за год» (the bar hint; the share does not depend on the module's length). */
+export const barTitle = (
+  row: Discipline,
+  index: number,
+  scale: { readonly totals: readonly number[]; readonly weeks: readonly number[] | undefined },
+): string => {
   const hours = row.hours[index] ?? 0;
+  const { totals, weeks } = scale;
+  const total = totals[index] ?? 0;
+  const rate = weeks === undefined ? "" : ` · ${loadText(hoursPerWeek(hours, index, weeks))} ч/нед`;
   const parts = [
-    `${String(hours)} ч — ${String(hoursShare(hours, total))}% часов модуля`,
+    `${String(hours)} ч${rate} — ${String(hoursShare(hours, total))}% часов модуля`,
     `${creditsText(row.credits)} за год`,
     row.variants === undefined
       ? ""

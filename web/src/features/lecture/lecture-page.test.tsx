@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { SyncedPart } from "#web/domain/synced.ts";
+
 import {
   catalogQuery,
   docMetaQuery,
@@ -15,7 +17,7 @@ import { Component } from "./lecture-page.tsx";
 
 const WEEK_ID = "03_sep16_permutations_determinant";
 
-const open = (entry: string, isSynced = false) => {
+const open = (entry: string, synced: SyncedPart[] = []) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(catalogQuery.queryKey, {
     lectures: {
@@ -23,7 +25,7 @@ const open = (entry: string, isSynced = false) => {
         {
           date: "2026-09-16",
           lecture: 3,
-          synced: isSynced,
+          synced,
           title: "Перестановки",
           weekId: WEEK_ID,
         },
@@ -83,9 +85,13 @@ describe("lecture page addresses", () => {
     expect(router.state.historyAction).toBe("REPLACE");
   });
 
-  it("says the note was synced with the lecture, with its date", async () => {
-    open(`/algebra/${WEEK_ID}`, true);
-    expect(await screen.findByText(/Сверено с лекцией 16\.09/)).toBeInTheDocument();
+  it.each<[SyncedPart[], string]>([
+    [["lecture"], "Сверено с лекцией"],
+    [["lecture", "seminars"], "Сверено с лекцией и семинарами"],
+    [["seminars"], "Сверено с семинарами"],
+  ])("says what the note %j was synced with, without a date", async (synced, text) => {
+    open(`/algebra/${WEEK_ID}`, synced);
+    expect(await screen.findByText(text)).toBeInTheDocument();
   });
 
   it("says nothing about syncing when the note is not synced", async () => {

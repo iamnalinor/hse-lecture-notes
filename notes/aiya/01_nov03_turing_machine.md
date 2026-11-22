@@ -3,6 +3,7 @@ course: aiya
 lecture: 1
 date: 2026-11-03
 title: Алгоритм и его формализация. Машина Тьюринга
+synced: [lecture]
 ---
 
 # Контекст

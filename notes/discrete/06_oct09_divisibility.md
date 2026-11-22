@@ -3,7 +3,7 @@ course: discrete
 lecture: 6
 date: 2026-10-09
 title: Делимость. Деление с остатком. Сравнения
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

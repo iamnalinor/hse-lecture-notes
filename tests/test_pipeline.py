@@ -339,8 +339,11 @@ def test_lint_demo_clean(demo: Path):
         ("# Теория", "# Теория за \\$5", "литеральный знак $ в заголовке"),
         ("# Теория", "# Теория\n\n::: remark\n## Цена `$x`\n\nТекст.\n:::", "литеральный знак $ в заголовке"),
         ("date: 2026-09-03", "date: 2026-09-03\nbasis: lecture", "поле basis больше не используется"),
-        ("date: 2026-09-03", "date: 2026-09-03\nsynced: false", "допустимо только synced: true"),
-        ("date: 2026-09-03", "date: 2026-09-03\nsynced: yes please", "допустимо только synced: true"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: true", "непустой список"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: []", "непустой список"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: lecture", "непустой список"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: [lecture, lecture]", "непустой список"),
+        ("date: 2026-09-03", "date: 2026-09-03\nsynced: [practice]", "непустой список"),
         ("::: {.definition #def:lec01:matrix", "::: {.defenition #def:lec01:matrix", "неизвестный тип блока"),
     ],
 )
@@ -354,9 +357,10 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
     assert expected in res.stdout, res.stdout
 
 
-def test_lint_accepts_synced_true(demo: Path):
+@pytest.mark.parametrize("value", ["[lecture]", "[lecture, seminars]", "[seminars]"])
+def test_lint_accepts_synced_lists(demo: Path, value: str):
     p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
-    p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-09-03", "date: 2026-09-03\nsynced: true", 1), encoding="utf-8")
+    p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-09-03", f"date: 2026-09-03\nsynced: {value}", 1), encoding="utf-8")
     res = lint(demo)
     assert res.returncode == 0, res.stdout
 
@@ -434,6 +438,30 @@ def test_lint_prep_catches(demo: Path, old: str, new: str, expected: str):
     res = lint(demo)
     assert res.returncode != 0
     assert expected in res.stdout, res.stdout
+
+
+@pytest.mark.skipif(not HAS_TEX, reason="нужен TeX для TikZ → SVG")
+@pytest.mark.parametrize(
+    "value,expected,suffix",
+    [
+        (None, [], ""),
+        ("[lecture]", ["lecture"], " · сверено с лекцией"),
+        ("[seminars, lecture]", ["lecture", "seminars"], " · сверено с лекцией и семинарами"),
+        ("[seminars]", ["seminars"], " · сверено с семинарами"),
+    ],
+)
+def test_synced_reaches_site_and_header(demo: Path, value, expected, suffix):
+    """synced: список частей → courses.json (упорядоченный список) и колонтитул PDF."""
+    if value:
+        p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
+        p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-09-03", f"date: 2026-09-03\nsynced: {value}", 1), encoding="utf-8")
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert courses["lectures"]["algebra"][0]["synced"] == expected
+    meta = json.loads((site / "algebra" / "01_sep03_matrices" / "meta.json").read_text(encoding="utf-8"))
+    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Лекция 1 · 3 сентября 2026" + suffix
 
 
 @pytest.mark.skipif(not HAS_TEX, reason="нужен TeX для TikZ → SVG")
