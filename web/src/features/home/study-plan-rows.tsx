@@ -56,7 +56,7 @@ export const TotalRow = ({ scale }: { readonly scale: PlanScale }) => (
     </div>
     {scale.totals.map((total, index) => (
       <div
-        className={`flex items-center p-1.5 ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
+        className={`flex items-end p-1.5 ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
         key={MODULES[index]}
       >
         <div
