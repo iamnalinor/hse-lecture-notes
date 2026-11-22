@@ -76,28 +76,29 @@ describe("course page", () => {
     expect(navLinks("Материалы курса")).toStrictEqual(["Читать лекцию 8 · 23 окт", "Теория"]);
   });
 
-  it("lists every prep in its own row: upcoming with the day, then undated, then past ones", () => {
+  it("lists the preps in the order of their events, each styled by its state", () => {
     calculusOn("2026-10-26");
     expect(navLinks("Подготовка")).toStrictEqual([
+      "КР-1",
       "Коллоквиум 1 · 02.11–30.12",
       "КР-2 · 10.12",
       "КР-3",
-      "КР-1",
     ]);
+    expect(screen.getByRole("link", { name: "КР-1" })).toHaveClass("text-muted");
+    expect(screen.getByRole("link", { name: "КР-1" })).toHaveAttribute("href", "/calculus/kr1");
     expect(screen.getByRole("link", { name: /Коллоквиум 1/u })).not.toHaveClass("bg-org-fill");
     // a prep without a day: neutral, not muted like a past one
     expect(screen.getByRole("link", { name: "КР-3" })).not.toHaveClass("bg-org-fill");
     expect(screen.getByRole("link", { name: "КР-3" })).not.toHaveClass("text-muted");
-    expect(screen.getByRole("link", { name: "КР-1" })).toHaveAttribute("href", "/calculus/kr1");
   });
 
-  it("orders upcoming preps by the next day that matters and accents those near the event", () => {
+  it("keeps the order of the events and accents those near the event", () => {
     calculusOn("2026-12-08");
     expect(navLinks("Подготовка")).toStrictEqual([
-      "КР-2 · 10.12",
-      "Коллоквиум 1 · 02.11–30.12",
-      "КР-3",
       "КР-1",
+      "Коллоквиум 1 · 02.11–30.12",
+      "КР-2 · 10.12",
+      "КР-3",
     ]);
     expect(screen.getByRole("link", { name: /КР-2/u })).toHaveClass("bg-org-fill");
     expect(screen.getByRole("link", { name: /Коллоквиум 1/u })).toHaveClass("bg-org-fill");

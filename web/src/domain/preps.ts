@@ -116,6 +116,24 @@ export const pastPreps = (preps: readonly PrepEntry[], today: string): readonly 
     .toSorted((a, b) => a.date.localeCompare(b.date));
 
 /**
+All preps of a course in the order of their events, whatever their state: by day, and those without
+a day yet (their event is still ahead) after the dated ones, by id. The course page shows them so,
+each styled by its state.
+*/
+export const chronologicalPreps = (preps: readonly PrepEntry[]): readonly PrepEntry[] => {
+  // undated ones after every date, then by id; code-unit order, not locale (which puts «~» first)
+  const key = (prep: PrepEntry): readonly [number, string] =>
+    isDated(prep) ? [0, prep.date] : [1, prep.id];
+  return preps.toSorted((a, b) => {
+    const [ka, kb] = [key(a), key(b)];
+    if (ka[0] !== kb[0]) {
+      return ka[0] - kb[0];
+    }
+    return ka[1] < kb[1] ? -1 : Number(ka[1] > kb[1]);
+  });
+};
+
+/**
 Preps of events not announced yet (no `date`): shown on the course page, neutral and without a day,
 so one can start early; never on the home page and never in the accent colour.
 */

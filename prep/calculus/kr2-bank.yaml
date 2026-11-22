@@ -1,0 +1,635 @@
+# Банк вопросов генератора вариантов к КР-2 по матанализу (сайт: /calculus/kr2, раздел «Генератор вариантов»).
+# Формат — context/markup.md §11, «Банк билетов». В PDF банк не попадает.
+#
+# about — подпись генератора: одна короткая фраза, что варианты неофициальные и тренировочные.
+# ticket — девять задач, по блоку тем на номер (лекции 6–13). Число задач и баллы КР-2 не объявлены:
+# состав варианта — по одному типу задач страницы, непрерывность и асимптоты — в одном пункте.
+# questions — id, kind (из ticket), topic (раздел sec:kr2:<topic> страницы), text, refs (задачи страницы
+# и конспектов — с их решениями) и/или answer (ответ и ключевой шаг для новых задач).
+# Каждый answer пересчитан (sympy).
+# Строки с обратной косой чертой — без кавычек, в '…' или блоком >-; в "…" YAML съест «\».
+
+about: Неофициальные тренировочные варианты; задачи на КР будут другие.
+
+ticket:
+  - kind: partial
+    title: Частичные пределы и критерий Коши
+    count: 1
+  - kind: definition
+    title: Предел функции по определению
+    count: 1
+  - kind: o-symbols
+    title: О-символика
+    count: 1
+  - kind: limits
+    title: Вычисление пределов функций
+    count: 1
+  - kind: continuity
+    title: Непрерывность и асимптоты
+    count: 1
+  - kind: diff-def
+    title: Производная по определению
+    count: 1
+  - kind: rules
+    title: Вычисление производных
+    count: 1
+  - kind: extrema
+    title: Монотонность и экстремумы
+    count: 1
+  - kind: mean-value
+    title: Теоремы Ролля и Лагранжа
+    count: 1
+
+questions:
+  # ------------------------------------------------------------------ 1. частичные пределы, Коши
+  - id: part-cos
+    kind: partial
+    topic: partial
+    text: >-
+      Найдите множество частичных пределов, верхний и нижний пределы последовательности
+      $x_n = \frac{2n - 1}{n + 3} \cos\frac{2\pi n}{3}$.
+    refs: [prob:kr2:partial-cos]
+  - id: part-cauchy-sum
+    kind: partial
+    topic: partial
+    text: >-
+      С помощью критерия Коши докажите, что сходится последовательность
+      $x_n = \sum_{k=1}^{n} \frac{\sin k^2}{k(k + 1)}$.
+    refs: [prob:kr2:cauchy-sum]
+  - id: part-e-sin
+    kind: partial
+    topic: partial
+    text: >-
+      Найдите множество частичных пределов, верхний и нижний пределы последовательности
+      $x_n = (-1)^n \left(1 + \frac1n\right)^n + \sin\frac{\pi n}{2}$.
+    answer: >-
+      Разбиение по остатку $n$ от деления на $4$, $\left(1 + \frac1n\right)^n \to e$: при $n = 4k$ и $n = 4k + 2$
+      предел $e$, при $n = 4k + 1$ предел $1 - e$, при $n = 4k + 3$ предел $-1 - e$. Частичные пределы
+      $\{-1 - e,\ 1 - e,\ e\}$, $\varlimsup x_n = e$, $\varliminf x_n = -1 - e$.
+  - id: part-root-cos
+    kind: partial
+    topic: partial
+    text: >-
+      Найдите множество частичных пределов, верхний и нижний пределы последовательности
+      $x_n = \sqrt[n]{n}\,\cos\frac{\pi n}{2} + \frac{(-1)^n n}{n + 1}$.
+    answer: >-
+      $\sqrt[n]{n} \to 1$, $\frac{n}{n + 1} \to 1$. По остатку $n$ от деления на $4$: $n = 4k$ даёт $1 + 1 = 2$,
+      $n = 4k + 1$ даёт $0 - 1 = -1$, $n = 4k + 2$ даёт $-1 + 1 = 0$, $n = 4k + 3$ даёт $-1$.
+      Частичные пределы $\{-1,\ 0,\ 2\}$, $\varlimsup x_n = 2$, $\varliminf x_n = -1$.
+  - id: part-power
+    kind: partial
+    topic: partial
+    text: >-
+      Найдите частичные пределы последовательности $x_n = \frac{(2 + (-1)^n)^n}{3^n}$.
+      Сходится ли она?
+    answer: >-
+      При чётном $n$ имеем $x_n = \frac{3^n}{3^n} = 1$, при нечётном $x_n = \frac{1}{3^n} \to 0$.
+      Частичные пределы $0$ и $1$; их два, поэтому последовательность расходится.
+  - id: part-cauchy-diverge
+    kind: partial
+    topic: partial
+    text: >-
+      С помощью критерия Коши докажите, что расходится последовательность
+      $x_n = 1 + \frac13 + \frac15 + \dots + \frac{1}{2n - 1}$.
+    answer: >-
+      $x_{2n} - x_n = \sum_{k=n+1}^{2n} \frac{1}{2k - 1} \ge n \cdot \frac{1}{4n - 1} > \frac14$:
+      в сумме $n$ слагаемых, наименьшее $\frac{1}{4n - 1}$. При $\varepsilon_0 = \frac14$ для любого $N$
+      номера $m = 2n$, $n > N$ нарушают условие фундаментальности.
+  - id: part-cauchy-geometric
+    kind: partial
+    topic: partial
+    text: >-
+      С помощью критерия Коши докажите, что сходится последовательность
+      $x_n = \sum_{k=1}^{n} \frac{\cos k!}{2^k}$.
+    answer: >-
+      $|x_{n+p} - x_n| \le \sum_{k=n+1}^{n+p} \frac{1}{2^k} < \frac{1}{2^n} < \frac1n$. Для $\varepsilon > 0$
+      подходит $N = \left[\frac1\varepsilon\right]$: при $m > n > N$ имеем $|x_m - x_n| < \frac1n < \varepsilon$.
+  - id: part-mod
+    kind: partial
+    topic: partial
+    text: >-
+      Найдите множество частичных пределов, $\varlimsup x_n$, $\varliminf x_n$, $\sup x_n$ и $\inf x_n$
+      для $x_n = \frac{n + 2}{n} \sin\frac{\pi n}{4}$.
+    refs: [prob:lec06:partial-mod]
+
+  # ------------------------------------------------------------------ 2. предел по определению
+  - id: def-rational
+    kind: definition
+    topic: definition
+    text: Докажите по определению Коши, что $\lim\limits_{x \to 1} \frac{x + 3}{2x + 1} = \frac43$.
+    refs: [prob:kr2:cauchy-rational]
+  - id: def-no-limit
+    kind: definition
+    topic: definition
+    text: Докажите, что предел $\lim\limits_{x \to 0} \cos\frac{1}{x^2}$ не существует.
+    refs: [prob:kr2:no-limit]
+  - id: def-square
+    kind: definition
+    topic: definition
+    text: Докажите по определению Коши, что $\lim\limits_{x \to 3} x^2 = 9$.
+    answer: >-
+      $|x^2 - 9| = |x - 3|\,|x + 3|$. При $|x - 3| < 1$ имеем $|x + 3| < 7$, поэтому
+      $|x^2 - 9| < 7|x - 3|$. Подходит $\delta = \min\left(1,\ \frac\varepsilon7\right)$.
+  - id: def-sqrt
+    kind: definition
+    topic: definition
+    text: Докажите по определению Коши, что $\lim\limits_{x \to 4} \sqrt{x} = 2$.
+    answer: >-
+      При $|x - 4| < 4$ функция определена ($x > 0$) и
+      $|\sqrt x - 2| = \frac{|x - 4|}{\sqrt x + 2} \le \frac{|x - 4|}{2}$. Подходит $\delta = \min(4,\ 2\varepsilon)$.
+  - id: def-infinity
+    kind: definition
+    topic: definition
+    text: >-
+      Докажите по определению, что $\lim\limits_{x \to +\infty} \frac{3x + 1}{x + 2} = 3$:
+      укажите $C(\varepsilon)$.
+    answer: >-
+      При $x > 0$ имеем $\left|\frac{3x + 1}{x + 2} - 3\right| = \frac{5}{x + 2}$. Подходит $C = \frac5\varepsilon$:
+      при $x > C$ получаем $x + 2 > \frac5\varepsilon$ и $\frac{5}{x + 2} < \varepsilon$.
+  - id: def-unbounded
+    kind: definition
+    topic: definition
+    text: >-
+      Докажите, что функция $f(x) = \frac1x \sin\frac1x$ не имеет при $x \to 0$ ни конечного,
+      ни бесконечного предела.
+    answer: >-
+      На $x_n = \frac{1}{\pi n}$ значения $f(x_n) = \pi n \sin \pi n = 0 \to 0$, а на
+      $y_n = \frac{1}{\pi/2 + 2\pi n}$ значения $f(y_n) = \frac\pi2 + 2\pi n \to +\infty$. Обе последовательности
+      Гейне для точки $0$, пределы значений разные, и конечного предела нет (следствие [-@cor:lec07:two-sequences]).
+      Бесконечного тоже нет: при $f(x) \to \infty$ было бы $|f(x_n)| \to +\infty$ на любой последовательности
+      Гейне, а $|f(x_n)| = 0$.
+  - id: def-x2-25
+    kind: definition
+    topic: definition
+    text: Докажите по Коши и по Гейне, что $\lim\limits_{x \to 5} x^2 = 25$.
+    refs: [prob:lec07:x2-25]
+  - id: def-rational2
+    kind: definition
+    topic: definition
+    text: Докажите по Коши, что $\lim\limits_{x \to 2} \frac{2x^2 - x + 1}{x + 1} = \frac73$.
+    refs: [prob:lec07:rational]
+
+  # ------------------------------------------------------------------ 3. о-символика
+  - id: o-classes
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Верно ли? (a) $o(x^2) + o(x^3) = o(x^2)$ при $x \to 0$; (b) $O(x^3) = o(x^2)$ при $x \to 0$;
+      (c) $x \cdot o(x) = o(x^3)$ при $x \to 0$; (d) $o(x^3) = o(x^2)$ при $x \to +\infty$;
+      (e) $o(x^5) = o(x)$ при $x \to 1$.
+    refs: [prob:kr2:o-classes]
+  - id: o-implications
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Верно ли при $x \to 0$ (все функции отличны от нуля около нуля)? (a) Если $f = O(g)$ и $g = o(h)$,
+      то $f = o(h)$. (b) Если $f = O(g)$, то $f = o(g)$. (c) Если $f = o(g)$ и $g \sim h$, то $f = o(h)$.
+      (d) Если $f = O(g)$, то $2^f = O(2^g)$.
+    refs: [prob:kr2:o-implications]
+  - id: o-notes-implications
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Верно ли? (a) Если $f = O(x^3)$ при $x \to 0$, то $f = o(x^2)$ при $x \to 0$. (b) Если $f = o(x^2)$
+      при $x \to 0$, то $f = O(x^3)$ при $x \to 0$. (c) Если $f = O(x^2)$ при $x \to +\infty$, то
+      $f = O(x^3)$ при $x \to +\infty$. (d) Если $f = O(x^2)$ при $x \to 0$, то $f = O(x^2)$ при $x \to +\infty$.
+    refs: [prob:lec09:o-implications]
+  - id: o-notes-rules
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Какие утверждения верны при $x \to 0$ (все функции под $o$, $O$ отличны от нуля около нуля)?
+      (a) Если $f_1 = o(g)$, $f_2 = o(g)$, то $f_1 f_2 = o(g^2)$. (b) Если $f_1 = O(g_1)$, $f_2 = O(g_2)$,
+      то $f_1 + f_2 = O(g_1 + g_2)$. (c) Если $f = o(g)$ и $g = O(h)$, то $f = o(h)$.
+      (d) Если $f = O(g)$, то $g = O(f)$.
+    refs: [prob:lec09:o-rules]
+  - id: o-notes-substitution
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Пусть $f(y) = 1 + 2y - y^2 + o(y^2)$ при $y \to 0$. (a) Найдите $\lim\limits_{y \to 0} \frac{f(y) - 1}{y}$.
+      (b) Представьте $f(3x + x^2)$ в виде $P(x) + o(x^2)$ при $x \to 0$, где $P$ — многочлен степени
+      не выше $2$.
+    refs: [prob:lec09:o-substitution]
+  - id: o-infinity
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Верно ли при $x \to +\infty$? (a) $O(x^3) = O(x^5)$; (b) $o(x^5) = o(x^3)$; (c) $x^2 + 7x = O(x^2)$.
+    answer: >-
+      (a) Да: $\frac{f}{x^5} = \frac{f}{x^3} \cdot \frac{1}{x^2}$, при $x > 1$ оба множителя ограничены.
+      (b) Нет: $f = x^4$, $\frac{x^4}{x^5} = \frac1x \to 0$, но $\frac{x^4}{x^3} = x$ не ограничено.
+      (c) Да: $\frac{x^2 + 7x}{x^2} = 1 + \frac7x \to 1$, отношение ограничено около $+\infty$.
+  - id: o-products
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Верно ли при $x \to 0$? (a) $\bigl(x + o(x)\bigr)^2 = x^2 + o(x^2)$; (b) $x^2 + o(x) = o(x)$;
+      (c) $o(x) \cdot o(x^2) = o(x^4)$.
+    answer: >-
+      (a) Да: $x^2 + 2x \cdot o(x) + o(x)^2$, оба добавочных слагаемых $o(x^2)$ (пункты 1, 4 правил [-@prop:lec09:o-rules]).
+      (b) Да: $x^2 = o(x)$, сумма двух $o(x)$ есть $o(x)$. (c) Нет: верно лишь $o(x^3)$. Контрпример
+      $f_1 = |x|^{3/2} = o(x)$, $f_2 = |x|^{5/2} = o(x^2)$, но $f_1 f_2 = x^4$ и $\frac{x^4}{x^4} = 1$.
+  - id: o-expansion
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Пусть $f(x) = 2 + 3x + O(x^2)$ при $x \to 0$. Верно ли, что (a) $f(x) \to 2$; (b) $\frac{f(x) - 2}{x} \to 3$;
+      (c) $f(x) = 2 + 3x + o(x)$; (d) $\frac{f(x) - 2 - 3x}{x^2} \to 0$?
+    answer: >-
+      (a)–(c) да: $\frac{O(x^2)}{x} = \frac{O(x^2)}{x^2} \cdot x \to 0$ (ограниченная на бесконечно малую),
+      то есть $O(x^2) = o(x)$; отсюда $f \to 2$ и $\frac{f - 2}{x} = 3 + \frac{O(x^2)}{x} \to 3$. (d) Нет: при $f = 2 + 3x + x^2$
+      отношение равно $1$.
+  - id: o-functions
+    kind: o-symbols
+    topic: o-symbols
+    text: >-
+      Верно ли при $x \to 0$? (a) $\sin x = O(x)$; (b) $\sin x = o(x)$; (c) $1 - \cos x = o(x)$;
+      (d) $x \sin\frac1x = o(x)$; (e) $x^2 \sin\frac1x = o(x)$.
+    answer: >-
+      (a) Да: $\frac{\sin x}{x} \to 1$, отношение ограничено около нуля. (b) Нет: предел отношения $1$, а не $0$.
+      (c) Да: $\frac{1 - \cos x}{x} \sim \frac x2 \to 0$. (d) Нет: у $\sin\frac1x$ нет предела в нуле.
+      (e) Да: $x \sin\frac1x \to 0$ как бесконечно малая на ограниченную.
+
+  # ------------------------------------------------------------------ 4. пределы функций
+  - id: lim-product
+    kind: limits
+    topic: limits
+    text: >-
+      Найдите $\lim\limits_{x \to 0} \frac{\ln(1 + \sin 4x)\,(e^{x^2} - 1)}{x\,(1 - \cos 2x)}$.
+    refs: [prob:kr2:equiv-product]
+  - id: lim-one-infinity
+    kind: limits
+    topic: limits
+    text: >-
+      Найдите $\lim\limits_{x \to 0} \left(\frac{1 + \operatorname{tg} 3x}{1 + \sin x}\right)^{1/x}$.
+    refs: [prob:kr2:one-infinity]
+  - id: lim-exp-diff
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to 0} \frac{e^{5x} - e^{2x}}{\sin 3x}$.
+    answer: >-
+      $1$. *Ключ:* $e^{5x} - e^{2x} = e^{2x}(e^{3x} - 1)$, $e^{3x} - 1 \sim 3x$, $\sin 3x \sim 3x$, $e^{2x} \to 1$.
+  - id: lim-root-log-cos
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to 0} \frac{\sqrt[3]{1 + x \sin 2x} - 1}{\ln \cos x}$.
+    answer: >-
+      $-\frac43$. Числитель $\sim \frac{x \sin 2x}{3} \sim \frac{2x^2}{3}$; знаменатель
+      $\ln\bigl(1 + (\cos x - 1)\bigr) \sim \cos x - 1 \sim -\frac{x^2}{2}$.
+  - id: lim-shift
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to 1} \frac{\operatorname{arctg}(x^2 - 1)}{\ln x}$.
+    answer: >-
+      $2$. Замена $t = x - 1 \to 0$: $\operatorname{arctg}(x^2 - 1) \sim x^2 - 1 = t(t + 2) \sim 2t$,
+      $\ln x = \ln(1 + t) \sim t$.
+  - id: lim-infinity-log
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to +\infty} x\bigl(\ln(x + 2) - \ln x\bigr)$.
+    answer: >-
+      $2$. $\ln(x + 2) - \ln x = \ln\left(1 + \frac2x\right) \sim \frac2x$ при $x \to +\infty$
+      (подстановка $u = \frac2x \to 0$).
+  - id: lim-one-infinity-rational
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to \infty} \left(\frac{x^2 + 2}{x^2 - 3}\right)^{x^2}$.
+    answer: >-
+      $e^5$. Основание $1 + \frac{5}{x^2 - 3}$, логарифм основания $\sim \frac{5}{x^2 - 3}$, показатель
+      $x^2 \ln(\ldots) \to 5$.
+  - id: lim-cos-power
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to 0} (\cos 2x)^{1/x^2}$.
+    answer: >-
+      $e^{-2}$. $\ln \cos 2x \sim \cos 2x - 1 \sim -\frac{(2x)^2}{2} = -2x^2$, показатель
+      $\frac{\ln \cos 2x}{x^2} \to -2$.
+  - id: lim-arcsin
+    kind: limits
+    topic: limits
+    text: Найдите $\lim\limits_{x \to 0} \frac{e^{\sin 3x} - 1}{\arcsin 2x}$.
+    answer: >-
+      $\frac32$. $e^{\sin 3x} - 1 \sim \sin 3x \sim 3x$, $\arcsin 2x \sim 2x$ (следствие [-@cor:lec11:arc-limits]).
+
+  # ------------------------------------------------------------------ 5–6. непрерывность и асимптоты
+  - id: cont-parameters
+    kind: continuity
+    topic: continuity
+    text: >-
+      При каких $a$ и $b$ функция, равная $\frac{\sin 3x}{x}$ при $x < 0$, $ax + b$ при $0 \le x \le 2$
+      и $\frac{x^2 - 4}{x - 2}$ при $x > 2$, непрерывна на $\R$?
+    refs: [prob:kr2:parameters]
+  - id: cont-classify
+    kind: continuity
+    topic: continuity
+    text: >-
+      Найдите точки разрыва функции $f(x) = \frac{x^2 - x}{|x|\,(x^2 - 1)}$, определите их род
+      и доопределите функцию по непрерывности, где это возможно.
+    refs: [prob:kr2:classify]
+  - id: cont-sin-removable
+    kind: continuity
+    topic: continuity
+    text: >-
+      Найдите точки разрыва функции $f(x) = \frac{\sin x}{x(x - \pi)}$, определите их род
+      и доопределите функцию по непрерывности, где это возможно.
+    answer: >-
+      Обе точки $0$ и $\pi$ — устранимые разрывы. При $x \to 0$: $\frac{\sin x}{x} \to 1$, предел $-\frac1\pi$.
+      При $x \to \pi$: $\sin x = -\sin(x - \pi) \sim -(x - \pi)$, предел $-\frac1\pi$. Доопределение:
+      $f(0) = f(\pi) = -\frac1\pi$.
+  - id: cont-arctg-jump
+    kind: continuity
+    topic: continuity
+    text: Исследуйте на непрерывность функцию $f(x) = \operatorname{arctg}\frac{1}{x - 2}$.
+    answer: >-
+      Непрерывна при $x \ne 2$. В точке $2$: $f(2 - 0) = -\frac\pi2$ (аргумент стремится к $-\infty$),
+      $f(2 + 0) = \frac\pi2$; скачок величины $\pi$.
+  - id: cont-parameters-exp
+    kind: continuity
+    topic: continuity
+    text: >-
+      При каких $a$ и $b$ функция, равная $\frac{e^{3x} - 1}{x}$ при $x < 0$, $a$ при $x = 0$
+      и $\frac{\sin bx}{2x}$ при $x > 0$, непрерывна в нуле?
+    answer: >-
+      $a = 3$, $b = 6$. $f(0 - 0) = 3$ ($e^{3x} - 1 \sim 3x$), $f(0 + 0) = \frac b2$ ($\sin bx \sim bx$ при
+      $b \ne 0$; при $b = 0$ предел $0$), условие $3 = a = \frac b2$.
+  - id: asym-rational
+    kind: continuity
+    topic: asymptotes
+    text: Найдите все асимптоты графика $f(x) = \frac{x^2 + 3x}{x - 1}$.
+    refs: [prob:kr2:asymptotes-rational]
+  - id: asym-exp
+    kind: continuity
+    topic: asymptotes
+    text: Найдите все асимптоты графика $f(x) = x\,e^{1/x}$.
+    refs: [prob:kr2:asymptotes-exp]
+  - id: asym-sqrt
+    kind: continuity
+    topic: asymptotes
+    text: Найдите все асимптоты графика $f(x) = \sqrt{x^2 + 4x}$.
+    answer: >-
+      Вертикальных нет: на области $(-\infty;\ -4] \cup [0;\ +\infty)$ функция непрерывна. При $x \to +\infty$:
+      $k = 1$, $b = \lim \frac{4x}{\sqrt{x^2 + 4x} + x} = 2$, асимптота $y = x + 2$. При $x \to -\infty$:
+      $\sqrt{x^2 + 4x} = |x|\sqrt{1 + \frac4x}$, $k = -1$,
+      $b = \lim\bigl(\sqrt{x^2 + 4x} + x\bigr) = \lim \frac{4x}{\sqrt{x^2 + 4x} - x} = -2$, асимптота $y = -x - 2$.
+  - id: asym-two-sides
+    kind: continuity
+    topic: asymptotes
+    text: Найдите все асимптоты графика $f(x) = \frac{x^2}{\sqrt{x^2 - 1}}$.
+    answer: >-
+      Область $|x| > 1$. Вертикальные $x = 1$ и $x = -1$: $f(1 + 0) = f(-1 - 0) = +\infty$. При $x \to +\infty$:
+      $k = 1$, $b = \lim \frac{x\bigl(x - \sqrt{x^2 - 1}\bigr)}{\sqrt{x^2 - 1}} = 0$, асимптота $y = x$;
+      при $x \to -\infty$: $k = -1$, $b = 0$, асимптота $y = -x$.
+  - id: asym-notes
+    kind: continuity
+    topic: asymptotes
+    text: >-
+      Найдите область определения и все асимптоты графика $f(x) = \frac{x^3 + 2}{x^2 - 4}$.
+    answer: >-
+      $x \ne \pm 2$. Вертикальные $x = 2$ и $x = -2$ (числитель в этих точках $10$ и $-6$, знаменатель $\to 0$).
+      $k = \lim \frac{x^3 + 2}{x^3 - 4x} = 1$, $b = \lim \frac{4x + 2}{x^2 - 4} = 0$: наклонная $y = x$ при
+      $x \to \pm\infty$.
+
+  # ------------------------------------------------------------------ 7. производная по определению
+  - id: dd-abs
+    kind: diff-def
+    topic: diff-def
+    text: >-
+      Существует ли $f'(2)$ для $f(x) = x\,|x - 2|$? Найдите односторонние производные в точке $2$.
+    refs: [prob:kr2:abs-derivative]
+  - id: dd-arctg
+    kind: diff-def
+    topic: diff-def
+    text: >-
+      При каких $a$ и $b$ функция, равная $\operatorname{arctg} x$ при $x \le 1$ и $ax^2 + b$ при $x > 1$,
+      дифференцируема на $\R$?
+    refs: [prob:kr2:piecewise-diff]
+  - id: dd-cbrt-sin
+    kind: diff-def
+    topic: diff-def
+    text: Найдите по определению $f'(0)$ для $f(x) = \sqrt[3]{x}\,\sin x$ или докажите, что её нет.
+    answer: >-
+      $f'(0) = 0$: $\frac{f(h) - f(0)}{h} = \sqrt[3]{h} \cdot \frac{\sin h}{h} \to 0 \cdot 1 = 0$.
+  - id: dd-sqrt-cos
+    kind: diff-def
+    topic: diff-def
+    text: >-
+      Найдите односторонние производные функции $f(x) = \sqrt{1 - \cos x}$ в точке $0$.
+      Дифференцируема ли она в нуле?
+    answer: >-
+      $\sqrt{1 - \cos h} = \sqrt2\,\left|\sin\frac h2\right|$, поэтому $\frac{f(h)}{h} \to \frac{\sqrt2}{2}$ при
+      $h \to +0$ и $\to -\frac{\sqrt2}{2}$ при $h \to -0$. Производные разные, в нуле $f$ не дифференцируема.
+  - id: dd-parameters
+    kind: diff-def
+    topic: diff-def
+    text: >-
+      При каких $a$ и $b$ функция, равная $ax^2 + 1$ при $x \le 1$ и $\frac bx$ при $x > 1$,
+      дифференцируема на $\R$?
+    answer: >-
+      $a = -\frac13$, $b = \frac23$. Непрерывность в точке $1$: $a + 1 = b$; односторонние производные
+      $f'_-(1) = 2a$, $f'_+(1) = -b$ (справа $f$ совпадает с $\frac bx$, и $f(1) = b$), условие $2a = -b$.
+  - id: dd-abs-cubic
+    kind: diff-def
+    topic: diff-def
+    text: >-
+      Где дифференцируема функция $f(x) = |x^3 - x|$? Найдите односторонние производные в точках,
+      где производной нет.
+    answer: >-
+      Везде, кроме $0$ и $\pm 1$. Около нуля $x^3 - x$ имеет знак, противоположный знаку $x$:
+      $f'_+(0) = 1$, $f'_-(0) = -1$. В точках $\pm 1$ функция $g = x^3 - x$ обращается в ноль, $g'(\pm 1) = 2$,
+      и $f'_\pm(1) = f'_\pm(-1) = \pm 2$.
+  - id: dd-notes-one-sided
+    kind: diff-def
+    topic: diff-def
+    text: >-
+      При каких $a$ и $b$ функция $f(x) = x^2$ при $x \le 1$, $f(x) = ax + b$ при $x > 1$
+      имеет производную в точке $1$? При каких $\alpha > 0$ функция $|x|^\alpha$ имеет производную в нуле?
+    refs: [prob:lec11:one-sided]
+
+  # ------------------------------------------------------------------ 8. производные и касательная
+  - id: rules-arcsin
+    kind: rules
+    topic: rules
+    text: >-
+      Найдите производную функции $y = x \arcsin\frac x2 + \sqrt{4 - x^2}$ на $(-2;\ 2)$ и уравнение
+      касательной к её графику в точке с абсциссой $1$.
+    refs: [prob:kr2:derivative-tangent]
+  - id: rules-log-diff
+    kind: rules
+    topic: rules
+    text: Найдите $y'(1)$ для $y = (x^2 + 1)^{\operatorname{arctg} x}$.
+    refs: [prob:kr2:log-diff]
+  - id: rules-ln-tg
+    kind: rules
+    topic: rules
+    text: Найдите производную функции $y = \ln \operatorname{tg}\frac x2$ при $0 < x < \pi$ и упростите её.
+    answer: >-
+      $y' = \frac{1}{\operatorname{tg}(x/2)} \cdot \frac{1}{2\cos^2(x/2)} = \frac{1}{2 \sin\frac x2 \cos\frac x2}
+      = \frac{1}{\sin x}$.
+  - id: rules-inverse
+    kind: rules
+    topic: rules
+    text: >-
+      Докажите, что $f(x) = x^3 + 2x + 1$ обратима на $\R$, и найдите $(f^{-1})'(4)$.
+    answer: >-
+      $\frac15$. $f'(x) = 3x^2 + 2 > 0$, $f$ строго возрастает и непрерывна; $f(1) = 4$, $f'(1) = 5$,
+      $(f^{-1})'(4) = \frac{1}{f'(1)}$.
+  - id: rules-tangent
+    kind: rules
+    topic: rules
+    text: Напишите уравнение касательной к графику $y = e^{2x} - x$ в точке с абсциссой $0$.
+    answer: >-
+      $y = x + 1$: $y(0) = 1$, $y' = 2e^{2x} - 1$, $y'(0) = 1$.
+  - id: rules-arctg-root
+    kind: rules
+    topic: rules
+    text: Найдите производную функции $y = \operatorname{arctg}\frac{x}{\sqrt{1 - x^2}}$ при $|x| < 1$ и упростите её.
+    answer: >-
+      $y' = \frac{1}{1 + \frac{x^2}{1 - x^2}} \cdot \frac{\sqrt{1 - x^2} + \frac{x^2}{\sqrt{1 - x^2}}}{1 - x^2}
+      = (1 - x^2) \cdot \frac{1}{(1 - x^2)^{3/2}} = \frac{1}{\sqrt{1 - x^2}}$.
+  - id: rules-parametric
+    kind: rules
+    topic: rules
+    text: >-
+      Кривая задана параметрически: $x = t^3 + t$, $y = t^2 + 2t$. Найдите $y'_x$ и уравнение касательной
+      в точке $t = 1$.
+    answer: >-
+      $x'_t = 3t^2 + 1 > 0$, $y'_x = \frac{2t + 2}{3t^2 + 1}$. При $t = 1$: точка $(2;\ 3)$, наклон $1$,
+      касательная $y = x + 1$.
+  - id: rules-x-ln-x
+    kind: rules
+    topic: rules
+    text: Найдите производную функции $y = x^{\ln x}$ при $x > 0$.
+    answer: >-
+      $y = e^{\ln^2 x}$, $y' = e^{\ln^2 x} \cdot \frac{2 \ln x}{x} = \frac{2 \ln x}{x}\, x^{\ln x}$.
+
+  # ------------------------------------------------------------------ 9. монотонность и экстремумы
+  - id: ext-cubic
+    kind: extrema
+    topic: extrema
+    text: >-
+      Найдите наибольшее и наименьшее значения функции $f(x) = 2x^3 - 3x^2 - 12x + 1$ на отрезке $[-2;\ 3]$.
+    refs: [prob:kr2:max-min]
+  - id: ext-cusp
+    kind: extrema
+    topic: extrema
+    text: Найдите промежутки монотонности и точки экстремума функции $f(x) = \sqrt[3]{x^2}\,(x - 5)$.
+    refs: [prob:kr2:monotone-cusp]
+  - id: ext-quartic
+    kind: extrema
+    topic: extrema
+    text: >-
+      Найдите наибольшее и наименьшее значения функции $f(x) = x^4 - 2x^2 + 3$ на отрезке $[-1;\ 2]$.
+    answer: >-
+      $f' = 4x(x^2 - 1)$, критические $-1$, $0$, $1$; $f(-1) = 2$, $f(0) = 3$, $f(1) = 2$, $f(2) = 11$.
+      Наибольшее $11$ (в точке $2$), наименьшее $2$ (в точках $\pm 1$).
+  - id: ext-trig
+    kind: extrema
+    topic: extrema
+    text: Найдите наибольшее и наименьшее значения функции $f(x) = x + 2\cos x$ на отрезке $[0;\ \pi]$.
+    answer: >-
+      $f' = 1 - 2\sin x = 0$ при $x = \frac\pi6$ и $\frac{5\pi}{6}$. Значения: $f(0) = 2$,
+      $f\left(\frac\pi6\right) = \frac\pi6 + \sqrt3 \approx 2{,}26$, $f\left(\frac{5\pi}{6}\right) = \frac{5\pi}{6} - \sqrt3
+      \approx 0{,}89$, $f(\pi) = \pi - 2 \approx 1{,}14$. Наибольшее $\frac\pi6 + \sqrt3$, наименьшее
+      $\frac{5\pi}{6} - \sqrt3$.
+  - id: ext-rational
+    kind: extrema
+    topic: extrema
+    text: Найдите промежутки монотонности и точки экстремума функции $f(x) = \frac{x^2}{x - 1}$.
+    answer: >-
+      $f' = \frac{x(x - 2)}{(x - 1)^2}$. Возрастает на $(-\infty;\ 0]$ и на $[2;\ +\infty)$, убывает на
+      $[0;\ 1)$ и на $(1;\ 2]$. Максимум в точке $0$ ($f(0) = 0$), минимум в точке $2$ ($f(2) = 4$).
+  - id: ext-gauss
+    kind: extrema
+    topic: extrema
+    text: >-
+      Найдите промежутки монотонности, точки экстремума, наибольшее и наименьшее значения
+      функции $f(x) = x e^{-x^2}$ на $\R$.
+    answer: >-
+      $f' = (1 - 2x^2)e^{-x^2}$. Возрастает на $\left[-\frac{1}{\sqrt2};\ \frac{1}{\sqrt2}\right]$, убывает на
+      $\left(-\infty;\ -\frac{1}{\sqrt2}\right]$ и на $\left[\frac{1}{\sqrt2};\ +\infty\right)$. Минимум
+      $-\frac{1}{\sqrt{2e}}$ в точке $-\frac{1}{\sqrt2}$, максимум $\frac{1}{\sqrt{2e}}$ в точке $\frac{1}{\sqrt2}$;
+      это и наименьшее и наибольшее значения на $\R$, так как $f \to 0$ при $x \to \pm\infty$ и $f(0) = 0$.
+  - id: ext-ray
+    kind: extrema
+    topic: extrema
+    text: Найдите наименьшее значение функции $f(x) = x + \frac{4}{x^2}$ при $x > 0$.
+    answer: >-
+      $3$, в точке $x = 2$. $f' = 1 - \frac{8}{x^3}$: $f' < 0$ на $(0;\ 2)$ и $f' > 0$ на $(2;\ +\infty)$, поэтому
+      $f$ убывает на $(0;\ 2]$ и возрастает на $[2;\ +\infty)$.
+  - id: ext-abs
+    kind: extrema
+    topic: extrema
+    text: >-
+      Найдите наибольшее и наименьшее значения функции $f(x) = x^2 - 4|x - 1|$ на отрезке $[-1;\ 3]$.
+    answer: >-
+      При $x < 1$ имеем $f = x^2 + 4x - 4$, $f' = 2x + 4 \ne 0$ на $[-1;\ 1)$; при $x > 1$ имеем $f = (x - 2)^2$,
+      ноль производной в точке $2$; в точке $1$ производной нет ($f'_- = 6$, $f'_+ = -2$). Значения:
+      $f(-1) = -7$, $f(1) = 1$, $f(2) = 0$, $f(3) = 1$. Наибольшее $1$ (в точках $1$ и $3$), наименьшее $-7$.
+  - id: ext-box
+    kind: extrema
+    topic: extrema
+    text: >-
+      Из квадратного листа жести со стороной $6$ делают открытую коробку: по углам вырезают квадраты
+      со стороной $x$ и загибают края. При каком $x$ объём коробки наибольший?
+    refs: [prob:lec13:optimization]
+
+  # ------------------------------------------------------------------ 10. теоремы о среднем
+  - id: mv-three-roots
+    kind: mean-value
+    topic: mean-value
+    text: Сколько действительных корней у уравнения $x^3 - 3x + 1 = 0$?
+    refs: [prob:kr2:three-roots]
+  - id: mv-arctg
+    kind: mean-value
+    topic: mean-value
+    text: Докажите, что $\frac{x}{1 + x^2} < \operatorname{arctg} x < x$ при $x > 0$.
+    refs: [prob:kr2:arctg-bounds]
+  - id: mv-one-root
+    kind: mean-value
+    topic: mean-value
+    text: Докажите, что уравнение $x^5 + x^3 + x - 1 = 0$ имеет ровно один действительный корень.
+    answer: >-
+      $f(0) = -1 < 0 < 2 = f(1)$: корень есть (Больцано–Коши). $f' = 5x^4 + 3x^2 + 1 > 0$, по следствию
+      [-@cor:lec13:roots] корней не больше одного.
+  - id: mv-two-roots
+    kind: mean-value
+    topic: mean-value
+    text: Сколько действительных корней у уравнения $x^4 - 4x + 1 = 0$?
+    answer: >-
+      Два. $f' = 4(x^3 - 1)$ обращается в ноль только при $x = 1$, поэтому корней не больше двух;
+      $f(0) = 1$, $f(1) = -2$, $f(2) = 9$: по корню на $(0;\ 1)$ и на $(1;\ 2)$.
+  - id: mv-lagrange-c
+    kind: mean-value
+    topic: mean-value
+    text: Найдите точку $c$ из теоремы Лагранжа для $f(x) = x^3$ на отрезке $[0;\ 3]$.
+    answer: >-
+      $c = \sqrt3$: $\frac{27 - 0}{3} = 9 = 3c^2$, и $\sqrt3 \in (0;\ 3)$.
+  - id: mv-cauchy-c
+    kind: mean-value
+    topic: mean-value
+    text: >-
+      Найдите точку $c$ из теоремы Коши для $f(x) = e^x$, $g(x) = e^{2x}$ на отрезке $[0;\ \ln 2]$.
+    answer: >-
+      $c = \ln\frac32$. $g' = 2e^{2x} \ne 0$; $\frac{2 - 1}{4 - 1} = \frac13 = \frac{e^c}{2e^{2c}} = \frac{1}{2e^c}$,
+      $e^c = \frac32$, и $0 < \ln\frac32 < \ln 2$.
+  - id: mv-sqrt
+    kind: mean-value
+    topic: mean-value
+    text: Докажите, что $\sqrt x < \frac{x + 1}{2}$ при $x > 1$.
+    answer: >-
+      Лагранж для $\sqrt x$ на $[1;\ x]$: $\sqrt x - 1 = \frac{x - 1}{2\sqrt c}$, $1 < c < x$, поэтому
+      $\sqrt x - 1 < \frac{x - 1}{2}$.
+  - id: mv-arcsin-arccos
+    kind: mean-value
+    topic: mean-value
+    text: Докажите, что $\arcsin x + \arccos x = \frac\pi2$ при $x \in [-1;\ 1]$.
+    answer: >-
+      На $(-1;\ 1)$ производная суммы $\frac{1}{\sqrt{1 - x^2}} - \frac{1}{\sqrt{1 - x^2}} = 0$, по следствию
+      [-@cor:lec13:constant] сумма постоянна; при $x = 0$ она равна $0 + \frac\pi2$. В точках $\pm 1$ —
+      по непрерывности (или прямой подстановкой: $\frac\pi2 + 0$, $-\frac\pi2 + \pi$).
+  - id: mv-identity
+    kind: mean-value
+    topic: mean-value
+    text: Докажите тождество $2\operatorname{arctg} x + \arcsin\frac{2x}{1 + x^2} = \pi$ при $x \ge 1$.
+    refs: [prob:lec13:identity]
