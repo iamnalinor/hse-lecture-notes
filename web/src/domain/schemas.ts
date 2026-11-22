@@ -17,8 +17,9 @@ const LectureEntrySchema = z
 export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 
 /**
-A page that prepares for a test or a colloquium (`prep/<course>/krN.md`, `colloqN.md`): `id` is `kr1`,
-`colloq1`…, `date` is the test day (for a colloquium — the first day of its window),
+A page that prepares for a test, a colloquium or a quiz (`prep/<course>/krN.md`, `colloqN.md`,
+`quiz-<slug>.md`): `id` is `kr1`, `colloq1`, `quiz-o-symbols`…, `topic` — the topic of a quiz (front
+matter `quiz_topic`, only quizzes have it), `date` is the test day (for a colloquium — the first day of its window),
 `activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
 by default), `highlightFrom` — the first day the prep is drawn in the accent colour, through `activeUntil`
 (front matter `highlight_from`, two weeks before `date` by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none,
@@ -36,18 +37,32 @@ const PrepEntrySchema = z
     date: z.string().nullish(),
     highlight_from: z.string().nullish(),
     id: z.string(),
+    quiz_topic: z.string().nullish(),
     title: z.string(),
   })
-  .transform(({ active_until: activeUntil, date, highlight_from: highlightFrom, ...rest }) =>
-    // No `date`: the event is not announced yet, the page is there to study from in advance.
-    date === null || date === undefined
-      ? rest
-      : {
-          ...rest,
-          activeUntil: activeUntil ?? date,
-          date,
-          highlightFrom: highlightFrom ?? addDays(date, -HIGHLIGHT_DAYS),
-        },
+  .transform(
+    ({
+      active_until: activeUntil,
+      date,
+      highlight_from: highlightFrom,
+      quiz_topic: quizTopic,
+      ...rest
+    }) => {
+      // only a quiz has a topic (`prepName`): «Квиз: О-символика»
+      const named = {
+        ...rest,
+        ...(!(quizTopic === null || quizTopic === undefined) && { topic: quizTopic }),
+      };
+      // No `date`: the event is not announced yet, the page is there to study from in advance.
+      return date === null || date === undefined
+        ? named
+        : {
+            ...named,
+            activeUntil: activeUntil ?? date,
+            date,
+            highlightFrom: highlightFrom ?? addDays(date, -HIGHLIGHT_DAYS),
+          };
+    },
   );
 export type PrepEntry = z.infer<typeof PrepEntrySchema>;
 

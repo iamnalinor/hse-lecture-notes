@@ -17,7 +17,7 @@
 | Перевести прогноз в конспект по лекции | `prompts/normalize.md` → `workflow.md` |
 | Добавить лекцию в план, поменять дату | `workflow.md` §1 и §10 |
 | Обновить теорию курса | `prompts/theory.md` → `markup.md` §10 |
-| Подготовка к КР, коллоквиуму, экзамену | `debt.md` (что не доделано) → `prompts/prep.md` → `markup.md` §11 → `courses/<course>.md` (контрольные, «Что следует из ПУД») → `program/<course>.md` |
+| Подготовка к КР, коллоквиуму, экзамену, квизу | `debt.md` (что не доделано) → `prompts/prep.md` → `markup.md` §11 → `courses/<course>.md` (контрольные, «Что следует из ПУД») → `program/<course>.md` |
 | Отревьюить подготовку | `prompts/facts.md` → `prompts/prep-review.md` → `prompts/prep.md` |
 | Читлист к КР | `prompts/cheatsheet.md` → `courses/<course>.md` → `prep/<course>/krN.md` |
 | Страница «План учебной дисциплины» | `prompts/program.md` → `markup.md` §12 |

@@ -62,6 +62,22 @@ describe("build data schemas", () => {
     expect(catalog.preps["calculus"]?.[0]).toMatchObject({ highlightFrom: "2026-12-07" });
   });
 
+  it("reads the topic of a quiz and none of a test", () => {
+    const catalog = CatalogSchema.parse({
+      lectures: {},
+      preps: {
+        calculus: [
+          { date: "2026-10-22", id: "kr1", quiz_topic: null, title: "" },
+          { id: "quiz-o-symbols", quiz_topic: "О-символика", title: "" },
+        ],
+      },
+    });
+    expect(catalog.preps["calculus"]?.map((prep) => prep.topic)).toStrictEqual([
+      undefined,
+      "О-символика",
+    ]);
+  });
+
   it("knows which preparation page has a ticket bank", () => {
     const catalog = CatalogSchema.parse({
       lectures: {},

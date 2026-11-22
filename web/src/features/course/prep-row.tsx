@@ -46,7 +46,7 @@ export const PrepRow = ({ course, preps, today }: Props) =>
       <nav aria-labelledby="course-preps" className="flex flex-wrap items-center gap-2">
         {chronologicalPreps(preps).map((prep) => (
           <Link className={style(prep, today)} key={prep.id} to={paths.prep(course, prep.id)}>
-            {prepName(prep.id)}
+            {prepName(prep.id, prep.topic)}
             {isDated(prep) && isUpcoming(prep, today) && (
               <span className="font-normal"> · {prepWhen(prep)}</span>
             )}

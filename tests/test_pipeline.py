@@ -743,6 +743,82 @@ def test_prep_unknown_name(demo: Path, name: str):
     assert build(demo, "--no-pdf", "--no-html").returncode != 0
 
 
+# ----------------------------------------------------------------------------- подготовка к квизу
+
+
+def make_quiz(demo: Path, name: str = "quiz-o-symbols") -> Path:
+    """prep/algebra/quiz-o-symbols.md из демо-подготовки к КР: id со slug, тема квиза, окно в неделю."""
+    src = (demo / "prep" / "algebra" / "kr1.md").read_text(encoding="utf-8")
+    text = (
+        src.replace(":kr1:", f":{name}:")
+        .replace("# О контрольной", "# О квизе")
+        .replace(
+            "date: 2026-11-07",
+            'quiz_topic: "О-символика"\ndate: 2026-11-23\nactive_until: 2026-11-27\nhighlight_from: 2026-11-20',
+        )
+    )
+    dst = demo / "prep" / "algebra" / f"{name}.md"
+    dst.write_text(text, encoding="utf-8")
+    return dst
+
+
+def test_quiz_builds(demo: Path):
+    """quiz-o-symbols.md: метки prob:quiz-o-symbols:…, окно недели в шапке, тема в courses.json."""
+    make_quiz(demo)
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    res = build(demo, "--no-pdf")
+    assert res.returncode == 0, res.stderr
+    site = demo / "build" / "site-data"
+    frag = (site / "algebra" / "quiz-o-symbols" / "fragment.html").read_text(encoding="utf-8")
+    assert 'id="prob:quiz-o-symbols:square"' in frag and 'href="#prob:quiz-o-symbols:square"' in frag
+    meta = json.loads((site / "algebra" / "quiz-o-symbols" / "meta.json").read_text(encoding="utf-8"))
+    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к квизу · 23.11–27.11.2026"
+    courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
+    assert [p["id"] for p in courses["preps"]["algebra"]] == ["kr1", "quiz-o-symbols"]
+    quiz = courses["preps"]["algebra"][1]
+    assert quiz["quiz_topic"] == "О-символика"
+    assert quiz["date"] == "2026-11-23" and quiz["active_until"] == "2026-11-27"
+    assert "quiz_topic" not in courses["preps"]["algebra"][0]
+    index = json.loads((site / "index.json").read_text(encoding="utf-8"))["algebra"]
+    assert not any(":quiz-o-symbols:" in k for k in index)
+
+
+@pytest.mark.parametrize(
+    "old,new,expected",
+    [
+        ("#prob:quiz-o-symbols:square", "#prob:kr1:square", "метки вида тип:quiz-o-symbols:slug"),
+        ("# О квизе", "# О контрольной", "первый раздел — «# О квизе»"),
+        ('quiz_topic: "О-символика"\n', "", "в front matter нет поля quiz_topic"),
+    ],
+)
+def test_lint_quiz_catches(demo: Path, old: str, new: str, expected: str):
+    p = make_quiz(demo)
+    text = p.read_text(encoding="utf-8")
+    assert old in text
+    p.write_text(text.replace(old, new, 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert expected in res.stdout, res.stdout
+
+
+def test_quiz_topic_only_on_quiz(demo: Path):
+    """Тема квиза у КР не нужна: поле quiz_topic у krN — ошибка, а не тихо игнорируется."""
+    p = demo / "prep" / "algebra" / "kr1.md"
+    text = p.read_text(encoding="utf-8")
+    p.write_text(text.replace("date:", 'quiz_topic: "x"\ndate:', 1), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "quiz_topic — только у квиза" in res.stdout, res.stdout
+
+
+@pytest.mark.parametrize("name", ["quiz-limits", "quiz1", "quiz"])
+def test_quiz_unknown_name(demo: Path, name: str):
+    """Квиз — тоже только с маршрутом на сайте: новое имя добавляют в PREP_IDS."""
+    make_quiz(demo, name)
+    assert build(demo, "--no-pdf", "--no-html").returncode != 0
+
+
 @pytest.mark.skipif(not HAS_TEX, reason="нужен TeX")
 def test_colloq_pdf(demo: Path):
     make_colloq(demo)
