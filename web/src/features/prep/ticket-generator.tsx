@@ -10,6 +10,7 @@ import { BUTTON_PRIMARY } from "#web/shared/ui/button.ts";
 
 import { TicketQuestion } from "./ticket-question.tsx";
 import { TopicFilter } from "./topic-filter.tsx";
+import { useChosenTopics } from "./use-chosen-topics.ts";
 
 type Props = { readonly course: string; readonly prepId: string };
 
@@ -74,18 +75,37 @@ const Ticket = ({
   );
 };
 
+/** Disabled until the bank loads, and while no topic is chosen (the hint under it says why). */
+const GenerateButton = ({
+  isEmpty,
+  onDraw,
+}: {
+  readonly isEmpty: boolean;
+  readonly onDraw: (() => void) | undefined;
+}) => (
+  <button
+    aria-describedby={isEmpty ? "ticket-topics-empty" : undefined}
+    className={`${BUTTON_PRIMARY} min-h-11`}
+    disabled={onDraw === undefined || isEmpty}
+    onClick={onDraw}
+    type="button"
+  >
+    Сгенерировать
+  </button>
+);
+
 /**
 The ticket generator of a colloquium page (on a test page — of variants): «Сгенерировать» draws a
 random ticket in the format of the bank's `ticket` from the bank (`prep/<course>/<prep>-bank.yaml`); each question opens its answer
-in place. Nothing goes into the URL: a ticket lives until the next one.
+in place. Nothing goes into the URL: a ticket lives until the next one. The chosen topics are kept
+in `localStorage` (`useChosenTopics`).
 */
 export const TicketGenerator = ({ course, prepId }: Props) => {
   const { data: bank, isError } = useQuery(ticketBankQuery(course, prepId));
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
   const topics = useMemo(() => (bank === undefined ? [] : bankTopics(bank)), [bank]);
-  // `undefined` — all topics: the bank is not loaded yet when the state is made
-  const [picked, setPicked] = useState<ReadonlySet<string> | undefined>(undefined);
-  const chosen = picked ?? new Set(topics);
+  const [chosen, choose] = useChosenTopics(course, prepId, topics);
+  const isEmpty = chosen.size === 0;
 
   return (
     <div
@@ -100,24 +120,27 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
             {isError ? "Не удалось загрузить банк вопросов." : describe(bank)}
           </p>
         </div>
-        <button
-          className={`${BUTTON_PRIMARY} min-h-11`}
-          disabled={bank === undefined || chosen.size === 0}
-          onClick={() => {
-            if (bank !== undefined) {
-              setDrawn((previous) => ({
-                parts: drawTicket(bank, Math.random, chosen),
-                serial: (previous?.serial ?? 0) + 1,
-              }));
-            }
-          }}
-          type="button"
-        >
-          Сгенерировать
-        </button>
+        <GenerateButton
+          isEmpty={isEmpty}
+          onDraw={
+            bank === undefined
+              ? undefined
+              : () => {
+                  setDrawn((previous) => ({
+                    parts: drawTicket(bank, Math.random, chosen),
+                    serial: (previous?.serial ?? 0) + 1,
+                  }));
+                }
+          }
+        />
       </div>
       {bank !== undefined && topics.length > 1 && (
-        <TopicFilter chosen={chosen} names={bank.topics} onChange={setPicked} topics={topics} />
+        <TopicFilter chosen={chosen} names={bank.topics} onChange={choose} topics={topics} />
+      )}
+      {isEmpty && (
+        <p className="mt-2 mb-0 text-subhead text-muted" id="ticket-topics-empty">
+          Выберите хотя бы одну тему.
+        </p>
       )}
       <p aria-live="polite" className="sr-only">
         {drawn === undefined ? "" : announce(drawn, prepId)}

@@ -46,6 +46,17 @@ const BANK: TicketBank = {
   topics: { det: "Определитель", matrix: "Матрицы" },
 };
 
+it("renders formulas in topic titles", async () => {
+  const bank = { ...BANK, topics: { det: "Определитель $\\det A$", matrix: "Матрицы" } };
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(bank));
+  renderWithApp(<TicketGenerator course="algebra" prepId="colloq1" />, "/algebra/colloq1");
+  await userEvent.click(await screen.findByText("Темы: все (2)"));
+  expect(
+    screen.getByRole("button", { name: /Определитель/u }).querySelector(".katex"),
+  ).not.toBeNull();
+  expect(screen.getByRole("button", { name: /Определитель/u })).not.toHaveTextContent("$");
+});
+
 const LECTURE_FRAGMENT = `<p>до</p>
 <div id="thm:lec04:laplace" class="nb nb-theorem nb-style-theorem" data-type="theorem" data-number="4.3">
   <div class="nb-head"><span class="nb-name">Теорема 4.3 (разложение Лапласа)</span></div>
@@ -78,6 +89,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  localStorage.clear();
 });
 
 const view = () =>
@@ -121,9 +133,20 @@ describe("TicketGenerator", () => {
     await newTicket();
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.queryByText("Теорема с доказательством")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Все" }));
     await userEvent.click(screen.getByRole("button", { name: "Ничего" }));
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Сгенерировать" })).toHaveAccessibleDescription(
+      "Выберите хотя бы одну тему.",
+    );
+  });
+
+  it("keeps the chosen topics after a reload", async () => {
+    const first = view();
+    await userEvent.click(await screen.findByText("Темы: все (2)"));
+    await userEvent.click(screen.getByRole("button", { name: "Матрицы" }));
+    first.unmount();
+    view();
+    expect(await screen.findByText("Темы: 1 из 2")).toBeInTheDocument();
   });
 
   it("links each question to its section of the page", async () => {
