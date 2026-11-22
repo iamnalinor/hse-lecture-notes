@@ -59,6 +59,7 @@ export const Component = () => {
       }
       pageName={prepGoal(prep.id)}
       slots={slots}
+      tocCaption={name}
       variant="prep"
     />
   );

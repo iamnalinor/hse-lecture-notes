@@ -12,7 +12,7 @@ type Props = {
 };
 
 export const CoursesSection = ({ lectures, preps, today }: Props) => (
-  <section className="border-t border-rule py-16" id="courses">
+  <section className="border-t border-rule py-10 sm:py-16" id="courses">
     <div className="mb-7">
       <SectionTitle>Курсы</SectionTitle>
     </div>

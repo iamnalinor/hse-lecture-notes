@@ -455,9 +455,13 @@ local function render_proof_like(div, name)
       '\\end{nbproof}')
   end
   local blocks = pandoc.Blocks(div.content)
-  local prefix = pandoc.Inlines { pandoc.Emph(md_inlines_resolved(label .. '.')) }
-  prefix_first_para(blocks, prefix)
-  local cls = has_class(div, 'proof') and 'nb-proof' or 'nb-solution'
+  local is_proof = has_class(div, 'proof')
+  -- на сайте решение и так под катом «Решение» (карточка задачи) — подпись внутри не повторяем
+  if is_proof or (title and title ~= '') then
+    local prefix = pandoc.Inlines { pandoc.Emph(md_inlines_resolved(label .. '.')) }
+    prefix_first_para(blocks, prefix)
+  end
+  local cls = is_proof and 'nb-proof' or 'nb-solution'
   return pandoc.Div(blocks, { class = cls })
 end
 
@@ -511,7 +515,19 @@ local function render_theory_block(div)
   div.identifier = 'reg-' .. ref .. (n > 1 and ('-' .. n) or '')
   -- определение в теории — обычный абзац «**Термин** — …», без плашки и номера
   if S.kind == 'theory' and t == 'definition' then
-    if FORMAT_LATEX then return div.content end
+    if FORMAT_LATEX then
+      -- именованная цель theory.pdf#reg-…: внешние ссылки на определение; ставится в начало
+      -- первого абзаца, без пустой строки (ссылки внутри PDF ведут в лекции, не сюда)
+      local blocks = pandoc.Blocks(div.content)
+      local anchor = pandoc.RawInline('latex', '\\hypertarget{' .. div.identifier .. '}{}')
+      local first = blocks[1]
+      if first and (first.t == 'Para' or first.t == 'Plain') then
+        first.content:insert(1, anchor)
+      else
+        blocks:insert(1, pandoc.Plain { anchor })
+      end
+      return blocks
+    end
     return pandoc.Div(div.content, pandoc.Attr(div.identifier, { 'nb-def' }, { { 'data-ref', ref } }))
   end
   div.attributes['tag'] = entry.tag

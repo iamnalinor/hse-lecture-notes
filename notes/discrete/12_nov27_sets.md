@@ -312,7 +312,7 @@ $\mathcal{P}(X) = \mathcal{P}(Y)$ тогда и только тогда, ког�
 ::: solution
 Пусть $A \subseteq B$ и $X \in \mathcal{P}(A)$, то есть $X \subseteq A$ (аксиома [-@ax:lec12:powerset]). По транзитивности включения (лемма [-@lem:lec12:subset]) $X \subseteq B$, то есть $X \in \mathcal{P}(B)$. Обратно, пусть $\mathcal{P}(A) \subseteq \mathcal{P}(B)$. *Ключ:* $A \in \mathcal{P}(A)$, поэтому $A \in \mathcal{P}(B)$, то есть $A \subseteq B$.
 
-*Ответ:* Да; обратное тоже верно.
+*Ответ:* Обратное тоже верно.
 :::
 
 ::: {.problem #prob:lec12:bounded-two}
@@ -365,8 +365,6 @@ b) $\{x \in \Z \mid 4 \mid x \vee x \equiv 1 \pmod 3\}$; из $\{0, \dots, 11\}$
 *Способ 2 (приём Рассела, замечание [-@rem:lec12:nonexistence]).* *Ключ:* рассмотреть $R_S = \{x \in S \mid x \notin x\}$. По следствию [-@cor:lec12:no-universal] $R_S \notin S$, а по свойству $S$ это значит, что $R_S = \varnothing$. Но $\{\varnothing\} \in S$ и $\{\varnothing\} \notin \{\varnothing\}$ (иначе $\{\varnothing\} = \varnothing$, а у $\{\varnothing\}$ есть элемент). Поэтому $\{\varnothing\} \in R_S$ и $R_S \ne \varnothing$ — противоречие.
 
 Первый способ короче, второй не опирается на аксиому основания и поэтому годится, если её запрещено использовать.
-
-*Ответ:* Такого $S$ нет; с аксиомой — получаем $S \in S$, без неё — приём Рассела.
 :::
 
 ::: {.problem #prob:lec12:lnp-formula}

@@ -247,8 +247,6 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 «$\supseteq$»: пусть $z \in A \times C$ (случай $z \in B \times C$ симметричен). Тогда $z = (x, c)$ с $x \in A \subseteq A \cup B$ и $c \in C$, значит, $z \in (A \cup B) \times C$.
 
 *Ключ:* в отличие от замечания [-@rem:lec14:product-union], «$\cup$» стоит только в одном множителе: на рис. [-@fig:lec14:product] (где роль $C$ задачи играет отрезок $B$, а роль $B$ задачи — отрезок $C$) это квадраты $A \times B$ и $C \times B$: они стоят в одном ряду и вместе дают полосу $(A \cup C) \times B$, «перекрёстных» квадратов нет.
-
-*Ответ:* Верно; два включения через произвольный элемент, в каждом — разбор случаев $x \in A$ / $x \in B$.
 :::
 
 ::: {.problem #prob:lec14:loop-pair}
@@ -269,8 +267,6 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 «$\Leftarrow$»: при $A = B$ обе части совпадают по принципу замены; если один из множителей пуст, обе части равны $\varnothing$ (пример [-@ex:lec14:product-empty]).
 
 «$\Rightarrow$»: пусть $A \times B = B \times A$, $A \ne \varnothing$ и $B \ne \varnothing$; докажем $A \subseteq B$. Возьмём $a \in A$. *Ключ:* непустота $B$ нужна, чтобы составить пару: возьмём $b \in B$; тогда $(a, b) \in A \times B = B \times A$, и по замечанию [-@rem:lec14:product-coord] $a \in B$. Включение $B \subseteq A$ — так же, с парой $(b, a)$, $a \in A$. Без условия непустоты вывод неверен: $\{1\} \times \varnothing = \varnothing = \varnothing \times \{1\}$, хотя $\{1\} \ne \varnothing$.
-
-*Ответ:* Верно.
 :::
 
 ::: {.problem #prob:lec14:minus}
@@ -284,7 +280,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 
 По тождеству с $A = [0, 2]$, $B = [0, 1]$, $C = [\frac12, 3]$ получаем $[0, 2] \times ([0, 1] \setminus [\frac12, 3]) = [0, 2] \times [0, \frac12)$: из прямоугольника $[0, 2] \times [0, 1]$ вырезана верхняя половина вместе с отрезком на высоте $\frac12$.
 
-*Ответ:* Тождество верно. Искомое множество — $[0, 2] \times [0, \frac12)$, прямоугольник без верхней стороны.
+*Ответ:* Искомое множество — $[0, 2] \times [0, \frac12)$, прямоугольник без верхней стороны.
 :::
 
 ::: {.problem #prob:lec14:union-union}

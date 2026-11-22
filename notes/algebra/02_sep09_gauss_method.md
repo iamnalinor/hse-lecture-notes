@@ -440,8 +440,6 @@ $$AX = \begin{pmatrix} a + c & b + d \\ c & d \end{pmatrix}, \qquad XA = \begin{
 *Ключ:* по ассоциативности $ABC = (AB)C$, и свойство 4 применяется к двум сомножителям $AB$ и $C$:
 $$(ABC)^T = ((AB)C)^T = C^T (AB)^T = C^T (B^T A^T) = C^T B^T A^T.$$
 Размеры: $A_{m \times n}$, $A^T_{n \times m}$, значит, $AA^T$ — размера $m \times m$. По свойствам 4 и 1: $(AA^T)^T = (A^T)^T A^T = AA^T$.
-
-*Ответ:* Двукратное применение свойства 4 теоремы [-@thm:lec02:transpose-props] и ассоциативность; $AA^T$ имеет размер $m \times m$.
 :::
 
 ::: {.problem #prob:lec02:chain}

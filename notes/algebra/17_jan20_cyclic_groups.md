@@ -316,9 +316,9 @@ $\Z_7^*$ — группа (утверждение [-@prop:lec16:units]): все 
 :::
 
 ::: solution
-$\operatorname{ord} \sigma = \operatorname{lcm}(3, 2) = 6$, поэтому $|\langle \sigma \rangle| = 6$ (теорема [-@thm:lec17:order-cyclic]), и по теореме [-@thm:lec17:cyclic-iso] $\langle \sigma \rangle \cong \Z_6$. Степени — по циклам: $\sigma^k = (1\,2\,3)^k (4\,5)^k$, где $(1\,2\,3)^k$ зависит от остатка $k$ при делении на $3$, а $(4\,5)^k$ — от чётности $k$. *Ключ:* с $S_3$ сравниваем коммутативность: циклическая группа абелева (утверждение [-@prop:lec17:cyclic-abelian]), $S_3$ — нет, порядки одинаковы, но по утверждению [-@prop:lec16:invariants] изоморфизма нет.
+$\operatorname{ord} \sigma = \operatorname{lcm}(3, 2) = 6$, поэтому $|\langle \sigma \rangle| = 6$ (теорема [-@thm:lec17:order-cyclic]), и по теореме [-@thm:lec17:cyclic-iso] $\langle \sigma \rangle \cong \Z_6$ (изоморфизм $\sigma^k \mapsto \bar k$). Степени — по циклам: $\sigma^k = (1\,2\,3)^k (4\,5)^k$, где $(1\,2\,3)^k$ зависит от остатка $k$ при делении на $3$, а $(4\,5)^k$ — от чётности $k$. *Ключ:* с $S_3$ сравниваем коммутативность: циклическая группа абелева (утверждение [-@prop:lec17:cyclic-abelian]), $S_3$ — нет, порядки одинаковы, но по утверждению [-@prop:lec16:invariants] изоморфизма нет.
 
-*Ответ:* $\langle \sigma \rangle = \{\Id, \sigma, \sigma^2, \dots, \sigma^5\}$, где $\sigma^2 = (1\,3\,2)$, $\sigma^3 = (4\,5)$, $\sigma^4 = (1\,2\,3)$, $\sigma^5 = (1\,3\,2)(4\,5)$; изоморфизм $\sigma^k \mapsto \bar k$. С $S_3$ не изоморфна.
+*Ответ:* $\langle \sigma \rangle = \{\Id, \sigma, \sigma^2, \dots, \sigma^5\}$, где $\sigma^2 = (1\,3\,2)$, $\sigma^3 = (4\,5)$, $\sigma^4 = (1\,2\,3)$, $\sigma^5 = (1\,3\,2)(4\,5)$; с $S_3$ не изоморфна.
 :::
 
 # Итоги

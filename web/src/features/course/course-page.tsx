@@ -34,7 +34,7 @@ export const Component = () => {
         <p className="max-w-160 text-body/relaxed text-ink/80 sm:text-title3/relaxed">
           {info.summary}
         </p>
-        <div className="mt-5.5 flex flex-wrap gap-x-6.5 gap-y-1 text-footnote text-muted">
+        <div className="mt-5.5 flex flex-wrap gap-x-6.5 gap-y-1 text-subhead text-muted">
           <span>
             Лектор <LecturerLink info={info} />
           </span>
