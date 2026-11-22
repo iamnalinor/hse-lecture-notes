@@ -79,6 +79,17 @@ def tex_env() -> dict[str, str]:
 # Подготовка к контрольной (krN), коллоквиуму (colloqN) или квизу (quiz-<slug>): имя файла = id
 # страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
 # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
+# synced в front matter: с чем сверен конспект. Порядок в courses.json фиксированный (сначала лекция).
+SYNCED_PARTS = ("lecture", "seminars")
+
+
+def synced_parts(value: object) -> list[str]:
+    """Список из front matter `synced` в каноническом порядке; нет поля — пустой список."""
+    if not isinstance(value, list):
+        return []
+    return [p for p in SYNCED_PARTS if p in value]
+
+
 PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)|(?P<quiz>quiz)-[a-z0-9][a-z0-9-]*")
 PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2", "quiz-o-symbols")
 PREP_FILES = ", ".join(f"{i}.md" for i in PREP_IDS)
@@ -241,7 +252,7 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
                 "week_id": doc.week_id,
                 "title": data.get("title"),
                 "date": data.get("date"),
-                "synced": doc.meta.get("synced") is True,
+                "synced": synced_parts(doc.meta.get("synced")),
                 "file": doc.rel,
             }
         )

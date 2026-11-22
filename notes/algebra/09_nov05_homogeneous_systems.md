@@ -3,7 +3,7 @@ course: algebra
 lecture: 9
 date: 2026-11-05
 title: Теорема Кронекера–Капелли. Однородные СЛАУ. Фундаментальная система решений
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

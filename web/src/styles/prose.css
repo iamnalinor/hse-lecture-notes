@@ -10,9 +10,11 @@ A lecture or a test prep is tens of thousands of KaTeX nodes. Opening an answer 
 one block, and without this the browser re-renders the whole document: 100–250 ms on a phone before
 the answer shows. The blocks and paragraphs off screen are skipped; `auto` remembers each one's real
 height once it has been drawn, so the page does not jump when scrolling back. Find-in-page and
-anchors still reach skipped content.
+anchors still reach skipped content. `<details>` (proofs, «Ответы») are left out: with `content-visibility: auto`
+on the folding element itself Chromium does not animate its height (`::details-content` in `app.css`),
+and a folded one is cheap anyway.
 */
-.prose-notes section > :not(section) {
+.prose-notes section > :not(section, details) {
   contain-intrinsic-size: auto 150px;
   content-visibility: auto;
 }

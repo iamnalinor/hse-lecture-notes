@@ -3,7 +3,7 @@ course: algebra
 lecture: 3
 date: 2026-09-16
 title: Метод Гаусса и СЛАУ. Перестановки и подстановки. Определитель
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

@@ -14,8 +14,22 @@ const subscribe = (listener: () => void): (() => void) => {
   };
 };
 
+/** The colours change at once everywhere: for one frame no element fades on its own (`app.css`). */
+const withoutTransitions = (apply: () => void): void => {
+  const root = document.documentElement;
+  root.dataset["themeSwitching"] = "";
+  apply();
+  // read a style so the new colours are computed while transitions are off
+  getComputedStyle(root).getPropertyValue("color");
+  requestAnimationFrame(() => {
+    delete root.dataset["themeSwitching"];
+  });
+};
+
 export const setTheme = (theme: Theme): void => {
-  document.documentElement.dataset["theme"] = theme;
+  withoutTransitions(() => {
+    document.documentElement.dataset["theme"] = theme;
+  });
   // The `media` variants of index.html are only the no-JS fallback: the chosen theme wins.
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
     meta.removeAttribute("media");

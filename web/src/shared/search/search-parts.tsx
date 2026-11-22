@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { SearchHit } from "#web/domain/search.ts";
 
 import { CloseIcon, SearchIcon } from "#web/shared/ui/icons.tsx";
@@ -29,7 +31,7 @@ export const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-72 lg:focus-within:w-104">
+  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-80">
     <SearchIcon size={16} />
     <input
       aria-activedescendant={hasPanel ? resultId(active) : undefined}
@@ -59,7 +61,7 @@ export const SearchField = ({
     ) : (
       <button
         aria-label="Очистить"
-        className="-my-px -mr-3 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted hover:text-ink lg:size-10"
+        className="-my-px -mr-3 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink lg:size-10"
         onClick={onClear}
         type="button"
       >
@@ -79,7 +81,35 @@ type PanelProps = {
   readonly status: string;
 };
 
-/** Right under the bar: full width on a phone, a dropdown under the field on a wide screen. */
+type PopoverProps = {
+  readonly children: React.ReactNode;
+  readonly isOpen: boolean;
+};
+
+/**
+Right under the bar: full width on a phone, a dropdown under the field on a wide screen. It fades and
+scales 0.98 → 1 in 150ms both ways (`[data-popover]` in `app.css`). To fade out it must stay in the DOM
+after its content is gone, so it keeps the last content while closed; closed it is `display: none`,
+`inert` and hidden from assistive technology.
+*/
+export const Popover = ({ children, isOpen }: PopoverProps) => {
+  const [kept, setKept] = useState<React.ReactNode>(undefined);
+  if (isOpen && kept !== children) {
+    setKept(children);
+  }
+  return kept === undefined ? null : (
+    <div
+      aria-hidden={!isOpen}
+      className="absolute inset-x-0 top-full z-50 border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border"
+      data-popover=""
+      data-state={isOpen ? "open" : "closed"}
+      inert={!isOpen}
+    >
+      {kept}
+    </div>
+  );
+};
+
 export const SearchPanel = ({
   active,
   hits,
@@ -89,7 +119,7 @@ export const SearchPanel = ({
   onPick,
   status,
 }: PanelProps) => (
-  <div className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border">
+  <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto rounded-[inherit]">
     <p className="px-5 text-subhead text-muted not-empty:py-5" role="status">
       {status}
     </p>
@@ -140,8 +170,8 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
     <div
       className={
         isOpen
-          ? "max-md:absolute max-md:inset-0 max-md:z-50 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4"
-          : "max-md:sr-only"
+          ? "max-md:absolute max-md:inset-0 max-md:z-50 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4 max-md:opacity-100 max-md:transition-opacity max-md:duration-150"
+          : "max-md:sr-only max-md:opacity-0"
       }
     >
       {children}

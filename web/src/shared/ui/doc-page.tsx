@@ -34,7 +34,7 @@ export const DocPage = ({
   pdfDoc,
 }: Props) => (
   <div
-    className={`mx-auto grid max-w-[1240px] justify-center gap-14 px-4 min-[1100px]:grid-cols-[230px_minmax(0,800px)] sm:px-8`}
+    className={`mx-auto grid max-w-[1240px] justify-center gap-14 px-4 min-[1100px]:grid-cols-[230px_minmax(0,860px)] sm:px-8`}
   >
     <div className="sticky top-6 hidden max-h-[calc(100vh-3rem)] self-start overflow-y-auto pt-14 min-[1100px]:block">
       {aside}

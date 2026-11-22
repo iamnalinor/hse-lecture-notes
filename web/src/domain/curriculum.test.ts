@@ -8,17 +8,47 @@ import {
   currentModule,
   groupByCategory,
   hourRuns,
+  hoursPerWeek,
   hoursShare,
   intensity,
-  maxHours,
+  loadText,
+  maxLoad,
   moduleTotals,
+  moduleWeeks,
 } from "./curriculum.ts";
 
 describe("curriculum shaping", () => {
   it("sums the hours of every module and finds the scale top", () => {
     expect(moduleTotals(SAMPLE.disciplines)).toEqual([65, 60, 113, 93]);
-    expect(maxHours(SAMPLE.disciplines)).toBe(44);
-    expect(maxHours([])).toBe(0);
+  });
+
+  it("takes the module lengths only when all four are known", () => {
+    expect(moduleWeeks(SAMPLE)).toEqual([7.9, 7.1, 10.7, 10.6]);
+    expect(moduleWeeks({ ...SAMPLE, moduleSpans: SAMPLE.moduleSpans.slice(1) })).toBeUndefined();
+  });
+
+  it("measures the load in hours per week, plain hours without the lengths", () => {
+    const weeks = moduleWeeks(SAMPLE);
+    expect(hoursPerWeek(28, 1, weeks)).toBeCloseTo(3.94, 2);
+    expect(hoursPerWeek(28, 1, undefined)).toBe(28);
+    // algebra: 28/7.9 = 3.54, 28/7.1 = 3.94, 44/10.7 = 4.11, 44/10.6 = 4.15; intro-se 18/7.1 = 2.5
+    expect(maxLoad(SAMPLE.disciplines, weeks)).toBeCloseTo(44 / 10.6, 5);
+    expect(maxLoad(SAMPLE.disciplines, undefined)).toBe(44);
+    expect(maxLoad([], weeks)).toBe(0);
+  });
+
+  it("makes a longer module with the same hours less intense", () => {
+    const weeks = moduleWeeks(SAMPLE);
+    const top = maxLoad(SAMPLE.disciplines, weeks);
+    // 40 hours in a 7.1-week module is heavier than 40 hours in a 10.6-week one
+    expect(intensity(hoursPerWeek(40, 1, weeks), top)).toBeGreaterThan(
+      intensity(hoursPerWeek(40, 3, weeks), top),
+    );
+  });
+
+  it("writes the load with a decimal comma", () => {
+    expect(loadText(3.94)).toBe("3,9");
+    expect(loadText(4)).toBe("4,0");
   });
 
   it("gives the share of a module in whole percent", () => {
@@ -26,7 +56,7 @@ describe("curriculum shaping", () => {
     expect(hoursShare(10, 0)).toBe(0);
   });
 
-  it("scales the intensity by absolute hours and draws nothing for zero", () => {
+  it("scales the intensity by load and draws nothing for zero", () => {
     expect(intensity(0, 44)).toBe(0);
     expect(intensity(44, 44)).toBe(1);
     expect(intensity(22, 44)).toBeCloseTo(0.65);
@@ -46,7 +76,8 @@ describe("curriculum shaping", () => {
   it("knows the current module only inside a known span", () => {
     expect(currentModule(SAMPLE, "2026-11-22")).toBe(2);
     expect(currentModule(SAMPLE, "2026-11-05")).toBe(2);
-    expect(currentModule(SAMPLE, "2027-01-20")).toBeUndefined();
+    expect(currentModule(SAMPLE, "2026-12-30")).toBe(2);
+    expect(currentModule(SAMPLE, "2027-01-05")).toBeUndefined();
   });
 
   it("sums the credits: shown, with the hidden rows of the plan, with English", () => {
@@ -68,7 +99,14 @@ describe("curriculum shaping", () => {
     if (algebra === undefined || nis === undefined) {
       throw new Error("no rows");
     }
-    expect(barTitle(algebra, 1, 203)).toBe("28 ч — 14% часов модуля · 8 кредитов за год");
-    expect(barTitle(nis, 0, 183)).toContain("один из 11 семинаров");
+    const weeks = moduleWeeks(SAMPLE);
+    const totals = [183, 203, 290, 282];
+    expect(barTitle(algebra, 1, { totals, weeks })).toBe(
+      "28 ч · 3,9 ч/нед — 14% часов модуля · 8 кредитов за год",
+    );
+    expect(barTitle(algebra, 1, { totals, weeks: undefined })).toBe(
+      "28 ч — 14% часов модуля · 8 кредитов за год",
+    );
+    expect(barTitle(nis, 0, { totals, weeks })).toContain("один из 11 семинаров");
   });
 });

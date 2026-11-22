@@ -3,7 +3,7 @@ course: discrete
 lecture: 5
 date: 2026-10-02
 title: Равносильность принципов индукции
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

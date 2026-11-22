@@ -154,6 +154,22 @@ describe("HeaderSearch", () => {
     expect(field()).toHaveFocus();
   });
 
+  it("keeps the folded panel in the DOM, inert, so it can fade out", async () => {
+    await userEvent.type(mount(), "миноры");
+    await screen.findByRole("option");
+    const panel = document.querySelector("[data-popover]");
+    expect(panel).toHaveAttribute("data-state", "open");
+    await userEvent.keyboard("{Escape}");
+    expect(panel).toHaveAttribute("data-state", "closed");
+    expect(panel).toHaveAttribute("aria-hidden", "true");
+    expect(panel).toHaveAttribute("inert");
+  });
+
+  it("has a fixed width: it does not widen on focus", () => {
+    mount();
+    expect(field().closest("label")?.className).not.toMatch(/focus-within:w-/u);
+  });
+
   it("folds on Esc from a button of the panel too", async () => {
     await userEvent.type(mount(), "ряд");
     await screen.findAllByRole("option");

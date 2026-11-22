@@ -3,7 +3,7 @@ course: discrete
 lecture: 4
 date: 2026-09-25
 title: Сильная индукция и принцип наименьшего числа
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

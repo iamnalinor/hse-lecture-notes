@@ -3,7 +3,7 @@ course: algebra
 lecture: 6
 date: 2026-10-07
 title: Вычисление определителей. Правило Крамера. Обратная матрица. Матричные уравнения
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

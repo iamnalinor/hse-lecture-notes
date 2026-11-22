@@ -3,7 +3,7 @@ course: discrete
 lecture: 2
 date: 2026-09-11
 title: Рассуждения, предикаты и кванторы
-synced: true
+synced: [lecture]
 ---
 
 # Контекст

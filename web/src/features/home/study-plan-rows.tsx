@@ -4,6 +4,7 @@ import {
   creditsText,
   type Discipline,
   hourRuns,
+  hoursPerWeek,
   intensity,
   MODULES,
 } from "#web/domain/curriculum.ts";
@@ -12,9 +13,12 @@ import { barBorder, categoryColor, runBackground } from "./study-plan-style.ts";
 
 export type PlanScale = {
   readonly current: number | undefined;
+  /** The highest load (hours per week, or hours without `weeks`): the top of the intensity scale. */
   readonly max: number;
   readonly maxTotal: number;
   readonly totals: readonly number[];
+  /** Teaching weeks of modules 1–4, when the plan knows them. */
+  readonly weeks: readonly number[] | undefined;
 };
 
 /** One name column plus four module columns; on a phone the name column is narrower and sticks to the left. */
@@ -56,7 +60,7 @@ export const TotalRow = ({ scale }: { readonly scale: PlanScale }) => (
         key={MODULES[index]}
       >
         <div
-          className="flex w-full items-start justify-center rounded-md border border-ink/25 bg-ink/15 pt-1 text-footnote font-semibold tabular-nums"
+          className="flex w-full items-center justify-center rounded-md border border-ink/25 bg-ink/15 text-footnote font-semibold tabular-nums"
           style={{ height: `${String(Math.max(28, Math.round((total / scale.maxTotal) * 64)))}px` }}
           title={`${String(total)} контактных часов в ${String(index + 1)} модуле`}
         >
@@ -87,28 +91,38 @@ const Run = (props: {
   readonly start: number;
 }) => {
   const { end, row, scale, start } = props;
-  const strengths = row.hours.slice(start, end).map((hours) => intensity(hours, scale.max));
+  const strengths = row.hours
+    .slice(start, end)
+    .map((hours, offset) => intensity(hoursPerWeek(hours, start + offset, scale.weeks), scale.max));
   return (
     <div
-      className="flex p-1.5"
+      className="flex items-center p-1.5"
       style={{ gridColumn: `${String(start + 2)} / span ${String(end - start)}`, gridRow: 1 }}
     >
-      <div
-        className="flex h-8 w-full overflow-hidden rounded-md border text-footnote font-semibold text-ink tabular-nums"
-        style={{
-          background: runBackground(row.category, strengths),
-          borderColor: barBorder(row.category, Math.max(...strengths)),
-        }}
-      >
-        {strengths.map((_, offset) => (
-          <span
-            className="flex flex-1 items-center justify-center"
-            key={MODULES[start + offset]}
-            title={barTitle(row, start + offset, scale.totals[start + offset] ?? 0)}
-          >
-            {row.hours[start + offset]}
-          </span>
-        ))}
+      <div className="relative h-8 w-full">
+        <div
+          aria-hidden="true"
+          className="size-full rounded-md border"
+          style={{
+            background: runBackground(row.category, strengths),
+            borderColor: barBorder(row.category, Math.max(...strengths)),
+          }}
+        />
+        {/* Labels sit on the module columns, not on the bar: the bar is inset by the padding, its thirds are off-centre. */}
+        <div
+          className="absolute -inset-x-1.5 inset-y-0 grid text-footnote font-semibold text-ink tabular-nums"
+          style={{ gridTemplateColumns: `repeat(${String(end - start)}, minmax(0, 1fr))` }}
+        >
+          {strengths.map((_, offset) => (
+            <span
+              className="flex items-center justify-center"
+              key={MODULES[start + offset]}
+              title={barTitle(row, start + offset, scale)}
+            >
+              {row.hours[start + offset]}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -118,10 +132,7 @@ const Run = (props: {
 const RowName = ({ row }: { readonly row: Discipline }) => (
   <div className={`${STICKY} flex flex-col justify-center px-3 py-2 sm:px-4`} title={row.name}>
     <div className="text-footnote/4 font-semibold sm:text-subhead/5">{row.short}</div>
-    <div className="text-caption text-muted">
-      {creditsText(row.credits)}
-      {row.variants === undefined ? "" : ` · один из ${String(row.variants)}`}
-    </div>
+    <div className="text-caption text-muted">{creditsText(row.credits)}</div>
   </div>
 );
 
