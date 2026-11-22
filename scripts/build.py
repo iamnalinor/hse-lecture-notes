@@ -11,7 +11,7 @@
     build/pdf/<course>/krN-cheatsheet-<variant>.pdf
                                         читлисты из prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex
     build/site-data/                    данные для будущего сайта + preview-страницы
-        index.json, courses.json, katex-macros.json, search.json
+        index.json, courses.json, katex-macros.json, search.json, curriculum.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
         <course>/theory/..., <course>/program/...
         <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
@@ -41,6 +41,7 @@ import pypandoc
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import curriculum  # noqa: E402
 import ticket_bank  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -662,6 +663,17 @@ def highlight_default(date: str | None) -> str | None:
     return (day - dt.timedelta(days=HIGHLIGHT_DAYS)).isoformat()
 
 
+def export_curriculum() -> None:
+    """program/curriculum-2026-y1.yaml → curriculum.json (диаграмма учебного плана внизу главной; файл необязателен)."""
+    path = SRC / curriculum.FILE
+    if not path.exists():
+        return
+    try:
+        write_json(SITE / "curriculum.json", curriculum.export(path))
+    except curriculum.CurriculumError as e:
+        raise BuildError(f"{curriculum.FILE.as_posix()}: {e}") from e
+
+
 def write_site_data(index: dict, metas: list[dict]) -> None:
     SITE.mkdir(parents=True, exist_ok=True)
     write_json(SITE / "index.json", index["labels"])
@@ -697,6 +709,7 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
         },
     )
     write_json(SITE / "katex-macros.json", katex_macros())
+    export_curriculum()
     search = []
     for m in sorted(metas, key=lambda m: (m["course"], m["kind"], m["lecture"])):
         fragment = (SITE / m["course"] / m["week_id"] / "fragment.html").read_text(encoding="utf-8")

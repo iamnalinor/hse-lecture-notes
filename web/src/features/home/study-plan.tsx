@@ -1,0 +1,98 @@
+import { useQuery } from "@tanstack/react-query";
+
+import { curriculumQuery } from "#web/api/queries.ts";
+import {
+  currentModule,
+  type Curriculum,
+  groupByCategory,
+  maxHours,
+  moduleTotals,
+} from "#web/domain/curriculum.ts";
+
+import { SectionTitle } from "./section-title.tsx";
+import { GroupRows, HeaderRow, type PlanScale, TotalRow } from "./study-plan-rows.tsx";
+import { barBackground } from "./study-plan-style.ts";
+import { StudyPlanTable } from "./study-plan-table.tsx";
+
+const LEGEND_STEPS = [0, 0.33, 0.66, 1] as const;
+
+const Legend = ({
+  current,
+  max,
+}: {
+  readonly current: number | undefined;
+  readonly max: number;
+}) => (
+  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-rule px-4 py-3 text-footnote text-muted">
+    <span className="flex items-center gap-2">
+      <span className="size-2 rounded-full bg-ink" />
+      аттестация в модуле
+    </span>
+    <span className="flex items-center gap-2">
+      <span className="whitespace-nowrap">меньше часов</span>
+      <span className="flex gap-0.5">
+        {LEGEND_STEPS.map((step) => (
+          <span
+            className="size-4 rounded-xs border border-rule"
+            key={step}
+            style={{ background: barBackground("math", 0.3 + step * 0.7) }}
+          />
+        ))}
+      </span>
+      <span className="whitespace-nowrap">больше (до {max} ч)</span>
+    </span>
+    {current === undefined ? null : <span>подсвечен идущий модуль</span>}
+  </div>
+);
+
+/** The Gantt-like chart of the first-year plan: a bar per discipline and module, shaded by contact hours. */
+export const StudyPlan = ({
+  curriculum,
+  today,
+}: {
+  readonly curriculum: Curriculum;
+  readonly today: string;
+}) => {
+  const groups = groupByCategory(curriculum);
+  const totals = moduleTotals(curriculum.disciplines);
+  const scale: PlanScale = {
+    current: currentModule(curriculum, today),
+    max: maxHours(curriculum.disciplines),
+    maxTotal: Math.max(1, ...totals),
+    totals,
+  };
+  return (
+    <figure
+      aria-label={curriculum.title}
+      className="relative overflow-hidden rounded-xl border border-rule bg-card"
+    >
+      <div aria-hidden="true" className="overflow-x-auto">
+        <div className="min-w-152">
+          <HeaderRow current={scale.current} />
+          <TotalRow scale={scale} />
+          {groups.map((group) => (
+            <GroupRows group={group} key={group.category.id} scale={scale} />
+          ))}
+        </div>
+      </div>
+      <StudyPlanTable groups={groups} totals={totals} />
+      <Legend current={scale.current} max={scale.max} />
+      <figcaption className="px-4 pb-3 text-footnote text-muted">
+        По рабочему учебному плану 2026/27. Кредиты — за год, часы — контактные.
+      </figcaption>
+    </figure>
+  );
+};
+
+/** The study plan at the bottom of the home page; absent from older data, then there is no section. */
+export const StudyPlanSection = ({ today }: { readonly today: string }) => {
+  const { data } = useQuery(curriculumQuery);
+  return data === undefined ? null : (
+    <section className="border-t border-rule py-10 sm:py-16" id="plan">
+      <div className="mb-7">
+        <SectionTitle>Учебный план 1 курса</SectionTitle>
+      </div>
+      <StudyPlan curriculum={data} today={today} />
+    </section>
+  );
+};

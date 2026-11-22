@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build  # noqa: E402
+import curriculum  # noqa: E402
 import ticket_bank  # noqa: E402
 
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
@@ -863,6 +864,13 @@ def main() -> int:
             page = p.with_name(p.name.removesuffix(ticket_bank.BANK_SUFFIX) + ".md")
             if not page.exists():
                 rep.err(p.relative_to(build.SRC).as_posix(), f"банк билетов без страницы {page.name}")
+
+    plan = build.SRC / curriculum.FILE
+    if not wanted and plan.exists():
+        try:
+            curriculum.export(plan)
+        except curriculum.CurriculumError as e:
+            rep.err(curriculum.FILE.as_posix(), str(e))
 
     for line in rep.errors + rep.warnings:
         print(line)

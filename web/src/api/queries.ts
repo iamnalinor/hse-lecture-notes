@@ -1,5 +1,6 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
+import { CurriculumSchema } from "#web/domain/curriculum.ts";
 import {
   CatalogSchema,
   DocMetaSchema,
@@ -18,6 +19,14 @@ export const catalogQuery = queryOptions({
   ...STATIC,
   queryFn: async () => await fetchJson("courses.json", CatalogSchema),
   queryKey: ["catalog"],
+});
+
+/** The study plan under the home page: an optional file, so a failed load simply hides the section. */
+export const curriculumQuery = queryOptions({
+  ...STATIC,
+  queryFn: async () => await fetchJson("curriculum.json", CurriculumSchema),
+  queryKey: ["curriculum"],
+  retry: false,
 });
 
 export const labelIndexQuery = queryOptions({

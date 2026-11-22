@@ -1,0 +1,58 @@
+# Учебный план 1 курса ПИ ФКН, 2026/27: контактные часы по модулям, из «Рабочего учебного плана»
+# (sources/common/curriculum/work1.pdf, утверждён 14.05.2026). Сборка кладёт его на сайт как
+# site-data/curriculum.json (scripts/curriculum.py), внизу главной рисуется диаграмма Ганта.
+#
+# hours — контактные часы в модулях 1–4 (колонки плана «Распределение контактных часов по модулям»);
+# attestations — модули, где у дисциплины в плане стоит «А» (экзамен или оценка в этом модуле).
+# Кредиты — за весь год. В таблицу не входят: физкультура, английский язык (факультатив) и внутренние
+# экзамены без кредитов — они перечислены в excluded, чтобы суммы сверялись с шапкой плана.
+
+source: sources/common/curriculum/work1.pdf
+title: Рабочий учебный план, 1 курс, 2026/2027
+# Строка «Вся образовательная программа» плана: контактные часы по модулям, всё, что в плане есть, кроме
+# факультативного английского языка.
+plan_totals: [211, 231, 336, 328]
+
+categories:
+  - id: math
+    label: Матеша
+    name: Математика
+  - id: prog
+    label: Прога
+    name: Программирование
+  - id: other
+    label: Непрофильное
+    name: Непрофильные дисциплины
+
+# Границы модулей в плане не указаны. Здесь только то, что есть в репозитории: лекции модуля 2 идут
+# с 05.11 (context/courses/algebra.md), сессия — до 30.12. Вне этих дат текущий модуль не подсвечивается.
+module_spans:
+  - { module: 2, from: "2026-11-05", to: "2026-12-30" }
+
+disciplines:
+  - { id: algebra, name: Алгебра, short: Алгебра, category: math, credits: 8, hours: [28, 28, 44, 44], attestations: [2, 4] }
+  - { id: calculus, name: Математический анализ, short: Матан, category: math, credits: 8, hours: [28, 28, 40, 40], attestations: [2, 4] }
+  - { id: discrete, name: Дискретная математика, short: Дискра, category: math, credits: 8, hours: [28, 28, 40, 40], attestations: [2, 4] }
+
+  - { id: aiya, name: Алгоритмы и алгоритмические языки, short: АиАЯ, category: prog, credits: 5, hours: [0, 62, 66, 0], attestations: [3] }
+  - { id: arch, name: Архитектура ЭВМ и язык ассемблера, short: Архитектура ЭВМ, category: prog, credits: 3, hours: [0, 0, 0, 80], attestations: [4] }
+  - { id: intro-prog, name: Введение в программирование, short: Введение в прогр., category: prog, credits: 3, hours: [24, 0, 0, 0], attestations: [1] }
+  - { id: intro-se, name: Введение в программную инженерию, short: Введение в ПИ, category: prog, credits: 4, hours: [18, 18, 0, 0], attestations: [2] }
+  - { id: cpp, name: Основы программирования на С++, short: С++, category: prog, credits: 5, hours: [0, 0, 40, 40], attestations: [4] }
+  # 11 вариантов семинара (по выбору). Часы у семи — 10/14/20 (всего 44), у четырёх (Android, iOS, веб,
+  # кибербезопасность) — 14/14/20 (48); взяты самые частые. Аттестация — в модуле 3.
+  - { id: nis, name: Научно-исследовательский семинар, short: НИС, category: prog, credits: 3, hours: [10, 14, 20, 0], attestations: [3], variants: 11 }
+  # Срок выполнения «Ф» (фиксированный), часов по модулям нет.
+  - { id: practice, name: Учебная практика, short: Учебная практика, category: prog, credits: 3, hours: [0, 0, 0, 0], attestations: [], no_module_hours: true }
+
+  - { id: history, name: История России, short: История России, category: other, credits: 4, hours: [12, 16, 24, 24], attestations: [2, 4] }
+  - { id: state, name: Основы российской государственности, short: Основы госуд., category: other, credits: 2, hours: [26, 0, 0, 0], attestations: [1] }
+  - { id: economics, name: Экономика, short: Экономика, category: other, credits: 3, hours: [0, 0, 16, 14], attestations: [4] }
+  - { id: safety, name: Безопасность жизнедеятельности, short: БЖД, category: other, credits: 1, hours: [9, 9, 0, 0], attestations: [2] }
+
+# Не показываются. in_plan_total: входят ли часы в строку «Вся образовательная программа».
+excluded:
+  - { name: Физическая культура, hours: [28, 28, 44, 44], in_plan_total: true }
+  - { name: Независимый экзамен по ИИ-грамотности, hours: [0, 0, 2, 0], in_plan_total: true }
+  - { name: Внутренний экзамен по английскому языку, hours: [0, 0, 0, 2], in_plan_total: true }
+  - { name: Английский язык (факультатив), hours: [20, 28, 40, 40], in_plan_total: false }
