@@ -700,8 +700,7 @@ local function set_template_meta(doc, config)
       for _, v in ipairs(meta['synced']) do synced[pandoc.utils.stringify(v)] = true end
     end
     if synced.lecture and synced.seminars then line = line .. ' · сверено с лекцией и семинарами'
-    elseif synced.lecture then line = line .. ' · сверено с лекцией'
-    elseif synced.seminars then line = line .. ' · сверено с семинарами' end
+    elseif synced.lecture then line = line .. ' · сверено с лекцией' end
     meta['header_line'] = pandoc.MetaString(line)
   end
   -- pandoc не должен печатать дату/заголовок своими средствами

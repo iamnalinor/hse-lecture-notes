@@ -88,7 +88,6 @@ describe("lecture page addresses", () => {
   it.each<[SyncedPart[], string]>([
     [["lecture"], "Сверено с лекцией"],
     [["lecture", "seminars"], "Сверено с лекцией и семинарами"],
-    [["seminars"], "Сверено с семинарами"],
   ])("says what the note %j was synced with, without a date", async (synced, text) => {
     open(`/algebra/${WEEK_ID}`, synced);
     expect(await screen.findByText(text)).toBeInTheDocument();

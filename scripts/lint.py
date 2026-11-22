@@ -332,11 +332,12 @@ def lint_notes(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> No
             and synced
             and all(isinstance(v, str) and v in build.SYNCED_PARTS for v in synced)
             and len(set(synced)) == len(synced)
+            and "lecture" in synced
         ):
             rep.err(
                 rel,
-                f"synced={synced!r}: допустим непустой список без повторов из {list(build.SYNCED_PARTS)} "
-                "(например, synced: [lecture, seminars]); не сверено — убери поле",
+                f"synced={synced!r}: допустимо synced: [lecture] или synced: [lecture, seminars] "
+                "(сверка с семинарами — только вместе с лекцией); не сверено — убери поле",
             )
 
     lecture = meta.get("lecture")
