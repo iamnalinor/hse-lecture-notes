@@ -91,6 +91,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  globalThis.history.replaceState(null, "", "/");
 });
 
 describe("HeaderSearch", () => {
@@ -206,11 +207,16 @@ describe("HeaderSearch", () => {
     expect(screen.getByRole("button", { name: "Поиск" })).toHaveFocus();
   });
 
-  it("keeps the query in the address and drops it on Esc", async () => {
+  it("keeps the query in the address, past the router, and drops it on Esc", async () => {
+    globalThis.history.replaceState(null, "", "/discrete#x");
     await userEvent.type(mount("/discrete#x"), "миноры");
-    expect(screen.getByTestId("location")).toHaveTextContent("/discrete?q=миноры#x");
-    await userEvent.keyboard("{Escape}");
+    expect(decodeURIComponent(globalThis.location.search)).toBe("?q=миноры");
+    expect(globalThis.location.hash).toBe("#x");
+    // the router does not navigate: no new location, no scroll back to #x on every key
     expect(screen.getByTestId("location").textContent).toBe("/discrete#x");
+    await userEvent.keyboard("{Escape}");
+    expect(globalThis.location.search).toBe("");
+    expect(globalThis.location.hash).toBe("#x");
   });
 
   it("opens with the query from the address", async () => {
@@ -219,11 +225,12 @@ describe("HeaderSearch", () => {
     expect(await screen.findByRole("option")).toHaveTextContent("Алгебра · Теория");
   });
 
-  it("does not drag the query of a folded panel to other pages", async () => {
+  it("drops the query from the address when the panel folds on a click outside", async () => {
     await userEvent.type(mount(), "миноры");
     await screen.findByRole("option");
     fireEvent.pointerDown(document.body);
-    expect(screen.getByTestId("location").textContent).toBe("/?q=миноры");
+    expect(globalThis.location.search).toBe("");
+    expect(field()).toHaveValue("миноры");
   });
 
   it("does not fetch the index until the field is touched", async () => {

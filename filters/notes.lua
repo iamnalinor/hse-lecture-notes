@@ -516,7 +516,8 @@ local function render_theory_block(div)
   -- определение в теории — обычный абзац «**Термин** — …», без плашки и номера
   if S.kind == 'theory' and t == 'definition' then
     if FORMAT_LATEX then
-      -- якорь для ссылок внутри PDF: в начало первого абзаца, без пустой строки
+      -- именованная цель theory.pdf#reg-…: внешние ссылки на определение; ставится в начало
+      -- первого абзаца, без пустой строки (ссылки внутри PDF ведут в лекции, не сюда)
       local blocks = pandoc.Blocks(div.content)
       local anchor = pandoc.RawInline('latex', '\\hypertarget{' .. div.identifier .. '}{}')
       local first = blocks[1]

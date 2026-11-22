@@ -454,6 +454,8 @@ $\Gamma b = (1, 1, 1)^T$, $a^T \Gamma b = 1 - 1 + 0 = 0$: векторы орт�
 
 ::: solution
 *Ключ:* базис не ортонормированный, поэтому сначала матрица Грама: $(\vec e_1, \vec e_2) = 1 \cdot 2 \cdot \cos \frac{2\pi}{3} = -1$, $\Gamma = \begin{pmatrix} 1 & -1 \\ -1 & 4 \end{pmatrix}$. Столбцы $a = (2, 1)^T$, $b = (1, -1)^T$. $\Gamma a = (1, 2)^T$, $a^T \Gamma a = 2 + 2 = 4$; $\Gamma b = (2, -5)^T$, $b^T \Gamma b = 2 + 5 = 7$, $a^T \Gamma b = 4 - 5 = -1$. Значит, $|\vec a| = 2$, $|\vec b| = \sqrt7$, $\cos \angle(\vec a, \vec b) = \frac{-1}{2\sqrt7}$. Проверка раскрытием скобок: $(\vec a, \vec b) = 2(\vec e_1, \vec e_1) - 2(\vec e_1, \vec e_2) + (\vec e_2, \vec e_1) - (\vec e_2, \vec e_2) = 2 + 2 - 1 - 4 = -1$.
+
+*Ответ:* $|\vec a| = 2$, $|\vec b| = \sqrt7$, $\cos \angle(\vec a, \vec b) = -\frac{1}{2\sqrt7}$.
 :::
 
 # Итоги

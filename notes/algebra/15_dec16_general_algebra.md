@@ -460,7 +460,7 @@ $\begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix} \begin{pmatrix} a & 0 \\ b & 0 \en
 
 *Ключ:* условие «нейтральный для всех элементов» — тождество по $x, y$ (или $a, b$), сравниваем коэффициенты. Правый нейтральный $R = \begin{pmatrix} r & 0 \\ s & 0 \end{pmatrix}$: $\begin{pmatrix} xr & 0 \\ yr & 0 \end{pmatrix} = \begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix}$ при всех $x, y$ $\Leftrightarrow r = 1$, $s$ любое. Левый нейтральный $L = \begin{pmatrix} l & 0 \\ m & 0 \end{pmatrix}$: $LB = \begin{pmatrix} la & 0 \\ ma & 0 \end{pmatrix}$ должно равняться $\begin{pmatrix} a & 0 \\ b & 0 \end{pmatrix}$ при всех $a, b$; при $a = 0$, $b = 1$ получаем $0 = 1$ — противоречие. Нейтральный элемент был бы и левым, и правым, поэтому его нет, и $S$ не моноид. Обратите внимание: $E \notin S$.
 
-*Ответ:* правые нейтральные — все матрицы $\begin{pmatrix} 1 & 0 \\ s & 0 \end{pmatrix}$, $s \in \R$; левых нейтральных нет; не моноид.
+*Ответ:* Правые нейтральные — все матрицы $\begin{pmatrix} 1 & 0 \\ s & 0 \end{pmatrix}$, $s \in \R$; левых нейтральных нет; не моноид.
 :::
 
 ::: {.problem #prob:lec15:residues}

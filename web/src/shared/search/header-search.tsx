@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { labelIndexQuery, searchIndexQuery } from "#web/api/queries.ts";
@@ -105,6 +105,31 @@ type State = {
 
 const FOLDED: State = { active: 0, isOpen: false, isWanted: false, limit: FIRST_HITS, query: "" };
 
+/** Search parameter that keeps the query: a link to `/?q=лагранж` opens the search with it. */
+const QUERY_PARAM = "q";
+
+const initialState = (search: string): State => {
+  const query = new URLSearchParams(search).get(QUERY_PARAM) ?? "";
+  return query === "" ? FOLDED : { ...FOLDED, isOpen: true, isWanted: true, query };
+};
+
+/**
+The query goes into the address with `history.replaceState`, past the router: a router navigation
+would get a new location key, and the page would scroll back to its `#anchor` on every keystroke and
+lose the «Назад» bar state. The entry is replaced, so Back is not spammed. Empty query — no `q`.
+*/
+const putQuery = (query: string): void => {
+  const url = new URL(globalThis.location.href);
+  if (query.trim() === "") {
+    url.searchParams.delete(QUERY_PARAM);
+  } else {
+    url.searchParams.set(QUERY_PARAM, query.trim());
+  }
+  if (url.href !== globalThis.location.href) {
+    globalThis.history.replaceState(globalThis.history.state, "", url);
+  }
+};
+
 type Refs = {
   readonly field: React.RefObject<HTMLInputElement | null>;
   readonly magnifier: React.RefObject<HTMLButtonElement | null>;
@@ -113,22 +138,38 @@ type Refs = {
 /** Ways to fold the panel: after a pick (focus leaves), on Esc or «Отмена» (focus stays near). */
 const useFolding = (
   setState: React.Dispatch<React.SetStateAction<State>>,
-  fieldRef: Refs["field"],
-  magnifierRef: Refs["magnifier"],
+  refs: Refs,
+  isOpen: boolean,
 ) => {
+  const { field, magnifier } = refs;
+  // the magnifier is `hidden` while the panel is open: it takes the focus once the fold is drawn
+  const pendingRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (isOpen || pendingRef.current === null) {
+      return;
+    }
+
+    pendingRef.current.focus();
+    pendingRef.current = null;
+  }, [isOpen]);
   const fold = useCallback((): void => {
+    putQuery("");
     setState((old) => ({ ...FOLDED, isWanted: old.isWanted }));
-    fieldRef.current?.blur();
-  }, [fieldRef, setState]);
+    field.current?.blur();
+  }, [field, setState]);
   /** Folds without dropping the focus on `<body>`. */
   const dismiss = useCallback(
     (isToMagnifier: boolean): void => {
+      putQuery("");
       setState((old) => ({ ...FOLDED, isWanted: old.isWanted }));
-      (isToMagnifier ? magnifierRef : fieldRef).current?.focus();
+      const target = (isToMagnifier ? magnifier : field).current;
+      target?.focus();
+      pendingRef.current = isToMagnifier ? target : null;
     },
-    [fieldRef, magnifierRef, setState],
+    [field, magnifier, setState],
   );
   const close = useCallback((): void => {
+    putQuery("");
     setState((old) => ({ ...old, isOpen: false }));
   }, [setState]);
   return { close, dismiss, fold };
@@ -161,57 +202,10 @@ const useFieldKeys = (
   };
 };
 
-/** Search parameter that keeps the query: a link to `/?q=лагранж` opens the search with it. */
-const QUERY_PARAM = "q";
-
-const initialState = (search: string): State => {
-  const query = new URLSearchParams(search).get(QUERY_PARAM) ?? "";
-  return query === "" ? FOLDED : { ...FOLDED, isOpen: true, isWanted: true, query };
-};
-
 /** State of the search, opened with the query from the address if it has one. */
 const useSearchState = () => {
   const { search } = useLocation();
   return useState(() => initialState(search));
-};
-
-/** `search` with the query put in (or taken out, when it is empty). */
-const withQuery = (search: string, query: string): string => {
-  const params = new URLSearchParams(search);
-  if (query.trim() === "") {
-    params.delete(QUERY_PARAM);
-  } else {
-    params.set(QUERY_PARAM, query.trim());
-  }
-  const next = params.toString();
-  return next === "" ? "" : `?${next}`;
-};
-
-/**
-While the panel is open its query follows into the address (replacing the entry, so Back is not
-spammed). A folded panel leaves the address alone: a pick navigates away by itself, and pages opened
-meanwhile do not get the query. Esc and «Отмена» take it out with the returned function.
-*/
-const useQueryInUrl = (query: null | string): (() => void) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const put = useCallback(
-    (text: string): void => {
-      const search = withQuery(location.search, text);
-      if (search !== location.search) {
-        void navigate({ hash: location.hash, search }, { preventScrollReset: true, replace: true });
-      }
-    },
-    [location.hash, location.search, navigate],
-  );
-  useEffect(() => {
-    if (query !== null) {
-      put(query);
-    }
-  }, [put, query]);
-  return useCallback(() => {
-    put("");
-  }, [put]);
 };
 
 /** Tab out of the search folds the panel; Esc from any of its controls dismisses it. */
@@ -247,14 +241,22 @@ export const HeaderSearch = () => {
   const [state, setState] = useSearchState();
   const { hits, status } = useHits(useDeferredValue(state.query), state.isWanted);
   const shown = Math.min(hits.length, state.limit);
-  const { close, dismiss, fold } = useFolding(setState, fieldRef, magnifierRef);
+  const { close, dismiss, fold } = useFolding(
+    setState,
+    { field: fieldRef, magnifier: magnifierRef },
+    state.isOpen,
+  );
   useGlobalKeys(boxRef, fieldRef, close);
   const want = useCallback((): void => {
     setState((old) => (old.isWanted ? old : { ...old, isWanted: true }));
   }, [setState]);
   usePrefetchWhenFree(want);
 
-  const dropQuery = useQueryInUrl(state.isOpen ? state.query : null);
+  useEffect(() => {
+    if (state.isOpen) {
+      putQuery(state.query);
+    }
+  }, [state.isOpen, state.query]);
   const onKeyDown = useFieldKeys({ active: state.active, hits, shown }, setState, fold);
 
   const hasPanel = state.isOpen && state.query.trim() !== "";
@@ -262,7 +264,6 @@ export const HeaderSearch = () => {
     <div
       className="md:min-w-0 md:flex-none"
       {...boxHandlers(close, () => {
-        dropQuery();
         dismiss(isPhone);
       })}
       ref={boxRef}
@@ -271,7 +272,6 @@ export const HeaderSearch = () => {
         isOpen={state.isOpen}
         magnifierRef={magnifierRef}
         onCancel={() => {
-          dropQuery();
           dismiss(true);
         }}
         onOpen={() => fieldRef.current?.focus()}
