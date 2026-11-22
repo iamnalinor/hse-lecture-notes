@@ -125,6 +125,9 @@ def test_html_blocks_and_refs(demo: Path):
     assert "Замечание 1.5" in frag
     assert 'href="#eq:lec01:assoc"' in frag and "(1.4)" in frag
     assert "\\tag{1.4}" in frag
+    # решение на сайте под катом «Решение»: подписи внутри нет, у доказательства — есть
+    sol = frag.split('class="nb-solution"', 1)[1][:200]
+    assert "Решение." not in sol
     meta = json.loads((site / "algebra" / "01_sep03_matrices" / "meta.json").read_text(encoding="utf-8"))
     assert meta["lecture"] == 1 and "basis" not in meta and "based_on" not in meta
     assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Лекция 1 · 3 сентября 2026"
@@ -247,6 +250,7 @@ def test_latex_blocks(demo: Path):
     assert "\\nbhead{Определение~2.1}" in out
     assert "\\begin{nbblock}{remark}{corner-case}{}" in out
     assert "(корнер-кейс)" in out
+    assert "\\begin{nbproof}{Решение}" in to_latex(demo, "01_sep03_matrices")
     # в LaTeX тот же единый ряд: Теорема 1.3, формула (1.4), Замечание 1.5, Рис. 1.6
     out1 = to_latex(demo, "01_sep03_matrices")
     order = [

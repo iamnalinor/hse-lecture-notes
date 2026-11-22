@@ -455,9 +455,13 @@ local function render_proof_like(div, name)
       '\\end{nbproof}')
   end
   local blocks = pandoc.Blocks(div.content)
-  local prefix = pandoc.Inlines { pandoc.Emph(md_inlines_resolved(label .. '.')) }
-  prefix_first_para(blocks, prefix)
-  local cls = has_class(div, 'proof') and 'nb-proof' or 'nb-solution'
+  local is_proof = has_class(div, 'proof')
+  -- на сайте решение и так под катом «Решение» (карточка задачи) — подпись внутри не повторяем
+  if is_proof or (title and title ~= '') then
+    local prefix = pandoc.Inlines { pandoc.Emph(md_inlines_resolved(label .. '.')) }
+    prefix_first_para(blocks, prefix)
+  end
+  local cls = is_proof and 'nb-proof' or 'nb-solution'
   return pandoc.Div(blocks, { class = cls })
 end
 
