@@ -649,10 +649,12 @@ end
 -- метаданные для шаблона
 -- ---------------------------------------------------------------------------
 
--- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1», quiz-o-symbols → «Подготовка
--- к квизу» (как prepGoal на сайте)
-local function prep_goal(id)
-  if id:match('^quiz%-') then return 'Подготовка к квизу' end
+-- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1», quiz-o-symbols (quiz_number 4) →
+-- «Подготовка к квизу 4» (как prepGoal на сайте)
+local function prep_goal(id, quiz_number)
+  if id:match('^quiz%-') then
+    return 'Подготовка к квизу' .. ((quiz_number and quiz_number ~= '') and (' ' .. quiz_number) or '')
+  end
   local n = id:match('%d+') or ''
   if id:match('^colloq') then return 'Подготовка к коллоквиуму ' .. n end
   return 'Подготовка к КР-' .. n
@@ -687,7 +689,7 @@ local function set_template_meta(doc, config)
       end
     end
     -- без date (событие ещё не объявлено) — без дня в колонтитуле
-    local line = string.format('%s · %s · %s', config.program or '', course_name, prep_goal(S.week_id or ''))
+    local line = string.format('%s · %s · %s', config.program or '', course_name, prep_goal(S.week_id or '', meta_str(meta, 'quiz_number')))
     if when ~= '' then line = line .. ' · ' .. when end
     meta['header_line'] = pandoc.MetaString(line)
   else
@@ -790,6 +792,7 @@ function Pandoc(doc)
       active_until = meta_str(meta, 'active_until'),
       highlight_from = meta_str(meta, 'highlight_from'),
       quiz_topic = meta_str(meta, 'quiz_topic'),
+      quiz_number = tonumber(meta_str(meta, 'quiz_number')),
       date_ru = meta_str(doc.meta, 'date_ru'),
       header_line = meta_str(doc.meta, 'header_line'),
       toc = S.toc, labels = labels, figures = S.figures,

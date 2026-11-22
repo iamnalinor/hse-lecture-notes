@@ -1,8 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 
+import type { Catalog } from "#web/domain/schemas.ts";
+
+import { catalogQuery } from "#web/api/queries.ts";
 import { COURSE_DOCS, isCourseDoc } from "#web/domain/course-docs.ts";
 import { findCourse } from "#web/domain/courses.ts";
-import { isPrepId, prepGoal } from "#web/domain/preps.ts";
+import { isPrepId, prepGoal, prepTopicName } from "#web/domain/preps.ts";
 import { hitPath, type SearchHit, type SnippetPart } from "#web/domain/search.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { TexText } from "#web/shared/reader/tex-text.tsx";
@@ -31,48 +35,54 @@ const Snippet = ({ parts }: { readonly parts: readonly SnippetPart[] }) =>
     <Part key={index} part={part} />
   ));
 
-const placeOf = (hit: SearchHit): string => {
+const placeOf = (hit: SearchHit, catalog: Catalog | undefined): string => {
   const course = findCourse(hit.course)?.short ?? hit.course;
   if (isCourseDoc(hit.doc)) {
     return `${course} · ${COURSE_DOCS[hit.doc]}`;
   }
-  return isPrepId(hit.doc)
-    ? `${course} · ${prepGoal(hit.doc)}`
-    : `${course} · Лекция ${String(hit.lecture)}`;
+  if (isPrepId(hit.doc)) {
+    const prep = catalog?.preps[hit.course]?.find((entry) => entry.id === hit.doc);
+    return `${course} · ${prepTopicName(prepGoal(hit.doc, prep?.quizNumber), prep?.topic)}`;
+  }
+  return `${course} · Лекция ${String(hit.lecture)}`;
 };
 
 export const resultId = (index: number): string => `search-hit-${String(index)}`;
 
-export const SearchResults = ({ active, hits, onHover, onPick }: Props) => (
-  <ul className="p-2" id="search-results" role="listbox">
-    {hits.map((hit, index) => (
-      <li
-        aria-selected={index === active}
-        className="rounded-lg aria-selected:bg-wash"
-        id={resultId(index)}
-        key={`${hit.course}/${hit.doc}#${hit.anchor}`}
-        role="option"
-      >
-        <Link
-          className="block px-3 py-2.5 text-ink no-underline"
-          onClick={onPick}
-          onMouseMove={() => {
-            onHover(index);
-          }}
-          tabIndex={-1}
-          to={hitPath(hit)}
+export const SearchResults = ({ active, hits, onHover, onPick }: Props) => {
+  // already loaded by the page behind the search; without it a quiz is named without its number
+  const catalog = useQuery(catalogQuery).data;
+  return (
+    <ul className="p-2" id="search-results" role="listbox">
+      {hits.map((hit, index) => (
+        <li
+          aria-selected={index === active}
+          className="rounded-lg aria-selected:bg-wash"
+          id={resultId(index)}
+          key={`${hit.course}/${hit.doc}#${hit.anchor}`}
+          role="option"
         >
-          <small className="block text-caption text-muted">{placeOf(hit)}</small>
-          <span className="block text-subhead font-semibold">
-            <TexText text={hit.heading} />
-          </span>
-          {hit.snippet.length > 0 && (
-            <span className="mt-0.5 line-clamp-2 block text-footnote/snug text-muted">
-              <Snippet parts={hit.snippet} />
+          <Link
+            className="block px-3 py-2.5 text-ink no-underline"
+            onClick={onPick}
+            onMouseMove={() => {
+              onHover(index);
+            }}
+            tabIndex={-1}
+            to={hitPath(hit)}
+          >
+            <small className="block text-caption text-muted">{placeOf(hit, catalog)}</small>
+            <span className="block text-subhead font-semibold">
+              <TexText text={hit.heading} />
             </span>
-          )}
-        </Link>
-      </li>
-    ))}
-  </ul>
-);
+            {hit.snippet.length > 0 && (
+              <span className="mt-0.5 line-clamp-2 block text-footnote/snug text-muted">
+                <Snippet parts={hit.snippet} />
+              </span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+};

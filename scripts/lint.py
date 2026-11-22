@@ -594,11 +594,17 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     kind = build.prep_kind(exam)
     colloq = kind == "colloq"
     event = {"colloq": "коллоквиума", "quiz": "квиза"}.get(kind, "КР")
-    # тема квиза — его имя на сайте («Квиз: О-символика»): номеров у квизов нет
+    # номер квиза — из таблицы планирования курса, его имя на сайте («Квиз 4»); тема — в скобках
     if kind == "quiz" and meta.get("quiz_topic") in (None, ""):
-        rep.err(rel, "в front matter нет поля quiz_topic (тема квиза: на сайте «Квиз: <тема>»)")
+        rep.err(rel, "в front matter нет поля quiz_topic (тема квиза: на сайте «Квиз 4 (<тема>)»)")
     elif kind != "quiz" and meta.get("quiz_topic") not in (None, ""):
         rep.err(rel, "поле quiz_topic — только у квиза (prep/<course>/quiz-<slug>.md)")
+    number = meta.get("quiz_number")
+    if kind == "quiz":
+        if type(number) is not int or number < 1:
+            rep.err(rel, "quiz_number — обязательное целое число > 0 (номер квиза из таблицы планирования context/courses/<курс>.md)")
+    elif number not in (None, ""):
+        rep.err(rel, "поле quiz_number — только у квиза (prep/<course>/quiz-<slug>.md)")
     dates: dict[str, dt.date] = {}
     for k in ("date", "active_until", "highlight_from"):
         value = meta.get(k)

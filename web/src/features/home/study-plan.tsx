@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { curriculumQuery } from "#web/api/queries.ts";
 import {
+  creditSums,
   currentModule,
   type Curriculum,
   groupByCategory,
@@ -24,10 +25,6 @@ const Legend = ({
   readonly max: number;
 }) => (
   <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-rule px-4 py-3 text-footnote text-muted">
-    <span className="flex items-center gap-2">
-      <span className="size-2 rounded-full bg-ink" />
-      аттестация в модуле
-    </span>
     <span className="flex items-center gap-2">
       <span className="whitespace-nowrap">меньше часов</span>
       <span className="flex gap-0.5">
@@ -55,6 +52,7 @@ export const StudyPlan = ({
 }) => {
   const groups = groupByCategory(curriculum);
   const totals = moduleTotals(curriculum.disciplines);
+  const sums = creditSums(curriculum);
   const scale: PlanScale = {
     current: currentModule(curriculum, today),
     max: maxHours(curriculum.disciplines),
@@ -78,7 +76,11 @@ export const StudyPlan = ({
       <StudyPlanTable groups={groups} totals={totals} />
       <Legend current={scale.current} max={scale.max} />
       <figcaption className="px-4 pb-3 text-footnote text-muted">
-        По рабочему учебному плану 2026/27. Кредиты — за год, часы — контактные.
+        По рабочему учебному плану 2026/27. Часы — контактные.{" "}
+        <span>
+          Кредиты за год: {sums.shown} по дисциплинам выше · {sums.withHidden} с учебной практикой и
+          физкультурой · {sums.withEnglish} с английским (факультатив).
+        </span>
       </figcaption>
     </figure>
   );

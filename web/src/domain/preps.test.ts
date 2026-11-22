@@ -15,6 +15,7 @@ import {
   prepDescription,
   prepGoal,
   prepName,
+  prepTopicName,
   prepWhen,
   undatedPreps,
   upcomingPreps,
@@ -47,19 +48,21 @@ describe("test preparation pages", () => {
   it("names a colloquium without «КР»", () => {
     expect(prepName("colloq1")).toBe("Коллоквиум 1");
     expect(prepGoal("colloq1")).toBe("Подготовка к коллоквиуму 1");
-    expect(prepGoal("quiz-o-symbols", "О-символика")).toBe("Подготовка к квизу «О-символика»");
+    expect(prepGoal("quiz-o-symbols", 4)).toBe("Подготовка к квизу 4");
     expect(prepContents("colloq1")).not.toContain("задачи с ответами");
     expect(prepDescription("colloq1")).toContain("коллоквиум");
   });
 
-  it("names a quiz by its topic, not by a number", () => {
-    expect(prepName("quiz-o-symbols", "О-символика")).toBe("Квиз: О-символика");
+  it("names a quiz by its number, the topic goes in brackets", () => {
+    expect(prepName("quiz-o-symbols", 4)).toBe("Квиз 4");
+    expect(prepTopicName("Квиз 4", "О-символика")).toBe("Квиз 4 (О-символика)");
+    expect(prepTopicName("КР-1")).toBe("КР-1");
     expect(prepName("quiz-o-symbols")).toBe("Квиз");
     expect(prepGoal("quiz-o-symbols")).toBe("Подготовка к квизу");
     expect(prepContents("quiz-o-symbols")).toBe("Типы задач, как решать, разобранные примеры");
     expect(prepDescription("quiz-o-symbols")).toBe("типы задач и разобранные примеры к квизу");
-    // the topic names only a quiz: a test keeps its number
-    expect(prepName("kr2", "О-символика")).toBe("КР-2");
+    // the quiz number names only a quiz: a test keeps its own
+    expect(prepName("kr2", 4)).toBe("КР-2");
   });
 
   it("routes every prep id the build accepts", () => {

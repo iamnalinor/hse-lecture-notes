@@ -11,23 +11,23 @@ const HoursSchema = z.tuple([z.number(), z.number(), z.number(), z.number()]);
 const CategorySchema = z.object({ id: z.string(), label: z.string(), name: z.string() });
 export type Category = z.infer<typeof CategorySchema>;
 
-const DisciplineSchema = z
-  .object({
-    attestations: z.array(z.number()),
-    category: z.string(),
-    credits: z.number(),
-    /** Contact hours in modules 1–4. */
-    hours: HoursSchema,
-    id: z.string(),
-    name: z.string(),
-    /** Fixed period without module hours («Ф»): drawn as a note, not as bars. */
-    no_module_hours: z.boolean().default(false),
-    short: z.string(),
-    /** A seminar to choose from `variants` options (НИС). */
-    variants: z.number().optional(),
-  })
-  .transform(({ no_module_hours: noModuleHours, ...rest }) => ({ ...rest, noModuleHours }));
+const DisciplineSchema = z.object({
+  attestations: z.array(z.number()),
+  category: z.string(),
+  credits: z.number(),
+  /** Contact hours in modules 1–4. */
+  hours: HoursSchema,
+  id: z.string(),
+  name: z.string(),
+  short: z.string(),
+  /** A seminar to choose from `variants` options (НИС). */
+  variants: z.number().optional(),
+});
 export type Discipline = z.infer<typeof DisciplineSchema>;
+
+const ExcludedSchema = z
+  .object({ credits: z.number(), in_plan_total: z.boolean(), name: z.string() })
+  .transform(({ in_plan_total: inPlanTotal, ...rest }) => ({ ...rest, inPlanTotal }));
 
 const ModuleSpanSchema = z.object({ from: z.string(), module: z.number(), to: z.string() });
 
@@ -35,6 +35,8 @@ export const CurriculumSchema = z
   .object({
     categories: z.array(CategorySchema),
     disciplines: z.array(DisciplineSchema),
+    /** Rows of the plan left off the chart; `in_plan_total`: counted in the plan's 60 credits (English is not). */
+    excluded: z.array(ExcludedSchema).default([]),
     module_spans: z.array(ModuleSpanSchema),
     title: z.string(),
   })
@@ -43,12 +45,26 @@ export type Curriculum = z.infer<typeof CurriculumSchema>;
 
 export type CategoryGroup = { readonly category: Category; readonly rows: readonly Discipline[] };
 
-/** Disciplines by category, in the order of the categories; an empty category is dropped. */
+const firstModule = (row: Discipline): number => row.hours.findIndex((hours) => hours > 0);
+const lastModule = (row: Discipline): number => row.hours.findLastIndex((hours) => hours > 0);
+const totalHours = (row: Discipline): number => row.hours.reduce((sum, hours) => sum + hours, 0);
+
+/** Gantt order inside a category: earlier start, then earlier end, then more hours, then name. */
+const bySpan = (a: Discipline, b: Discipline): number => {
+  const keys = [
+    firstModule(a) - firstModule(b),
+    lastModule(a) - lastModule(b),
+    totalHours(b) - totalHours(a),
+  ];
+  return keys.find((key) => key !== 0) ?? a.name.localeCompare(b.name, "ru");
+};
+
+/** Disciplines by category (in the order of the categories), each sorted by its time span; an empty category is dropped. */
 export const groupByCategory = (curriculum: Curriculum): readonly CategoryGroup[] =>
   curriculum.categories
     .map((category) => ({
       category,
-      rows: curriculum.disciplines.filter((row) => row.category === category.id),
+      rows: curriculum.disciplines.filter((row) => row.category === category.id).toSorted(bySpan),
     }))
     .filter((group) => group.rows.length > 0);
 
@@ -89,16 +105,48 @@ export const attestationText = (modules: readonly number[]): string => {
   return `аттестация в ${listModules(modules)} ${modules.length === 1 ? "модуле" : "модулях"}`;
 };
 
+/** Runs of consecutive modules with hours: `[28, 28, 0, 40]` → `[{start: 0, end: 2}, {start: 3, end: 4}]` (`end` exclusive). */
+export const hourRuns = (
+  hours: readonly number[],
+): readonly { readonly end: number; readonly start: number }[] =>
+  hours
+    .entries()
+    .filter(([index, value]) => value > 0 && (hours[index - 1] ?? 0) <= 0)
+    .map(([start]) => {
+      const gap = hours.slice(start).findIndex((value) => value <= 0);
+      return { end: gap === -1 ? hours.length : start + gap, start };
+    })
+    .toArray();
+
+export type CreditSums = {
+  readonly shown: number;
+  readonly withEnglish: number;
+  readonly withHidden: number;
+};
+
+const sum = (rows: readonly { readonly credits: number }[]): number =>
+  rows.reduce((total, row) => total + row.credits, 0);
+
+/** Credits for the year: of the shown disciplines, with the hidden rows of the plan's 60, with the facultative English too. */
+export const creditSums = (curriculum: Curriculum): CreditSums => {
+  const shown = sum(curriculum.disciplines);
+  const withHidden = shown + sum(curriculum.excluded.filter((row) => row.inPlanTotal));
+  return {
+    shown,
+    withEnglish: withHidden + sum(curriculum.excluded.filter((row) => !row.inPlanTotal)),
+    withHidden,
+  };
+};
+
 export const creditsText = (credits: number): string =>
   `${String(credits)} ${plural(credits, ["кредит", "кредита", "кредитов"])}`;
 
-/** «28 ч — 14% часов модуля · 8 кредитов за год · аттестация в 2 и 4 модулях» (the bar hint). */
+/** «28 ч — 14% часов модуля · 8 кредитов за год» (the bar hint). */
 export const barTitle = (row: Discipline, index: number, total: number): string => {
   const hours = row.hours[index] ?? 0;
   const parts = [
     `${String(hours)} ч — ${String(hoursShare(hours, total))}% часов модуля`,
     `${creditsText(row.credits)} за год`,
-    attestationText(row.attestations),
     row.variants === undefined
       ? ""
       : `${row.name}: нужно выбрать один из ${String(row.variants)} семинаров`,

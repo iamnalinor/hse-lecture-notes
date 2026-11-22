@@ -67,8 +67,8 @@ describe("build data schemas", () => {
       lectures: {},
       preps: {
         calculus: [
-          { date: "2026-10-22", id: "kr1", quiz_topic: null, title: "" },
-          { id: "quiz-o-symbols", quiz_topic: "О-символика", title: "" },
+          { date: "2026-10-22", id: "kr1", quiz_number: null, quiz_topic: null, title: "" },
+          { id: "quiz-o-symbols", quiz_number: 4, quiz_topic: "О-символика", title: "" },
         ],
       },
     });
@@ -76,6 +76,7 @@ describe("build data schemas", () => {
       undefined,
       "О-символика",
     ]);
+    expect(catalog.preps["calculus"]?.map((prep) => prep.quizNumber)).toStrictEqual([undefined, 4]);
   });
 
   it("knows which preparation page has a ticket bank", () => {

@@ -23,7 +23,11 @@ def test_real_plan_matches_header():
     assert data["plan_totals"] == [211, 231, 336, 328]
     shown = [sum(d["hours"][m] for d in data["disciplines"]) for m in range(4)]
     assert shown == [183, 203, 290, 282]  # без физкультуры (28, 28, 44, 44) и экзаменов без кредитов
-    assert sum(d["credits"] for d in data["disciplines"]) == 60
+    # учебная практика (3 кредита, без часов) вынесена в excluded: показано 57 из 60
+    assert sum(d["credits"] for d in data["disciplines"]) == 57
+    in_total = sum(x["credits"] for x in data["excluded"] if x["in_plan_total"])
+    assert in_total == 3 and sum(x["credits"] for x in data["excluded"]) == 11  # 57 + 3 = 60, с английским 68
+    assert 57 + in_total == 60
 
 
 def test_real_plan_scope():
@@ -31,7 +35,11 @@ def test_real_plan_scope():
     names = {d["name"] for d in data["disciplines"]}
     assert not {n for n in names if "Физическая" in n or "Английский" in n or "экзамен" in n.lower()}
     assert sum(d["short"] == "НИС" for d in data["disciplines"]) == 1
-    assert next(d for d in data["disciplines"] if d["id"] == "practice")["no_module_hours"] is True
+    assert "practice" not in {d["id"] for d in data["disciplines"]}
+    shorts = {d["id"]: d["short"] for d in data["disciplines"]}
+    assert shorts["history"] == "История" and shorts["state"] == "ОРГ"
+    assert shorts["intro-prog"] == "Введение в программирование"
+    assert shorts["intro-se"] == "Введение в программную инженерию"
 
 
 def put_plan(demo: Path, text: str | None = None) -> None:  # noqa: F811 (фикстура pytest)
@@ -45,9 +53,11 @@ def test_build_writes_curriculum_json(demo: Path):  # noqa: F811 (фикстур
     res = build(demo, "--no-pdf")
     assert res.returncode == 0, res.stderr
     out = json.loads((demo / "build" / "site-data" / "curriculum.json").read_text(encoding="utf-8"))
-    assert set(out) == {"title", "categories", "module_spans", "disciplines"}
+    assert set(out) == {"title", "categories", "module_spans", "disciplines", "excluded"}
+    assert sum(x["credits"] for x in out["excluded"] if x["in_plan_total"]) == 3
+    assert sum(x["credits"] for x in out["excluded"] if not x["in_plan_total"]) == 8
     assert out["module_spans"] == [{"module": 2, "from": "2026-11-05", "to": "2026-12-30"}]
-    assert [c["label"] for c in out["categories"]] == ["Матеша", "Прога", "Непрофильное"]
+    assert [c["label"] for c in out["categories"]] == ["Математика", "Программирование", "Непрофильные дисциплины"]
 
 
 def test_build_without_plan_has_no_file(demo: Path):  # noqa: F811 (фикстура pytest)

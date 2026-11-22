@@ -754,12 +754,27 @@ def make_quiz(demo: Path, name: str = "quiz-o-symbols") -> Path:
         .replace("# О контрольной", "# О квизе")
         .replace(
             "date: 2026-11-07",
-            'quiz_topic: "О-символика"\ndate: 2026-11-23\nactive_until: 2026-11-27\nhighlight_from: 2026-11-20',
+            'quiz_number: 4\nquiz_topic: "О-символика"\ndate: 2026-11-23\nactive_until: 2026-11-27\nhighlight_from: 2026-11-20',
         )
     )
     dst = demo / "prep" / "algebra" / f"{name}.md"
     dst.write_text(text, encoding="utf-8")
     return dst
+
+
+def test_quiz_number_required_for_quiz_only(demo: Path):
+    """quiz_number: у квиза обязателен и целый > 0; у КР и коллоквиума — ошибка."""
+    path = make_quiz(demo)
+    ok = path.read_text(encoding="utf-8")
+    for bad in ("quiz_number: 4\n", "quiz_number: 0\n", "quiz_number: два\n"):
+        path.write_text(ok.replace("quiz_number: 4\n", "" if bad == "quiz_number: 4\n" else bad), encoding="utf-8")
+        res = lint(demo)
+        assert res.returncode != 0 and "quiz_number" in res.stdout, bad
+    path.write_text(ok, encoding="utf-8")
+    kr = demo / "prep" / "algebra" / "kr1.md"
+    kr.write_text(kr.read_text(encoding="utf-8").replace("date: 2026-11-07", "quiz_number: 4\ndate: 2026-11-07"), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0 and "quiz_number" in res.stdout
 
 
 def test_quiz_builds(demo: Path):
@@ -773,13 +788,14 @@ def test_quiz_builds(demo: Path):
     frag = (site / "algebra" / "quiz-o-symbols" / "fragment.html").read_text(encoding="utf-8")
     assert 'id="prob:quiz-o-symbols:square"' in frag and 'href="#prob:quiz-o-symbols:square"' in frag
     meta = json.loads((site / "algebra" / "quiz-o-symbols" / "meta.json").read_text(encoding="utf-8"))
-    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к квизу · 23.11–27.11.2026"
+    assert meta["header_line"] == "ПИ ФКН ВШЭ 2026/27 · Алгебра · Подготовка к квизу 4 · 23.11–27.11.2026"
     courses = json.loads((site / "courses.json").read_text(encoding="utf-8"))
     assert [p["id"] for p in courses["preps"]["algebra"]] == ["kr1", "quiz-o-symbols"]
     quiz = courses["preps"]["algebra"][1]
-    assert quiz["quiz_topic"] == "О-символика"
+    assert quiz["quiz_topic"] == "О-символика" and quiz["quiz_number"] == 4
     assert quiz["date"] == "2026-11-23" and quiz["active_until"] == "2026-11-27"
     assert "quiz_topic" not in courses["preps"]["algebra"][0]
+    assert "quiz_number" not in courses["preps"]["algebra"][0]
     index = json.loads((site / "index.json").read_text(encoding="utf-8"))["algebra"]
     assert not any(":quiz-o-symbols:" in k for k in index)
 

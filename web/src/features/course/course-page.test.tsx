@@ -81,7 +81,8 @@ describe("course page", () => {
       .getAllByRole("row")
       .filter((row) => within(row).queryByText(hint) !== null)
       .map((row) => within(row).getByRole("link", { name: /Предел|Непрерывность|Производная/ }));
-    expect(marked.map((link) => link.textContent)).toEqual(["Предел функции"]);
+    expect(marked).toHaveLength(1);
+    expect(marked[0]).toHaveTextContent(/^Предел функции/);
   });
 
   it("links the program page of the course next to the theory", () => {

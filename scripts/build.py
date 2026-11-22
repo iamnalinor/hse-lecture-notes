@@ -77,7 +77,7 @@ def tex_env() -> dict[str, str]:
 
 
 # Подготовка к контрольной (krN), коллоквиуму (colloqN) или квизу (quiz-<slug>): имя файла = id
-# страницы на сайте. У квизов курса нет известной нумерации, поэтому id — по теме: quiz-o-symbols.
+# страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
 # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)|(?P<quiz>quiz)-[a-z0-9][a-z0-9-]*")
 PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2", "quiz-o-symbols")
@@ -695,8 +695,9 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     # есть банк билетов → на странице генератор (bank.json рядом с fragment.html)
                     "bank": bool(m.get("bank")),
                 }
-                # тема квиза («О-символика»): из неё сайт пишет «Квиз: О-символика»; у КР поля нет
+                # номер и тема квиза: сайт пишет «Квиз 4», тема — в скобках рядом; у КР полей нет
                 | ({"quiz_topic": m["quiz_topic"]} if m.get("quiz_topic") else {})
+                | ({"quiz_number": int(m["quiz_number"])} if m.get("quiz_number") else {})
             )
     write_json(
         SITE / "courses.json",

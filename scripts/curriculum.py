@@ -16,7 +16,7 @@ import yaml
 FILE = Path("program") / "curriculum-2026-y1.yaml"
 MODULES = 4
 DISCIPLINE_KEYS = {
-    "id", "name", "short", "category", "credits", "hours", "attestations", "variants", "no_module_hours",
+    "id", "name", "short", "category", "credits", "hours", "attestations", "variants",
 }
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -114,10 +114,16 @@ def validate(data: dict) -> list[str]:
 
 
 def export(path: Path) -> dict:
-    """Проверенное содержимое yaml для сайта (всё, кроме excluded и plan_totals: они нужны проверке)."""
+    """Проверенное содержимое yaml для сайта (excluded — только имя, кредиты и признак входа в «60»; plan_totals нужен проверке)."""
     data = load(path)
     errors = validate(data)
     if errors:
         raise CurriculumError(f"{path.name}: " + "; ".join(errors))
     keys = ("title", "categories", "module_spans", "disciplines")
-    return {k: data.get(k, []) for k in keys}
+    out = {k: data.get(k, []) for k in keys}
+    # скрытые строки плана: сайт считает по ним кредиты «со скрытыми» и «с английским»
+    out["excluded"] = [
+        {"name": x["name"], "credits": x.get("credits", 0), "in_plan_total": bool(x.get("in_plan_total"))}
+        for x in data["excluded"]
+    ]
+    return out

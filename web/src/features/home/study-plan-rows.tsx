@@ -1,16 +1,14 @@
-import type { ReactNode } from "react";
-
 import {
-  attestationText,
   barTitle,
   type CategoryGroup,
   creditsText,
   type Discipline,
+  hourRuns,
   intensity,
   MODULES,
 } from "#web/domain/curriculum.ts";
 
-import { barBackground, barBorder, categoryColor } from "./study-plan-style.ts";
+import { barBorder, categoryColor, runBackground } from "./study-plan-style.ts";
 
 export type PlanScale = {
   readonly current: number | undefined;
@@ -21,18 +19,8 @@ export type PlanScale = {
 
 /** One name column plus four module columns; on a phone the name column is narrower and sticks to the left. */
 export const GRID =
-  "grid grid-cols-[8.5rem_repeat(4,minmax(5.5rem,1fr))] sm:grid-cols-[11.5rem_repeat(4,minmax(6rem,1fr))]";
+  "grid grid-cols-[8.75rem_repeat(4,minmax(5.5rem,1fr))] sm:grid-cols-[11.5rem_repeat(4,minmax(6rem,1fr))]";
 const STICKY = "sticky left-0 z-10 bg-card";
-
-const Cell = ({
-  children,
-  isCurrent,
-}: {
-  readonly children?: ReactNode;
-  readonly isCurrent: boolean;
-}) => (
-  <div className={`relative flex items-center p-1.5 ${isCurrent ? "bg-wash" : ""}`}>{children}</div>
-);
 
 export const HeaderRow = ({ current }: { readonly current: number | undefined }) => (
   <div className={`${GRID} border-b border-rule`}>
@@ -91,37 +79,45 @@ const GroupLabel = ({ group }: { readonly group: CategoryGroup }) => (
   </div>
 );
 
-const Bar = (props: {
-  readonly index: number;
+/** Neighbouring modules of one discipline are one bar: flows across the column boundary, rounded at its ends only. */
+const Run = (props: {
+  readonly end: number;
   readonly row: Discipline;
   readonly scale: PlanScale;
+  readonly start: number;
 }) => {
-  const { index, row, scale } = props;
-  const hours = row.hours[index] ?? 0;
-  const strength = intensity(hours, scale.max);
+  const { end, row, scale, start } = props;
+  const strengths = row.hours.slice(start, end).map((hours) => intensity(hours, scale.max));
   return (
     <div
-      className="relative flex h-8 w-full items-center justify-center rounded-md border text-footnote font-semibold text-ink tabular-nums"
-      style={{
-        background: barBackground(row.category, strength),
-        borderColor: barBorder(row.category, strength),
-      }}
-      title={barTitle(row, index, scale.totals[index] ?? 0)}
+      className="flex p-1.5"
+      style={{ gridColumn: `${String(start + 2)} / span ${String(end - start)}`, gridRow: 1 }}
     >
-      {hours}
-      {row.attestations.includes(index + 1) ? (
-        <span
-          className="absolute top-1/2 right-1.5 size-2 -translate-y-1/2 rounded-full bg-ink"
-          title={attestationText([index + 1])}
-        />
-      ) : null}
+      <div
+        className="flex h-8 w-full overflow-hidden rounded-md border text-footnote font-semibold text-ink tabular-nums"
+        style={{
+          background: runBackground(row.category, strengths),
+          borderColor: barBorder(row.category, Math.max(...strengths)),
+        }}
+      >
+        {strengths.map((_, offset) => (
+          <span
+            className="flex flex-1 items-center justify-center"
+            key={MODULES[start + offset]}
+            title={barTitle(row, start + offset, scale.totals[start + offset] ?? 0)}
+          >
+            {row.hours[start + offset]}
+          </span>
+        ))}
+      </div>
     </div>
   );
 };
 
+/** The full name is in the tooltip; the short one is the label, a long one wraps to two lines. */
 const RowName = ({ row }: { readonly row: Discipline }) => (
-  <div className={`${STICKY} px-4 py-2`} title={row.name}>
-    <div className="text-subhead/5 font-semibold">{row.short}</div>
+  <div className={`${STICKY} flex flex-col justify-center px-3 py-2 sm:px-4`} title={row.name}>
+    <div className="text-footnote/4 font-semibold sm:text-subhead/5">{row.short}</div>
     <div className="text-caption text-muted">
       {creditsText(row.credits)}
       {row.variants === undefined ? "" : ` · один из ${String(row.variants)}`}
@@ -129,26 +125,19 @@ const RowName = ({ row }: { readonly row: Discipline }) => (
   </div>
 );
 
-const NoHours = () => (
-  <div className="col-span-4 flex items-center p-1.5">
-    <div className="w-full rounded-md border border-dashed border-ink/30 px-3 py-1.5 text-center text-footnote text-muted">
-      без часов по модулям · срок фиксированный
-    </div>
-  </div>
-);
-
 const DisciplineRow = ({ row, scale }: { readonly row: Discipline; readonly scale: PlanScale }) => (
   <div className={`${GRID} border-b border-rule last:border-0`}>
     <RowName row={row} />
-    {row.noModuleHours ? (
-      <NoHours />
-    ) : (
-      MODULES.map((module, index) => (
-        <Cell isCurrent={module === scale.current} key={module}>
-          {(row.hours[index] ?? 0) > 0 ? <Bar index={index} row={row} scale={scale} /> : null}
-        </Cell>
-      ))
-    )}
+    {MODULES.map((module, index) => (
+      <div
+        className={module === scale.current ? "bg-wash" : ""}
+        key={module}
+        style={{ gridColumn: index + 2, gridRow: 1 }}
+      />
+    ))}
+    {hourRuns(row.hours).map((run) => (
+      <Run end={run.end} key={run.start} row={row} scale={scale} start={run.start} />
+    ))}
   </div>
 );
 

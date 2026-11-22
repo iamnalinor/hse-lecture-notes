@@ -36,11 +36,9 @@ export const StudyPlanTable = ({ groups, totals }: Props) => (
             <th scope="row">{row.name}</th>
             <td>{group.category.label}</td>
             <td>{creditsText(row.credits)}</td>
-            {row.noModuleHours ? (
-              <td colSpan={MODULES.length}>без часов по модулям</td>
-            ) : (
-              row.hours.map((hours, index) => <td key={MODULES[index]}>{hoursCell(hours)}</td>)
-            )}
+            {row.hours.map((hours, index) => (
+              <td key={MODULES[index]}>{hoursCell(hours)}</td>
+            ))}
             <td>{row.attestations.length === 0 ? "—" : attestationText(row.attestations)}</td>
           </tr>
         )),
