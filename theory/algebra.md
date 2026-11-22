@@ -765,7 +765,7 @@ $[\vec a, \vec b] = \vec 0 \Leftrightarrow \vec a, \vec b$ коллинеарн�
 :::
 
 ::: {.theorem ref="thm:lec13:cross-props"}
-$[\vec b, \vec a] = -[\vec a, \vec b]$; векторное произведение линейно по каждому аргументу. *Идея:* вектор нулевой, если скалярно ортогонален всем; $([\vec b, \vec a] + [\vec a, \vec b], \vec c)$ и аналогичное выражение для линейности сводятся к свойствам смешанного произведения.
+$[\vec b, \vec a] = -[\vec a, \vec b]$; $[\lambda \vec a, \vec b] = \lambda [\vec a, \vec b]$; $[\vec a_1 + \vec a_2, \vec b] = [\vec a_1, \vec b] + [\vec a_2, \vec b]$ (так же по второму аргументу). *Идея:* вектор нулевой, если скалярно ортогонален всем; $([\vec b, \vec a] + [\vec a, \vec b], \vec c)$ и аналогичное выражение для линейности сводятся к свойствам смешанного произведения.
 :::
 
 ::: {.theorem ref="thm:lec13:cross-coords"}
@@ -808,6 +808,10 @@ $\vec r_M = \frac{q \vec r_1 + p \vec r_2}{p + q}$; середина — $\frac{
 
 ::: {.proposition ref="prop:lec14:proportional"}
 Два общих уравнения задают одну плоскость тогда и только тогда, когда их коэффициенты пропорциональны.
+:::
+
+::: {.definition ref="def:lec14:intercepts"}
+**Уравнение плоскости в отрезках**: $\frac{x}{a} + \frac{y}{b} + \frac{z}{c} = 1$, $abc \ne 0$; плоскость пересекает оси в точках $(a, 0, 0)$, $(0, b, 0)$, $(0, 0, c)$.
 :::
 
 ::: {.theorem ref="thm:lec14:two-planes"}
@@ -946,6 +950,10 @@ $\bar a + \bar b := \overline{a + b}$ и $\bar a \cdot \bar b := \overline{ab}$ 
 **Общая линейная группа** $GL_n(\R) = \{A \in M_n(\R) \mid \det A \ne 0\}$ с умножением — общая линейная группа.
 :::
 
+::: {.definition ref="def:lec16:symmetric"}
+**Симметрическая группа** $S_n$ — подстановки длины $n$ с умножением, $|S_n| = n!$; $S(X)$ — биекции $X \to X$ с композицией.
+:::
+
 ::: {.definition ref="def:lec16:order"}
 **Порядок группы** $|G|$ — число её элементов; группа конечна или бесконечна.
 :::
@@ -960,6 +968,10 @@ $\bar a + \bar b := \overline{a + b}$ и $\bar a \cdot \bar b := \overline{ab}$ 
 
 ::: {.theorem ref="thm:lec16:criterion"}
 Непустое $H \subseteq G$ — подгруппа $\Leftrightarrow$ $h_1 h_2^{-1} \in H$ для всех $h_1, h_2 \in H$. *Идея:* подставить пары $(h, h)$ — получится $e$, $(e, h)$ — получится $h^{-1}$, $(h_1, h_2^{-1})$ — получится $h_1 h_2$.
+:::
+
+::: {.definition ref="def:lec16:sl"}
+**Специальная линейная группа** $SL_n(\R) = \{A \in M_n(\R) \mid \det A = 1\}$ — подгруппа $GL_n(\R)$.
 :::
 
 ::: {.definition ref="def:lec16:homomorphism"}
