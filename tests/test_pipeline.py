@@ -454,6 +454,21 @@ def test_prep_without_date(demo: Path):
     assert prep["date"] is None and prep["active_until"] is None and prep["highlight_from"] is None
 
 
+def test_prep_new_scheme_tasks(demo: Path):
+    """КР по новой схеме (context/prompts/prep.md): задачи — в «# Задачи» по типам, «## Прототипы» нет."""
+    p = demo / "prep" / "algebra" / "kr1.md"
+    text = p.read_text(encoding="utf-8")
+    new = text.replace("# Умножение матриц {#sec:kr1:product}", "# Задачи\n\n## 1. Умножение матриц {#sec:kr1:product}")
+    p.write_text(new.replace("## Прототипы", "Примеры:"), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode == 0, res.stdout
+    # ни «# Задачи», ни «## Прототипы» — задач на странице КР нет
+    p.write_text(text.replace("## Прототипы", "Примеры:"), encoding="utf-8")
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "«# Задачи»" in res.stdout, res.stdout
+
+
 @pytest.mark.skipif(not HAS_TEX, reason="нужен шрифт CMU из TeX Live")
 def test_lint_missing_glyph(demo: Path):
     p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
