@@ -19,15 +19,7 @@ import { StudyPlanTable } from "./study-plan-table.tsx";
 
 const LEGEND_STEPS = [0, 0.33, 0.66, 1] as const;
 
-const Legend = ({
-  current,
-  max,
-  perWeek,
-}: {
-  readonly current: number | undefined;
-  readonly max: number;
-  readonly perWeek: boolean;
-}) => (
+const Legend = ({ max, perWeek }: { readonly max: number; readonly perWeek: boolean }) => (
   <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-rule px-4 py-3 text-footnote text-muted">
     <span className="flex items-center gap-2">
       <span className="whitespace-nowrap">меньше часов</span>
@@ -44,7 +36,6 @@ const Legend = ({
         больше (до {loadText(max)} {perWeek ? "ч/нед" : "ч"})
       </span>
     </span>
-    {current === undefined ? null : <span>подсвечен идущий модуль</span>}
   </div>
 );
 
@@ -82,7 +73,7 @@ export const StudyPlan = ({
         </div>
       </div>
       <StudyPlanTable groups={groups} totals={totals} />
-      <Legend current={scale.current} max={scale.max} perWeek={weeks !== undefined} />
+      <Legend max={scale.max} perWeek={weeks !== undefined} />
       <figcaption className="px-4 pb-3 text-center text-footnote text-muted">
         По рабочему учебному плану 2026/27. Часы — контактные; цвет полосы — часы в неделю.{" "}
         <span>
