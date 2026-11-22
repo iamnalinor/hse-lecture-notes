@@ -5,8 +5,8 @@ import { shortDate } from "./dates.ts";
 /**
 Preparation pages live next to lectures: `/<course>/kr1` for a test (`prep/<course>/krN.md`),
 `/<course>/colloq1` for a colloquium, the oral part of the exam (`prep/<course>/colloqN.md`),
-`/<course>/quiz-o-symbols` for a short quiz (`prep/<course>/quiz-<slug>.md`): quizzes have no known
-numbering, so their id names the topic. The build accepts the same ids (`PREP_IDS` in `scripts/build.py`).
+`/<course>/quiz-o-symbols` for a short quiz (`prep/<course>/quiz-<slug>.md`): the id names the topic,
+the number (front matter `quiz_number`, from the course planning table) is only in the displayed name. The build accepts the same ids (`PREP_IDS` in `scripts/build.py`).
 */
 export const PREP_IDS = ["kr1", "kr2", "kr3", "colloq1", "colloq2", "quiz-o-symbols"] as const;
 
@@ -34,10 +34,10 @@ const parse = (id: string): undefined | { readonly kind: PrepKind; readonly numb
 export const isPrepId = (doc: string): boolean => PREP_ID.test(doc);
 
 /**
-`kr1` → `КР-1`, `colloq1` → `Коллоквиум 1`, a quiz → `Квиз: О-символика` by its `topic` (front matter
-`quiz_topic`; quizzes are not numbered).
+`kr1` → `КР-1`, `colloq1` → `Коллоквиум 1`, a quiz → `Квиз 4` by its `quizNumber` (front matter
+`quiz_number`; the topic is shown separately, see `prepTopicName`).
 */
-export const prepName = (id: string, topic?: string): string => {
+export const prepName = (id: string, quizNumber?: number): string => {
   const prep = parse(id);
   switch (prep?.kind) {
     case undefined: {
@@ -47,7 +47,7 @@ export const prepName = (id: string, topic?: string): string => {
       return `Коллоквиум ${prep.number}`;
     }
     case "quiz": {
-      return topic === undefined || topic === "" ? "Квиз" : `Квиз: ${topic}`;
+      return quizNumber === undefined ? "Квиз" : `Квиз ${String(quizNumber)}`;
     }
     case "kr": {
       return `КР-${prep.number}`;
@@ -55,17 +55,17 @@ export const prepName = (id: string, topic?: string): string => {
   }
 };
 
-/** Button, crumb and search label: `Подготовка к КР-1`, `Подготовка к коллоквиуму 1`, `Подготовка к квизу`. */
-export const prepGoal = (id: string, topic?: string): string => {
+/** Button, crumb and search label: `Подготовка к КР-1`, `Подготовка к коллоквиуму 1`, `Подготовка к квизу 4`. */
+export const prepGoal = (id: string, quizNumber?: number): string => {
   const prep = parse(id);
   switch (prep?.kind) {
     case "colloq": {
       return `Подготовка к коллоквиуму ${prep.number}`;
     }
     case "quiz": {
-      return topic === undefined || topic === ""
+      return quizNumber === undefined
         ? "Подготовка к квизу"
-        : `Подготовка к квизу «${topic}»`;
+        : `Подготовка к квизу ${String(quizNumber)}`;
     }
     case "kr":
     case undefined: {
@@ -73,6 +73,10 @@ export const prepGoal = (id: string, topic?: string): string => {
     }
   }
 };
+
+/** A name with room for the topic of a quiz: `Квиз 4 (О-символика)`; the plain name for the rest. */
+export const prepTopicName = (name: string, topic?: string): string =>
+  topic === undefined || topic === "" ? name : `${name} (${topic})`;
 
 /** What the page holds: a test is about problems, a colloquium about theory and proofs, a quiz about a few problem types. */
 export const prepContents = (id: string): string => {

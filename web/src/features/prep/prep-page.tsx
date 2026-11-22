@@ -8,6 +8,7 @@ import {
   prepContents,
   prepGoal,
   prepName,
+  prepTopicName,
   prepWhen,
 } from "#web/domain/preps.ts";
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
@@ -18,7 +19,7 @@ import { TicketGenerator } from "./ticket-generator.tsx";
 /**
 Preparation for a test (`prep/<course>/krN.md`: topics, methods, problems with hidden answers), a
 colloquium (`colloqN.md`: definitions, theorems, proof outlines) or a quiz (`quiz-<slug>.md`: a few
-problem types, named by `quiz_topic`). A page with a ticket bank
+problem types, numbered by `quiz_number`, topic `quiz_topic`). A page with a ticket bank
 (`colloqN-bank.yaml` → `bank` in the catalog) hosts the ticket generator in its section
 `sec:<prep>:generator` (in the PDF that section is a link to the site).
 */
@@ -29,7 +30,8 @@ export const Component = () => {
       .pathname.split("/")
       .findLast((part) => part !== "") ?? "";
   const prep = preps.find((entry) => entry.id === id) ?? notFound();
-  const name = prepName(prep.id, prep.topic);
+  const name = prepName(prep.id, prep.quizNumber);
+  const noteName = prepTopicName(name, prep.topic);
   useDocumentTitle(prep.title); // same title as the page shell (`spa-fallback.ts`)
   const hasBank = prep.bank === true;
   const slots = useMemo(
@@ -55,10 +57,10 @@ export const Component = () => {
       downloads={cheatsheetDocs(prep)}
       note={
         isDated(prep)
-          ? `${name} — ${prepWhen(prep)}. ${prepContents(prep.id)}`
-          : `${name}. ${prepContents(prep.id)}`
+          ? `${noteName} — ${prepWhen(prep)}. ${prepContents(prep.id)}`
+          : `${noteName}. ${prepContents(prep.id)}`
       }
-      pageName={prepGoal(prep.id, prep.topic)}
+      pageName={prepGoal(prep.id, prep.quizNumber)}
       slots={slots}
       tocCaption={name}
       variant="prep"

@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build  # noqa: E402
+import curriculum  # noqa: E402
 import ticket_bank  # noqa: E402
 
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
@@ -593,11 +594,17 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     kind = build.prep_kind(exam)
     colloq = kind == "colloq"
     event = {"colloq": "коллоквиума", "quiz": "квиза"}.get(kind, "КР")
-    # тема квиза — его имя на сайте («Квиз: О-символика»): номеров у квизов нет
+    # номер квиза — из таблицы планирования курса, его имя на сайте («Квиз 4»); тема — в скобках
     if kind == "quiz" and meta.get("quiz_topic") in (None, ""):
-        rep.err(rel, "в front matter нет поля quiz_topic (тема квиза: на сайте «Квиз: <тема>»)")
+        rep.err(rel, "в front matter нет поля quiz_topic (тема квиза: на сайте «Квиз 4 (<тема>)»)")
     elif kind != "quiz" and meta.get("quiz_topic") not in (None, ""):
         rep.err(rel, "поле quiz_topic — только у квиза (prep/<course>/quiz-<slug>.md)")
+    number = meta.get("quiz_number")
+    if kind == "quiz":
+        if type(number) is not int or number < 1:
+            rep.err(rel, "quiz_number — обязательное целое число > 0 (номер квиза из таблицы планирования context/courses/<курс>.md)")
+    elif number not in (None, ""):
+        rep.err(rel, "поле quiz_number — только у квиза (prep/<course>/quiz-<slug>.md)")
     dates: dict[str, dt.date] = {}
     for k in ("date", "active_until", "highlight_from"):
         value = meta.get(k)
@@ -863,6 +870,13 @@ def main() -> int:
             page = p.with_name(p.name.removesuffix(ticket_bank.BANK_SUFFIX) + ".md")
             if not page.exists():
                 rep.err(p.relative_to(build.SRC).as_posix(), f"банк билетов без страницы {page.name}")
+
+    plan = build.SRC / curriculum.FILE
+    if not wanted and plan.exists():
+        try:
+            curriculum.export(plan)
+        except curriculum.CurriculumError as e:
+            rep.err(curriculum.FILE.as_posix(), str(e))
 
     for line in rep.errors + rep.warnings:
         print(line)

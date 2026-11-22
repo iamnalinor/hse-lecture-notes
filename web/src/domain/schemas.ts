@@ -18,8 +18,8 @@ export type LectureEntry = z.infer<typeof LectureEntrySchema>;
 
 /**
 A page that prepares for a test, a colloquium or a quiz (`prep/<course>/krN.md`, `colloqN.md`,
-`quiz-<slug>.md`): `id` is `kr1`, `colloq1`, `quiz-o-symbols`…, `topic` — the topic of a quiz (front
-matter `quiz_topic`, only quizzes have it), `date` is the test day (for a colloquium — the first day of its window),
+`quiz-<slug>.md`): `id` is `kr1`, `colloq1`, `quiz-o-symbols`…, `quizNumber` and `topic` — the number and topic
+of a quiz (front matter `quiz_number`, `quiz_topic`, only quizzes have them), `date` is the test day (for a colloquium — the first day of its window),
 `activeUntil` — the last day the test is shown as upcoming (front matter `active_until`, the test day
 by default), `highlightFrom` — the first day the prep is drawn in the accent colour, through `activeUntil`
 (front matter `highlight_from`, two weeks before `date` by default), `cheatsheets` — print variants of its cheatsheet PDF (`1side`, `2side`), empty when there is none,
@@ -37,6 +37,7 @@ const PrepEntrySchema = z
     date: z.string().nullish(),
     highlight_from: z.string().nullish(),
     id: z.string(),
+    quiz_number: z.number().nullish(),
     quiz_topic: z.string().nullish(),
     title: z.string(),
   })
@@ -45,12 +46,14 @@ const PrepEntrySchema = z
       active_until: activeUntil,
       date,
       highlight_from: highlightFrom,
+      quiz_number: quizNumber,
       quiz_topic: quizTopic,
       ...rest
     }) => {
-      // only a quiz has a topic (`prepName`): «Квиз: О-символика»
+      // only a quiz has a number and a topic (`prepName`): «Квиз 4», «Квиз 4 (О-символика)»
       const named = {
         ...rest,
+        ...(!(quizNumber === null || quizNumber === undefined) && { quizNumber }),
         ...(!(quizTopic === null || quizTopic === undefined) && { topic: quizTopic }),
       };
       // No `date`: the event is not announced yet, the page is there to study from in advance.
@@ -72,6 +75,8 @@ export const CatalogSchema = z.object({
   /** Courses that have the «План учебной дисциплины» page (`program/<course>.md`). */
   programs: z.array(z.string()).default([]),
 });
+
+export type Catalog = z.infer<typeof CatalogSchema>;
 
 const LabelTypeSchema = z.enum([
   "axiom",

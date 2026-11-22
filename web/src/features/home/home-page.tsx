@@ -7,6 +7,7 @@ import { CoursesSection } from "./courses-section.tsx";
 import { HomeHero } from "./home-hero.tsx";
 import { type RecentItem, recentItems, RecentLectures } from "./recent-lectures.tsx";
 import { SectionTitle } from "./section-title.tsx";
+import { StudyPlanSection } from "./study-plan.tsx";
 
 export const Component = () => {
   const catalog = useCatalog();
@@ -31,6 +32,7 @@ export const Component = () => {
         </div>
         <RecentLectures items={recentItems(all, today)} />
       </section>
+      <StudyPlanSection today={today} />
     </div>
   );
 };

@@ -85,9 +85,11 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
             to={paths.prep(course.id, next.id)}
           >
             <small className={`mb-0.5 block text-caption ${isAccent ? "" : "text-muted"}`}>
-              {prepName(next.id, next.topic)} · {prepWhen(next)}
+              {prepName(next.id, next.quizNumber)} · {prepWhen(next)}
             </small>
-            <span className="text-body/snug font-semibold">{prepGoal(next.id, next.topic)} →</span>
+            <span className="text-body/snug font-semibold">
+              {prepGoal(next.id, next.quizNumber)} →
+            </span>
           </Link>
         )}
       </div>

@@ -64,11 +64,15 @@
   --org-fill: color-mix(in srgb, var(--org) 80%, var(--ink));
   --org-fill-hover: color-mix(in srgb, var(--org) 70%, var(--ink));
   --on-org-fill: var(--paper);
+  /* Study-plan bars: the share of the category colour in the strongest bar. Dark ink stays readable on a
+  light theme's 72%, light ink on the dark theme's 50% (both ≥ 4.5:1). */
+  --plan-max: 72%;
 }
 
 :root[data-theme="dark"] {
   --org-fill: var(--org);
   --org-fill-hover: color-mix(in srgb, var(--org) 85%, var(--ink));
+  --plan-max: 50%;
 }
 
 /*

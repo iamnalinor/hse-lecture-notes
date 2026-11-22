@@ -5,7 +5,7 @@ import type { LectureEntry } from "#web/domain/schemas.ts";
 import { shortDate } from "#web/domain/dates.ts";
 import { paths } from "#web/domain/paths.ts";
 import { PdfLink } from "#web/shared/ui/pdf-link.tsx";
-import { SyncedMark } from "#web/shared/ui/synced-mark.tsx";
+import { SyncedTitle } from "#web/shared/ui/synced-mark.tsx";
 
 type Props = {
   readonly course: string;
@@ -50,9 +50,8 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
                 className="text-body/snug text-ink no-underline hover:text-def"
                 to={paths.lecture(course, lecture.weekId)}
               >
-                {lecture.title}
+                <SyncedTitle synced={lecture.synced} title={lecture.title} />
               </Link>
-              {lecture.synced && <SyncedMark />}
               {/* The date column does not fit on a phone: the date moves under the title. */}
               <span className="mt-1 block text-footnote text-muted tabular-nums sm:hidden">
                 {shortDate(lecture.date)}

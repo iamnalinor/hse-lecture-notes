@@ -32,7 +32,12 @@ const SKIPPED = new Set([
 ]);
 // Per-page copies of the shell (`algebra/…/index.html`) for static hosting: navigations get the one shell.
 const PAGE_SHELL = /^(?!data\/).+\/index\.html$/u;
-const SHARED_DATA = new Set(["data/courses.json", "data/index.json", "data/katex-macros.json"]);
+const SHARED_DATA = new Set([
+  "data/courses.json",
+  "data/curriculum.json",
+  "data/index.json",
+  "data/katex-macros.json",
+]);
 // Browsers that run service workers all take woff2: the woff/ttf fallbacks of KaTeX are not precached.
 const PRECACHED_ASSET = /^assets\/.+\.(?:css|js|woff2)$/u;
 // data/<course>/<doc>/… (a lecture, the theory, the program, a prep)

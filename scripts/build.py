@@ -11,7 +11,7 @@
     build/pdf/<course>/krN-cheatsheet-<variant>.pdf
                                         читлисты из prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex
     build/site-data/                    данные для будущего сайта + preview-страницы
-        index.json, courses.json, katex-macros.json, search.json
+        index.json, courses.json, katex-macros.json, search.json, curriculum.json
         <course>/<week_id>/fragment.html, meta.json, fig/*.svg, index.html (preview)
         <course>/theory/..., <course>/program/...
         <course>/<prep>/bank.json       банк генератора билетов (prep/<course>/<prep>-bank.yaml)
@@ -41,6 +41,7 @@ import pypandoc
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import curriculum  # noqa: E402
 import ticket_bank  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,7 +77,7 @@ def tex_env() -> dict[str, str]:
 
 
 # Подготовка к контрольной (krN), коллоквиуму (colloqN) или квизу (quiz-<slug>): имя файла = id
-# страницы на сайте. У квизов курса нет известной нумерации, поэтому id — по теме: quiz-o-symbols.
+# страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
 # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)|(?P<quiz>quiz)-[a-z0-9][a-z0-9-]*")
 PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2", "quiz-o-symbols")
@@ -662,6 +663,17 @@ def highlight_default(date: str | None) -> str | None:
     return (day - dt.timedelta(days=HIGHLIGHT_DAYS)).isoformat()
 
 
+def export_curriculum() -> None:
+    """program/curriculum-2026-y1.yaml → curriculum.json (диаграмма учебного плана внизу главной; файл необязателен)."""
+    path = SRC / curriculum.FILE
+    if not path.exists():
+        return
+    try:
+        write_json(SITE / "curriculum.json", curriculum.export(path))
+    except curriculum.CurriculumError as e:
+        raise BuildError(f"{curriculum.FILE.as_posix()}: {e}") from e
+
+
 def write_site_data(index: dict, metas: list[dict]) -> None:
     SITE.mkdir(parents=True, exist_ok=True)
     write_json(SITE / "index.json", index["labels"])
@@ -683,8 +695,9 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                     # есть банк билетов → на странице генератор (bank.json рядом с fragment.html)
                     "bank": bool(m.get("bank")),
                 }
-                # тема квиза («О-символика»): из неё сайт пишет «Квиз: О-символика»; у КР поля нет
+                # номер и тема квиза: сайт пишет «Квиз 4», тема — в скобках рядом; у КР полей нет
                 | ({"quiz_topic": m["quiz_topic"]} if m.get("quiz_topic") else {})
+                | ({"quiz_number": int(m["quiz_number"])} if m.get("quiz_number") else {})
             )
     write_json(
         SITE / "courses.json",
@@ -697,6 +710,7 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
         },
     )
     write_json(SITE / "katex-macros.json", katex_macros())
+    export_curriculum()
     search = []
     for m in sorted(metas, key=lambda m: (m["course"], m["kind"], m["lecture"])):
         fragment = (SITE / m["course"] / m["week_id"] / "fragment.html").read_text(encoding="utf-8")
