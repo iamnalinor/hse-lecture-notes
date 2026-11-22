@@ -58,13 +58,17 @@ describe("StudyPlan", () => {
       "28 ч · 3,5 ч/нед — 43% часов модуля · 8 кредитов за год",
     ).parentElement;
     expect(algebra?.children).toHaveLength(4);
-    expect(algebra?.parentElement).toHaveStyle({ gridColumn: "2 / span 4" });
+    // labels → bar wrapper → grid cell of the run
+    expect(algebra?.parentElement?.parentElement).toHaveStyle({ gridColumn: "2 / span 4" });
     // gap: modules 1, then 3–4 → two bars
     const gap = screen.getAllByTitle(/1 кредит за год/u);
     expect(gap).toHaveLength(3);
     expect(gap[0]?.parentElement).not.toBe(gap[1]?.parentElement);
     expect(gap[1]?.parentElement).toBe(gap[2]?.parentElement);
-    expect(algebra?.style.background).toContain("linear-gradient");
+    // the coloured bar is the labels' sibling
+    expect((algebra?.previousElementSibling as HTMLElement | null)?.style.background).toContain(
+      "linear-gradient",
+    );
   });
 
   it("keeps «один из N» for the seminar in the tooltip only, and shows the full category names", () => {
