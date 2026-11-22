@@ -11,7 +11,8 @@ export const PREP_IDS = ["kr1", "kr2", "kr3", "colloq1", "colloq2"] as const;
 
 type DatedPrep = Extract<PrepEntry, { readonly date: string }>;
 
-const isDated = (prep: PrepEntry): prep is DatedPrep => "date" in prep;
+/** A prep with a day; one without (`undatedPreps`) never names a day anywhere on the site. */
+export const isDated = (prep: PrepEntry): prep is DatedPrep => "date" in prep;
 
 const PREP_ID = /^(?<kind>kr|colloq)(?<number>\d+)$/u;
 
@@ -88,14 +89,10 @@ export const cheatsheetDocs = (prep: PrepEntry): readonly PdfDoc[] =>
 When a prep is shown: a test — its day (`02.11`); a colloquium with a window — the whole window
 (`02.11–30.12`), so that in December the tile does not read like a past day.
 */
-export const prepWhen = (prep: PrepEntry): string => {
-  if (!isDated(prep)) {
-    return "дата не объявлена";
-  }
-  return parse(prep.id)?.colloq === true && prep.activeUntil !== prep.date
+export const prepWhen = (prep: DatedPrep): string =>
+  parse(prep.id)?.colloq === true && prep.activeUntil !== prep.date
     ? `${shortDate(prep.date)}–${shortDate(prep.activeUntil)}`
     : shortDate(prep.date);
-};
 
 /** The next day that matters: the first day while it is ahead, then the last active day. */
 const nextDay = (prep: DatedPrep, today: string): string =>

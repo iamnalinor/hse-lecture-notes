@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   cheatsheetDocs,
+  isDated,
   isHighlighted,
   isPrepId,
   isUpcoming,
@@ -215,6 +216,6 @@ describe("test preparation pages", () => {
     expect(upcomingPreps(preps, "2026-10-01").map((prep) => prep.id)).toStrictEqual(["kr1"]);
     expect(pastPreps(preps, "2026-11-20").map((prep) => prep.id)).toStrictEqual(["kr1"]);
     expect(undatedPreps(preps).map((prep) => prep.id)).toStrictEqual(["kr2"]);
-    expect(prepWhen(undated)).toBe("дата не объявлена");
+    expect(isDated(undated)).toBe(false);
   });
 });
