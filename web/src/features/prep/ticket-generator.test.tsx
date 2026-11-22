@@ -121,7 +121,7 @@ describe("TicketGenerator", () => {
     expect(document.querySelector(".katex")).not.toBeNull();
   });
 
-  it("draws only from the chosen topics, and «Ничего» leaves nothing to draw", async () => {
+  it("draws only from the chosen topics, and «Сбросить все» leaves nothing to draw", async () => {
     view();
     expect(await screen.findByText("Темы: все 2")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Определитель" }));
@@ -133,7 +133,7 @@ describe("TicketGenerator", () => {
     await newTicket();
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.queryByText("Теорема с доказательством")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Ничего" }));
+    await userEvent.click(screen.getByRole("button", { name: "Сбросить все" }));
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toHaveAccessibleDescription(
       "Выберите хотя бы одну тему.",

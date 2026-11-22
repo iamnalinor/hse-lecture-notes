@@ -23,7 +23,7 @@ type BulkProps = {
   readonly onChange: (chosen: ReadonlySet<string>) => void;
 };
 
-/** «Все» / «Ничего» as one segmented control: two halves of a pill, the one that would change nothing greyed. */
+/** «Выбрать все» / «Сбросить все» as one segmented control: two halves of a pill, the one that would change nothing greyed. */
 const BulkButtons = ({ chosen, onChange, topics }: BulkProps) => (
   <span className="inline-flex divide-x divide-rule overflow-hidden rounded-full border border-rule bg-card">
     <button
@@ -34,7 +34,7 @@ const BulkButtons = ({ chosen, onChange, topics }: BulkProps) => (
       }}
       type="button"
     >
-      Все
+      Выбрать все
     </button>
     <button
       className={BULK}
@@ -44,7 +44,7 @@ const BulkButtons = ({ chosen, onChange, topics }: BulkProps) => (
       }}
       type="button"
     >
-      Ничего
+      Сбросить все
     </button>
   </span>
 );
@@ -52,7 +52,7 @@ const BulkButtons = ({ chosen, onChange, topics }: BulkProps) => (
 /**
 Which topics a generated set may come from: all by default; a press turns one topic off or on (a
 turned-off chip is also struck through, not only paler). Always open and compact: a line with the
-count and «Все / Ничего», then small chips.
+count and «Выбрать все / Сбросить все», then small chips.
 */
 export const TopicFilter = ({ chosen, names, onChange, topics }: Props) => {
   const toggle = (topic: string): void => {
