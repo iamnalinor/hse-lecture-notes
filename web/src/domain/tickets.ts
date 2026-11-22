@@ -59,13 +59,35 @@ const drawParts = (draw: Draw, entries: TicketBank["ticket"]): readonly TicketPa
     return drawParts(draw, [...(pick(first.oneOf, draw.random) ?? []), ...rest]);
   }
   const questions = drawKind(draw, first.kind, first.count);
+  const tail = drawParts({ ...draw, taken: [...draw.taken, ...questions] }, rest);
+  if (questions.length === 0) {
+    // the chosen topics have nothing of this kind: the part is left out, not shown empty
+    return tail;
+  }
   const { kind, points, proofs, title } = first;
-  const part = { kind, points, proofs, questions, title };
-  return [part, ...drawParts({ ...draw, taken: [...draw.taken, ...questions] }, rest)];
+  return [{ kind, points, proofs, questions, title }, ...tail];
 };
 
-export const drawTicket = (bank: TicketBank, random: Random = Math.random): readonly TicketPart[] =>
-  drawParts({ bank, random, taken: [] }, bank.ticket);
+/**
+`topics` narrows the draw to questions of these topics (the topic filter of the generator); parts
+with no question left are dropped. Without it — the whole bank.
+*/
+export const drawTicket = (
+  bank: TicketBank,
+  random: Random = Math.random,
+  topics?: ReadonlySet<string>,
+): readonly TicketPart[] => {
+  const questions =
+    topics === undefined
+      ? bank.questions
+      : bank.questions.filter((question) => topics.has(question.topic));
+  return drawParts({ bank: { ...bank, questions }, random, taken: [] }, bank.ticket);
+};
+
+/** Topics that have questions, in the order of their first question (the page's order). */
+export const bankTopics = (bank: TicketBank): readonly string[] => [
+  ...new Set(bank.questions.map((question) => question.topic)),
+];
 
 /** A proof outline of the page itself: `rem:<prep>:proof-…` («ход доказательства»). */
 const isOwnOutline = (ref: TicketRef, prepId: string): boolean =>

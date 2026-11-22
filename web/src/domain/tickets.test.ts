@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { TicketBank, TicketQuestion } from "./schemas.ts";
 
-import { drawTicket, refsWithProof } from "./tickets.ts";
+import { bankTopics, drawTicket, refsWithProof } from "./tickets.ts";
 
 const question = (id: string, kind: string, topic: string): TicketQuestion => ({
   answer: "",
@@ -120,6 +120,30 @@ describe("drawTicket", () => {
 });
 
 const ref = (doc: string, id: string) => ({ doc, id });
+
+describe("topic filter", () => {
+  it("draws only from the chosen topics and drops parts left without questions", () => {
+    const bank: TicketBank = {
+      ...BANK,
+      questions: [...BANK.questions, question("x1", "extra", "x")],
+      ticket: [
+        ...BANK.ticket,
+        { count: 1, kind: "extra", points: "", proofs: false, title: "Доп." },
+      ],
+    };
+    const parts = drawTicket(bank, seeded(3), new Set(["a"]));
+    expect(parts.map((part) => part.kind)).toStrictEqual(["proof", "definition"]);
+    expect(parts.flatMap((part) => part.questions).map((q) => q.topic)).toStrictEqual([
+      "a",
+      "a",
+      "a",
+    ]);
+  });
+
+  it("lists the topics of the bank in the order of their questions", () => {
+    expect(bankTopics(BANK)).toStrictEqual(["a", "b", "c", "d"]);
+  });
+});
 
 describe("refsWithProof", () => {
   it("drops the lecture proof of a statement the page outlines", () => {

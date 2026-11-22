@@ -283,6 +283,11 @@ def check_texts(rep: Report, rel: str, blocks: list) -> None:
                     rel,
                     f"символов {''.join(missing)} нет в шрифте PDF (будут квадраты): пиши их в формуле, например $\\Rightarrow$",
                 )
+        if b.get("t") == "Header" and any(
+            n["t"] == "Str" and "$" in n["c"] for n in iter_nodes(b["c"][2])
+        ):
+            # заголовок уходит в оглавление и индекс как «текст $формула$»: литеральный $ там не отличить
+            rep.err(rel, f"литеральный знак $ в заголовке «{stringify(b['c'][2])}»: перефразируй без него")
         prose = re.sub(r"\$[^$]*\$", "", text_of_block(b, code=False))
         if "!" in prose:
             rep.warn(

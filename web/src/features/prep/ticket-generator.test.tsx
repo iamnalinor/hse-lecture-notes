@@ -109,6 +109,23 @@ describe("TicketGenerator", () => {
     expect(document.querySelector(".katex")).not.toBeNull();
   });
 
+  it("draws only from the chosen topics, and «Ничего» leaves nothing to draw", async () => {
+    view();
+    await userEvent.click(await screen.findByText("Темы: все (2)"));
+    await userEvent.click(screen.getByRole("button", { name: "Определитель" }));
+    expect(screen.getByRole("button", { name: "Определитель" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByText("Темы: 1 из 2")).toBeInTheDocument();
+    await newTicket();
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.queryByText("Теорема с доказательством")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Все" }));
+    await userEvent.click(screen.getByRole("button", { name: "Ничего" }));
+    expect(screen.getByRole("button", { name: "Сгенерировать" })).toBeDisabled();
+  });
+
   it("links each question to its section of the page", async () => {
     view();
     await newTicket();

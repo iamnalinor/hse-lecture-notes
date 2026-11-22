@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { TicketBank } from "#web/domain/schemas.ts";
 
 import { ticketBankQuery } from "#web/api/queries.ts";
 import { plural } from "#web/domain/text.ts";
-import { drawTicket, type TicketPart } from "#web/domain/tickets.ts";
+import { bankTopics, drawTicket, type TicketPart } from "#web/domain/tickets.ts";
 import { BUTTON_PRIMARY } from "#web/shared/ui/button.ts";
 
 import { TicketQuestion } from "./ticket-question.tsx";
+import { TopicFilter } from "./topic-filter.tsx";
 
 type Props = { readonly course: string; readonly prepId: string };
 
@@ -81,6 +82,10 @@ in place. Nothing goes into the URL: a ticket lives until the next one.
 export const TicketGenerator = ({ course, prepId }: Props) => {
   const { data: bank, isError } = useQuery(ticketBankQuery(course, prepId));
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
+  const topics = useMemo(() => (bank === undefined ? [] : bankTopics(bank)), [bank]);
+  // `undefined` — all topics: the bank is not loaded yet when the state is made
+  const [picked, setPicked] = useState<ReadonlySet<string> | undefined>(undefined);
+  const chosen = picked ?? new Set(topics);
 
   return (
     <div
@@ -97,11 +102,11 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
         </div>
         <button
           className={`${BUTTON_PRIMARY} min-h-11`}
-          disabled={bank === undefined}
+          disabled={bank === undefined || chosen.size === 0}
           onClick={() => {
             if (bank !== undefined) {
               setDrawn((previous) => ({
-                parts: drawTicket(bank),
+                parts: drawTicket(bank, Math.random, chosen),
                 serial: (previous?.serial ?? 0) + 1,
               }));
             }
@@ -111,6 +116,9 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
           Сгенерировать
         </button>
       </div>
+      {bank !== undefined && topics.length > 1 && (
+        <TopicFilter chosen={chosen} names={bank.topics} onChange={setPicked} topics={topics} />
+      )}
       <p aria-live="polite" className="sr-only">
         {drawn === undefined ? "" : announce(drawn, prepId)}
       </p>
