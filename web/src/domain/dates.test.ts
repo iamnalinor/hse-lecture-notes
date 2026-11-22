@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, dayMonth, shortDate, todayIso } from "./dates.ts";
+import { addDays, dayMonth, shortDate, todayIso, weekStart } from "./dates.ts";
 
 describe("dates", () => {
   it("shortens an ISO date to day.month", () => {
@@ -34,5 +34,14 @@ describe("dates", () => {
     expect(addDays("2026-12-25", 14)).toBe("2027-01-08");
     expect(addDays("not a date", -14)).toBe("not a date");
     expect(addDays("2027-03-10", -14)).toBe("2027-02-24");
+  });
+});
+
+describe("weekStart", () => {
+  it("finds the Monday of the week", () => {
+    expect(weekStart("2026-11-20")).toBe("2026-11-16");
+    expect(weekStart("2026-11-16")).toBe("2026-11-16");
+    expect(weekStart("2026-11-22")).toBe("2026-11-16");
+    expect(weekStart("x")).toBe("x");
   });
 });

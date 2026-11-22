@@ -13,7 +13,7 @@ title: Ориентация, векторное и смешанное произ
 
 - определять, правая или левая тройка векторов, по рисунку и по знаку смешанного произведения;
 - вычислять векторное произведение в координатах правого ортонормированного базиса, находить площади параллелограмма и треугольника и проверять коллинеарность;
-- упрощать выражения с векторными произведениями, пользуясь антикоммутативностью и линейностью;
+- упрощать выражения с векторными произведениями, пользуясь антикоммутативностью и линейностью, доказывать векторные тождества и решать уравнение $[\vec a, \vec x] = \vec b$;
 - вычислять смешанное произведение, объёмы параллелепипеда и тетраэдра, высоту, проверять компланарность — в том числе в произвольном базисе;
 - находить координаты вектора по координатам его начала и конца и координаты точки, делящей отрезок в данном отношении.
 
@@ -189,7 +189,10 @@ $$\langle \alpha \vec a_1 + \beta \vec a_2, \vec b, \vec c \rangle = \langle \ve
 
 ::: {.theorem #thm:lec13:cross-props title="свойства векторного произведения"}
 1. *Антикоммутативность:* $[\vec b, \vec a] = -[\vec a, \vec b]$.
-2. *Линейность:* $[\alpha \vec a_1 + \beta \vec a_2, \vec b] = \alpha [\vec a_1, \vec b] + \beta [\vec a_2, \vec b]$, и так же по второму аргументу.
+2. *Однородность:* $[\lambda \vec a, \vec b] = \lambda [\vec a, \vec b]$.
+3. *Дистрибутивность:* $[\vec a_1 + \vec a_2, \vec b] = [\vec a_1, \vec b] + [\vec a_2, \vec b]$.
+
+По второму аргументу однородность и дистрибутивность тоже верны. Вместе пункты 2 и 3 — *линейность*: $[\alpha \vec a_1 + \beta \vec a_2, \vec b] = \alpha [\vec a_1, \vec b] + \beta [\vec a_2, \vec b]$.
 :::
 
 ::: proof
@@ -197,9 +200,13 @@ $$\langle \alpha \vec a_1 + \beta \vec a_2, \vec b, \vec c \rangle = \langle \ve
 
 1. Для любого $\vec c$: $([\vec b, \vec a] + [\vec a, \vec b], \vec c) = \langle \vec b, \vec a, \vec c \rangle + \langle \vec a, \vec b, \vec c \rangle = 0$ по кососимметричности. Значит, $[\vec b, \vec a] + [\vec a, \vec b] = \vec 0$.
 
-2. Пусть $\vec d = [\alpha \vec a_1 + \beta \vec a_2, \vec b] - \alpha [\vec a_1, \vec b] - \beta [\vec a_2, \vec b]$. По линейности скалярного произведения и смешанного произведения по первому аргументу для любого $\vec c$
-$$(\vec d, \vec c) = \langle \alpha \vec a_1 + \beta \vec a_2, \vec b, \vec c \rangle - \alpha \langle \vec a_1, \vec b, \vec c \rangle - \beta \langle \vec a_2, \vec b, \vec c \rangle = 0,$$
-поэтому $\vec d = \vec 0$. Линейность по второму аргументу следует из линейности по первому и антикоммутативности.
+2. Пусть $\vec d = [\lambda \vec a, \vec b] - \lambda [\vec a, \vec b]$. По линейности скалярного произведения и смешанного произведения по первому аргументу для любого $\vec c$
+$$(\vec d, \vec c) = \langle \lambda \vec a, \vec b, \vec c \rangle - \lambda \langle \vec a, \vec b, \vec c \rangle = 0,$$
+поэтому $\vec d = \vec 0$.
+
+3. Так же для $\vec d = [\vec a_1 + \vec a_2, \vec b] - [\vec a_1, \vec b] - [\vec a_2, \vec b]$: $(\vec d, \vec c) = \langle \vec a_1 + \vec a_2, \vec b, \vec c \rangle - \langle \vec a_1, \vec b, \vec c \rangle - \langle \vec a_2, \vec b, \vec c \rangle = 0$.
+
+По второму аргументу: $[\vec a, \lambda \vec b] = -[\lambda \vec b, \vec a] = -\lambda [\vec b, \vec a] = \lambda [\vec a, \vec b]$ по пунктам 1 и 2; дистрибутивность — так же по пунктам 1 и 3.
 :::
 
 На числах: если $|\vec a| = 2$, $|\vec b| = 3$, $\angle(\vec a, \vec b) = \frac{\pi}{6}$, то площадь параллелограмма на векторах $\vec a + 2\vec b$ и $3\vec a - \vec b$ вычисляется без координат. Раскроем по линейности: $[\vec a + 2\vec b, 3\vec a - \vec b] = 3[\vec a, \vec a] - [\vec a, \vec b] + 6[\vec b, \vec a] - 2[\vec b, \vec b] = -[\vec a, \vec b] - 6[\vec a, \vec b] = -7[\vec a, \vec b]$. Площадь $7 |[\vec a, \vec b]| = 7 \cdot 2 \cdot 3 \cdot \frac12 = 21$.
@@ -377,6 +384,36 @@ $\langle \vec a, \vec b, \vec c \rangle = \begin{vmatrix} 1 & 2 & \lambda \\ 0 &
 *Ключ:* раскрываем по линейности, следя за порядком: $[2\vec a - \vec b, \vec a + 3\vec b] = 2[\vec a, \vec a] + 6[\vec a, \vec b] - [\vec b, \vec a] - 3[\vec b, \vec b] = 6[\vec a, \vec b] + [\vec a, \vec b] = 7[\vec a, \vec b]$ (теорема [-@thm:lec13:cross-props]). Угол: $\cos \varphi = \frac{6}{3 \cdot 4} = \frac12$, $\sin \varphi = \frac{\sqrt3}{2}$, $|[\vec a, \vec b]| = 3 \cdot 4 \cdot \frac{\sqrt3}{2} = 6\sqrt3$. Ответ $7 \cdot 6\sqrt3 = 42\sqrt3$.
 
 *Ответ:* $42\sqrt3$.
+:::
+
+::: {.problem #prob:lec13:double-cross}
+Докажите тождество $[\vec a, [\vec b, \vec c]] = \vec b \, (\vec a, \vec c) - \vec c \, (\vec a, \vec b)$ (формула двойного векторного произведения).
+:::
+
+::: solution
+*Ключ:* обе части — векторы, определённые без координат, поэтому достаточно сравнить их координаты в одном правом ортонормированном базисе. По [-@eq:lec13:cross-coords] $[\vec b, \vec c] = (b_2 c_3 - b_3 c_2, \; b_3 c_1 - b_1 c_3, \; b_1 c_2 - b_2 c_1)$, и первая координата левой части
+$$a_2 (b_1 c_2 - b_2 c_1) - a_3 (b_3 c_1 - b_1 c_3) = b_1 (a_2 c_2 + a_3 c_3) - c_1 (a_2 b_2 + a_3 b_3).$$
+Прибавим и вычтем $a_1 b_1 c_1$: получится $b_1 (a_1 c_1 + a_2 c_2 + a_3 c_3) - c_1 (a_1 b_1 + a_2 b_2 + a_3 b_3) = b_1 (\vec a, \vec c) - c_1 (\vec a, \vec b)$ — первая координата правой части. Формула [-@eq:lec13:cross-coords] не меняется при циклической замене индексов $1 \to 2 \to 3 \to 1$, поэтому вторая и третья координаты сравниваются той же выкладкой со сдвинутыми индексами.
+
+Проверка на базисных векторах: $[\vec i, [\vec i, \vec j]] = [\vec i, \vec k] = -\vec j$ (замечание [-@rem:lec13:not-associative]), а правая часть равна $\vec i \, (\vec i, \vec j) - \vec j \, (\vec i, \vec i) = -\vec j$.
+:::
+
+::: {.problem #prob:lec13:cross-equation}
+Пусть $\vec a \ne \vec 0$. (а) При каком условии на $\vec b$ уравнение $[\vec a, \vec x] = \vec b$ имеет решение? Найдите все его решения. (б) Решите уравнение при $\vec a = (1, 1, 0)$, $\vec b = (1, -1, 2)$.
+:::
+
+::: solution
+(а) *Необходимость.* Вектор $[\vec a, \vec x]$ перпендикулярен $\vec a$ (определение [-@def:lec13:cross]), поэтому решение возможно только при $(\vec a, \vec b) = 0$.
+
+*Достаточность.* *Ключ:* решение ищем в виде $\vec x_0 = \mu [\vec b, \vec a]$. По тождеству из задачи [-@prob:lec13:double-cross] $[\vec a, [\vec b, \vec a]] = \vec b \, (\vec a, \vec a) - \vec a \, (\vec a, \vec b) = |\vec a|^2 \vec b$, так как $(\vec a, \vec b) = 0$. Значит, $\vec x_0 = \frac{[\vec b, \vec a]}{|\vec a|^2}$ — решение.
+
+*Все решения.* Если $\vec x$ — решение, то по линейности $[\vec a, \vec x - \vec x_0] = \vec b - \vec b = \vec 0$, и $\vec x - \vec x_0$ коллинеарен $\vec a$ (утверждение [-@prop:lec13:collinear]), то есть $\vec x - \vec x_0 = t \vec a$ (утверждение [-@prop:lec12:dependence-geometry], $\vec a \ne \vec 0$). Обратно, $[\vec a, \vec x_0 + t \vec a] = \vec b + t [\vec a, \vec a] = \vec b$. Решения заполняют прямую, параллельную $\vec a$, — так же устроено общее решение неоднородной СЛАУ (теорема [-@thm:lec10:nonhomogeneous]): частное решение плюс решения уравнения $[\vec a, \vec x] = \vec 0$.
+
+*Ответ:* решение есть тогда и только тогда, когда $(\vec a, \vec b) = 0$; тогда $\vec x = \dfrac{[\vec b, \vec a]}{|\vec a|^2} + t \vec a$, $t \in \R$.
+
+(б) $(\vec a, \vec b) = 1 - 1 + 0 = 0$, решение есть. По [-@eq:lec13:cross-coords] $[\vec b, \vec a] = \big((-1) \cdot 0 - 2 \cdot 1, \; 2 \cdot 1 - 1 \cdot 0, \; 1 \cdot 1 - (-1) \cdot 1\big) = (-2, 2, 2)$, $|\vec a|^2 = 2$, $\vec x_0 = (-1, 1, 1)$. Проверка: $[\vec a, \vec x_0] = (1 \cdot 1 - 0 \cdot 1, \; 0 \cdot (-1) - 1 \cdot 1, \; 1 \cdot 1 - 1 \cdot (-1)) = (1, -1, 2) = \vec b$.
+
+*Ответ:* $\vec x = (-1 + t, \; 1 + t, \; 1)$, $t \in \R$.
 :::
 
 ::: {.problem #prob:lec13:any-basis}

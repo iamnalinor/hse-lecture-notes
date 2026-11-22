@@ -37,12 +37,15 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
   const isAccent = next !== undefined && isHighlighted(next, today);
   return (
     <article className="group relative row-span-3 grid cursor-pointer grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-rule bg-card transition-colors hover:bg-wash/50 has-[[data-tile]:hover]:bg-card has-[h3_a:focus-visible]:ring-2 has-[h3_a:focus-visible]:ring-brand">
-      <div className="flex min-h-32.5 flex-col border-b border-rule px-5.5 pt-5.5 pb-4.5">
-        <span aria-hidden="true" className="absolute top-4.5 right-5 text-title2 text-faint">
+      <div className="flex flex-col border-b border-rule px-4.5 pt-4 pb-3.5 sm:min-h-32.5 sm:px-5.5 sm:pt-5.5 sm:pb-4.5">
+        <span
+          aria-hidden="true"
+          className="absolute top-3.5 right-4.5 text-title3 text-faint sm:top-4.5 sm:right-5 sm:text-title2"
+        >
           <TexMath display={false} tex={course.symbol} />
         </span>
         <span className="text-footnote text-muted">{course.weekday}</span>
-        <h3 className="mt-2.5 mb-1.5 max-w-55 text-title2/tight font-bold">
+        <h3 className="mt-1.5 mb-1 max-w-55 text-title3/tight font-bold sm:mt-2.5 sm:mb-1.5 sm:text-title2/tight">
           <Link
             className="text-ink no-underline after:absolute after:inset-0 after:content-['']"
             to={paths.course(course.id)}
@@ -60,7 +63,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
           </span>
         </span>
       </div>
-      <div className="px-5.5 py-4 empty:p-0">
+      <div className="px-4.5 py-2.5 empty:p-0 sm:px-5.5 sm:py-4">
         {last !== undefined && (
           <Link
             className={`${TILE} -mx-3 text-ink hover:bg-wash`}
@@ -74,7 +77,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
           </Link>
         )}
       </div>
-      <div className="px-5.5 pb-4 empty:p-0">
+      <div className="px-4.5 pb-3 empty:p-0 sm:px-5.5 sm:pb-4">
         {next !== undefined && (
           <Link
             className={isAccent ? PREP_TILE.accent : PREP_TILE.neutral}

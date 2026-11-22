@@ -49,7 +49,7 @@ questions:
     text: Может ли сумма цифр числа $n^2$ равняться $2030$ при целом $n$?
     answer: >-
       Не может. Сумма цифр сравнима с числом по модулю $9$; квадраты по модулю $9$ дают
-      $0, 1, 4, 7$ (перебор $n \equiv 0, \pm 1, \pm 2, \pm 3, \pm 4$), а $2030 \equiv 2 + 0 + 3 + 0 = 5 \pmod 9$.
+      $0, 1, 4, 7$ (перебор $n \equiv 0, 1, 2, 3, 4$; у $9 - n$ тот же квадрат), а $2030 \equiv 2 + 0 + 3 + 0 = 5 \pmod 9$.
   - id: res-quadratic-5
     kind: residues
     topic: residues
@@ -63,7 +63,7 @@ questions:
     text: Докажите, что уравнение $x^2 - 5y^2 = 2027$ не имеет решений в целых числах.
     answer: >-
       По модулю $5$: $x^2 \equiv 2027 \equiv 2$, а квадраты по модулю $5$ дают только $0, 1, 4$
-      (перебор $x \equiv 0, \pm 1, \pm 2$).
+      (перебор $x \equiv 0, 1, 2, 3, 4$: $x^2 \equiv 0, 1, 4, 4, 1$).
   - id: res-power2-7
     kind: residues
     topic: residues
@@ -313,9 +313,9 @@ questions:
   - id: sys-crt-8-9-5
     kind: systems
     topic: systems
-    text: Решите систему $x \equiv 3 \pmod 8$, $x \equiv -2 \pmod 9$, $x \equiv 4 \pmod 5$.
+    text: Решите систему $x \equiv 3 \pmod 8$, $x \equiv 7 \pmod 9$, $x \equiv 4 \pmod 5$.
     answer: >-
-      $x \equiv 259 \pmod{360}$. Подстановкой: $x = 3 + 8t$, $8t \equiv -5 \pmod 9$, $-t \equiv 4$, $t \equiv 5$,
+      $x \equiv 259 \pmod{360}$. Подстановкой: $x = 3 + 8t$, $8t \equiv 7 - 3 = 4 \pmod 9$; $8^2 = 64 \equiv 1$, поэтому $t \equiv 8 \cdot 4 = 32 \equiv 5$,
       $x = 43 + 72s$; $43 + 72s \equiv 3 + 2s \equiv 4 \pmod 5$, $s \equiv 3$, $x = 259$.
 
   # ------------------------------------------------------------------ 6. множества
