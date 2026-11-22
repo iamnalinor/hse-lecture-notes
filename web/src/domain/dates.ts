@@ -23,6 +23,16 @@ export const addDays = (iso: string, days: number): string => {
   return Number.isNaN(time) ? iso : new Date(time + days * DAY_MS).toISOString().slice(0, 10);
 };
 
+/** The Monday of the ISO day's week: `2026-11-20` (Fri) → `2026-11-16`. Not a date → as is. */
+export const weekStart = (iso: string): string => {
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) {
+    return iso;
+  }
+  const weekday = (new Date(time).getUTCDay() + 6) % 7;
+  return addDays(iso, -weekday);
+};
+
 const MOSCOW_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" });
 
 /** Today in Moscow, where lectures and tests take place, wherever the reader is: `2026-10-25`. */

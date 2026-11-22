@@ -6,7 +6,7 @@ transition: a fade on hover runs while the page scrolls under a resting cursor a
 to leave a darker copy of itself behind.
 */
 const BASE =
-  "inline-flex min-h-10 cursor-pointer pointer-coarse:min-h-11 items-center gap-2 rounded-md px-4 text-subhead font-semibold no-underline disabled:cursor-default disabled:opacity-50";
+  "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-3.5 text-subhead sm:min-h-10 sm:px-4 font-semibold no-underline disabled:cursor-default disabled:opacity-50";
 
 export const BUTTON_PRIMARY = `${BASE} bg-ink text-paper hover:bg-ink/85`;
 
