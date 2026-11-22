@@ -1,0 +1,159 @@
+import type { SearchHit } from "#web/domain/search.ts";
+
+import { CloseIcon, SearchIcon } from "#web/shared/ui/icons.tsx";
+
+import { resultId, SearchResults } from "./search-results.tsx";
+
+const isMac = (): boolean => /Mac|iPhone|iPad/u.test(navigator.userAgent);
+
+type FieldProps = {
+  readonly active: number;
+  readonly fieldRef: React.RefObject<HTMLInputElement | null>;
+  readonly hasPanel: boolean;
+  readonly isTabbable: boolean;
+  readonly onClear: () => void;
+  readonly onFocus: () => void;
+  readonly onKeyDown: (event: React.KeyboardEvent) => void;
+  readonly onQuery: (query: string) => void;
+  readonly query: string;
+};
+
+export const SearchField = ({
+  active,
+  fieldRef,
+  hasPanel,
+  isTabbable,
+  onClear,
+  onFocus,
+  onKeyDown,
+  onQuery,
+  query,
+}: FieldProps) => (
+  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-72 lg:focus-within:w-104">
+    <SearchIcon size={16} />
+    <input
+      aria-activedescendant={hasPanel ? resultId(active) : undefined}
+      aria-autocomplete="list"
+      aria-controls={hasPanel ? "search-results" : undefined}
+      aria-expanded={hasPanel}
+      aria-label="Поиск по конспектам"
+      className="size-full min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-faint lg:text-subhead [&::-webkit-search-cancel-button]:hidden"
+      enterKeyHint="search"
+      onChange={(event) => {
+        onQuery(event.target.value);
+      }}
+      onFocus={onFocus}
+      onKeyDown={onKeyDown}
+      onPointerDown={onFocus}
+      placeholder="Поиск: «4.3», «миноры»"
+      ref={fieldRef}
+      role="combobox"
+      tabIndex={isTabbable ? undefined : -1}
+      type="search"
+      value={query}
+    />
+    {query === "" ? (
+      <kbd className="hidden rounded-sm border border-rule px-1.5 py-px text-caption whitespace-nowrap lg:inline">
+        {isMac() ? "⌘K" : "Ctrl K"}
+      </kbd>
+    ) : (
+      <button
+        aria-label="Очистить"
+        className="-my-px -mr-3 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted hover:text-ink lg:size-10"
+        onClick={onClear}
+        type="button"
+      >
+        <CloseIcon size={16} />
+      </button>
+    )}
+  </label>
+);
+
+type PanelProps = {
+  readonly active: number;
+  readonly hits: readonly SearchHit[];
+  readonly limit: number;
+  readonly onHover: (index: number) => void;
+  readonly onMore: () => void;
+  readonly onPick: () => void;
+  readonly status: string;
+};
+
+/** Right under the bar: full width on a phone, a dropdown under the field on a wide screen. */
+export const SearchPanel = ({
+  active,
+  hits,
+  limit,
+  onHover,
+  onMore,
+  onPick,
+  status,
+}: PanelProps) => (
+  <div className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border">
+    <p className="px-5 text-subhead text-muted not-empty:py-5" role="status">
+      {status}
+    </p>
+    {hits.length > 0 && (
+      <SearchResults
+        active={active}
+        hits={hits.slice(0, limit)}
+        onHover={onHover}
+        onPick={onPick}
+      />
+    )}
+    {hits.length > limit && (
+      <button
+        className="mx-2 mb-2 block min-h-11 w-[calc(100%-1rem)] cursor-pointer rounded-lg text-subhead text-muted hover:bg-wash hover:text-ink"
+        onClick={onMore}
+        type="button"
+      >
+        Показать ещё {hits.length - limit}
+      </button>
+    )}
+  </div>
+);
+
+type PhoneProps = {
+  readonly children: React.ReactNode;
+  readonly isOpen: boolean;
+  readonly magnifierRef: React.RefObject<HTMLButtonElement | null>;
+  readonly onCancel: () => void;
+  readonly onOpen: () => void;
+};
+
+/**
+On a phone the bar keeps one row: a magnifier button sits next to the courses, and a tap unfolds the
+field over that row with «Отмена» to fold it back. Folded, the field is `sr-only`, not
+`hidden`: the tap focuses it right away, so iOS raises the keyboard. From `md` up the field is always in the bar.
+*/
+export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: PhoneProps) => (
+  <>
+    <button
+      aria-label="Поиск"
+      className={`size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink md:hidden ${isOpen ? "hidden" : "flex"}`}
+      onClick={onOpen}
+      ref={magnifierRef}
+      type="button"
+    >
+      <SearchIcon size={20} />
+    </button>
+    <div
+      className={
+        isOpen
+          ? "max-md:absolute max-md:inset-0 max-md:z-50 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4"
+          : "max-md:sr-only"
+      }
+    >
+      {children}
+      {isOpen && (
+        <button
+          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink md:hidden"
+          onClick={onCancel}
+          type="button"
+        >
+          Отмена
+        </button>
+      )}
+    </div>
+  </>
+);

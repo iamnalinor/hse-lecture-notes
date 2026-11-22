@@ -20,8 +20,10 @@ type Props = {
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
   readonly note: string;
-  /** Crumb, title and TOC caption: «Теория», «План учебной дисциплины», «Подготовка к КР-1». */
+  /** Crumb and title: «Теория», «План учебной дисциплины», «Подготовка к КР-1». */
   readonly pageName: string;
+  /** TOC caption when the page name is long and would repeat the crumb right next to it: «КР-1». */
+  readonly tocCaption?: string;
   /** Content mounted at the end of a section, by its id: the ticket generator in `sec:colloq1:generator`. */
   readonly slots?: ReadonlyMap<string, ReactNode>;
   readonly variant: "prep" | "program" | "theory";
@@ -36,6 +38,7 @@ export const CourseDocument = ({
   note,
   pageName,
   slots,
+  tocCaption = pageName,
   variant,
 }: Props) => {
   const meta = useDocMeta(course, docId);
@@ -45,7 +48,9 @@ export const CourseDocument = ({
 
   return (
     <DocPage
-      aside={isWide && <DocToc caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />}
+      aside={
+        isWide && <DocToc caption={tocCaption} minutes={readingMinutes(html)} toc={meta.toc} />
+      }
       course={course}
       courseName={courseName}
       downloads={downloads}
@@ -61,7 +66,7 @@ export const CourseDocument = ({
         slots={slots}
         variant={variant}
       />
-      <TocSheet caption={pageName} minutes={readingMinutes(html)} toc={meta.toc} />
+      <TocSheet caption={tocCaption} minutes={readingMinutes(html)} toc={meta.toc} />
     </DocPage>
   );
 };

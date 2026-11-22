@@ -515,7 +515,18 @@ local function render_theory_block(div)
   div.identifier = 'reg-' .. ref .. (n > 1 and ('-' .. n) or '')
   -- определение в теории — обычный абзац «**Термин** — …», без плашки и номера
   if S.kind == 'theory' and t == 'definition' then
-    if FORMAT_LATEX then return div.content end
+    if FORMAT_LATEX then
+      -- якорь для ссылок внутри PDF: в начало первого абзаца, без пустой строки
+      local blocks = pandoc.Blocks(div.content)
+      local anchor = pandoc.RawInline('latex', '\\hypertarget{' .. div.identifier .. '}{}')
+      local first = blocks[1]
+      if first and (first.t == 'Para' or first.t == 'Plain') then
+        first.content:insert(1, anchor)
+      else
+        blocks:insert(1, pandoc.Plain { anchor })
+      end
+      return blocks
+    end
     return pandoc.Div(div.content, pandoc.Attr(div.identifier, { 'nb-def' }, { { 'data-ref', ref } }))
   end
   div.attributes['tag'] = entry.tag

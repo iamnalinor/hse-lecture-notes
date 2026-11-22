@@ -144,13 +144,39 @@ describe("HeaderSearch", () => {
     expect(screen.getAllByRole("option")).toHaveLength(20);
   });
 
-  it("folds and clears on Esc", async () => {
+  it("folds and clears on Esc, the focus stays in the field", async () => {
     await userEvent.type(mount(), "миноры");
     await screen.findByRole("option");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(field()).toHaveValue("");
-    expect(field()).not.toHaveFocus();
+    expect(field()).toHaveFocus();
+  });
+
+  it("folds on Esc from a button of the panel too", async () => {
+    await userEvent.type(mount(), "ряд");
+    await screen.findAllByRole("option");
+    screen.getByRole("button", { name: /Показать ещё/u }).focus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(field()).toHaveFocus();
+  });
+
+  it("folds the panel when Tab leaves the search", async () => {
+    renderWithApp(
+      <>
+        <HeaderSearch />
+        <button type="button">Дальше</button>
+      </>,
+      "/",
+    );
+    await userEvent.type(field(), "миноры");
+    await screen.findByRole("option");
+    screen.getByRole("button", { name: "Дальше" }).focus();
+    await waitFor(() => {
+      expect(screen.queryByRole("listbox")).toBeNull();
+    });
+    expect(field()).toHaveValue("миноры");
   });
 
   it("on a phone unfolds from the magnifier over the bar and folds with «Отмена»", async () => {
@@ -163,7 +189,21 @@ describe("HeaderSearch", () => {
     await userEvent.click(screen.getByRole("button", { name: "Отмена" }));
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(screen.queryByRole("button", { name: "Отмена" })).toBeNull();
-    expect(field()).not.toHaveFocus();
+    expect(screen.getByRole("button", { name: "Поиск" })).toHaveFocus();
+  });
+
+  it("on a phone the folded field is not a Tab stop, and Esc returns to the magnifier", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      addEventListener: vi.fn<() => void>(),
+      matches: query === "(width < 48rem)",
+      removeEventListener: vi.fn<() => void>(),
+    }));
+    mount();
+    expect(field()).toHaveAttribute("tabindex", "-1");
+    await userEvent.click(screen.getByRole("button", { name: "Поиск" }));
+    expect(field()).not.toHaveAttribute("tabindex");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("button", { name: "Поиск" })).toHaveFocus();
   });
 
   it("does not fetch the index until the field is touched", async () => {

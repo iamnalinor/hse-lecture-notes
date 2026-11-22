@@ -354,8 +354,6 @@ $$\begin{aligned} f''(x) &= \frac{-2x(1 + x^2)^2 - (1 - x^2) \cdot 2(1 + x^2) \c
 \(a) $g(x) = \operatorname{tg} x - x$, $g'(x) = \frac{1}{\cos^2 x} - 1 = \operatorname{tg}^2 x > 0$ на $\left(0;\ \frac\pi2\right)$, $g$ непрерывна на $\left[0;\ \frac\pi2\right)$.
 
 \(b) $g(x) = \ln(1 + x) - x + \frac{x^2}{2}$, $g'(x) = \frac{1}{1 + x} - 1 + x = \frac{x^2}{1 + x} > 0$ при $x > 0$. Вместе с примером [-@ex:lec13:log-bounds]: $x - \frac{x^2}{2} < \ln(1 + x) < x$.
-
-*Ответ:* Оба — через монотонность разности.
 :::
 
 ## Производные высших порядков
@@ -411,8 +409,6 @@ $x'_t = 2t > 0$, так что $x = t^2$ строго возрастает и з
 \(a) $(\sin x)'' = -\sin x \le 0$ на $\left[0;\ \frac\pi2\right]$ — выпукла вверх (следствие [-@cor:lec14:convex-second]). *Ключ:* хорда над $\left[0;\ \frac\pi2\right]$ соединяет $(0;\ 0)$ и $\left(\frac\pi2;\ 1\right)$, это $y = \frac2\pi x$, а график выпуклой вверх функции не ниже хорды (определение [-@def:lec14:convex]).
 
 \(b) $\ln$ выпукл вверх на $(0;\ +\infty)$. Неравенство из определения с $\lambda = \frac12$: $\ln\left(\frac a2 + \frac b2\right) \ge \frac12 \ln a + \frac12 \ln b = \ln\sqrt{ab}$, и логарифм возрастает.
-
-*Ответ:* \(a) Синус выпукл вверх на $\left[0;\ \frac\pi2\right]$, а $\frac2\pi x$ — его хорда. (b) $\ln\frac{a + b}{2} \ge \frac{\ln a + \ln b}{2}$.
 :::
 
 ## Исследование функции

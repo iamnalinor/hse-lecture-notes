@@ -325,9 +325,6 @@ $A \mathbin{\triangle} B$ — элементы, лежащие ровно в о�
 a) Поэлементно: $x \in (A \setminus B) \setminus C \iff x \in A \wedge x \notin B \wedge x \notin C \iff x \in A \wedge \neg(x \in B \vee x \in C) \iff x \in A \setminus (B \cup C)$ (закон де Моргана). Цепочкой: $(A \cap \bar B) \cap \bar C = A \cap (\bar B \cap \bar C) = A \cap \overline{B \cup C}$.
 
 b) *Ключ:* по таблице принадлежности (пример [-@ex:lec13:identity]) левая часть — области $100$, $101$, $111$, а правая $(A \setminus B) \setminus C$ — только область $100$. Расходятся, например, в строке $101$: $x \in A$, $x \notin B$, $x \in C$. Отсюда контрпример $U = \{1\}$, $A = C = \{1\}$, $B = \varnothing$: $A \setminus (B \setminus C) = \{1\} \setminus \varnothing = \{1\}$, а $(A \setminus B) \setminus C = \{1\} \setminus \{1\} = \varnothing$. Поэтому в «$A \setminus B \setminus C$» скобки опускать нельзя (замечание [-@rem:lec13:parens]).
-
-*Ответ:* a) Верно.
-b) Неверно: при $A = C = \{1\}$, $B = \varnothing$ слева $\{1\}$, справа $\varnothing$.
 :::
 
 ::: {.problem #prob:lec13:union-power}
@@ -341,7 +338,7 @@ $A \subseteq \mathcal{P}(\bigcup A)$: пусть $\alpha \in A$. Каждый э
 
 Для $A = \{\{1\}\}$: $\bigcup A = \{1\}$ (пример [-@ex:lec13:union]), $\mathcal{P}(\{1\}) = \{\varnothing, \{1\}\}$, а $\varnothing \notin A$, так что здесь включение строгое. Равенство бывает ровно при $A = \mathcal{P}(Y)$: тогда по доказанному $\bigcup A = Y$ и $\mathcal{P}(\bigcup A) = A$ (например, $A = \{\varnothing\} = \mathcal{P}(\varnothing)$); обратно, если $\mathcal{P}(\bigcup A) = A$, то $A = \mathcal{P}(Y)$ при $Y = \bigcup A$.
 
-*Ответ:* Оба утверждения верны; $\mathcal{P}(\bigcup A) = A$ в общем случае неверно: при $A = \{\{1\}\}$ получаем $\mathcal{P}(\bigcup A) = \{\varnothing, \{1\}\} \ne A$. Равенство выполнено тогда и только тогда, когда $A = \mathcal{P}(Y)$ для некоторого $Y$.
+*Ответ:* $\mathcal{P}(\bigcup A) = A$ в общем случае неверно: при $A = \{\{1\}\}$ получаем $\mathcal{P}(\bigcup A) = \{\varnothing, \{1\}\} \ne A$. Равенство выполнено тогда и только тогда, когда $A = \mathcal{P}(Y)$ для некоторого $Y$.
 :::
 
 ::: {.problem #prob:lec13:infinite}
@@ -364,8 +361,6 @@ $A \subseteq \mathcal{P}(\bigcup A)$: пусть $\alpha \in A$. Каждый э
 *Поэлементно.* «$\Rightarrow$»: пусть $A \setminus B = A$ и $x \in A \cap B$. Тогда $x \in A = A \setminus B$, то есть $x \notin B$, — противоречие с $x \in B$; значит, $A \cap B = \varnothing$. «$\Leftarrow$»: $A \setminus B \subseteq A$ по лемме [-@lem:lec13:basic-incl]; обратно, если $x \in A$, то $x \notin B$ (иначе $x \in A \cap B = \varnothing$), и $x \in A \setminus B$.
 
 *Через тождества* (универсум $U = A \cup B$). *Ключ:* разложить $A$ на две части, «в $B$» и «вне $B$»: $A = A \cap U = A \cap (B \cup \bar B) = (A \cap B) \cup (A \setminus B)$. «$\Leftarrow$»: при $A \cap B = \varnothing$ получаем $A = \varnothing \cup (A \setminus B) = A \setminus B$. «$\Rightarrow$»: при $A \setminus B = A$ имеем $A \cap B = (A \setminus B) \cap B = \varnothing$ по лемме [-@lem:lec13:basic-incl].
-
-*Ответ:* Верно.
 :::
 
 # Итоги

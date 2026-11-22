@@ -536,8 +536,6 @@ $\det A = t^2 - 1$, $\Delta_1 = \begin{vmatrix} 1 & 1 \\ 1 & t \end{vmatrix} = t
 $A^2 = \begin{pmatrix} a^2 + bc & ab + bd \\ ac + cd & bc + d^2 \end{pmatrix}$, $(a + d) A = \begin{pmatrix} a^2 + ad & ab + bd \\ ac + cd & ad + d^2 \end{pmatrix}$. Разность $A^2 - (a + d)A = \begin{pmatrix} bc - ad & 0 \\ 0 & bc - ad \end{pmatrix} = -(ad - bc) E$, что и требовалось.
 
 *Ключ:* перенесём $A^2 - (a+d)A$ в другую часть и вынесем $A$: $A\bigl((a + d)E - A\bigr) = (ad - bc)E$. При $ad - bc \ne 0$ делим на это число; по следствию [-@cor:lec06:one-side] одного равенства $A \cdot B = E$ достаточно, чтобы $B = \frac{1}{ad - bc}\bigl((a + d)E - A\bigr) = \frac{1}{ad - bc}\begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$ было обратной. Заодно видно, что $(a + d)E - A = \tilde A$.
-
-*Ответ:* Проверка прямым вычислением; при $ad - bc \ne 0$ из равенства $A\bigl((a + d)E - A\bigr) = (ad - bc) E$ получается $A^{-1} = \frac{1}{ad - bc} \bigl((a + d) E - A\bigr) = \frac{1}{ad - bc} \begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$.
 :::
 
 ::: {.problem #prob:lec06:lu}

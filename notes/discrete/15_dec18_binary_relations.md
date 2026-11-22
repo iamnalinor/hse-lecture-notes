@@ -553,7 +553,7 @@ $y \in F[[-1, 2]] \iff \exists x \in [-1, 2]\ y = x^2$. При $x \in [-1, 0]$ �
 
 Для $X = [-2, -1]$ и $Y = [1, 2]$: $X \cap Y = \varnothing$ и $F[X \cap Y] = \varnothing$, а $F[X] = F[Y] = [1, 4]$. Как в примере [-@ex:lec15:image-cap], причина в «склейке»: $x$ и $-x$ дают одно и то же $x^2$.
 
-*Ответ:* $F[[-1, 2]] = [0, 4]$, $F^{-1}[[1, 4]] = [-2, -1] \cup [1, 2]$, $F^{-1}[[-3, -1]] = \varnothing$. Пример: $X = [-2, -1]$, $Y = [1, 2]$.
+*Ответ:* $F[[-1, 2]] = [0, 4]$, $F^{-1}[[1, 4]] = [-2, -1] \cup [1, 2]$, $F^{-1}[[-3, -1]] = \varnothing$.
 :::
 
 ::: {.problem #prob:lec15:union-image}
@@ -567,7 +567,7 @@ b \in (P \cup Q)[X] &\iff \exists a\, \bigl(a \in X \wedge (aPb \vee aQb)\bigr) 
 \end{aligned}$$
 *Ключ:* для пересечения в третьем переходе пришлось бы переставить $\exists$ и $\wedge$, а это только следствие (замечание [-@rem:lec02:distribute]). Включение $(P \cap Q)[X] \subseteq P[X] \cap Q[X]$ проще получить без цепочки: образ монотонен по отношению ($P \subseteq P'$ влечёт $P[X] \subseteq P'[X]$ — прямо из определения), а $P \cap Q \subseteq P$, $P \cap Q \subseteq Q$. В контрпримере $P \cap Q = \varnothing$, поэтому слева $\varnothing$, а $P[X] = Q[X] = \{2\}$.
 
-*Ответ:* Для объединения верно; для пересечения — только $(P \cap Q)[X] \subseteq P[X] \cap Q[X]$, например, $P = \{(0, 2)\}$, $Q = \{(1, 2)\}$, $X = \{0, 1\}$ дают $\varnothing \ne \{2\}$.
+*Ответ:* Для пересечения — только $(P \cap Q)[X] \subseteq P[X] \cap Q[X]$, например, $P = \{(0, 2)\}$, $Q = \{(1, 2)\}$, $X = \{0, 1\}$ дают $\varnothing \ne \{2\}$.
 :::
 
 ::: {.problem #prob:lec15:meet}
