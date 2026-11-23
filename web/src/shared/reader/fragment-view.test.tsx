@@ -195,3 +195,92 @@ describe("FragmentView slots", () => {
     );
   });
 });
+
+const TICKETS_HTML = `
+<section id="билеты" class="level1">
+  <h1>Билеты</h1>
+  <section id="sec:exam1:laplace" class="level2">
+    <h2>1. Разложение определителя по строке</h2>
+    <div id="rem:exam1:proof-laplace" class="nb nb-remark nb-style-remark" data-type="remark" data-number="1">
+      <div class="nb-head"><span class="nb-name">Замечание 1 (доказательство)</span></div>
+      <div class="nb-body"><p>Шаг 1. Линейность по строке.</p></div>
+    </div>
+  </section>
+  <section id="sec:exam1:lu" class="level2">
+    <h2>2. <span class="math inline">LU</span>-разложение</h2>
+    <p>Условие главных миноров.</p>
+  </section>
+</section>
+<section id="задачи" class="level1">
+  <h1>Задачи</h1>
+  <section id="sec:exam1:rank" class="level2">
+    <h2>1. Ранг матрицы</h2>
+    <p>Привести к ступенчатому виду.</p>
+  </section>
+</section>`;
+
+describe("FragmentView ticket list", () => {
+  it("folds tickets in «Билеты» on prep pages into a compact list and opens them on click", async () => {
+    renderWithApp(
+      <FragmentView
+        course="algebra"
+        docId="exam1"
+        html={TICKETS_HTML}
+        lecture={undefined}
+        variant="prep"
+      />,
+    );
+
+    const details = [...document.querySelectorAll<HTMLDetailsElement>("section#билеты details")];
+    expect(details).toHaveLength(2);
+    expect(details[0]?.open).toBe(false);
+    expect(details[1]?.open).toBe(false);
+
+    // Leading numbers are split into tabular columns, math inside titles still renders.
+    expect(screen.getByText("1.")).toBeInTheDocument();
+    expect(screen.getByText("Разложение определителя по строке")).toBeInTheDocument();
+    expect(document.querySelector("section#билеты .katex")).not.toBeNull();
+
+    // Non-ticket sections («Задачи») stay open as regular prose sections.
+    expect(document.querySelector("section#задачи details")).toBeNull();
+    expect(screen.getByText("Привести к ступенчатому виду.")).toBeVisible();
+
+    await userEvent.click(screen.getByText("Разложение определителя по строке"));
+    expect(details[0]?.open).toBe(true);
+    expect(details[1]?.open).toBe(false);
+  });
+
+  it("expands and collapses all tickets with the bulk buttons", async () => {
+    renderWithApp(
+      <FragmentView
+        course="algebra"
+        docId="exam1"
+        html={TICKETS_HTML}
+        lecture={undefined}
+        variant="prep"
+      />,
+    );
+
+    const expandAll = screen.getByRole("button", { name: "Раскрыть все" });
+    const collapseAll = screen.getByRole("button", { name: "Свернуть все" });
+    const details = [...document.querySelectorAll<HTMLDetailsElement>("section#билеты details")];
+
+    expect(expandAll).toBeEnabled();
+    expect(collapseAll).toBeDisabled();
+
+    await userEvent.click(expandAll);
+    expect(details.every((item) => item.open)).toBe(true);
+    expect(expandAll).toBeDisabled();
+    expect(collapseAll).toBeEnabled();
+
+    await userEvent.click(collapseAll);
+    expect(details.every((item) => !item.open)).toBe(true);
+    expect(expandAll).toBeEnabled();
+    expect(collapseAll).toBeDisabled();
+  });
+
+  it("does not fold «Билеты» outside prep pages", () => {
+    view(TICKETS_HTML);
+    expect(document.querySelectorAll("details")).toHaveLength(0);
+  });
+});

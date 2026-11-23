@@ -18,6 +18,7 @@ import { Proof } from "./proof.tsx";
 import { RefLink } from "./ref-link.tsx";
 import { columnLabel, headerLabels } from "./table-labels.ts";
 import { TexMath } from "./tex-math.tsx";
+import { renderTicketSection } from "./ticket-list.tsx";
 
 export type TransformOptions = {
   /** Where `fig/<hash>.svg` of this document lives. */
@@ -213,11 +214,17 @@ const cell: Handler = (node, options, replace) => {
 };
 
 const section: Handler = (node, options, replace) => {
+  const slot = options.slots.get(node.attribs["id"] ?? "");
+  const compactTickets =
+    options.variant === "prep" ? renderTicketSection(node, replace, slot) : undefined;
+  if (compactTickets !== undefined) {
+    return compactTickets;
+  }
   const number = options.sectionNumbers.get(node.attribs["id"] ?? "");
   return (
     <section className="scroll-mt-6" data-section-number={number} id={node.attribs["id"]}>
       {children(node, replace)}
-      {options.slots.get(node.attribs["id"] ?? "")}
+      {slot}
     </section>
   );
 };
