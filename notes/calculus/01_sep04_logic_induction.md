@@ -3,7 +3,7 @@ course: calculus
 lecture: 1
 date: 2026-09-04
 title: Высказывания, предикаты, кванторы. Метод математической индукции. Неравенство Бернулли
-synced: [lecture]
+synced: [lecture, seminars]
 ---
 
 # Контекст

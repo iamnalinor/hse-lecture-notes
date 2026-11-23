@@ -3,7 +3,7 @@ course: calculus
 lecture: 5
 date: 2026-10-02
 title: Аксиома непрерывности. Точные грани. Теорема Вейерштрасса. Число e. Подпоследовательности
-synced: [lecture]
+synced: [lecture, seminars]
 ---
 
 # Контекст

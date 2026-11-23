@@ -3,7 +3,7 @@ course: calculus
 lecture: 8
 date: 2026-10-23
 title: Предел сложной функции. Первый и второй замечательные пределы. Пределы на бесконечности и бесконечные пределы
-synced: [lecture]
+synced: [lecture, seminars]
 ---
 
 # Контекст
@@ -543,6 +543,29 @@ $$\frac{\cos 3x^3 - 1}{\sin^6 2x} = -\frac{1 - \cos 3x^3}{(3x^3)^2} \cdot \frac{
 Первый множитель стремится к $-\frac12$ (замена $u = 3x^3 \ne 0$ при $x \ne 0$), второй равен $\frac{9}{64}$, третий стремится к $1$. Ответ: $-\frac12 \cdot \frac{9}{64} = -\frac{9}{128}$.
 
 *Ответ:* (a) $-1$; (b) $4$; (c) $-\frac{9}{128}$.
+:::
+
+::: {.problem #prob:lec08:trig-shift}
+Найдите пределы:
+
+- \(a) $\lim\limits_{x \to a} \dfrac{\cos x - \cos a}{x - a}$;
+- \(b) $\lim\limits_{x \to \pi/3} \dfrac{\sin\left(x - \frac\pi3\right)}{1 - 2\cos x}$.
+:::
+
+::: solution
+\(a) *Ключ:* перевести разность косинусов в произведение, чтобы выделился множитель $\sin\frac{x - a}{2}$ с аргументом, стремящимся к нулю:
+$$\frac{\cos x - \cos a}{x - a} = \frac{-2\sin\frac{x + a}{2}\sin\frac{x - a}{2}}{x - a} = -\sin\frac{x + a}{2} \cdot \frac{\sin\frac{x - a}{2}}{\frac{x - a}{2}}.$$
+При $x \to a$ первый множитель стремится к $-\sin a$ (утверждение [-@prop:lec08:sin-cos]), а второй — к $1$ (теорема [-@thm:lec08:first-remarkable] с заменой $u = \frac{x - a}{2} \ne 0$). Предел равен $-\sin a$.
+
+\(b) При $x = \frac\pi3$ имеем $1 - 2\cos\frac\pi3 = 0$, неопределённость $\frac00$. *Ключ:* записать $1 = 2\cos\frac\pi3$ и применить формулу разности косинусов:
+$$1 - 2\cos x = 2\left(\cos\frac\pi3 - \cos x\right) = 4\sin\frac{x + \frac\pi3}{2}\sin\frac{x - \frac\pi3}{2}.$$
+Замена $t = x - \frac\pi3 \to 0$ ($t \ne 0$) даёт
+$$\frac{\sin t}{4\sin\left(\frac\pi3 + \frac t2\right)\sin\frac t2} = \frac{\sin t}{t} \cdot \frac{t/2}{\sin(t/2)} \cdot \frac{1}{2\sin\left(\frac\pi3 + \frac t2\right)} \to 1 \cdot 1 \cdot \frac{1}{2 \cdot \frac{\sqrt3}{2}} = \frac{1}{\sqrt3}.$$
+
+*Ответ:*
+
+- \(a) $-\sin a$;
+- \(b) $\frac{1}{\sqrt3}$.
 :::
 
 ## Пределы на бесконечности и бесконечные пределы

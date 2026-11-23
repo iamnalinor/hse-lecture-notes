@@ -1193,3 +1193,19 @@ def test_prep_ids_match_site():
     m = re.search(r"export const PREP_IDS = \[([^\]]*)\]", ts)
     assert m, "PREP_IDS не найден в preps.ts"
     assert tuple(re.findall(r'"([^"]+)"', m.group(1))) == PREP_IDS
+
+
+def test_pdf_inline_code_preserves_quote_comma(demo: Path):
+    """babel-russian не должен съедать сочетание `",` внутри инлайн-кода в PDF."""
+    import pymupdf
+
+    note = demo / "notes" / "algebra" / "01_sep03_matrices.md"
+    note.write_text(
+        note.read_text(encoding="utf-8") + '\n\nПроверка кода: `printf("%d", x)`.\n',
+        encoding="utf-8",
+    )
+    res = build(demo, "--no-html", "--only", "notes/algebra/01_sep03_matrices.md")
+    assert res.returncode == 0, res.stderr
+    pdf = demo / "build" / "pdf" / "algebra" / "01_sep03_matrices.pdf"
+    text = "\n".join(page.get_text() for page in pymupdf.open(pdf))
+    assert 'printf("%d", x)' in text, text

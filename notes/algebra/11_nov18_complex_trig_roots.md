@@ -124,7 +124,7 @@ $(2 - 3i)^{-1} = \dfrac{2 + 3i}{(2 - 3i)(2 + 3i)} = \dfrac{2 + 3i}{2^2 + 3^2} = 
 
 ```{.tikz #fig:lec11:trig caption="Модуль и аргумент: число $z = x + iy$ — точка на расстоянии $r = |z|$ от нуля, луч к ней образует угол $\varphi$ с положительной действительной полуосью; $x = r\cos\varphi$, $y = r\sin\varphi$"}
 \begin{tikzpicture}[scale=1.1]
-  \draw[->] (-0.8,0) -- (4.2,0) node[below] {$\operatorname{Re}$};
+  \draw[->] (-0.8,0) -- (4.7,0) node[below] {$\operatorname{Re}$};
   \draw[->] (0,-0.6) -- (0,2.8) node[left] {$\operatorname{Im}$};
   \draw[aux] (3,0) -- (3,2);
   \draw[aux] (0,2) -- (3,2);
@@ -142,7 +142,7 @@ $(2 - 3i)^{-1} = \dfrac{2 + 3i}{(2 - 3i)(2 + 3i)} = \dfrac{2 + 3i}{2^2 + 3^2} = 
 *Модулем* числа $z = x + iy$ называется вещественное число $|z| = \sqrt{x^2 + y^2}$ — расстояние от точки $z$ до начала координат.
 :::
 
-По формуле [-@eq:lec11:z-zbar] $|z|^2 = z \bar z$. Для вещественного $z = x$ модуль $\sqrt{x^2}$ — обычный модуль числа $x$, так что определение его продолжает. Модуль разности $|z_1 - z_2|$ — расстояние между точками $z_1$ и $z_2$. Из рисунка видно, что $|\bar z| = |z|$ и $|\operatorname{Re} z| \le |z|$, $|\operatorname{Im} z| \le |z|$.
+По формуле [-@eq:lec11:z-zbar] $|z|^2 = z \bar z$. Для вещественного $z = x$ модуль $\sqrt{x^2}$ — обычный модуль числа $x$, так что определение его продолжает. Модуль разности $|z_1 - z_2|$ — расстояние между точками $z_1$ и $z_2$. По определению $|\bar z| = \sqrt{x^2 + (-y)^2} = |z|$ (отражение относительно вещественной оси сохраняет расстояние до нуля), а из рисунка видны оценки $|\operatorname{Re} z| \le |z|$ и $|\operatorname{Im} z| \le |z|$.
 
 ::: {.definition #def:lec11:argument title="аргумент"}
 Пусть $z \ne 0$. *Аргументом* числа $z$ называется любой угол $\varphi$, для которого
@@ -218,11 +218,11 @@ $z_1 = 2(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3})$ (пример [-@ex:lec11:t
   \draw[thick, nbred, -{Stealth}] (0,0) -- (-0.732,2.732);
   \node[left, nbred] at (-0.732,2.732) {$z_1 z_2$, $|z_1 z_2| = 2\sqrt2$};
   \draw[nbgreen, ->] (0.55,0) arc[start angle=0, end angle=45, radius=0.55];
-  \node[nbgreen] at (0.8,0.22) {$\frac{\pi}{4}$};
-  \draw[nbblue, ->] (0.85,0) arc[start angle=0, end angle=60, radius=0.85];
-  \node[nbblue] at (0.36,1.0) {$\frac{\pi}{3}$};
+  \node[nbgreen, fill=white, inner sep=1pt] at (0.64,0.22) {$\frac{\pi}{4}$};
+  \draw[nbblue, ->] (0.98,0) arc[start angle=0, end angle=60, radius=0.98];
+  \node[nbblue, fill=white, inner sep=1pt] at (0.42,1.08) {$\frac{\pi}{3}$};
   \draw[nbred, ->] (0.75,1.3) arc[start angle=60, end angle=105, radius=1.5];
-  \node[nbred] at (0.05,1.75) {$+\frac{\pi}{4}$};
+  \node[nbred, fill=white, inner sep=1pt] at (0.28,1.72) {$+\frac{\pi}{4}$};
 \end{tikzpicture}
 ```
 
@@ -308,7 +308,7 @@ $8i = 8(\cos \frac{\pi}{2} + i \sin \frac{\pi}{2})$, $\rho = 8$, $\psi = \frac{\
   \draw[nbred, ->] (0.7,0) arc[start angle=0, end angle=30, radius=0.7];
   \node[nbred] at (1.05,0.2) {$\frac{\pi}{6}$};
   \draw[nbgreen, ->] (0.606,0.35) arc[start angle=30, end angle=150, radius=0.7];
-  \node[nbgreen] at (0,0.42) {$\frac{2\pi}{3}$};
+  \node[nbgreen, fill=white, inner sep=1pt] at (-0.28,0.52) {$\frac{2\pi}{3}$};
   \node[left] at (-2,-0.25) {$r = 2$};
 \end{tikzpicture}
 ```
@@ -330,7 +330,7 @@ $$\varepsilon_k = \cos \frac{2\pi k}{n} + i \sin \frac{2\pi k}{n}, \qquad k = 0,
 
 $1 = 1 \cdot (\cos 0 + i \sin 0)$, $\rho = 1$, $\psi = 0$. По [-@eq:lec11:roots] $z_k = \cos \frac{2\pi k}{6} + i \sin \frac{2\pi k}{6} = \cos \frac{\pi k}{3} + i \sin \frac{\pi k}{3}$, $k = 0, \dots, 5$. Первый корень $z_0 = 1$, шаг $\frac{\pi}{3}$, корни — вершины правильного шестиугольника, вписанного в единичную окружность:
 $$z_0 = 1, \quad z_1 = \tfrac12 + \tfrac{\sqrt3}{2} i, \quad z_2 = -\tfrac12 + \tfrac{\sqrt3}{2} i, \quad z_3 = -1, \quad z_4 = -\tfrac12 - \tfrac{\sqrt3}{2} i, \quad z_5 = \tfrac12 - \tfrac{\sqrt3}{2} i.$$
-Для $z_4$ и $z_5$ взяты главные значения аргумента $-\frac{2\pi}{3}$ и $-\frac{\pi}{3}$. Проверка: $z_1 = e^{i\pi/3}$ (формула Эйлера ниже), $z_1^6 = \cos 2\pi + i \sin 2\pi = 1$. В $\R$ корней только два, $\pm 1$. Остальные четыре разбились на пары сопряжённых: $z_5 = \bar z_1$, $z_4 = \bar z_2$. Это не случайно: так устроены корни любого многочлена с вещественными коэффициентами (лекция 12).
+Для $z_4$ и $z_5$ взяты главные значения аргумента $-\frac{2\pi}{3}$ и $-\frac{\pi}{3}$. Проверка по формуле Муавра: $z_1^6 = \cos 2\pi + i \sin 2\pi = 1$. В $\R$ корней только два, $\pm 1$. Остальные четыре разбились на пары сопряжённых: $z_5 = \bar z_1$, $z_4 = \bar z_2$. Это не случайно: так устроены корни любого многочлена с вещественными коэффициентами (лекция 12).
 :::
 
 *Квадратный корень двумя способами.* В задаче [-@prob:lec10:sqrt] уравнение $z^2 = -3 + 4i$ решено в алгебраической форме, системой для $\operatorname{Re} z$, $\operatorname{Im} z$; ответ $\pm(1 + 2i)$. По теореме [-@thm:lec11:roots]: $\rho = 5$, $\cos \psi = -\frac35$, $\sin \psi = \frac45$, и $z = \pm\sqrt5 (\cos \frac{\psi}{2} + i \sin \frac{\psi}{2})$. Угол $\psi$ не табличный, но половинный находится по формулам понижения степени: $\psi \in (\frac{\pi}{2}, \pi)$, поэтому $\frac{\psi}{2}$ в первой четверти и $\cos \frac{\psi}{2} = \sqrt{\frac{1 + \cos \psi}{2}} = \frac{1}{\sqrt5}$, $\sin \frac{\psi}{2} = \sqrt{\frac{1 - \cos \psi}{2}} = \frac{2}{\sqrt5}$. Получаем $z = \pm(1 + 2i)$ — то же. Какой способ выбирать:
@@ -365,7 +365,7 @@ $$\cos \varphi = \frac{e^{i\varphi} + e^{-i\varphi}}{2}, \qquad \sin \varphi = \
 :::
 
 ::: proof
-$e^{-i\varphi} = \cos(-\varphi) + i \sin(-\varphi) = \cos \varphi - i \sin \varphi = \overline{e^{i\varphi}}$. Складывая с $e^{i\varphi} = \cos \varphi + i \sin \varphi$, получаем $2\cos \varphi$, вычитая — $2i \sin \varphi$. Это частный случай свойства 5 сопряжения (утверждение [-@prop:lec11:conjugate]): $\cos \varphi = \operatorname{Re} e^{i\varphi}$, $\sin \varphi = \operatorname{Im} e^{i\varphi}$.
+$e^{-i\varphi} = \cos(-\varphi) + i \sin(-\varphi) = \cos \varphi - i \sin \varphi = \overline{e^{i\varphi}}$. Складывая с $e^{i\varphi} = \cos \varphi + i \sin \varphi$, получаем $2\cos \varphi$, вычитая — $2i \sin \varphi$. Это частный случай общих формул $\operatorname{Re} z = \frac{z + \bar z}{2}$ и $\operatorname{Im} z = \frac{z - \bar z}{2i}$ для $z = e^{i\varphi}$.
 :::
 
 Формулы кратных углов [-@eq:lec11:triple] выражают $\cos n\varphi$ через степени $\cos \varphi$. Формулы [-@eq:lec11:cos-sin] позволяют сделать обратное — *понизить степень* (линеаризовать), выразив $\cos^n \varphi$ через косинусы кратных углов. Это понадобится в матанализе при интегрировании.
@@ -401,7 +401,7 @@ $$f(z) = a_n z^n + a_{n-1} z^{n-1} + \dots + a_1 z + a_0, \qquad a_0, \dots, a_n
 Без доказательства. Строгое доказательство опирается на теорию функций комплексного переменного, а не на алгебру. Название историческое, отсюда кавычки: с XVII века основной задачей алгебры считалось нахождение корней многочленов, доказать теорему пытались Декарт, Эйлер, Лагранж, Лаплас, а строго её доказал Гаусс в начале XIX века.
 
 ::: {.remark #rem:lec11:closed title="алгебраическая замкнутость"}
-Теорема говорит, что множество $\mathbb{C}$ *алгебраически замкнуто*: у любого многочлена с комплексными коэффициентами есть корень из того же множества. Для $\Q$ и $\R$ это неверно. У $x^2 - 2$ рациональные коэффициенты, а корни $\pm\sqrt2 \notin \Q$. У $x^2 + 1$ вещественные коэффициенты, а корни $\pm i \notin \R$. Условие $n \ge 1$ существенно: у константы $5$ корней нет (замечание [-@rem:lec11:zero-poly]).
+Теорема говорит, что множество $\mathbb{C}$ *алгебраически замкнуто*: у любого многочлена степени $n \ge 1$ с комплексными коэффициентами есть корень из того же множества. Для $\Q$ и $\R$ это неверно. У $x^2 - 2$ рациональные коэффициенты, а корни $\pm\sqrt2 \notin \Q$. У $x^2 + 1$ вещественные коэффициенты, а корни $\pm i \notin \R$. Условие $n \ge 1$ существенно: у константы $5$ корней нет (замечание [-@rem:lec11:zero-poly]).
 :::
 
 Из основной теоремы алгебры и теоремы Безу следует, что у многочлена степени $n$ ровно $n$ комплексных корней с учётом кратности: по теореме Безу корень позволяет поделить многочлен на $z - z_0$ без остатка, у частного снова есть корень, и так $n$ раз. Это — в лекции 12 (теорема [-@thm:lec12:bezout], следствие [-@cor:lec12:linear-factors]). Корни многочленов понадобятся и в модуле 4: собственные значения матрицы — корни её характеристического многочлена, и основная теорема алгебры гарантирует, что над $\mathbb{C}$ они всегда есть.
@@ -465,24 +465,18 @@ $|w| = \sqrt{64 + 192} = 16$, $\cos \psi = -\frac{8}{16} = -\frac12$, $\sin \psi
 :::
 
 ::: {.problem #prob:lec11:roots-arg}
-(а) Найдите корни уравнения $z^4 + \dfrac{2i}{1 - i\sqrt3} = 0$, для которых $0 < \arg z < \frac{\pi}{2}$. Изобразите на комплексной плоскости число $w = -\dfrac{2i}{1 - i\sqrt3}$ и все корни $\sqrt[4]{w}$.
-
-(б) Найдите то значение $u$ корня $\sqrt[3]{(1 + i\sqrt3)^2}$, для которого число $\dfrac{u}{1 - i}$ имеет аргумент $-\frac{31\pi}{36}$, и модуль числа $\dfrac{u}{1 - i}$.
+Найдите корни уравнения $z^4 + \dfrac{2i}{1 - i\sqrt3} = 0$, для которых $0 < \arg z < \frac{\pi}{2}$. Изобразите на комплексной плоскости число $w = -\dfrac{2i}{1 - i\sqrt3}$ и все корни $\sqrt[4]{w}$.
 :::
 
 ::: solution
-(а) Уравнение — это $z^4 = w$. *Ключ:* $w$ приводим к тригонометрической форме по частям, не переходя к алгебраической: модули делятся, аргументы вычитаются (теорема [-@thm:lec11:trig-mult]). $2i = 2\left(\cos \frac{\pi}{2} + i \sin \frac{\pi}{2}\right)$, $1 - i\sqrt3 = 2\left(\cos\left(-\frac{\pi}{3}\right) + i \sin\left(-\frac{\pi}{3}\right)\right)$, поэтому у частного модуль $1$ и аргумент $\frac{\pi}{2} + \frac{\pi}{3} = \frac{5\pi}{6}$. Минус — умножение на $-1 = \cos \pi + i \sin \pi$: аргумент $w$ равен $\frac{5\pi}{6} + \pi = \frac{11\pi}{6}$, главное значение $-\frac{\pi}{6}$. Итак, $w = \cos\left(-\frac{\pi}{6}\right) + i \sin\left(-\frac{\pi}{6}\right) = \frac{\sqrt3 - i}{2}$. Проверка: $\frac{2i}{1 - i\sqrt3} = \frac{2i(1 + i\sqrt3)}{4} = \frac{-\sqrt3 + i}{2}$.
+Уравнение — это $z^4 = w$. *Ключ:* $w$ приводим к тригонометрической форме по частям, не переходя к алгебраической: модули делятся, аргументы вычитаются (теорема [-@thm:lec11:trig-mult]). $2i = 2\left(\cos \frac{\pi}{2} + i \sin \frac{\pi}{2}\right)$, $1 - i\sqrt3 = 2\left(\cos\left(-\frac{\pi}{3}\right) + i \sin\left(-\frac{\pi}{3}\right)\right)$, поэтому у частного модуль $1$ и аргумент $\frac{\pi}{2} + \frac{\pi}{3} = \frac{5\pi}{6}$. Минус — умножение на $-1 = \cos \pi + i \sin \pi$: аргумент $w$ равен $\frac{5\pi}{6} + \pi = \frac{11\pi}{6}$, главное значение $-\frac{\pi}{6}$. Итак, $w = \cos\left(-\frac{\pi}{6}\right) + i \sin\left(-\frac{\pi}{6}\right) = \frac{\sqrt3 - i}{2}$. Проверка: $\frac{2i}{1 - i\sqrt3} = \frac{2i(1 + i\sqrt3)}{4} = \frac{-\sqrt3 + i}{2}$.
 
 По теореме [-@thm:lec11:roots] корни имеют модуль $1$ и аргументы $\varphi_k = \frac{-\pi/6 + 2\pi k}{4} = -\frac{\pi}{24} + \frac{\pi k}{2}$: при $k = 0, 1, 2, 3$ это $-\frac{\pi}{24}$, $\frac{11\pi}{24}$, $\frac{23\pi}{24}$, $\frac{35\pi}{24}$ (главное значение последнего $-\frac{13\pi}{24}$). В интервал $\left(0, \frac{\pi}{2}\right) = \left(0, \frac{12\pi}{24}\right)$ попадает только $\varphi_1$. Корни — вершины квадрата на единичной окружности, на той же окружности лежит и $w$ (рис. [-@fig:lec11:roots-arg]).
 
 *Ответ:* $z = \cos \frac{11\pi}{24} + i \sin \frac{11\pi}{24}$.
-
-(б) $1 + i\sqrt3 = 2\left(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3}\right)$, по формуле Муавра $(1 + i\sqrt3)^2 = 4\left(\cos \frac{2\pi}{3} + i \sin \frac{2\pi}{3}\right)$. Корни третьей степени: $u_k = \sqrt[3]{4}\,(\cos \theta_k + i \sin \theta_k)$, $\theta_k = \frac{2\pi}{9} + \frac{2\pi k}{3}$, то есть $\theta_0 = \frac{2\pi}{9}$, $\theta_1 = \frac{8\pi}{9}$, $\theta_2 = \frac{14\pi}{9}$. Так как $1 - i = \sqrt2\left(\cos\left(-\frac{\pi}{4}\right) + i \sin\left(-\frac{\pi}{4}\right)\right)$, число $\frac{u_k}{1 - i}$ имеет аргумент $\theta_k + \frac{\pi}{4}$: $\frac{17\pi}{36}$, $\frac{41\pi}{36}$, $\frac{65\pi}{36}$. *Ключ:* «имеет аргумент $-\frac{31\pi}{36}$» значит, что $-\frac{31\pi}{36}$ — один из аргументов, то есть отличается от $\theta_k + \frac{\pi}{4}$ на кратное $2\pi$. Подходит только $k = 1$: $\frac{41\pi}{36} - 2\pi = -\frac{31\pi}{36}$; у двух других разности $\frac{48\pi}{36} = \frac{4\pi}{3}$ и $\frac{96\pi}{36} = \frac{8\pi}{3}$ не кратны $2\pi$. Модуль частного $\frac{\sqrt[3]{4}}{\sqrt2} = 2^{2/3 - 1/2} = 2^{1/6}$.
-
-*Ответ:* $u = \sqrt[3]{4}\left(\cos \frac{8\pi}{9} + i \sin \frac{8\pi}{9}\right)$, $\left|\dfrac{u}{1 - i}\right| = \sqrt[6]{2}$.
 :::
 
-```{.tikz #fig:lec11:roots-arg caption="Задача [-@prob:lec11:roots-arg] (а): число $w$ с аргументом $-\\frac{\\pi}{6}$ и четыре корня $\\sqrt[4]{w}$ на единичной окружности; соседние корни отличаются поворотом на $\\frac{\\pi}{2}$, в первую четверть ($0 < \\arg z < \\frac{\\pi}{2}$, закрашена) попадает только $z_1$"}
+```{.tikz #fig:lec11:roots-arg caption="Задача [-@prob:lec11:roots-arg]: число $w$ с аргументом $-\\frac{\\pi}{6}$ и четыре корня $\\sqrt[4]{w}$ на единичной окружности; соседние корни отличаются поворотом на $\\frac{\\pi}{2}$, в первую четверть ($0 < \\arg z < \\frac{\\pi}{2}$, закрашена) попадает только $z_1$"}
 \begin{tikzpicture}[scale=1.6]
   \fill[nbgreen!12] (0,0) -- (1.35,0) arc[start angle=0, end angle=90, radius=1.35] -- cycle;
   \draw[->] (-1.6,0) -- (1.7,0) node[below] {$\operatorname{Re}$};
@@ -499,6 +493,16 @@ $|w| = \sqrt{64 + 192} = 16$, $\cos \psi = -\frac{8}{16} = -\frac12$, $\sin \psi
   \node[below right, nbred] at (-30:1) {$w = \frac{\sqrt3 - i}{2}$};
 \end{tikzpicture}
 ```
+
+::: {.problem #prob:lec11:roots-quotient}
+Найдите то значение $u$ корня $\sqrt[3]{(1 + i\sqrt3)^2}$, для которого число $\dfrac{u}{1 - i}$ имеет аргумент $-\frac{31\pi}{36}$, и модуль числа $\dfrac{u}{1 - i}$.
+:::
+
+::: solution
+$1 + i\sqrt3 = 2\left(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3}\right)$, по формуле Муавра $(1 + i\sqrt3)^2 = 4\left(\cos \frac{2\pi}{3} + i \sin \frac{2\pi}{3}\right)$. Корни третьей степени: $u_k = \sqrt[3]{4}\,(\cos \theta_k + i \sin \theta_k)$, $\theta_k = \frac{2\pi}{9} + \frac{2\pi k}{3}$, то есть $\theta_0 = \frac{2\pi}{9}$, $\theta_1 = \frac{8\pi}{9}$, $\theta_2 = \frac{14\pi}{9}$. Так как $1 - i = \sqrt2\left(\cos\left(-\frac{\pi}{4}\right) + i \sin\left(-\frac{\pi}{4}\right)\right)$, число $\frac{u_k}{1 - i}$ имеет аргумент $\theta_k + \frac{\pi}{4}$: $\frac{17\pi}{36}$, $\frac{41\pi}{36}$, $\frac{65\pi}{36}$. *Ключ:* «имеет аргумент $-\frac{31\pi}{36}$» значит, что $-\frac{31\pi}{36}$ — один из аргументов, то есть отличается от $\theta_k + \frac{\pi}{4}$ на кратное $2\pi$. Подходит только $k = 1$: $\frac{41\pi}{36} - 2\pi = -\frac{31\pi}{36}$; у двух других разности $\frac{48\pi}{36} = \frac{4\pi}{3}$ и $\frac{96\pi}{36} = \frac{8\pi}{3}$ не кратны $2\pi$. Модуль частного $\frac{\sqrt[3]{4}}{\sqrt2} = 2^{2/3 - 1/2} = 2^{1/6}$.
+
+*Ответ:* $u = \sqrt[3]{4}\left(\cos \frac{8\pi}{9} + i \sin \frac{8\pi}{9}\right)$, $\left|\dfrac{u}{1 - i}\right| = \sqrt[6]{2}$.
+:::
 
 ::: {.problem #prob:lec11:linear-system}
 Решите систему уравнений

@@ -9,7 +9,7 @@ title: "Теория: математический анализ"
 - $C_n^k$ — число сочетаний из $n$ по $k$ ($n$ снизу); в англоязычной литературе $\binom{n}{k}$.
 - «Возрастающая» — строго: $a_n < a_{n+1}$; нестрогая — «неубывающая».
 - Бесконечно большая: $|a_n| \to +\infty$, знак не важен; $(-1)^n n \to \infty$, но не к $+\infty$ и не к $-\infty$.
-- $a^x$, $\ln x$, $x^\alpha$ до лекции 11 берутся со школьными свойствами, их непрерывность — на веру; в лекции 11 она доказана.
+- $a^x$, $\ln x$, $x^\alpha$ до лекции 11 берутся со школьными свойствами, их непрерывность — на веру; в лекции 11 $a^x$ определена, а её монотонность и непрерывность приняты без доказательства; непрерывность $\ln x$ и $x^\alpha$ из них доказана.
 - $\operatorname{tg}$, $\operatorname{ctg}$, $\operatorname{arctg}$ — русская запись $\tan$, $\cot$, $\arctan$.
 - $o(g)$, $O(g)$ и $\sim$ — только для $g$, не обращающихся в ноль около точки.
 - Устранимый разрыв не считается разрывом первого рода: первый род — только скачок.
@@ -633,7 +633,7 @@ $f$ непрерывна на $[a;\ b]$, $f(a) f(b) < 0$ $\Rightarrow$ $\exists 
 $\arcsin$ возрастает, $\arccos$ убывает (на $[-1;\ 1]$, значения $\left[-\frac\pi2;\ \frac\pi2\right]$ и $[0;\ \pi]$); $\operatorname{arctg}$ возрастает, $\operatorname{arcctg}$ убывает на $\R$, $\operatorname{arctg} y \to \pm\frac\pi2$ при $y \to \pm\infty$; все четыре непрерывны. $\arcsin$, $\operatorname{arctg}$ нечётны, $\arccos(-y) = \pi - \arccos y$; $\arcsin y + \arccos y = \operatorname{arctg} y + \operatorname{arcctg} y = \frac\pi2$. *Идея:* строгая монотонность сужений через формулы разности; затем теорема о непрерывности обратной.
 :::
 
-::: {.corollary ref="cor:lec11:arc-limits"}
+::: {.corollary ref="cor:lec11:arc-limits" status="на лекции не доказывалось"}
 $\arcsin x \sim x$, $\operatorname{arctg} x \sim x$ при $x \to 0$. *Идея:* замена $y = \arcsin x \to 0$, $y \ne 0$, и $\frac{y}{\sin y} \to 1$.
 :::
 
@@ -642,7 +642,7 @@ $\arcsin x \sim x$, $\operatorname{arctg} x \sim x$ при $x \to 0$. *Идея:
 :::
 
 ::: {.definition ref="def:lec11:exp"}
-**Показательная функция** ($a > 0$, $a \ne 1$): $a^x = \lim a^{x_n}$ для любой последовательности рациональных $x_n \to x$.
+**Показательная функция** ($a > 0$, $a \ne 1$): $a^x = \lim a^{x_n}$ для любой последовательности рациональных $x_n \to x$; при $a = 1$ полагают $1^x = 1$.
 :::
 
 ::: {.theorem ref="thm:lec11:exp" status="без доказательства"}
@@ -661,7 +661,7 @@ $\log_a$ непрерывна, монотонна (как $a^x$), множест
 **Степенная функция:** $x^\alpha = e^{\alpha \ln x}$ при $x > 0$, $\alpha \in \R$.
 :::
 
-::: {.corollary ref="cor:lec11:power-limit"}
+::: {.corollary ref="cor:lec11:power-limit" status="на лекции не доказывалось"}
 Если $u \to A > 0$, $v \to B \in \R$, то $u^v \to A^B$. *Идея:* $u^v = e^{v \ln u}$ и непрерывность $\ln$ и $e^x$.
 :::
 
@@ -674,7 +674,7 @@ $\log_a$ непрерывна, монотонна (как $a^x$), множест
 :::
 
 ::: {.proposition ref="prop:lec11:table"}
-$(x^n)' = nx^{n-1}$, $(\sin x)' = \cos x$, $(\cos x)' = -\sin x$, $(\operatorname{tg} x)' = \frac{1}{\cos^2 x}$, $(a^x)' = a^x \ln a$, $(\ln x)' = \frac1x$, $(\log_a x)' = \frac{1}{x \ln a}$, $(x^\alpha)' = \alpha x^{\alpha - 1}$ ($x > 0$). *Идея:* $x^n - x_0^n = (x - x_0)(x^{n-1} + \dots + x_0^{n-1})$; для остальных (семинар, ДЗ) разностное отношение сводится к замечательному пределу: $\frac{\sin(h/2)}{h/2}$, $\frac{e^y - 1}{y}$, $\frac{\ln(1 + t)}{t}$, $\frac{(1 + t)^\alpha - 1}{t}$ с $t = \frac hx$; для $x^n$ — бином.
+$(x^n)' = nx^{n-1}$, $(\sin x)' = \cos x$, $(\cos x)' = -\sin x$, $(\operatorname{tg} x)' = \frac{1}{\cos^2 x}$, $(a^x)' = a^x \ln a$, $(\ln x)' = \frac1x$, $(\log_a x)' = \frac{1}{x \ln a}$, $(x^\alpha)' = \alpha x^{\alpha - 1}$ ($x > 0$). *Идея:* $x^n - x_0^n = (x - x_0)(x^{n-1} + \dots + x_0^{n-1})$; для остальных (семинар, ДЗ) разностное отношение сводится к замечательному пределу: $\frac{\sin(h/2)}{h/2}$, $\frac{e^y - 1}{y}$, $\frac{\ln(1 + t)}{t}$, $\frac{(1 + t)^\alpha - 1}{t}$ с $t = \frac hx$.
 :::
 
 ::: {.definition ref="def:lec11:differentiable"}
@@ -699,12 +699,12 @@ $(f \pm g)' = f' \pm g'$, $(cf)' = cf'$, $(fg)' = f'g + fg'$, $\left(\frac fg\ri
 
 # 12. Правила дифференцирования
 
-::: {.definition ref="def:lec12:one-sided"}
-**Односторонние производные:** $f'_\pm(x_0) = \lim\limits_{h \to \pm 0} \frac{f(x_0 + h) - f(x_0)}{h}$. Производная существует $\Leftrightarrow$ $f'_-(x_0) = f'_+(x_0)$ (обе конечны).
-:::
-
 ::: {.definition ref="def:lec12:differential"}
 **Дифференциал** $df(x_0) = f'(x_0)\,dx$, $dx = \Delta x$; $\Delta f = df + o(\Delta x)$.
+:::
+
+::: {.definition ref="def:lec12:one-sided"}
+**Односторонние производные:** $f'_\pm(x_0) = \lim\limits_{h \to \pm 0} \frac{f(x_0 + h) - f(x_0)}{h}$. Производная существует $\Leftrightarrow$ $f'_-(x_0) = f'_+(x_0)$ (обе конечны).
 :::
 
 ::: {.theorem ref="thm:lec12:inverse"}
