@@ -585,9 +585,9 @@ PREP_GONE = re.compile(r"(Вопросы для самопроверки|Сам�
 
 
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
-    """Подготовка к КР, коллоквиуму или квизу (prep/<course>/krN.md, colloqN.md, quiz-<slug>.md).
+    """Подготовка к КР, коллоквиуму, экзамену или квизу (prep/<course>/krN.md, colloqN.md, examN.md, quiz-<slug>.md).
 
-    Свои метки prob:krN:… (prob:colloqN:…, prob:quiz-<slug>:…), теория — ref= на блоки конспектов.
+    Свои метки prob:krN:… (prob:colloqN:…, prob:examN:…, prob:quiz-<slug>:…), теория — ref= на блоки конспектов.
     """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem

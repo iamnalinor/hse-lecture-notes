@@ -112,7 +112,7 @@ questions:
     text: Дайте определение подгруппы и докажите критерий подгруппы.
     refs: [def:lec16:subgroup, thm:lec16:criterion, rem:exam1:proof-subgroup-criterion]
 
-  # --- Определения и формулировки (30 вопросов) ---
+  # --- Определения и формулировки (46 вопросов) ---
   - id: def-fsr
     kind: definition
     topic: fsr-existence
@@ -141,13 +141,32 @@ questions:
     kind: definition
     topic: trig-mult
     text: Что такое алгебраическая и тригонометрическая формы записи комплексного числа?
-    refs: [def:lec10:algebraic, def:lec11:trig-form]
+    refs: [def:lec10:algebraic, eq:lec11:trig, def:lec11:trig-form]
 
   - id: def-mod-arg
     kind: definition
     topic: trig-mult
     text: Дайте определения модуля и аргумента комплексного числа. Что такое главное значение аргумента?
     refs: [def:lec11:modulus, def:lec11:argument, rem:lec11:arg-convention]
+
+  - id: def-trig-mult
+    kind: definition
+    topic: trig-mult
+    text: Сформулируйте правила умножения и деления комплексных чисел в тригонометрической форме.
+    refs: [thm:lec11:trig-mult]
+
+  - id: def-moivre
+    kind: definition
+    topic: moivre
+    text: Выпишите формулу Муавра для возведения комплексного числа в целую степень.
+    refs: [thm:lec11:moivre]
+
+  - id: def-roots
+    kind: definition
+    topic: roots
+    text: Дайте определение корня $n$-й степени из комплексного числа, выпишите формулу всех корней и опишите их геометрическое расположение.
+    answer: 'Все $n$ корней лежат на окружности радиуса $\sqrt[n]{\rho}$ с шагом аргумента $\frac{2\pi}{n}$: при $n \ge 3$ это вершины правильного $n$-угольника, при $n = 2$ — две противоположные точки $\pm z_0$.'
+    refs: [def:lec11:root, thm:lec11:roots]
 
   - id: def-conjugate-division
     kind: definition
@@ -167,10 +186,23 @@ questions:
     text: Сформулируйте основную теорему алгебры и теорему Безу.
     refs: [thm:lec11:fta, thm:lec12:bezout]
 
+  - id: def-linear-factors
+    kind: definition
+    topic: bezout
+    text: Сформулируйте теорему о разложении комплексного многочлена на линейные множители над $\mathbb{C}$.
+    refs: [cor:lec12:linear-factors]
+
+  - id: def-multiplicity
+    kind: definition
+    topic: poly-factor
+    text: Дайте определение корня кратности $k$ многочлена.
+    refs: [def:lec12:multiplicity]
+
   - id: def-vieta3
     kind: definition
     topic: poly-factor
     text: Выпишите формулы Виета для приведённого многочлена третьей степени.
+    answer: 'Для кубического многочлена $x^3 + px^2 + qx + r$ с корнями $c_1, c_2, c_3$:'
     refs: [thm:lec12:vieta, eq:lec12:vieta3]
 
   - id: def-irreducible
@@ -186,17 +218,35 @@ questions:
     answer: 'Пример: у $x^2 + 1$ (вещественные коэффициенты) корни $i$ и $-i = \bar i$; у $x^4 + 4$ — пары $1 \pm i$ и $-1 \pm i$.'
     refs: [prop:lec12:conjugate-root]
 
+  - id: def-basis-onb
+    kind: definition
+    topic: dot-coords
+    text: Дайте определения базиса в $V_3$ и ортонормированного базиса (ОНБ). Как выражаются скалярное произведение и длина вектора в ОНБ?
+    refs: [def:lec12:basis, def:lec12:onb, cor:lec12:onb]
+
   - id: def-dot-any-basis
     kind: definition
     topic: dot-coords
     text: Выпишите формулу скалярного произведения векторов в произвольном (не обязательно ортонормированном) базисе.
     refs: [def:lec12:gram, thm:lec12:dot-coordinates]
 
+  - id: def-orientation
+    kind: definition
+    topic: cross-coords
+    text: Дайте определение правой и левой тройки некомпланарных векторов в пространстве.
+    refs: [def:lec13:orientation]
+
   - id: def-cross
     kind: definition
     topic: cross-coords
     text: Дайте определение векторного произведения в трёхмерном пространстве и сформулируйте его три алгебраических свойства.
     refs: [def:lec13:cross, thm:lec13:cross-props]
+
+  - id: def-cross-coords
+    kind: definition
+    topic: cross-coords
+    text: Выпишите координатную формулу векторного произведения в правом ортонормированном базисе.
+    refs: [thm:lec13:cross-coords]
 
   - id: def-collinear
     kind: definition
@@ -228,24 +278,60 @@ questions:
     text: Что такое уравнение поверхности и его геометрический образ? Что такое нормальный вектор плоскости?
     refs: [def:lec14:surface, def:lec14:normal]
 
+  - id: def-plane-equation
+    kind: definition
+    topic: plane-equation
+    text: Сформулируйте теорему об общем уравнении плоскости в ПДСК.
+    refs: [thm:lec14:plane-equation]
+
   - id: def-intercepts
     kind: definition
     topic: planes-lines
     text: Выпишите уравнение плоскости в отрезках и объясните геометрический смысл параметров.
     refs: [def:lec14:intercepts]
 
+  - id: def-two-planes
+    kind: definition
+    topic: positions
+    text: Опишите случаи взаимного расположения двух плоскостей в пространстве и критерий для каждого из них.
+    refs: [thm:lec14:two-planes]
+
+  - id: def-angles-plane-line
+    kind: definition
+    topic: positions
+    text: Выпишите формулы угла между двумя плоскостями и угла между прямой и плоскостью.
+    refs: [def:lec14:angle-planes, def:lec14:angle-line-plane]
+
   - id: def-line-equations
     kind: definition
     topic: planes-lines
     text: Выпишите векторное, параметрические, канонические и общие уравнения прямой в пространстве.
-    answer: 'Общие уравнения прямой — система уравнений двух пересекающихся плоскостей $A_1 x + B_1 y + C_1 z + D_1 = 0$, $A_2 x + B_2 y + C_2 z + D_2 = 0$ с неколлинеарными нормалями.'
+    answer: >-
+      Через точку $M_0(x_0, y_0, z_0)$ с направляющим вектором $\vec s = (s_1, s_2, s_3) \ne \vec 0$:
+      векторное $\vec r = \vec r_0 + t\vec s$;
+      параметрические $x = x_0 + s_1 t$, $y = y_0 + s_2 t$, $z = z_0 + s_3 t$;
+      канонические $\frac{x - x_0}{s_1} = \frac{y - y_0}{s_2} = \frac{z - z_0}{s_3}$;
+      общие — система двух пересекающихся плоскостей $A_1 x + B_1 y + C_1 z + D_1 = 0$,
+      $A_2 x + B_2 y + C_2 z + D_2 = 0$ с неколлинеарными нормалями.
     refs: [def:lec14:direction]
+
+  - id: def-line-plane
+    kind: definition
+    topic: positions
+    text: Сформулируйте условия взаимного расположения прямой и плоскости в пространстве.
+    refs: [thm:lec14:line-plane]
 
   - id: def-two-lines-coplanar
     kind: definition
     topic: positions
     text: Сформулируйте критерий принадлежности двух прямых в пространстве одной плоскости.
     refs: [thm:lec14:two-lines]
+
+  - id: def-direction-cosines
+    kind: definition
+    topic: planes-lines
+    text: Дайте определение направляющих косинусов ненулевого вектора в ОНБ и укажите тождество, которым они связаны.
+    refs: [def:lec14:direction-cosines]
 
   - id: def-point-plane-dist
     kind: definition
@@ -280,6 +366,12 @@ questions:
     text: Что такое симметрическая группа $S_n$ (сколько в ней элементов), общая линейная группа $GL_n(\R)$ и специальная линейная группа $SL_n(\R)$?
     refs: [def:lec16:symmetric, def:lec16:gl, def:lec16:sl]
 
+  - id: def-order-cayley
+    kind: definition
+    topic: groups
+    text: Что такое порядок группы и таблица Кэли конечной группы?
+    refs: [def:lec16:order, def:lec16:cayley]
+
   - id: def-homomorphism-iso
     kind: definition
     topic: groups
@@ -287,12 +379,24 @@ questions:
     answer: 'Примеры: $\det\colon GL_n(\R) \to (\R \setminus \{0\}, \cdot)$ — гомоморфизм; $\ln\colon (\R_{>0}, \cdot) \to (\R, +)$ и $D_3 \cong S_3$ — изоморфизмы.'
     refs: [def:lec16:homomorphism, def:lec16:iso]
 
+  - id: def-iso-props
+    kind: definition
+    topic: groups
+    text: Сформулируйте свойства тождественного отображения, обратного к изоморфизму и композиции гомоморфизмов (изоморфизмов).
+    refs: [prop:lec16:iso-props]
+
   - id: def-cyclic-order
     kind: definition
     topic: groups
     text: Дайте определения циклической группы и порядка элемента группы; приведите пример.
     answer: 'Пример: $(\Z_n, +) = \langle \bar 1 \rangle$ — циклическая группа порядка $n$; в $(\Z_6, +)$ имеем $\operatorname{ord} \bar 2 = 3$.'
     refs: [def:lec17:cyclic, def:lec17:order]
+
+  - id: def-cyclic-iso
+    kind: definition
+    topic: groups
+    text: Сформулируйте теорему о классификации циклических групп с точностью до изоморфизма.
+    refs: [thm:lec17:cyclic-iso]
 
   - id: def-subgroup
     kind: definition
@@ -445,8 +549,8 @@ questions:
     kind: problem
     topic: planes-lines
     text: >-
-      В треугольнике $A(-1, 2)$, $B(5, 4)$, $C(3, -2)$ на плоскости составьте общие уравнения медианы
-      и высоты из вершины $A$.
+      В треугольнике $A(1, 2)$, $B(4, 6)$, $C(6, -10)$ на плоскости составьте общие уравнения медианы,
+      высоты и биссектрисы из вершины $A$.
     refs: [prob:exam1:triangle]
 
   - id: prob-pencil
@@ -475,8 +579,8 @@ questions:
     kind: problem
     topic: positions
     text: >-
-      Установите взаимное расположение прямых $\frac{x - 1}{2} = \frac{y}{1} = \frac{z - 1}{0}$ и
-      $x = 2,\ y = 3 + 2u,\ z = -1 + 2u$ и найдите расстояние между ними.
+      Установите взаимное расположение прямых $\frac{x}{1} = \frac{y - 1}{-2} = \frac{z + 1}{2}$ и
+      $x = -2 + 2u,\ y = 1 + 2u,\ z = u$ и найдите расстояние между ними.
     refs: [prob:exam1:lines-skew]
 
   - id: prob-sym-plane

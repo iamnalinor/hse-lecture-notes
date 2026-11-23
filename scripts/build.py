@@ -76,8 +76,8 @@ def tex_env() -> dict[str, str]:
     return env
 
 
-# Подготовка к контрольной (krN), коллоквиуму (colloqN) или квизу (quiz-<slug>): имя файла = id
-# страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
+# Подготовка к контрольной (krN), коллоквиуму (colloqN), экзамену (examN) или квизу (quiz-<slug>):
+# имя файла = id страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
 # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 # synced в front matter: с чем сверен конспект. Порядок в courses.json фиксированный (сначала лекция).
 SYNCED_PARTS = ("lecture", "seminars")
