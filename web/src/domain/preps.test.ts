@@ -27,6 +27,9 @@ describe("test preparation pages", () => {
     ["kr12", true],
     ["colloq1", true],
     ["colloq", false],
+    ["exam1", true],
+    ["exam2", true],
+    ["exam", false],
     ["quiz-o-symbols", true],
     ["quiz-limits", true],
     ["quiz", false],
@@ -65,8 +68,27 @@ describe("test preparation pages", () => {
     expect(prepName("kr2", 4)).toBe("КР-2");
   });
 
+  it("names an exam and formats its session window", () => {
+    expect(prepName("exam1")).toBe("Экзамен 1");
+    expect(prepGoal("exam1")).toBe("Подготовка к экзамену 1");
+    expect(prepContents("exam1")).toContain("Билеты");
+    expect(prepDescription("exam1")).toContain("экзамену");
+    expect(
+      prepWhen({
+        activeUntil: "2026-12-30",
+        cheatsheets: [],
+        date: "2026-12-21",
+        highlightFrom: "2026-12-07",
+        id: "exam1",
+        title: "",
+      }),
+    ).toBe("21.12–30.12");
+  });
+
   it("routes every prep id the build accepts", () => {
     expect(PREP_IDS).toContain("quiz-o-symbols");
+    expect(PREP_IDS).toContain("quiz-limits");
+    expect(PREP_IDS).toContain("exam1");
     expect(PREP_IDS).toContain("colloq1");
     expect(PREP_IDS.every((id) => isPrepId(id))).toBe(true);
   });

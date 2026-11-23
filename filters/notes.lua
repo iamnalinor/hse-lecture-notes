@@ -649,14 +649,15 @@ end
 -- метаданные для шаблона
 -- ---------------------------------------------------------------------------
 
--- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1», quiz-o-symbols (quiz_number 4) →
--- «Подготовка к квизу 4» (как prepGoal на сайте)
+-- kr1 → «Подготовка к КР-1», colloq1 → «Подготовка к коллоквиуму 1», exam1 → «Подготовка к экзамену 1»,
+-- quiz-o-symbols (quiz_number 4) → «Подготовка к квизу 4» (как prepGoal на сайте)
 local function prep_goal(id, quiz_number)
   if id:match('^quiz%-') then
     return 'Подготовка к квизу' .. ((quiz_number and quiz_number ~= '') and (' ' .. quiz_number) or '')
   end
   local n = id:match('%d+') or ''
   if id:match('^colloq') then return 'Подготовка к коллоквиуму ' .. n end
+  if id:match('^exam') then return 'Подготовка к экзамену ' .. n end
   return 'Подготовка к КР-' .. n
 end
 
@@ -678,7 +679,9 @@ local function set_template_meta(doc, config)
     -- (коротко, чтобы колонтитул остался в одну строку)
     local when = date_ru(date)
     local last_day = meta_str(meta, 'active_until')
-    local windowed = (S.week_id or ''):match('^colloq') or (S.week_id or ''):match('^quiz%-')
+    local windowed = (S.week_id or ''):match('^colloq')
+      or (S.week_id or ''):match('^exam')
+      or (S.week_id or ''):match('^quiz%-')
     if windowed and last_day and date and last_day ~= date then
       local y1, m1, d1 = date:match('^(%d+)-(%d+)-(%d+)$')
       local y2, m2, d2 = last_day:match('^(%d+)-(%d+)-(%d+)$')

@@ -1209,3 +1209,42 @@ def test_pdf_inline_code_preserves_quote_comma(demo: Path):
     pdf = demo / "build" / "pdf" / "algebra" / "01_sep03_matrices.pdf"
     text = "\n".join(page.get_text() for page in pymupdf.open(pdf))
     assert 'printf("%d", x)' in text, text
+
+
+def test_exam_prep_lint_and_build(demo: Path):
+    """Подготовка к экзамену (exam1.md): `# Об экзамене`, `# Билеты`, метки `:exam1:`, окно дат в шапке."""
+    prep_dir = demo / "prep" / "algebra"
+    prep_dir.mkdir(parents=True, exist_ok=True)
+    exam = prep_dir / "exam1.md"
+    exam.write_text(
+        """---
+course: algebra
+title: "Подготовка к экзамену 1: алгебра"
+date: 2026-12-21
+active_until: 2026-12-30
+---
+
+# Об экзамене
+
+Письменный экзамен в сессию.
+
+# Билеты
+
+## 1. Матрицы {#sec:exam1:matrices}
+
+::: {.definition ref="def:lec01:matrix"}
+:::
+
+::: {.remark #rem:exam1:proof-matrices title="доказательство"}
+Шаг 1. По определению [-@def:lec01:matrix].
+:::
+""",
+        encoding="utf-8",
+    )
+    res = lint(demo, str(exam))
+    assert res.returncode == 0, res.stdout
+    res_b = build(demo, "--no-pdf", "--only", "prep/algebra/exam1.md")
+    assert res_b.returncode == 0, res_b.stderr
+    meta = json.loads((demo / "build" / "site-data" / "algebra" / "exam1" / "meta.json").read_text(encoding="utf-8"))
+    assert "Подготовка к экзамену 1" in meta["header_line"]
+    assert "21.12–30.12.2026" in meta["header_line"]
