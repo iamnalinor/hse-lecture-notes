@@ -738,7 +738,7 @@ def test_colloq_without_problems(demo: Path):
     p.write_text(text.replace("## Что нужно знать", "## Теория"), encoding="utf-8")
     res = lint(demo)
     assert res.returncode != 0
-    assert "нет ни одного подраздела «## Что нужно знать»" in res.stdout, res.stdout
+    assert "нет ни раздела «# Билеты», ни подраздела «## Что нужно знать»" in res.stdout, res.stdout
 
 
 @pytest.mark.parametrize(
@@ -764,7 +764,7 @@ def test_lint_colloq_catches(demo: Path, old: str, new: str, expected: str):
     assert expected in res.stdout, res.stdout
 
 
-@pytest.mark.parametrize("name", ["colloq3", "kr4", "exam1"])
+@pytest.mark.parametrize("name", ["colloq3", "kr4", "exam3"])
 def test_prep_unknown_name(demo: Path, name: str):
     """Имя файла подготовки — только то, под что есть маршрут на сайте."""
     make_colloq(demo, name)
@@ -856,7 +856,7 @@ def test_quiz_topic_only_on_quiz(demo: Path):
     assert "quiz_topic — только у квиза" in res.stdout, res.stdout
 
 
-@pytest.mark.parametrize("name", ["quiz-limits", "quiz1", "quiz"])
+@pytest.mark.parametrize("name", ["quiz-unknown", "quiz1", "quiz"])
 def test_quiz_unknown_name(demo: Path, name: str):
     """Квиз — тоже только с маршрутом на сайте: новое имя добавляют в PREP_IDS."""
     make_quiz(demo, name)
