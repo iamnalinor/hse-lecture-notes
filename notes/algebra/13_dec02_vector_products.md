@@ -399,7 +399,10 @@ $$a_2 (b_1 c_2 - b_2 c_1) - a_3 (b_3 c_1 - b_1 c_3) = b_1 (a_2 c_2 + a_3 c_3) - 
 :::
 
 ::: {.problem #prob:lec13:cross-equation}
-Пусть $\vec a \ne \vec 0$. (а) При каком условии на $\vec b$ уравнение $[\vec a, \vec x] = \vec b$ имеет решение? Найдите все его решения. (б) Решите уравнение при $\vec a = (1, 1, 0)$, $\vec b = (1, -1, 2)$.
+Пусть $\vec a \ne \vec 0$.
+
+- (а) При каком условии на $\vec b$ уравнение $[\vec a, \vec x] = \vec b$ имеет решение? Найдите все его решения.
+- (б) Решите уравнение при $\vec a = (1, 1, 0)$, $\vec b = (1, -1, 2)$.
 :::
 
 ::: solution
@@ -409,11 +412,12 @@ $$a_2 (b_1 c_2 - b_2 c_1) - a_3 (b_3 c_1 - b_1 c_3) = b_1 (a_2 c_2 + a_3 c_3) - 
 
 *Все решения.* Если $\vec x$ — решение, то по линейности $[\vec a, \vec x - \vec x_0] = \vec b - \vec b = \vec 0$, и $\vec x - \vec x_0$ коллинеарен $\vec a$ (утверждение [-@prop:lec13:collinear]), то есть $\vec x - \vec x_0 = t \vec a$ (утверждение [-@prop:lec12:dependence-geometry], $\vec a \ne \vec 0$). Обратно, $[\vec a, \vec x_0 + t \vec a] = \vec b + t [\vec a, \vec a] = \vec b$. Решения заполняют прямую, параллельную $\vec a$, — так же устроено общее решение неоднородной СЛАУ (теорема [-@thm:lec10:nonhomogeneous]): частное решение плюс решения уравнения $[\vec a, \vec x] = \vec 0$.
 
-*Ответ:* решение есть тогда и только тогда, когда $(\vec a, \vec b) = 0$; тогда $\vec x = \dfrac{[\vec b, \vec a]}{|\vec a|^2} + t \vec a$, $t \in \R$.
-
 (б) $(\vec a, \vec b) = 1 - 1 + 0 = 0$, решение есть. По [-@eq:lec13:cross-coords] $[\vec b, \vec a] = \big((-1) \cdot 0 - 2 \cdot 1, \; 2 \cdot 1 - 1 \cdot 0, \; 1 \cdot 1 - (-1) \cdot 1\big) = (-2, 2, 2)$, $|\vec a|^2 = 2$, $\vec x_0 = (-1, 1, 1)$. Проверка: $[\vec a, \vec x_0] = (1 \cdot 1 - 0 \cdot 1, \; 0 \cdot (-1) - 1 \cdot 1, \; 1 \cdot 1 - 1 \cdot (-1)) = (1, -1, 2) = \vec b$.
 
-*Ответ:* $\vec x = (-1 + t, \; 1 + t, \; 1)$, $t \in \R$.
+*Ответ:*
+
+- (а) решение есть тогда и только тогда, когда $(\vec a, \vec b) = 0$; тогда $\vec x = \dfrac{[\vec b, \vec a]}{|\vec a|^2} + t \vec a$, $t \in \R$;
+- (б) $\vec x = (-1 + t, \; 1 + t, \; 1)$, $t \in \R$.
 :::
 
 ::: {.problem #prob:lec13:any-basis}

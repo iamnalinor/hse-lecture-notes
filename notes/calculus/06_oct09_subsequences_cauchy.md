@@ -3,7 +3,7 @@ course: calculus
 lecture: 6
 date: 2026-10-09
 title: Теорема Больцано–Вейерштрасса. Критерий Коши. Частичные пределы и предельные точки. Верхний и нижний пределы
-synced: [lecture]
+synced: [lecture, seminars]
 ---
 
 # Контекст

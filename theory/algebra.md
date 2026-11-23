@@ -550,7 +550,7 @@ $Ax = b$ совместна $\Leftrightarrow$ $\operatorname{Rg} A = \operatorna
 **Общее решение однородной системы**: $x = c_1 \Phi_1 + \dots + c_k \Phi_k$, где $\Phi_1, \dots, \Phi_k$ — ФСР, $c_j$ — произвольные числа.
 :::
 
-::: {.corollary ref="cor:lec10:max-independent"}
+::: {.corollary ref="cor:lec10:max-independent" status="на лекции не доказывалось"}
 Любые $s > n - \operatorname{Rg} A$ решений $Ax = 0$ линейно зависимы; ФСР — максимальный независимый набор решений. *Идея:* ранг матрицы из них $\le n - r < s$, и по теореме о ранге столбцы зависимы.
 :::
 
@@ -935,7 +935,7 @@ $\bar a + \bar b := \overline{a + b}$ и $\bar a \cdot \bar b := \overline{ab}$ 
 :::
 
 ::: {.definition ref="def:lec16:gl"}
-**Общая линейная группа** $GL_n(\R) = \{A \in M_n(\R) \mid \det A \ne 0\}$ с умножением — общая линейная группа.
+**Общая линейная группа** $GL_n(\R) = \{A \in M_n(\R) \mid \det A \ne 0\}$ с умножением матриц.
 :::
 
 ::: {.definition ref="def:lec16:symmetric"}
@@ -954,12 +954,12 @@ $\bar a + \bar b := \overline{a + b}$ и $\bar a \cdot \bar b := \overline{ab}$ 
 **Подгруппа** — $H \le G$, если $e \in H$, $h_1 h_2 \in H$ и $h^{-1} \in H$ для всех $h, h_1, h_2 \in H$; собственная — $H \ne \{e\}$, $H \ne G$. Примеры: $SL_n(\R) \le GL_n(\R)$ ($\det A = 1$), $A_n \le S_n$ (чётные подстановки, $|A_n| = \frac{n!}{2}$), $k\Z \le \Z$.
 :::
 
-::: {.theorem ref="thm:lec16:criterion"}
-Непустое $H \subseteq G$ — подгруппа $\Leftrightarrow$ $h_1 h_2^{-1} \in H$ для всех $h_1, h_2 \in H$. *Идея:* подставить пары $(h, h)$ — получится $e$, $(e, h)$ — получится $h^{-1}$, $(h_1, h_2^{-1})$ — получится $h_1 h_2$.
-:::
-
 ::: {.definition ref="def:lec16:sl"}
 **Специальная линейная группа** $SL_n(\R) = \{A \in M_n(\R) \mid \det A = 1\}$ — подгруппа $GL_n(\R)$.
+:::
+
+::: {.theorem ref="thm:lec16:criterion"}
+Непустое $H \subseteq G$ — подгруппа $\Leftrightarrow$ $h_1 h_2^{-1} \in H$ для всех $h_1, h_2 \in H$. *Идея:* подставить пары $(h, h)$ — получится $e$, $(e, h)$ — получится $h^{-1}$, $(h_1, h_2^{-1})$ — получится $h_1 h_2$.
 :::
 
 ::: {.definition ref="def:lec16:homomorphism"}
