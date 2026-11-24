@@ -4,7 +4,7 @@ export type FetchLike = (input: string | URL | Request, init?: RequestInit) => P
 
 export type Tier = "guest" | "external" | "internal";
 export type QuotaBucket = "high" | "low";
-export type ModelId = "gpt-6.1-terra" | "gpt-6-luna";
+export type ModelId = string;
 export type RunStatus = "running" | "done" | "stopped" | "incomplete" | "error";
 export type MessageStatus = "done" | "running" | "stopped" | "incomplete" | "error";
 export type DocKind = "lecture" | "theory" | "prep" | "program";
@@ -36,6 +36,12 @@ export interface Env {
   OWNER_TELEGRAM_ID?: string;
 }
 
+export interface BucketModel {
+  model: string;
+  effort: string;
+  pricingVersion: number;
+}
+
 export interface ServicePolicy {
   rateLimitPerMinute: number;
   maxQuestionChars: number;
@@ -62,45 +68,11 @@ export interface ServicePolicy {
     reserveHighMicros: number;
     reserveLowMicros: number;
   };
-  tiers: {
-    guest: { lowLimit: number };
-    external: { lowLimit: number };
-    internal: { highLimit: number; lowLimit: number };
+  buckets: {
+    high: BucketModel & { limits: { internal: number } };
+    low: BucketModel & { limits: Record<Tier, number> };
   };
 }
-
-export const DEFAULT_POLICY: ServicePolicy = {
-  rateLimitPerMinute: 4,
-  maxQuestionChars: 2000,
-  maxQuoteChars: 4000,
-  maxBodyBytes: 32768,
-  maxHistoryMessages: 16,
-  maxHistoryChars: 24000,
-  maxToolRounds: 5,
-  maxToolCalls: 10,
-  maxToolOutputChars: 12000,
-  maxTotalToolOutputChars: 36000,
-  maxResponseChars: 24000,
-  maxRunDurationMs: 60000,
-  staleRunTimeoutMs: 75000,
-  allowanceTtlMs: 1800000,
-  sessionTtlMs: 2592000000,
-  archiveAfterDays: 30,
-  threadsPageSize: 20,
-  requireLoginWithoutFingerprint: false,
-  budgets: {
-    weeklyGlobalUsdMicros: 30_000_000,
-    weeklyWarnRatio: 0.8,
-    dailyGuestUsdMicros: 500_000,
-    reserveHighMicros: 40_000,
-    reserveLowMicros: 5_000,
-  },
-  tiers: {
-    guest: { lowLimit: 3 },
-    external: { lowLimit: 20 },
-    internal: { highLimit: 20, lowLimit: 80 },
-  },
-};
 
 export interface QuotePayload {
   blockId?: string;
@@ -116,6 +88,7 @@ export interface ChatStep {
   note?: string;
   state: "running" | "done" | "error";
   res?: string[];
+  links?: string[];
   more?: number;
 }
 
@@ -206,6 +179,7 @@ export interface RoundTokenUsage {
 }
 
 export interface LlmRoundRequest {
+  effort: string;
   model: ModelId;
   instructions: string;
   input: CodexInputItem[];

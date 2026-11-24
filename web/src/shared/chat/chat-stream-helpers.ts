@@ -47,10 +47,10 @@ export const applyMetaMessageIds = (
   }
   return prev.map((msg, idx) => {
     if (idx === aIdx) {
-      return { ...msg, id: ids.assistantId, runId: ids.runId };
+      return { ...msg, id: ids.assistantId, renderKey: msg.renderKey ?? msg.id, runId: ids.runId };
     }
     if (idx === aIdx - 1 && msg.role === "user") {
-      return { ...msg, id: ids.userId, runId: ids.runId };
+      return { ...msg, id: ids.userId, renderKey: msg.renderKey ?? msg.id, runId: ids.runId };
     }
     return msg;
   });
@@ -62,7 +62,7 @@ export const resetRetryAssistant = (
 ): readonly ChatMessage[] => {
   const idx = prev.findIndex((m) => m.id === retryId);
   const target = idx === -1 ? undefined : prev[idx];
-  if (target === undefined) {
+  if (target?.role !== "assistant" || idx !== prev.length - 1) {
     return prev;
   }
   const reset: ChatMessage = {
@@ -72,5 +72,5 @@ export const resetRetryAssistant = (
     status: "running",
     steps: [],
   };
-  return [...prev.slice(0, idx), reset];
+  return [...prev.slice(0, -1), reset];
 };

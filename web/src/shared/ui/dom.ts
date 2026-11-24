@@ -11,3 +11,11 @@ export const hashTarget = (hash: string): string => {
     return raw;
   }
 };
+
+/** Earlier chat citations prefixed generated section IDs with sec:<document>:. */
+export const findMaterialTarget = (hash: string, docId: string): Element | null => {
+  const id = hashTarget(hash);
+  const exact = findById(document, id);
+  const prefix = `sec:${docId}:`;
+  return exact ?? (id.startsWith(prefix) ? findById(document, id.slice(prefix.length)) : null);
+};

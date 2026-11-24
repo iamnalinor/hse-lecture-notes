@@ -3,10 +3,9 @@ import type { JSX } from "react";
 import { useChat } from "./chat-context.tsx";
 import { SparklesIcon } from "./chat-icons.tsx";
 
-/** Exact `.ai-head-btn` from prototype.html placed in TopBar on document pages. */
 export const ChatToggleButton = (): JSX.Element | null => {
   const chat = useChat();
-  if (!chat.isConfigured || chat.docContext === null) {
+  if (!chat.isConfigured) {
     return null;
   }
 

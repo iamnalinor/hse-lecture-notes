@@ -5,7 +5,6 @@ import {
   type ReactNode,
   type SetStateAction,
   use,
-  useCallback,
   useMemo,
   useState,
 } from "react";
@@ -25,17 +24,14 @@ import {
   parseDocContext,
 } from "#web/domain/chat.ts";
 
+import { useChatSendActions, useComposerDraft } from "./use-chat-send-actions.ts";
 import {
   useChatAuthState,
   useRootOpenClassSync,
   useTelegramAuthActions,
   useThreadState,
 } from "./use-chat-state.ts";
-import {
-  type ChatStreamController,
-  type StreamStateSetters,
-  useChatStream,
-} from "./use-chat-stream.ts";
+import { type StreamStateSetters, useChatStream } from "./use-chat-stream.ts";
 
 export const TURNSTILE_HOST_ID = "hse-turnstile-host";
 
@@ -43,10 +39,12 @@ export type ChatContextValue = {
   readonly activeThreadId: null | string;
   readonly block: ChatBlock | null;
   readonly cancelTurnstile: () => void;
+  readonly canStop: boolean;
+  readonly clearBlock: () => void;
   readonly clearQuote: () => void;
   readonly close: () => void;
   readonly degraded: ChatDegraded;
-  readonly docContext: ChatDocContext | null;
+  readonly docContext: ChatDocContext;
   readonly draft: string;
   readonly isConfigured: boolean;
   readonly isLoginBusy: boolean;
@@ -76,56 +74,9 @@ export type ChatContextValue = {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-type SendHookDeps = {
-  readonly docContext: ChatDocContext | null;
-  readonly draft: string;
-  readonly quote: ChatQuote | null;
-  readonly stream: ChatStreamController;
-  readonly thr: ReturnType<typeof useThreadState>;
-};
-
-const useChatSendActions = ({ docContext, draft, quote, stream, thr }: SendHookDeps) => {
-  const retryMessage = useCallback(
-    async (assistantMsgId: string): Promise<void> => {
-      if (docContext === null || thr.isStreaming) {
-        return;
-      }
-      const idx = thr.messages.findIndex((m) => m.id === assistantMsgId);
-      const userMsg = idx > 0 ? thr.messages[idx - 1] : undefined;
-      if (userMsg?.role !== "user") {
-        return;
-      }
-      await stream.sendQuestion({
-        activeThreadId: thr.activeThreadId,
-        docContext,
-        quote: userMsg.quote,
-        retryAssistantMessageId: assistantMsgId,
-        text: userMsg.contentTex,
-      });
-    },
-    [docContext, stream, thr.activeThreadId, thr.isStreaming, thr.messages],
-  );
-
-  const send = useCallback(
-    async (overrideText?: string): Promise<void> => {
-      if (docContext === null || thr.isStreaming) {
-        return;
-      }
-      const text = (overrideText ?? draft).trim();
-      if (text === "" && quote === null) {
-        return;
-      }
-      await stream.sendQuestion({ activeThreadId: thr.activeThreadId, docContext, quote, text });
-    },
-    [docContext, draft, quote, stream, thr.activeThreadId, thr.isStreaming],
-  );
-
-  return { retryMessage, send };
-};
-
 type BuildCtxArgs = {
   readonly auth: ReturnType<typeof useChatAuthState>;
-  readonly docContext: ChatDocContext | null;
+  readonly docContext: ChatDocContext;
   readonly draft: string;
   readonly isConfigured: boolean;
   readonly isOpen: boolean;
@@ -145,6 +96,10 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   activeThreadId: a.thr.activeThreadId,
   block: a.auth.block,
   cancelTurnstile: cancelActiveTurnstile,
+  canStop: a.thr.canStop,
+  clearBlock: () => {
+    a.auth.setBlock(null);
+  },
   clearQuote: () => {
     a.setQuote(null);
   },
@@ -162,6 +117,10 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   login: a.tgAuth.login,
   messages: a.thr.messages,
   newChat: () => {
+    if (a.thr.isStreaming) {
+      return;
+    }
+    a.thr.invalidateLoad();
     if (a.thr.activeThreadId !== null) {
       a.thr.setPreviousThreadId(a.thr.activeThreadId);
     }
@@ -176,7 +135,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   quote: a.quote,
   rateLimitUntil: a.auth.rateLimitUntil,
   restorePreviousThread: () => {
-    if (a.docContext === null || a.thr.previousThreadId === null) {
+    if (a.thr.isStreaming || a.thr.previousThreadId === null) {
       return;
     }
     const target = a.thr.previousThreadId;
@@ -185,7 +144,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   },
   retryMessage: a.retryMessage,
   selectThread: (threadId: string) => {
-    if (a.docContext === null) {
+    if (a.thr.isStreaming) {
       return;
     }
     a.thr.setPreviousThreadId(null);
@@ -204,59 +163,49 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   user: a.auth.user,
 });
 
-const useChatSessionValue = (docContext: ChatDocContext | null): ChatContextValue => {
+type SessionProps = {
+  readonly composer: ReturnType<typeof useComposerDraft>;
+  readonly tgAuth: ReturnType<typeof useTelegramAuthActions>;
+  readonly turnstileHooks: TurnstileHooks;
+  readonly turnstileOpen: boolean;
+  readonly auth: ReturnType<typeof useChatAuthState>;
+  readonly docContext: ChatDocContext;
+  readonly isOpen: boolean;
+  readonly setIsOpen: Dispatch<SetStateAction<boolean>>;
+};
+
+const useChatSessionValue = ({
+  auth,
+  composer,
+  docContext,
+  isOpen,
+  setIsOpen,
+  tgAuth,
+  turnstileHooks,
+  turnstileOpen,
+}: SessionProps): ChatContextValue => {
   const isConfigured = isChatConfigured();
-  const [isOpen, setIsOpen] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [quote, setQuote] = useState<ChatQuote | null>(null);
-  const [turnstileOpen, setTurnstileOpen] = useState(false);
+  const { draft, setDraft, quote, setQuote } = composer;
 
-  const auth = useChatAuthState();
   const thr = useThreadState(docContext, isOpen, isConfigured);
-  useRootOpenClassSync(isOpen, docContext !== null);
+  useRootOpenClassSync(isOpen);
 
-  const turnstileHooks = useMemo<TurnstileHooks>(
-    () => ({
-      getContainer: () => document.querySelector<HTMLElement>(`#${TURNSTILE_HOST_ID}`),
-      onInteractiveClose: () => {
-        setTurnstileOpen(false);
-      },
-      onInteractiveOpen: () => {
-        setTurnstileOpen(true);
-      },
-    }),
-    [],
-  );
-
-  const setters = useMemo<StreamStateSetters>(
-    () => ({
-      loadThread: thr.loadThread,
-      setActiveThreadId: thr.setActiveThreadId,
-      setBlock: auth.setBlock,
-      setDegraded: auth.setDegraded,
-      setDraft,
-      setIsStreaming: thr.setIsStreaming,
-      setMessages: thr.setMessages,
-      setPreviousThreadId: thr.setPreviousThreadId,
-      setQuote,
-      setThreads: thr.setThreads,
-      setTier: auth.setTier,
-      setUser: auth.setUser,
-    }),
-    [auth, thr],
-  );
-
-  const stream = useChatStream(setters, turnstileHooks);
-  const tgAuth = useTelegramAuthActions({
-    activeThreadId: thr.activeThreadId,
-    docContext,
-    loadThread: thr.loadThread,
+  const setters: StreamStateSetters = {
+    setPollRunId: thr.setPollRunId,
+    setActiveThreadId: thr.setActiveThreadId,
     setBlock: auth.setBlock,
     setDegraded: auth.setDegraded,
+    setDraft,
+    setIsStreaming: thr.setIsStreaming,
+    setMessages: thr.setMessages,
+    setPreviousThreadId: thr.setPreviousThreadId,
+    setQuote,
+    setThreads: thr.setThreads,
     setTier: auth.setTier,
     setUser: auth.setUser,
-    turnstileHooks,
-  });
+  };
+
+  const stream = useChatStream(setters, turnstileHooks);
   const actions = useChatSendActions({ docContext, draft, quote, stream, thr });
 
   return buildContextValue({
@@ -280,20 +229,64 @@ const useChatSessionValue = (docContext: ChatDocContext | null): ChatContextValu
 
 type InnerProps = {
   readonly children: ReactNode;
-  readonly docContext: ChatDocContext | null;
+  readonly docContext: ChatDocContext;
 };
 
-const ChatDocSessionProvider = ({ children, docContext }: InnerProps): JSX.Element => {
-  const value = useChatSessionValue(docContext);
+const ChatDocSessionProvider = ({ children, ...props }: InnerProps & SessionProps): JSX.Element => {
+  const value = useChatSessionValue(props);
   return <ChatContext value={value}>{children}</ChatContext>;
 };
 
-export const ChatProvider = ({ children }: { readonly children: ReactNode }): JSX.Element => {
+export const ChatProvider = ({
+  children,
+  general = false,
+}: {
+  readonly children: ReactNode;
+  readonly general?: boolean;
+}): JSX.Element => {
   const location = useLocation();
-  const docContext = useMemo(() => parseDocContext(location.pathname), [location.pathname]);
-  const docKey = docContext === null ? "none" : `${docContext.course}:${docContext.docId}`;
+  const auth = useChatAuthState();
+  const [isOpen, setIsOpen] = useState(false);
+  const [turnstileOpen, setTurnstileOpen] = useState(false);
+  const turnstileHooks = useMemo<TurnstileHooks>(
+    () => ({
+      getContainer: () => document.querySelector<HTMLElement>(`#${TURNSTILE_HOST_ID}`),
+      onInteractiveClose: () => {
+        setTurnstileOpen(false);
+      },
+      onInteractiveOpen: () => {
+        setTurnstileOpen(true);
+      },
+    }),
+    [],
+  );
+
+  const docContext = useMemo(
+    () => parseDocContext(general ? "/" : location.pathname),
+    [general, location.pathname],
+  );
+  const docKey = `${docContext.course}:${docContext.docId}`;
+  const composer = useComposerDraft(docKey, auth.user);
+  const tgAuth = useTelegramAuthActions({
+    onLogin: composer.onLogin,
+    setBlock: auth.setBlock,
+    setDegraded: auth.setDegraded,
+    setTier: auth.setTier,
+    setUser: auth.setUser,
+    turnstileHooks,
+  });
   return (
-    <ChatDocSessionProvider docContext={docContext} key={docKey}>
+    <ChatDocSessionProvider
+      auth={auth}
+      composer={composer}
+      docContext={docContext}
+      isOpen={isOpen}
+      key={`${docKey}:${auth.user?.id ?? "guest"}`}
+      setIsOpen={setIsOpen}
+      tgAuth={tgAuth}
+      turnstileHooks={turnstileHooks}
+      turnstileOpen={turnstileOpen}
+    >
       {children}
     </ChatDocSessionProvider>
   );

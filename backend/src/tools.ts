@@ -1,3 +1,4 @@
+import { SYSTEM_PROMPT } from "./system-prompt";
 import type { TrackedD1 } from "./db";
 import { buildFtsMatchQuery } from "./stemmer";
 import type {
@@ -109,9 +110,9 @@ export async function validateQuoteAgainstCourse(
     }>(
       db
         .prepare(
-          "SELECT course, doc_id, title, statement_tex, proof_tex FROM course_blocks WHERE id = ?",
+          "SELECT course, doc_id, title, statement_tex, proof_tex FROM course_blocks WHERE course = ? AND doc_id = ? AND (anchor_id = ? OR id = ?) LIMIT 1",
         )
-        .bind(quote.blockId),
+        .bind(course, docId, quote.blockId, quote.blockId),
     );
     if (block && block.course === course && block.doc_id === docId) {
       const combined = `${block.title}\n${block.statement_tex}\n${block.proof_tex}`;
@@ -140,7 +141,7 @@ export async function buildSystemPrompt(
   course: string,
   docId: string,
 ): Promise<{ instructions: string; currentDocOrder: number; currentDocTitle: string }> {
-  const docsRes = await db.all<{
+  const docsRes = course === "" ? { results: [] } : await db.all<{
     doc_kind: string;
     doc_id: string;
     order_index: number;
@@ -168,26 +169,15 @@ export async function buildSystemPrompt(
     outlineLines.push(`- [${d.doc_kind}] ${d.doc_id}: ${d.title}${marker}`);
   }
 
-  const outlineSection =
-    outlineLines.length > 0
-      ? outlineLines.join("\n")
-      : `- Текущий документ: ${course}/${docId}  ← МЫ ЗДЕСЬ`;
+  const outlineSection = outlineLines.length ? `\n\nПЛАН КУРСА (${course}):\n${outlineLines.join("\n")}` : "";
+  let pageContext = "Студент на главной странице. Курс и документ не выбраны. По умолчанию поиск охватывает все курсы. Для read_document указывай курс из результатов поиска.";
+  if (docId) {
+    pageContext = `Студент открыл документ «${currentDocTitle}» (${course}/${docId}). Отдавай приоритет текущей и более ранним лекциям. Если блок помечен later_in_course, предупреди, что это будет позже в курсе.`;
+  } else if (course) {
+    pageContext = `Студент на странице курса ${course}. Конкретный документ не выбран. Не предполагай, какие темы уже пройдены.`;
+  }
 
-  const instructions = `Ты — учебный ИИ-ассистент по конспектам 1 курса ПИ ВШЭ на сайте hse.nalinor.dev.
-Отвечай строго на русском языке, лаконично, точно и математически корректно.
-
-ПРАВИЛА:
-1. Опирайся на материалы курса через инструменты search_materials, read_block и read_document. Не выдумывай номера, формулировки теорем или определения, которых нет в конспектах.
-2. Хронология курса: студент сейчас открыл документ «${currentDocTitle}» (${course}/${docId}).
-   - Если в результатах поиска блок помечен \`chronology: "later_in_course"\`, НЕ опирайся на него как на уже пройденный факт без явной оговорки («это будет позже в курсе»).
-   - Отдавай приоритет материалу из текущей и более ранних лекций.
-3. Ссылки на блоки конспекта оформляй ровно в формате Markdown-ссылки на ID блока, например: [теорема о делении с остатком](#thm:lec06:divmod) или [определение](#def:lec01:statement). Используй только реальные \`id\` блоков, которые вернули инструменты.
-4. Формулы пиши в LaTeX: инлайн \`$...$\`, выключные \`$$...$$\`. Не оборачивай LaTeX-формулы в бэктики.
-5. Если студент задаёт задачу, помогай понять идею и шаги доказательства в стиле конспекта, ссылаясь на нужные определения и теоремы курса.
-6. Если нужного факта нет в конспектах, честно скажи об этом.
-
-ПЛАН КУРСА (${course}):
-${outlineSection}`;
+  const instructions = `${SYSTEM_PROMPT}\n\n${pageContext}${outlineSection}`;
 
   return { instructions, currentDocOrder, currentDocTitle };
 }
@@ -287,6 +277,7 @@ export interface ToolExecutionContext {
 }
 
 interface SearchBlockRow {
+  anchor_id: string;
   id: string;
   course: string;
   doc_kind: string;
@@ -304,7 +295,8 @@ function classifyChronology(
   currentCourse: string,
   currentDocId: string,
   currentDocOrder: number,
-): "earlier" | "current" | "later_in_course" | "other_course" {
+): "earlier" | "current" | "later_in_course" | "other_course" | "unspecified" {
+  if (!currentDocId) return "unspecified";
   if (blockCourse !== currentCourse) return "other_course";
   if (blockDocId === currentDocId) return "current";
   if (blockDocOrder > currentDocOrder && currentDocOrder > 0) return "later_in_course";
@@ -313,6 +305,10 @@ function classifyChronology(
 
 function isExactBlockIdQuery(q: string): boolean {
   return /^[a-z]+:[a-z0-9_:-]+$/i.test(q.trim());
+}
+
+function materialLink(row: { course: string; doc_id: string; anchor_id: string }): string {
+  return `/${row.course}/${row.doc_id}#${row.anchor_id}`;
 }
 
 export class AgentToolRunner {
@@ -328,12 +324,27 @@ export class AgentToolRunner {
     name: string,
     rawArgs: string,
   ): Promise<{ output: string; step: ChatStep; fromCache: boolean }> {
+    const limit = Math.min(
+      this.ctx.maxToolOutputChars,
+      this.ctx.maxTotalToolOutputChars - this.totalOutputChars,
+    );
+    if (limit <= 0) {
+      return { output: "", step: { kind: "note", state: "error", note: "Лимит инструментов" }, fromCache: false };
+    }
+    const capped = (output: string): string => {
+      const suffix = "\n...[truncated]";
+      const text = output.length <= limit
+        ? output
+        : output.slice(0, Math.max(0, limit - suffix.length)) + suffix.slice(0, limit);
+      this.totalOutputChars += text.length;
+      return text;
+    };
     let args: Record<string, unknown> = {};
     try {
       args = rawArgs ? (JSON.parse(rawArgs) as Record<string, unknown>) : {};
     } catch {
       return {
-        output: JSON.stringify({ error: "Invalid JSON arguments" }),
+        output: capped(JSON.stringify({ error: "Invalid JSON arguments" })),
         step: { kind: "note", note: `Ошибка аргументов ${name}`, state: "error" },
         fromCache: false,
       };
@@ -342,7 +353,7 @@ export class AgentToolRunner {
     const cacheKey = `${name}:${JSON.stringify(args)}`;
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      return { output: cached.output, step: cached.step, fromCache: true };
+      return { output: capped(cached.output), step: cached.step, fromCache: true };
     }
 
     let result: { output: string; step: ChatStep };
@@ -359,16 +370,8 @@ export class AgentToolRunner {
       };
     }
 
-    // Enforce per-tool and cumulative output caps
-    const remaining = Math.max(256, this.ctx.maxTotalToolOutputChars - this.totalOutputChars);
-    const limit = Math.min(this.ctx.maxToolOutputChars, remaining);
-    if (result.output.length > limit) {
-      result.output = `${result.output.slice(0, limit - 40)}\n...[truncated]`;
-    }
-    this.totalOutputChars += result.output.length;
-
     this.cache.set(cacheKey, result);
-    return { ...result, fromCache: false };
+    return { ...result, output: capped(result.output), fromCache: false };
   }
 
   private async runSearchMaterials(
@@ -393,15 +396,15 @@ export class AgentToolRunner {
       const exact = await this.ctx.db.first<SearchBlockRow>(
         this.ctx.db
           .prepare(
-            "SELECT id, course, doc_kind, doc_id, doc_order, block_kind, title, statement_tex FROM course_blocks WHERE id = ?",
+            "SELECT id, anchor_id, course, doc_kind, doc_id, doc_order, block_kind, title, statement_tex FROM course_blocks WHERE id = ? OR (course = ? AND anchor_id = ?) ORDER BY (doc_id = ?) DESC, id LIMIT 1",
           )
-          .bind(query),
+          .bind(query, course, query, this.ctx.currentDocId),
       );
       if (exact) {
         const item = this.formatSearchItem(exact);
         return {
           output: JSON.stringify({ results: [item], source: "exact_id" }),
-          step: { kind: "search", q: query, state: "done", res: [exact.title || exact.id] },
+          step: { kind: "search", q: query, state: "done", res: [exact.title || exact.id], links: [materialLink(exact)] },
         };
       }
     }
@@ -432,7 +435,7 @@ export class AgentToolRunner {
         const res = await this.ctx.db.all<SearchBlockRow>(
           this.ctx.db
             .prepare(
-              `SELECT b.id, b.course, b.doc_kind, b.doc_id, b.doc_order, b.block_kind, b.title, b.statement_tex
+              `SELECT b.id, b.anchor_id, b.course, b.doc_kind, b.doc_id, b.doc_order, b.block_kind, b.title, b.statement_tex
                FROM course_blocks_fts
                JOIN course_blocks b ON b.id = course_blocks_fts.id
                WHERE ${filters.join(" AND ")}
@@ -489,7 +492,7 @@ export class AgentToolRunner {
             const verified = await this.ctx.db.all<SearchBlockRow>(
               this.ctx.db
                 .prepare(
-                  `SELECT id, course, doc_kind, doc_id, doc_order, block_kind, title, statement_tex
+                  `SELECT id, anchor_id, course, doc_kind, doc_id, doc_order, block_kind, title, statement_tex
                    FROM course_blocks
                    WHERE ${filters.join(" AND ")}`,
                 )
@@ -539,6 +542,7 @@ export class AgentToolRunner {
         q: query,
         state: "done",
         res: labels,
+        links: merged.slice(0, 3).map(materialLink),
         ...(more > 0 ? { more } : {}),
       },
     };
@@ -551,6 +555,7 @@ export class AgentToolRunner {
         : row.statement_tex;
     return {
       id: row.id,
+      anchor_id: row.anchor_id,
       course: row.course,
       doc_kind: row.doc_kind,
       doc_id: row.doc_id,
@@ -571,7 +576,7 @@ export class AgentToolRunner {
   private async runReadBlock(
     args: Record<string, unknown>,
   ): Promise<{ output: string; step: ChatStep }> {
-    const id = String(args.id ?? "").trim();
+    let id = String(args.id ?? "").trim();
     const includeProof = args.include_proof !== false;
     if (!id) {
       return {
@@ -580,11 +585,18 @@ export class AgentToolRunner {
       };
     }
 
+    if (!id.startsWith("block:")) {
+      const legacy = await this.ctx.db.first<{id: string}>(
+        this.ctx.db.prepare("SELECT id FROM course_blocks WHERE course = ? AND anchor_id = ? ORDER BY (doc_id = ?) DESC, id LIMIT 1")
+          .bind(this.ctx.currentCourse, id, this.ctx.currentDocId),
+      );
+      id = legacy?.id ?? id;
+    }
     // 1 batch with 3 independent bounded queries (avoids double JOIN row multiplication!)
     const [blockRes, outRes, inRes] = await this.ctx.db.batch<Record<string, unknown>>([
       this.ctx.db
         .prepare(
-          `SELECT id, course, doc_kind, doc_id, doc_order, block_kind, section_id, title, statement_tex, proof_tex
+          `SELECT id, anchor_id, course, doc_kind, doc_id, doc_order, block_kind, section_id, title, statement_tex, proof_tex
            FROM course_blocks WHERE id = ?`,
         )
         .bind(id),
@@ -612,6 +624,7 @@ export class AgentToolRunner {
       | {
           id: string;
           course: string;
+          anchor_id: string;
           doc_kind: string;
           doc_id: string;
           doc_order: number;
@@ -632,6 +645,7 @@ export class AgentToolRunner {
 
     const payload = {
       id: block.id,
+      anchor_id: block.anchor_id,
       course: block.course,
       doc_kind: block.doc_kind,
       doc_id: block.doc_id,
@@ -711,33 +725,45 @@ export class AgentToolRunner {
       };
     }
 
+    const outline = JSON.parse(doc.outline_json) as Array<{id: string; level: number}>;
+    const sectionIds = [sectionId];
+    const index = outline.findIndex(heading => heading.id === sectionId);
+    if (index >= 0) {
+      const level = outline[index]!.level;
+      for (const heading of outline.slice(index + 1)) {
+        if (heading.level <= level) break;
+        sectionIds.push(heading.id);
+      }
+    }
     // Bounded block read (LIMIT 30)
     const blocks = sectionId
       ? await this.ctx.db.all<{
           id: string;
+          anchor_id: string;
           block_kind: string;
           title: string;
           statement_tex: string;
         }>(
           this.ctx.db
             .prepare(
-              `SELECT id, block_kind, title, statement_tex
+              `SELECT id, anchor_id, block_kind, title, statement_tex
                FROM course_blocks
-               WHERE course = ? AND doc_id = ? AND (section_id = ? OR id = ?)
+               WHERE course = ? AND doc_id = ? AND (section_id IN (SELECT value FROM json_each(?)) OR id = ?)
                ORDER BY block_order
                LIMIT 30`,
             )
-            .bind(course, docId, sectionId, sectionId),
+            .bind(course, docId, JSON.stringify(sectionIds), sectionId),
         )
       : await this.ctx.db.all<{
           id: string;
+          anchor_id: string;
           block_kind: string;
           title: string;
           statement_tex: string;
         }>(
           this.ctx.db
             .prepare(
-              `SELECT id, block_kind, title, statement_tex
+              `SELECT id, anchor_id, block_kind, title, statement_tex
                FROM course_blocks
                WHERE course = ? AND doc_id = ?
                ORDER BY block_order
@@ -748,6 +774,7 @@ export class AgentToolRunner {
 
     const compactBlocks = blocks.results.map((b) => ({
       id: b.id,
+      anchor_id: b.anchor_id,
       block_kind: b.block_kind,
       title: b.title,
       statement_tex:
@@ -768,7 +795,7 @@ export class AgentToolRunner {
           this.ctx.currentDocId,
           this.ctx.currentDocOrder,
         ),
-        outline: JSON.parse(doc.outline_json),
+        outline,
         blocks: compactBlocks,
       }),
       step: { kind: "read", target: sectionId ? `${doc.title} (${sectionId})` : doc.title, state: "done" },

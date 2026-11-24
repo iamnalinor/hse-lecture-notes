@@ -177,6 +177,7 @@ async function refreshWithLease(
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body.toString(),
+      signal: AbortSignal.timeout(LEASE_TTL_MS / 2),
     });
 
     if (!resp.ok) {
@@ -188,15 +189,16 @@ async function refreshWithLease(
         errText.includes("refresh_token_reused");
 
       if (isTerminal) {
-        await db.run(
+        const marked = await db.run(
           db
             .prepare(
               `UPDATE codex_credentials
                SET status = 'needs_reauth', lease_owner = NULL, lease_until = 0, updated_at = ?
-               WHERE id = 1 AND lease_owner = ?`,
+               WHERE id = 1 AND lease_owner = ? AND version = ? AND lease_until > ?`,
             )
-            .bind(now(), leaseOwner),
+            .bind(now(), leaseOwner, initialRow.version, now()),
         );
+        if (!marked.meta.changes) throw new CodexAuthError("oauth_unavailable", "Refresh lease expired");
         await sendOwnerAlert(
           env,
           db,
@@ -211,16 +213,6 @@ async function refreshWithLease(
         );
       }
 
-      // Transient error: release lease without changing status
-      await db.run(
-        db
-          .prepare(
-            `UPDATE codex_credentials
-             SET lease_owner = NULL, lease_until = 0, updated_at = ?
-             WHERE id = 1 AND lease_owner = ?`,
-          )
-          .bind(now(), leaseOwner),
-      );
       throw new CodexAuthError("oauth_unavailable", `Codex OAuth transient failure (${resp.status})`);
     }
 
@@ -246,7 +238,9 @@ async function refreshWithLease(
 
     const encrypted = await encryptJsonAesGcm(env.CODEX_CREDENTIALS_ENCRYPTION_KEY, updatedCreds);
 
-    await db.run(
+    // A rotated pair supersedes the source version even if the lease changed hands.
+    // A newer saved pair or an admin reseed always wins. Late errors are owner-fenced above.
+    const saved = await db.run(
       db
         .prepare(
           `UPDATE codex_credentials
@@ -256,14 +250,20 @@ async function refreshWithLease(
                lease_owner = NULL,
                lease_until = 0,
                updated_at = ?
-           WHERE id = 1 AND version = ? AND lease_owner = ?`,
+           WHERE id = 1 AND version = ?`,
         )
-        .bind(encrypted, now(), initialRow.version, leaseOwner),
+        .bind(encrypted, now(), initialRow.version),
     );
 
+    if (!saved.meta.changes) {
+      const latest = await db.first<CodexCredentialsRow>(db.prepare("SELECT * FROM codex_credentials WHERE id = 1"));
+      if (latest && latest.version > initialRow.version && latest.status === "ok") {
+        return decryptJsonAesGcm(env.CODEX_CREDENTIALS_ENCRYPTION_KEY, latest.encrypted_payload);
+      }
+      throw new CodexAuthError("oauth_unavailable", "Credential version changed during refresh");
+    }
     return updatedCreds;
   } catch (err) {
-    if (err instanceof CodexAuthError) throw err;
     await db.run(
       db
         .prepare(
@@ -273,6 +273,7 @@ async function refreshWithLease(
         )
         .bind(now(), leaseOwner),
     );
+    if (err instanceof CodexAuthError) throw err;
     throw new CodexAuthError(
       "oauth_unavailable",
       `Codex OAuth refresh network error: ${err instanceof Error ? err.message : String(err)}`,

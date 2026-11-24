@@ -5,6 +5,7 @@ import {
   fetchChatThread,
   loginViaTelegram,
   logoutChatSession,
+  type ThreadResponse,
 } from "#web/api/chat-client.ts";
 import { readStoredAuth, subscribeAuthStorage } from "#web/api/chat-storage.ts";
 import { type TurnstileHooks, warmupChatWidgets } from "#web/api/chat-widgets.ts";
@@ -19,12 +20,12 @@ import {
   nextRunPollDelayMs,
 } from "#web/domain/chat.ts";
 
-export const useRootOpenClassSync = (isOpen: boolean, hasDoc: boolean): void => {
+export const useRootOpenClassSync = (isOpen: boolean): void => {
   const savedScrollYRef = useRef<null | number>(null);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (isOpen && hasDoc) {
+    if (isOpen) {
       root.classList.add("ai-open");
       if (
         globalThis.window.matchMedia("(max-width: 720px)").matches &&
@@ -43,7 +44,7 @@ export const useRootOpenClassSync = (isOpen: boolean, hasDoc: boolean): void => 
     if (globalThis.window.matchMedia("(max-width: 720px)").matches) {
       globalThis.window.scrollTo(0, y);
     }
-  }, [hasDoc, isOpen]);
+  }, [isOpen]);
 
   useEffect(
     () => () => {
@@ -63,21 +64,38 @@ export const useChatAuthState = () => {
 
   const applyBlock = useCallback((next: ChatBlock | null): void => {
     setBlock(next);
-    if (next?.code === "rate_limited") {
-      setRateLimitUntil(Date.now() + (next.retryAfterSec ?? 15) * 1000);
-    } else if (next === null) {
-      setRateLimitUntil(0);
-    }
+    setRateLimitUntil(
+      next?.code === "rate_limited" ? Date.now() + (next.retryAfterSec ?? 15) * 1000 : 0,
+    );
   }, []);
+
+  useEffect(() => {
+    if (typeof block?.nextAvailableAt !== "number") {
+      return;
+    }
+    const timer = globalThis.setTimeout(
+      () => {
+        applyBlock(null);
+      },
+      Math.max(0, block.nextAvailableAt - Date.now()),
+    );
+    return () => {
+      globalThis.clearTimeout(timer);
+    };
+  }, [applyBlock, block]);
 
   useEffect(
     () =>
       subscribeAuthStorage(() => {
         const fresh = readStoredAuth();
+        if (fresh.user?.id !== user?.id) {
+          applyBlock(null);
+          setDegraded({ active: false });
+        }
         setTier(fresh.tier);
         setUser(fresh.user);
       }),
-    [],
+    [applyBlock, user?.id],
   );
 
   return {
@@ -93,8 +111,19 @@ export const useChatAuthState = () => {
   };
 };
 
+const readThread = async (
+  ctx: ChatDocContext,
+  threadId?: null | string,
+): Promise<null | ThreadResponse> => {
+  try {
+    return await fetchChatThread(ctx.course, ctx.docId, threadId);
+  } catch {
+    return null;
+  }
+};
+
 export const useThreadState = (
-  docContext: ChatDocContext | null,
+  docContext: ChatDocContext,
   isOpen: boolean,
   isConfigured: boolean,
 ) => {
@@ -104,77 +133,82 @@ export const useThreadState = (
   const [messages, setMessages] = useState<readonly ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isThreadLoading, setIsThreadLoading] = useState(
-    () => isConfigured && docContext !== null && readStoredAuth().browserToken !== null,
+    () => isConfigured && readStoredAuth().browserToken !== null,
   );
 
+  const [pollRunId, setPollRunId] = useState<null | string>(null);
+  const requestRef = useRef(0);
+  const invalidateLoad = useCallback(() => {
+    requestRef.current += 1;
+    setIsThreadLoading(false);
+  }, []);
   const loadThread = useCallback(
     async (ctx: ChatDocContext, requestedThreadId?: null | string): Promise<void> => {
-      try {
-        const data = await fetchChatThread(ctx.course, ctx.docId, requestedThreadId);
-        if (data === null) {
-          return;
-        }
-        setThreads(data.threads);
-        if (data.thread === null) {
-          setActiveThreadId(null);
-          setMessages([]);
-          return;
-        }
-        setActiveThreadId(data.thread.id);
-        setMessages(data.thread.messages);
-        const last = data.thread.messages.at(-1);
-        if (last?.role === "assistant" && last.status === "running" && last.runId !== null) {
-          setIsStreaming(true);
-        }
-      } finally {
-        setIsThreadLoading(false);
+      const request = ++requestRef.current;
+      const data = await readThread(ctx, requestedThreadId);
+      if (request !== requestRef.current) {
+        return;
       }
+      setIsThreadLoading(false);
+      if (data === null) {
+        return;
+      }
+      const items = data.thread?.messages ?? [];
+      const last = items.at(-1);
+      const run = last?.role === "assistant" && last.status === "running" ? last.runId : null;
+      setThreads(data.threads);
+      setActiveThreadId(data.thread?.id ?? null);
+      setMessages(items);
+      setIsStreaming(run !== null);
+      setPollRunId(run);
     },
     [],
   );
 
+  useRunStatusPoller({ runId: pollRunId, ctx: docContext, threadId: activeThreadId, loadThread });
+
+  const openedRef = useRef(false);
   useEffect(() => {
-    if (!isConfigured || docContext === null || readStoredAuth().browserToken === null) {
+    if (!isOpen || !isConfigured || openedRef.current) {
       return;
     }
-    let isCancelled = false;
-    const sync = async (): Promise<void> => {
-      if (!isCancelled) {
-        await loadThread(docContext);
-      }
-    };
-    void sync();
-    return () => {
-      isCancelled = true;
-    };
-  }, [docContext, isConfigured, loadThread]);
+    openedRef.current = true;
+    if (readStoredAuth().browserToken !== null) {
+      // Defer the first fetch until the panel has committed its loading state.
+      queueMicrotask(() => void loadThread(docContext));
+    }
+  }, [docContext, isConfigured, isOpen, loadThread]);
 
   useEffect(() => {
-    if (isOpen && isConfigured && docContext !== null) {
+    if (isOpen && isConfigured) {
       warmupChatWidgets();
     }
-  }, [docContext, isConfigured, isOpen]);
+  }, [isConfigured, isOpen]);
 
   return {
     activeThreadId,
+    canStop: isStreaming && pollRunId === null,
+    invalidateLoad,
     isStreaming,
     isThreadLoading,
-    loadThread,
+    loadThread: (ctx: ChatDocContext, threadId: string) => {
+      setIsThreadLoading(true);
+      return loadThread(ctx, threadId);
+    },
     messages,
     previousThreadId,
     setActiveThreadId,
     setIsStreaming,
     setMessages,
     setPreviousThreadId,
+    setPollRunId,
     setThreads,
     threads,
   };
 };
 
 type LoginDeps = {
-  readonly activeThreadId: null | string;
-  readonly docContext: ChatDocContext | null;
-  readonly loadThread: (ctx: ChatDocContext, requestedThreadId?: null | string) => Promise<void>;
+  readonly onLogin: (account: ChatUser | null) => void;
   readonly setBlock: (next: ChatBlock | null) => void;
   readonly setDegraded: (next: ChatDegraded) => void;
   readonly setTier: (next: ChatTier) => void;
@@ -192,13 +226,11 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
     setIsLoginBusy(true);
     try {
       const res = await loginViaTelegram(deps.turnstileHooks);
+      deps.onLogin(res.user);
       deps.setTier(res.tier);
       deps.setUser(res.user);
       deps.setDegraded(res.degraded);
       deps.setBlock(res.block);
-      if (deps.docContext !== null) {
-        await deps.loadThread(deps.docContext, deps.activeThreadId);
-      }
     } catch {
       // User cancelled Telegram popup or network error
     } finally {
@@ -207,9 +239,12 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
   }, [deps, isLoginBusy]);
 
   const switchAccount = useCallback(async (): Promise<void> => {
-    await logoutChatSession();
+    if ((await logoutChatSession()) === "session_changed") {
+      return;
+    }
     deps.setTier("guest");
     deps.setUser(null);
+    deps.setDegraded({ active: false });
     deps.setBlock(null);
     await login();
   }, [deps, login]);
@@ -217,62 +252,42 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
   return { isLoginBusy, login, switchAccount };
 };
 
-type PollerSetters = {
-  readonly loadThread: (ctx: ChatDocContext, threadId?: null | string) => Promise<void>;
-  readonly setIsStreaming: (isStreaming: boolean) => void;
+type PollTarget = {
+  readonly runId: null | string;
+  readonly ctx: ChatDocContext;
+  readonly threadId: null | string;
+  readonly loadThread: (ctx: ChatDocContext, threadId: null | string) => Promise<void>;
 };
 
-export const useRunStatusPoller = (
-  setters: PollerSetters,
-  runIdRef: { current: null | string },
-) => {
-  const timerRef = useRef<null | ReturnType<typeof globalThis.setTimeout>>(null);
-
-  const stopPolling = useCallback((): void => {
-    if (timerRef.current === null) {
+const useRunStatusPoller = ({ runId, ctx, threadId, loadThread }: PollTarget): void => {
+  useEffect(() => {
+    if (runId === null) {
       return;
     }
-    globalThis.clearTimeout(timerRef.current);
-    timerRef.current = null;
-  }, []);
-
-  useEffect(
-    () => () => {
-      stopPolling();
-    },
-    [stopPolling],
-  );
-
-  return useCallback(
-    (runId: string, ctx: ChatDocContext, threadId: null | string): void => {
-      stopPolling();
-      let attempt = 0;
-      const schedule = (delayMs: number): void => {
-        timerRef.current = globalThis.setTimeout(() => {
-          void tick();
-        }, delayMs);
-      };
-      const tick = async (): Promise<void> => {
-        if (document.hidden) {
-          schedule(4000);
-          return;
+    let isActive = true;
+    let attempt = 0;
+    let timer: ReturnType<typeof globalThis.setTimeout>;
+    const tick = async (): Promise<void> => {
+      if (!document.hidden) {
+        try {
+          const status = await fetchChatRunStatus(runId);
+          if (isActive && status?.status !== "running") {
+            await loadThread(ctx, threadId);
+          }
+        } catch {
+          // A temporary connection error leaves the saved run eligible for the next poll.
         }
-        attempt += 1;
-        const status = await fetchChatRunStatus(runId);
-        if (status?.status !== "running") {
-          stopPolling();
-          setters.setIsStreaming(false);
-          await setters.loadThread(ctx, threadId ?? status?.threadId ?? null);
-          return;
-        }
-        schedule(nextRunPollDelayMs(attempt));
-      };
-      if (runIdRef.current !== null) {
-        schedule(nextRunPollDelayMs(0));
       }
-    },
-    [runIdRef, setters, stopPolling],
-  );
+      if (isActive) {
+        timer = globalThis.setTimeout(() => void tick(), nextRunPollDelayMs(++attempt));
+      }
+    };
+    timer = globalThis.setTimeout(() => void tick(), nextRunPollDelayMs(0));
+    return () => {
+      isActive = false;
+      globalThis.clearTimeout(timer);
+    };
+  }, [ctx, loadThread, runId, threadId]);
 };
 
 export const useCopyFeedback = () => {

@@ -1,5 +1,6 @@
+import initialPolicy from "../policy.json";
 import { Database } from "bun:sqlite";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -13,9 +14,11 @@ export class SqliteD1Shim {
     this.sqlite = new Database(":memory:");
     this.sqlite.exec("PRAGMA foreign_keys = ON;");
     if (applyInitMigration) {
-      const sqlPath = resolve(import.meta.dir, "../migrations/0001_init.sql");
-      const sql = readFileSync(sqlPath, "utf8");
-      this.sqlite.exec(sql);
+      const dir = resolve(import.meta.dir, "../migrations");
+      for (const name of readdirSync(dir).filter(name => name.endsWith(".sql")).sort()) {
+        this.sqlite.exec(readFileSync(resolve(dir, name), "utf8"));
+      }
+      this.sqlite.query("INSERT INTO service_config (key, value_json, updated_at) VALUES ('policy', ?, 0)").run(JSON.stringify(initialPolicy));
     }
   }
 
@@ -73,7 +76,8 @@ class SqlitePreparedStatement {
       trimmed.startsWith("EXPLAIN") ||
       trimmed.startsWith("PRAGMA");
 
-    if (isSelect) {
+    const returnsRows = /\bRETURNING\b/u.test(trimmed);
+    if (isSelect || returnsRows) {
       const stmt = this.sqlite.query(this.query);
       const rows = stmt.all(...(this.params as never[])) as T[];
       const duration = performance.now() - start;
@@ -84,10 +88,10 @@ class SqlitePreparedStatement {
           duration,
           size_after: 0,
           rows_read: Math.max(1, rows.length),
-          rows_written: 0,
+          rows_written: returnsRows ? rows.length : 0,
           last_row_id: 0,
-          changed_db: false,
-          changes: 0,
+          changed_db: returnsRows && rows.length > 0,
+          changes: returnsRows ? rows.length : 0,
         },
       };
     } else {

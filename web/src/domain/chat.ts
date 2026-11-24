@@ -1,4 +1,5 @@
 import chatSuggestionsData from "./chat-suggestions.json";
+import { findCourse } from "./courses.ts";
 
 export type ChatTier = "external" | "guest" | "internal";
 
@@ -41,6 +42,7 @@ export type ChatStep = {
   readonly note?: string;
   readonly q?: string;
   readonly res?: readonly string[];
+  readonly links?: readonly string[];
   readonly state: "done" | "error" | "running";
   readonly target?: string;
 };
@@ -53,6 +55,7 @@ export type ChatMessage = {
   readonly errorMessage: null | string;
   readonly id: string;
   readonly quote: ChatQuote | null;
+  readonly renderKey?: string;
   readonly role: "assistant" | "user";
   readonly runId: null | string;
   readonly seq: number;
@@ -88,13 +91,12 @@ export type ChatPlateCopy = {
 };
 
 /** Extracts `{ course, docId }` on document routes (`/<course>/<docId>`), else `null`. */
-export const parseDocContext = (pathname: string): ChatDocContext | null => {
-  const parts = pathname.split("/").filter((part) => part !== "");
-  if (parts.length !== 2) {
-    return null;
-  }
-  const [course, docId] = parts;
-  return course === undefined || docId === undefined ? null : { course, docId };
+export const parseDocContext = (pathname: string): ChatDocContext => {
+  const [slug, docId = "", ...rest] = pathname.split("/").filter(Boolean);
+  const course = findCourse(slug);
+  return course === undefined || rest.length > 0
+    ? { course: "", docId: "" }
+    : { course: course.id, docId };
 };
 
 const russianPlural = (n: number, forms: readonly [string, string, string]): string => {
@@ -281,7 +283,7 @@ export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number):
 };
 
 export const DEFAULT_CHAT_SUGGESTIONS: readonly string[] = [
-  "Объясни ключевую идею этой лекции простыми словами",
+  "Объясни ключевую идею этого материала простыми словами",
   "Разбери главное доказательство по шагам",
   "Приведи наглядный пример и контрпример по теме",
 ];
@@ -289,9 +291,16 @@ export const DEFAULT_CHAT_SUGGESTIONS: readonly string[] = [
 const SUGGESTIONS_MAP: Readonly<Record<string, readonly string[]>> = chatSuggestionsData;
 
 /** Returns pre-generated study prompts for `<course>/<docId>`, falling back to generic defaults. */
-export const getLectureSuggestions = (docContext: ChatDocContext | null): readonly string[] => {
-  if (docContext === null) {
-    return DEFAULT_CHAT_SUGGESTIONS;
+export const getLectureSuggestions = (docContext: ChatDocContext): readonly string[] => {
+  if (docContext.course === "") {
+    return ["В каких курсах разбирают индукцию?", "Где найти примеры работы с указателями на C?"];
+  }
+  if (docContext.docId === "") {
+    return [
+      "Какие темы входят в курс?",
+      "С какой лекции начать?",
+      "Какие материалы помогут подготовиться к контрольной?",
+    ];
   }
   const key = `${docContext.course}/${docContext.docId}`;
   const custom = SUGGESTIONS_MAP[key];

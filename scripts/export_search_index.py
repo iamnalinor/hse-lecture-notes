@@ -26,6 +26,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.error
@@ -33,13 +34,14 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+import pypandoc
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_D1_ID = "3516cc7d-e847-4266-8764-95c43dd0881c"
 DEFAULT_VECTORIZE_INDEX = "hse-course-blocks"
 VECTORIZE_FREE_MAX_VECTORS = 4800  # hard Free cap is 4882 @ 1024 dim (5M stored dimensions)
-CHUNKING_VERSION = 1
+CHUNKING_VERSION = 2
 EMBEDDING_MODEL = "@cf/baai/bge-m3"
 
 # Priority order for vectorization if corpus approaches Vectorize Free ceiling
@@ -208,7 +210,7 @@ class IndexedBlock:
 
 _FRONT_MATTER_RE = re.compile(r"^---\n(.*?)\n(?:---|\.\.\.)\n(.*)$", re.S)
 _HEADING_RE = re.compile(r"^(#{1,3})\s+(.+?)(?:\s+\{#([a-zA-Z0-9_:-]+)\})?\s*$")
-_DIV_OPEN_RE = re.compile(r"^(:{3,})\s*\{([^}]*)\}\s*$")
+_DIV_OPEN_RE = re.compile(r"^(:{3,})\s*(?:\{(.*)\}|([\w-]+))\s*$")
 _DIV_CLOSE_RE = re.compile(r"^(:{3,})\s*$")
 _REF_LINK_RE = re.compile(
     r"(?:\[-?@([a-zA-Z]+:[a-zA-Z0-9_:-]+)\]|\[[^\]]+\]\(#([a-zA-Z0-9_:-]+)\))"
@@ -247,9 +249,16 @@ def _parse_div_attrs(attr_str: str) -> tuple[str | None, str | None, str]:
     )
 
 
-def _slugify(text: str) -> str:
-    tokens = _TOKEN_RE.findall(text.lower().replace("ё", "е"))
-    return "-".join(tokens[:6]) or "sec"
+def _heading_ids(lines: list[str]) -> list[str]:
+    # Use the site's Pandoc reader for math, Unicode, punctuation and duplicate headings.
+    headings = [line for line in lines if _HEADING_RE.match(line)]
+    if not headings:
+        return []
+    data = subprocess.check_output(
+        [pypandoc.get_pandoc_path(), "-f", "markdown+tex_math_dollars+fenced_divs+citations-implicit_figures", "-t", "json"],
+        input="\n\n".join(headings), text=True,
+    )
+    return [block["c"][1][0] for block in json.loads(data)["blocks"] if block["t"] == "Header"]
 
 
 def _doc_order_index(doc_kind: str, doc_id: str, meta: dict[str, Any]) -> int:
@@ -349,17 +358,29 @@ def parse_markdown_document(
     # Stack of active fenced divs: (fence_len, cls, anchor, title, statement_lines, proof_lines)
     div_stack: list[dict[str, Any]] = []
 
+    reg_counts: dict[str, int] = {}
+    source_refs: list[tuple[str, str]] = []
+    heading_ids = iter(_heading_ids(lines))
     for line in lines:
+        heading_id = next(heading_ids) if _HEADING_RE.match(line) else None
         open_m = _DIV_OPEN_RE.match(line)
         if open_m:
             fence_len = len(open_m.group(1))
-            cls, anchor, title = _parse_div_attrs(open_m.group(2))
+            attrs = open_m.group(2) or ""
+            cls, anchor, title = _parse_div_attrs(attrs)
+            cls = cls or open_m.group(3)
+            ref = re.search(r"""(?:^|\s)ref=["']?([\w:-]+)""", attrs)
+            if ref:
+                source = ref.group(1)
+                n = reg_counts[source] = reg_counts.get(source, 0) + 1
+                anchor = f"reg-{source}" + (f"-{n}" if n > 1 else "")
             div_stack.append(
                 {
                     "fence_len": fence_len,
                     "cls": cls or "",
                     "anchor": anchor,
                     "title": title,
+                    "ref": ref.group(1) if ref else None,
                     "statement_lines": [],
                     "proof_lines": [],
                 }
@@ -402,6 +423,8 @@ def parse_markdown_document(
                 block_order += 1
                 anchor = top["anchor"] or f"{mapped_kind}:{doc_id}:{block_order}"
                 canonical_id = anchor if top["anchor"] else f"{course}:{doc_id}#{anchor}"
+                if top["ref"]:
+                    source_refs.append((canonical_id, top["ref"]))
                 title = top["title"] or f"{mapped_kind} ({doc_id})"
                 lemmas = " ".join(
                     dict.fromkeys(tokenize_and_stem(f"{title} {stmt_text} {proof_text}"))
@@ -416,7 +439,7 @@ def parse_markdown_document(
                         doc_order=order_index,
                         block_order=block_order,
                         block_kind=mapped_kind,
-                        anchor_id=anchor,
+                        anchor_id=top["anchor"] or current_section_id or "",
                         section_id=current_section_id,
                         title=title,
                         statement_tex=stmt_text,
@@ -439,13 +462,12 @@ def parse_markdown_document(
         if hm:
             level = len(hm.group(1))
             htitle = hm.group(2).strip()
-            hid = hm.group(3) or f"sec:{doc_id}:{_slugify(htitle)}"
+            hid = heading_id
             outline.append({"id": hid, "title": htitle, "level": level})
-            if level == 2:
-                flush_section()
-                current_section_id = hid
-                current_section_title = htitle
-                current_section_lines = []
+            flush_section()
+            current_section_id = hid
+            current_section_title = htitle
+            current_section_lines = []
             continue
 
         if current_section_title is not None:
@@ -463,7 +485,7 @@ def parse_markdown_document(
             seen_ids[b.id] = 1
 
     # Extract cross-references from blocks (Pandoc [-@id]/[@id] and Markdown [text](#id))
-    refs_set: set[tuple[str, str]] = set()
+    refs_set = set(source_refs)
     for b in blocks:
         combined = f"{b.statement_tex}\n{b.proof_tex}"
         for m_ref in _REF_LINK_RE.finditer(combined):
@@ -481,7 +503,7 @@ def parse_markdown_document(
         date=date_str,
         outline=outline,
         body_tex=body.strip(),
-        content_hash=_sha256_hex(f"{doc_title}|{body.strip()}"),
+        content_hash=_sha256_hex(json.dumps([doc_title, date_str, order_index, outline, body.strip()])),
     )
     return doc, blocks, sorted(refs_set)
 
@@ -495,18 +517,31 @@ def collect_corpus(
     all_blocks: list[IndexedBlock] = []
     all_refs: list[tuple[str, str]] = []
 
-    global_seen: dict[str, int] = {}
-    for path, doc_kind, course, doc_id in discover_source_files(root, only_course):
+    targets: dict[tuple[str, str], list[IndexedBlock]] = {}
+    pending_refs: list[tuple[str, str, str, str]] = []
+    for path, doc_kind, course, doc_id in discover_source_files(root):
         doc, blocks, refs = parse_markdown_document(path, doc_kind, course, doc_id)
         docs.append(doc)
-        for b in blocks:
-            if b.id in global_seen:
-                global_seen[b.id] += 1
-                b.id = f"{course}:{doc_id}#{b.anchor_id}_{global_seen[b.id]}"
-            else:
-                global_seen[b.id] = 1
-            all_blocks.append(b)
-        all_refs.extend(refs)
+        source_ids = {}
+        for block in blocks:
+            # The public anchor is local to its document. Vectorize IDs are limited to 64 bytes.
+            canonical = "block:" + _sha256_hex(json.dumps([course, doc_id, block.id]))
+            source_ids[block.id] = canonical
+            block.id = canonical
+            targets.setdefault((course, block.anchor_id), []).append(block)
+            all_blocks.append(block)
+        pending_refs.extend((course, doc_id, source_ids[src], dst) for src, dst in refs)
+
+    outgoing: dict[str, list[str]] = {}
+    for course, doc_id, src, anchor in pending_refs:
+        candidates = targets.get((course, anchor), [])
+        local = [b for b in candidates if b.doc_id == doc_id] or candidates
+        if len(local) == 1:
+            dst = local[0].id
+            all_refs.append((src, dst))
+            outgoing.setdefault(src, []).append(dst)
+    for block in all_blocks:
+        block.content_hash = _sha256_hex(json.dumps([dataclasses.asdict(block), sorted(outgoing.get(block.id, []))]))
 
     # Enforce Vectorize Free tier budget (<= max_vectorize vectors @ 1024 dim)
     prioritized = sorted(
@@ -517,9 +552,21 @@ def collect_corpus(
     for i, b in enumerate(all_blocks):
         b.vectorize_candidate = i in selected_vec
 
-    # Deduplicate refs globally
-    unique_refs = sorted(set(all_refs))
-    return docs, all_blocks, unique_refs
+    return scope_corpus(docs, all_blocks, sorted(set(all_refs)), only_course)
+
+
+def scope_corpus(
+    docs: list[IndexedDocument],
+    all_blocks: list[IndexedBlock],
+    all_refs: list[tuple[str, str]],
+    only_course: str | None,
+) -> tuple[list[IndexedDocument], list[IndexedBlock], list[tuple[str, str]]]:
+    if only_course:
+        docs = [doc for doc in docs if doc.course == only_course]
+        all_blocks = [block for block in all_blocks if block.course == only_course]
+        ids = {block.id for block in all_blocks}
+        all_refs = [(src, dst) for src, dst in all_refs if src in ids]
+    return docs, all_blocks, all_refs
 
 
 # =============================================================================
@@ -557,7 +604,10 @@ class CloudflareClient:
         )
         try:
             with urllib.request.urlopen(req, timeout=60) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+                result = json.loads(resp.read().decode("utf-8"))
+                if not result.get("success"):
+                    raise RuntimeError(f"Cloudflare API {method} {path}: {result.get('errors')}")
+                return result
         except urllib.error.HTTPError as exc:
             err_body = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"Cloudflare API {method} {path} HTTP {exc.code}: {err_body}") from exc
@@ -567,8 +617,6 @@ class CloudflareClient:
         if params:
             payload["params"] = params
         res = self._req("POST", f"/d1/database/{self.d1_id}/query", payload)
-        if not res.get("success"):
-            raise RuntimeError(f"D1 query error: {res}")
         first = (res.get("result") or [{}])[0]
         return first.get("results") or []
 
@@ -607,7 +655,9 @@ def sync_to_cloudflare(
     refs: list[tuple[str, str]],
     skip_vectorize: bool = False,
     only_course: str | None = None,
+    global_blocks: list[IndexedBlock] | None = None,
 ) -> dict[str, int]:
+    # The text sync is course-local. Vector capacity is shared by all courses.
     now_ms = int(time.time() * 1000)
     stats = {
         "docs_upserted": 0,
@@ -699,6 +749,41 @@ def sync_to_cloudflare(
         if not skip_vectorize and b.vectorize_candidate:
             blocks_needing_vec.append(b)
 
+    removed_block_ids = sorted(set(existing_blocks) - new_block_ids)
+    obsolete = {bid for bid in removed_block_ids if len(bid.encode()) <= 64}
+    obsolete.update(b.id for b in blocks if not b.vectorize_candidate and existing_blocks.get(b.id, ("", 0))[1])
+    if only_course and global_blocks is not None and not skip_vectorize:
+        eligible_sources = {(b.course, b.doc_id, b.anchor_id) for b in global_blocks if b.vectorize_candidate}
+        other_vectors = cf.d1_query(
+            "SELECT id, course, doc_id, anchor_id FROM course_blocks WHERE course != ? AND vectorized = 1",
+            [only_course],
+        )
+        obsolete.update(row["id"] for row in other_vectors
+                        if (row["course"], row["doc_id"], row["anchor_id"]) not in eligible_sources)
+    queue_key = "pending_vector_deletes:" + (only_course or "*")
+    if skip_vectorize and obsolete:
+        old = cf.d1_query("SELECT value_json FROM service_config WHERE key = ?", [queue_key])
+        queued = set(json.loads(old[0]["value_json"])) if old else set()
+        cf.d1_query("INSERT OR REPLACE INTO service_config (key, value_json, updated_at) VALUES (?, ?, ?)",
+                    [queue_key, json.dumps(sorted(queued | obsolete)), now_ms])
+    if not skip_vectorize:
+        pending = cf.d1_query("SELECT key, value_json FROM service_config WHERE key LIKE 'pending_vector_deletes:%'")
+        eligible = {b.id for b in (global_blocks if global_blocks is not None else blocks) if b.vectorize_candidate}
+        for row in pending:
+            if only_course and global_blocks is None and row["key"] != queue_key:
+                continue
+            obsolete.update(set(json.loads(row["value_json"])) - eligible)
+        ids = sorted(obsolete)
+        for i in range(0, len(ids), 80):
+            batch = ids[i : i + 80]
+            cf.vectorize_delete(batch)
+            ph = ", ".join("?" for _ in batch)
+            cf.d1_query(f"UPDATE course_blocks SET vectorized = 0 WHERE id IN ({ph})", batch)
+            stats["vectors_deleted"] += len(batch)
+        for row in pending:
+            if not only_course or global_blocks is not None or row["key"] == queue_key:
+                cf.d1_query("DELETE FROM service_config WHERE key = ?", [row["key"]])
+
     # Batch changed blocks into D1 (10 per multi-row SQL statement for speed)
     changed_ids = {b.id for b in changed_blocks}
     BATCH_SZ = 5  # 5 * 16 = 80 params (well under SQLite 100 bind param limit per query!)
@@ -724,7 +809,7 @@ def sync_to_cloudflare(
                     b.statement_tex,
                     b.proof_tex,
                     b.lemmas,
-                    b.content_hash,
+                    "",  # publish hash after FTS and references are consistent
                     now_ms,
                 ]
             )
@@ -761,23 +846,16 @@ def sync_to_cloudflare(
         stats["blocks_upserted"] += len(chunk)
 
     # Delete removed blocks from D1, FTS5, refs, and Vectorize
-    removed_block_ids = sorted(set(existing_blocks) - new_block_ids)
     for i in range(0, len(removed_block_ids), 40):
         chunk_ids = removed_block_ids[i : i + 40]
         ph = ", ".join("?" for _ in chunk_ids)
-        cf.d1_query(f"DELETE FROM course_blocks WHERE id IN ({ph})", chunk_ids)
         cf.d1_query(f"DELETE FROM course_blocks_fts WHERE id IN ({ph})", chunk_ids)
         cf.d1_query(
             f"DELETE FROM block_references WHERE from_block_id IN ({ph}) OR to_block_id IN ({ph})",
             chunk_ids + chunk_ids,
         )
+        cf.d1_query(f"DELETE FROM course_blocks WHERE id IN ({ph})", chunk_ids)
         stats["blocks_deleted"] += len(chunk_ids)
-
-    if not skip_vectorize and removed_block_ids:
-        for i in range(0, len(removed_block_ids), 100):
-            batch_ids = removed_block_ids[i : i + 100]
-            cf.vectorize_delete(batch_ids)
-            stats["vectors_deleted"] += len(batch_ids)
 
     # 4. Update references for changed blocks only (batched)
     if changed_ids:
@@ -800,26 +878,25 @@ def sync_to_cloudflare(
             )
             stats["refs_updated"] += len(chunk_refs)
 
+    for i in range(0, len(changed_blocks), 30):
+        chunk = changed_blocks[i : i + 30]
+        cases = " ".join("WHEN ? THEN ?" for _ in chunk)
+        ph = ", ".join("?" for _ in chunk)
+        params = [value for b in chunk for value in (b.id, b.content_hash)]
+        cf.d1_query(f"UPDATE course_blocks SET content_hash = CASE id {cases} END WHERE id IN ({ph})",
+                    params + [b.id for b in chunk])
+
     # 5. Embed & upsert Vectorize in batches of 25
     if not skip_vectorize and blocks_needing_vec:
         for i in range(0, len(blocks_needing_vec), 25):
             chunk = blocks_needing_vec[i : i + 25]
             texts = [f"{b.title}\n{b.statement_tex[:1200]}" for b in chunk]
             embeddings = cf.embed_texts(texts)
-            valid_blocks = [b for b in chunk if len(b.id.encode("utf-8")) <= 64]
-            vectors = [
-                {"id": b.id, "values": emb}
-                for b, emb in zip(chunk, embeddings, strict=True)
-                if len(b.id.encode("utf-8")) <= 64
-            ]
+            vectors = [{"id": b.id, "values": emb} for b, emb in zip(chunk, embeddings, strict=True)]
             cf.vectorize_upsert(vectors)
-            if valid_blocks:
-                ph = ", ".join("?" for _ in valid_blocks)
-                cf.d1_query(
-                    f"UPDATE course_blocks SET vectorized = 1 WHERE id IN ({ph})",
-                    [b.id for b in valid_blocks],
-                )
-                stats["vectors_upserted"] += len(valid_blocks)
+            ph = ", ".join("?" for _ in chunk)
+            cf.d1_query(f"UPDATE course_blocks SET vectorized = 1 WHERE id IN ({ph})", [b.id for b in chunk])
+            stats["vectors_upserted"] += len(chunk)
 
     # 6. Update index_meta version
     index_version = _sha256_hex(
@@ -853,7 +930,8 @@ def main() -> None:
     parser.add_argument("--output-json", type=Path, default=None)
     args = parser.parse_args()
 
-    docs, blocks, refs = collect_corpus(args.root, only_course=args.only_course)
+    corpus = collect_corpus(args.root)
+    docs, blocks, refs = scope_corpus(*corpus, args.only_course)
     vec_count = sum(1 for b in blocks if b.vectorize_candidate)
     stored_dims = vec_count * 1024
 
@@ -900,9 +978,8 @@ def main() -> None:
         cf = CloudflareClient(account_id, api_token, d1_id, vec_idx)
         stats = sync_to_cloudflare(
             cf,
-            docs,
-            blocks,
-            refs,
+            docs, blocks, refs,
+            global_blocks=corpus[1],
             skip_vectorize=args.skip_vectorize,
             only_course=args.only_course,
         )

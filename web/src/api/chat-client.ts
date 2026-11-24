@@ -116,6 +116,12 @@ const postAllowanceOnce = async (
   return { data: res.data as AllowanceResponse, ok: res.ok, status: res.status };
 };
 
+const assertSameSession = (sessionToken: null | string): void => {
+  if (sessionToken !== readStoredAuth().sessionToken) {
+    throw new Error("Chat session changed");
+  }
+};
+
 /** Obtains or refreshes the 30-minute allowanceToken (with multi-tab lock & 409 mismatch recovery). */
 export const ensureChatAllowance = async (
   turnstileHooks: TurnstileHooks,
@@ -147,11 +153,17 @@ export const ensureChatAllowance = async (
       getBrowserFingerprint(),
     ]);
 
-    let res = await postAllowanceOnce(turnstileToken, fingerprint);
+    const post = async (token: string) => {
+      assertSameSession(cached.sessionToken);
+      const result = await postAllowanceOnce(token, fingerprint);
+      assertSameSession(cached.sessionToken);
+      return result;
+    };
+    let res = await post(turnstileToken);
     if (res.status === 409) {
       saveBrowserToken(null);
       const retryTs = await requestTurnstileToken(turnstileSiteKey, turnstileHooks);
-      res = await postAllowanceOnce(retryTs, fingerprint);
+      res = await post(retryTs);
     }
     if (!res.ok) {
       throw new Error(`Allowance error (${res.status})`);
@@ -181,6 +193,9 @@ export const fetchChatThread = async (
     return null;
   }
   const res = await apiJson(buildThreadQuery(course, docId, threadId), { method: "GET" });
+  if (auth.sessionToken !== readStoredAuth().sessionToken) {
+    return null;
+  }
   if (res.status === 409) {
     saveBrowserToken(null);
     return null;
@@ -215,13 +230,16 @@ const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string
 export const loginViaTelegram = async (
   turnstileHooks: TurnstileHooks,
 ): Promise<AllowanceResponse> => {
+  const { sessionToken } = readStoredAuth();
   const nonce = await requestLoginNonce(turnstileHooks);
   const idToken = await openTelegramLoginPopup(getChatEnvConfig().telegramClientId, nonce);
+  assertSameSession(sessionToken);
   const loginRes = await apiJson("/v1/auth/telegram", {
     body: JSON.stringify({ telegramIdToken: idToken }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+  assertSameSession(sessionToken);
   if (!loginRes.ok) {
     throw new Error("Telegram login rejected by server");
   }
@@ -237,7 +255,7 @@ export const loginViaTelegram = async (
   return await ensureChatAllowance(turnstileHooks, true);
 };
 
-export const logoutChatSession = async (): Promise<void> => {
+export const logoutChatSession = async (): Promise<"logged_out" | "session_changed"> => {
   const auth = readStoredAuth();
   if (auth.sessionToken !== null) {
     try {
@@ -250,6 +268,10 @@ export const logoutChatSession = async (): Promise<void> => {
       // Clear local session regardless of network failure
     }
   }
+  if (auth.sessionToken !== readStoredAuth().sessionToken) {
+    return "session_changed";
+  }
   saveSessionAuth(null, "guest", null);
   clearAllowanceToken();
+  return "logged_out";
 };

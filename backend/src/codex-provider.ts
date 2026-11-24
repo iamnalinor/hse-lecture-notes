@@ -313,6 +313,7 @@ export class CodexResponsesProvider implements LlmProvider {
         // IMPORTANT: never send `max_output_tokens` to chatgpt.com/backend-api/codex/responses
         const payload = {
           model: req.model,
+          reasoning: { effort: req.effort },
           instructions: req.instructions,
           input: req.input,
           tools: req.tools,

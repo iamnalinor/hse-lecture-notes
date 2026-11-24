@@ -95,7 +95,10 @@ const computePillCoords = (
   const isMobile = globalThis.window.innerWidth <= 720;
   const isChatOpen = document.documentElement.classList.contains("ai-open");
   const viewportW = globalThis.window.innerWidth;
-  const maxRight = (isChatOpen && !isMobile ? viewportW - 400 : viewportW) - 8;
+  const maxRight =
+    (isChatOpen && !isMobile
+      ? (document.querySelector("#ai-panel")?.getBoundingClientRect().left ?? viewportW)
+      : viewportW) - 8;
   const left = Math.max(8, Math.min(anchorRect.right - 68, maxRight - 136));
   let top = anchorRect.bottom + (isMobile ? 34 : 8);
   if (top + 36 > globalThis.window.innerHeight - 8 && rects[0] !== undefined) {
@@ -143,7 +146,7 @@ const highlightQuoteRange = (range: null | Range): void => {
 export const SelectionAskButton = (): JSX.Element | null => {
   const chat = useChat();
   const [pill, setPill] = useState<FloatingPill | null>(null);
-  const isActive = chat.isConfigured && chat.docContext !== null;
+  const isActive = chat.isConfigured && chat.docContext.docId !== "";
 
   useEffect(() => {
     if (!isActive) {
@@ -155,12 +158,17 @@ export const SelectionAskButton = (): JSX.Element | null => {
         globalThis.clearTimeout(timer);
       }
       timer = globalThis.setTimeout(() => {
-        setPill(computeSelPill());
+        if (globalThis.document.activeElement?.classList.contains("ai-sel-btn") !== true) {
+          setPill(computeSelPill());
+        }
       }, 0);
     };
     const onSelectionChange = (): void => {
       const sel = globalThis.window.getSelection();
-      if (sel === null || sel.isCollapsed) {
+      if (
+        globalThis.document.activeElement?.classList.contains("ai-sel-btn") !== true &&
+        (sel === null || sel.isCollapsed)
+      ) {
         setPill(null);
       }
     };
@@ -191,8 +199,8 @@ export const SelectionAskButton = (): JSX.Element | null => {
     <button
       aria-label="Спросить ИИ о выделенном фрагменте"
       className={pill === null ? "ai-sel-btn" : "ai-sel-btn is-on"}
-      onMouseDown={(event) => {
-        event.preventDefault();
+      disabled={pill === null}
+      onClick={() => {
         if (pill === null) {
           return;
         }
@@ -200,6 +208,9 @@ export const SelectionAskButton = (): JSX.Element | null => {
         chat.openWithQuote(pill.quote);
         setPill(null);
         globalThis.window.getSelection()?.removeAllRanges();
+      }}
+      onMouseDown={(event) => {
+        event.preventDefault();
       }}
       style={pill === null ? undefined : { left: `${pill.left}px`, top: `${pill.top}px` }}
       type="button"

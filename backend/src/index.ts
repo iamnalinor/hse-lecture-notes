@@ -106,7 +106,7 @@ async function handleGetThread(
   const beforeUpdatedAt =
     beforeUpdatedAtRaw && /^\d+$/.test(beforeUpdatedAtRaw) ? Number(beforeUpdatedAtRaw) : null;
 
-  if (!course || !docId) {
+  if (!url.searchParams.has("course") || !url.searchParams.has("doc") || (!course && docId)) {
     return { status: 400, body: { code: "missing_params", message: "course and doc are required" } };
   }
 
@@ -215,7 +215,7 @@ async function handleGetThread(
       | { id: string; course: string; doc_id: string; title: string; created_at: number; updated_at: number }
       | undefined;
 
-    if (!thrRow) {
+    if (!thrRow || thrRow.course !== course || thrRow.doc_id !== docId) {
       if (requestedThreadId) requestedThreadMissing = true;
     } else {
       const messages = [...(msgRes?.results ?? [])].reverse().map((m) => ({

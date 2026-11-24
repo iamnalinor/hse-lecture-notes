@@ -34,6 +34,7 @@ export type WsStreamCallbacks = {
 };
 
 export type ActiveWsStream = {
+  readonly disconnect: () => void;
   readonly stop: () => void;
 };
 
@@ -101,11 +102,13 @@ export const openChatMessageStream = (
   let isFinished = false;
 
   ws.addEventListener("open", () => {
-    ws.send(JSON.stringify({ ...params, type: "send" }));
+    if (!isFinished) {
+      ws.send(JSON.stringify({ ...params, type: "send" }));
+    }
   });
 
   ws.addEventListener("message", (event) => {
-    if (typeof event.data !== "string") {
+    if (isFinished || typeof event.data !== "string") {
       return;
     }
     const parsed = parseFrame(event.data);
@@ -121,9 +124,15 @@ export const openChatMessageStream = (
   });
 
   return {
+    disconnect: () => {
+      isFinished = true;
+      ws.close();
+    },
     stop: () => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "stop" }));
+      } else if (ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
       }
     },
   };

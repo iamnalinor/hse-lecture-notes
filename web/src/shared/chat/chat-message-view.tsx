@@ -10,15 +10,11 @@ import { useCopyFeedback } from "./use-chat-state.ts";
 
 type FootActionsProps = {
   readonly contentTex: string;
-  readonly isStreaming: boolean;
+  readonly canRetry: boolean;
   readonly onRetry: () => void;
 };
 
-const AssistantFootActions = ({
-  contentTex,
-  isStreaming,
-  onRetry,
-}: FootActionsProps): JSX.Element => {
+const AssistantFootActions = ({ contentTex, canRetry, onRetry }: FootActionsProps): JSX.Element => {
   const { copyText, isCopied } = useCopyFeedback();
 
   return (
@@ -46,7 +42,7 @@ const AssistantFootActions = ({
         <button
           aria-label="Ответить заново"
           className="ai-icon-btn"
-          disabled={isStreaming}
+          disabled={!canRetry}
           onClick={onRetry}
           title="Ответить заново"
           type="button"
@@ -59,7 +55,7 @@ const AssistantFootActions = ({
 };
 
 type Props = {
-  readonly isStreaming: boolean;
+  readonly canRetry: boolean;
   readonly message: ChatMessage;
   readonly onJumpToBlock: (blockId: string) => void;
   readonly onRetry: (messageId: string) => void;
@@ -93,7 +89,7 @@ const UserMessageView = ({
 };
 
 const AssistantMessageView = ({
-  isStreaming,
+  canRetry,
   message,
   onJumpToBlock,
   onRetry,
@@ -126,7 +122,7 @@ const AssistantMessageView = ({
             </div>
             <button
               className="ai-btn ai-btn-2"
-              disabled={isStreaming}
+              disabled={!canRetry}
               onClick={retrySelf}
               type="button"
             >
@@ -149,8 +145,8 @@ const AssistantMessageView = ({
       </div>
       {isFinished && (
         <AssistantFootActions
+          canRetry={canRetry}
           contentTex={message.contentTex}
-          isStreaming={isStreaming}
           onRetry={retrySelf}
         />
       )}

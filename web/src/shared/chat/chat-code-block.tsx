@@ -1,7 +1,12 @@
-import type { JSX } from "react";
+import { type JSX, lazy, Suspense } from "react";
 
 import { CheckIcon, CopyIcon } from "./chat-icons.tsx";
 import { useCopyFeedback } from "./use-chat-state.ts";
+
+const Highlight = lazy(async () => {
+  const { ChatCodeHighlight } = await import("./chat-code-highlight.tsx");
+  return { default: ChatCodeHighlight };
+});
 
 type Props = {
   readonly code: string;
@@ -29,7 +34,11 @@ export const ChatCodeBlock = ({ code, lang }: Props): JSX.Element => {
         </button>
       </div>
       <pre>
-        <code>{code}</code>
+        <code>
+          <Suspense fallback={code}>
+            <Highlight code={code} lang={lang} />
+          </Suspense>
+        </code>
       </pre>
     </div>
   );

@@ -4,6 +4,7 @@
  * directly via Wrangler / CLOUDFLARE_API_TOKEN (no public admin HTTP endpoints).
  *
  * Usage:
+ *   bun run scripts/admin.ts init-db [--remote]
  *   bun run scripts/admin.ts set-codex-token [--remote] [--refresh-token <tok>] [--account-id <id>]
  *   bun run scripts/admin.ts set-policy <path-to-policy.json> [--remote]
  *   bun run scripts/admin.ts sync-telegram-accounts <path-to-ids.txt> [--remote]
@@ -14,7 +15,8 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { encryptJsonAesGcm } from "../src/crypto";
 import type { CodexCredentialsPayload } from "../src/codex-auth";
-import { DEFAULT_POLICY } from "../src/types";
+import initialPolicy from "../policy.json";
+import type { ServicePolicy } from "../src/types";
 
 const DB_NAME = "hse-lecture-notes";
 
@@ -22,15 +24,37 @@ function sqlString(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-function runD1Sql(sql: string, remote: boolean): void {
-  const args = ["wrangler", "d1", "execute", DB_NAME, remote ? "--remote" : "--local", "--command", sql];
-  const proc = spawnSync("bunx", args, {
+function runD1(args: string[], remote: boolean): void {
+  const target = remote ? "--remote" : "--local";
+  const proc = spawnSync("bunx", ["wrangler", "d1", ...args, target], {
     cwd: new URL("..", import.meta.url).pathname,
     stdio: "inherit",
-    env: process.env,
   });
-  if (proc.status !== 0) {
-    process.exit(proc.status ?? 1);
+  if (proc.error) throw proc.error;
+  if (proc.status !== 0) process.exit(proc.status ?? 1);
+}
+
+function runD1Sql(sql: string, remote: boolean): void {
+  runD1(["execute", DB_NAME, "--command", sql], remote);
+}
+
+function initializeDatabase(remote: boolean): void {
+  runD1(["migrations", "apply", DB_NAME], remote);
+  runD1Sql(`INSERT INTO service_config (key, value_json, updated_at)
+VALUES ('policy', ${sqlString(JSON.stringify(initialPolicy satisfies ServicePolicy))}, ${Date.now()})
+ON CONFLICT(key) DO NOTHING`, remote);
+}
+
+function validatePolicyPatch(value: unknown, template: unknown, path: string): void {
+  if (template && typeof template === "object") {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Expected an object at ${path}`);
+    for (const [key, item] of Object.entries(value)) {
+      if (!Object.hasOwn(template, key)) throw new Error(`Unknown policy field ${path}.${key}`);
+      validatePolicyPatch(item, (template as Record<string, unknown>)[key], `${path}.${key}`);
+    }
+  } else if (typeof value !== typeof template || (typeof value === "string" && !value.trim()) ||
+      (typeof value === "number" && (!Number.isFinite(value) || value < 0))) {
+    throw new Error(`Invalid policy value at ${path}`);
   }
 }
 
@@ -48,6 +72,8 @@ async function main(): Promise<void> {
 
   if (!cmd || cmd === "--help" || cmd === "-h") {
     console.log(`Commands:
+  init-db [--remote]
+    Applies the schema and initializes missing service policy.
   set-codex-token [--remote] [--refresh-token <tok>] [--account-id <id>]
     Reads CODEX_CREDENTIALS_ENCRYPTION_KEY and CODEX_INITIAL_REFRESH_TOKEN from env if not passed.
   set-policy <policy.json> [--remote]
@@ -56,6 +82,11 @@ async function main(): Promise<void> {
     Replaces internal_telegram_accounts from a newline/comma-separated list of numeric Telegram IDs.
   status [--remote]
     Shows codex_credentials status, policy, and internal account count.`);
+    return;
+  }
+
+  if (cmd === "init-db") {
+    initializeDatabase(remote);
     return;
   }
 
@@ -99,15 +130,11 @@ ON CONFLICT(id) DO UPDATE SET
       process.exit(1);
     }
     const raw = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
-    const merged = {
-      ...DEFAULT_POLICY,
-      ...raw,
-      budgets: { ...DEFAULT_POLICY.budgets, ...(raw.budgets as Record<string, unknown> | undefined) },
-      tiers: { ...DEFAULT_POLICY.tiers, ...(raw.tiers as Record<string, unknown> | undefined) },
-    };
+    validatePolicyPatch(raw, initialPolicy, "policy");
+    const patch = sqlString(JSON.stringify(raw));
     const sql = `INSERT INTO service_config (key, value_json, updated_at)
-VALUES ('policy', ${sqlString(JSON.stringify(merged))}, ${now})
-ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at;`;
+VALUES ('policy', json_patch(${sqlString(JSON.stringify(initialPolicy))}, ${patch}), ${now})
+ON CONFLICT(key) DO UPDATE SET value_json = json_patch(service_config.value_json, ${patch}), updated_at = excluded.updated_at;`;
     runD1Sql(sql, remote);
     console.log("Policy updated successfully.");
     return;

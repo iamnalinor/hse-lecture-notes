@@ -7,6 +7,7 @@ import { ChatCodeBlock } from "./chat-code-block.tsx";
 import {
   type BlockSegment,
   type InlineSpan,
+  isMaterialLink,
   parseChatBlocks,
   safeStreamCut,
   scanInlinePieces,
@@ -56,11 +57,17 @@ const renderRefAnchor = ({ key, label, onJumpToBlock, target }: RefAnchorArgs): 
   return (
     <a
       className="ref"
-      data-ref={target}
-      href={`#${target}`}
+      data-ref={isMaterialLink(target) ? undefined : target}
+      href={isMaterialLink(target) ? target : `#${target}`}
       key={key}
       onClick={(event) => {
-        if (onJumpToBlock === undefined) {
+        if (
+          onJumpToBlock === undefined ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
           return;
         }
 
@@ -144,14 +151,15 @@ const renderBlock = (
       </Tag>
     );
   }
+  const Tag = block.kind === "heading" ? block.tag : "p";
   return (
-    <p key={index}>
+    <Tag key={index}>
       <InlineTeX
         isAnimated={opts.isStreaming}
         onJumpToBlock={opts.onJumpToBlock}
         text={block.value}
       />
-    </p>
+    </Tag>
   );
 };
 

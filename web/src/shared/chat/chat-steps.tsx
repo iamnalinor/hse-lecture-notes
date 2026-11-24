@@ -3,6 +3,7 @@ import { type JSX, useState } from "react";
 import type { ChatStep } from "#web/domain/chat.ts";
 
 import { ChevronIcon, ReadStepIcon, SearchStepIcon } from "./chat-icons.tsx";
+import { isMaterialLink } from "./chat-markdown-parse.ts";
 
 const pluralSteps = (n: number): string => {
   const abs = Math.abs(n) % 100;
@@ -55,6 +56,35 @@ type StepResProps = {
   readonly step: ChatStep;
 };
 
+const ResultLink = ({
+  href,
+  label,
+  onJumpToBlock,
+}: {
+  readonly href: string | undefined;
+  readonly label: string;
+  readonly onJumpToBlock: (id: string) => void;
+}): JSX.Element => {
+  if (href === undefined || !isMaterialLink(href)) {
+    return <>{label}</>;
+  }
+  return (
+    <a
+      href={href}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+          return;
+        }
+
+        event.preventDefault();
+        onJumpToBlock(href);
+      }}
+    >
+      {label}
+    </a>
+  );
+};
+
 const StepResult = ({ onJumpToBlock, step }: StepResProps): JSX.Element | null => {
   if (step.state === "running" || step.res === undefined || step.res.length === 0) {
     return null;
@@ -66,16 +96,7 @@ const StepResult = ({ onJumpToBlock, step }: StepResProps): JSX.Element | null =
         // eslint-disable-next-line @eslint-react/no-array-index-key -- ordered step results
         <span key={`${refId}-${idx}`}>
           {idx > 0 && ", "}
-          <a
-            data-ref={refId}
-            href={`#${refId}`}
-            onClick={(event) => {
-              event.preventDefault();
-              onJumpToBlock(refId);
-            }}
-          >
-            {refId}
-          </a>
+          <ResultLink href={step.links?.[idx]} label={refId} onJumpToBlock={onJumpToBlock} />
         </span>
       ))}
       {more > 0 && ` и ещё ${more}`}

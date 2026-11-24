@@ -1,6 +1,8 @@
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 
 import { paths } from "#web/domain/paths.ts";
+import { ChatProvider } from "#web/shared/chat/chat-context.tsx";
+import { ChatPanel } from "#web/shared/chat/chat-panel.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
 import { applyUpdate, useHasUpdate } from "#web/shared/offline/sw-registration.ts";
@@ -32,31 +34,34 @@ export const RouteError = () => {
   useDocumentTitle(isMissing ? "Страница не найдена" : "Ошибка");
 
   return (
-    <div className="flex min-h-screen flex-col bg-paper text-ink">
-      <TopBar />
-      <main className="mx-auto w-full max-w-[720px] flex-1 px-4 py-16 sm:px-8 sm:py-24">
-        <h1 className="text-large font-bold">
-          {isMissing ? "Такой страницы нет" : "Не получилось открыть страницу"}
-        </h1>
-        {hasUpdate ? (
-          <p className="mt-4 text-title3 text-muted">
-            Сайт обновился, а эта вкладка открыта на старой версии.{" "}
-            <button
-              className="cursor-pointer font-semibold text-brand underline"
-              onClick={applyUpdate}
-              type="button"
-            >
-              Обновить
-            </button>
-          </p>
-        ) : (
-          <p className="mt-4 text-title3 text-muted">{describe(error)}</p>
-        )}
-        <Link className="mt-8 inline-block font-semibold" to={paths.home()}>
-          На главную →
-        </Link>
-      </main>
-      <SiteFooter />
-    </div>
+    <ChatProvider general>
+      <div className="flex min-h-screen flex-col bg-paper text-ink">
+        <TopBar />
+        <main className="mx-auto w-full max-w-[720px] flex-1 px-4 py-16 sm:px-8 sm:py-24">
+          <h1 className="text-large font-bold">
+            {isMissing ? "Такой страницы нет" : "Не получилось открыть страницу"}
+          </h1>
+          {hasUpdate ? (
+            <p className="mt-4 text-title3 text-muted">
+              Сайт обновился, а эта вкладка открыта на старой версии.{" "}
+              <button
+                className="cursor-pointer font-semibold text-brand underline"
+                onClick={applyUpdate}
+                type="button"
+              >
+                Обновить
+              </button>
+            </p>
+          ) : (
+            <p className="mt-4 text-title3 text-muted">{describe(error)}</p>
+          )}
+          <Link className="mt-8 inline-block font-semibold" to={paths.home()}>
+            На главную →
+          </Link>
+        </main>
+        <SiteFooter />
+        <ChatPanel />
+      </div>
+    </ChatProvider>
   );
 };

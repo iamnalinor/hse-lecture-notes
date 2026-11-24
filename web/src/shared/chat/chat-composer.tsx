@@ -34,7 +34,7 @@ const resolvePlaceholder = (hasQuote: boolean, hasMessages: boolean): string => 
   if (hasMessages) {
     return "Уточните или спросите ещё";
   }
-  return "Вопрос по лекции";
+  return "Задайте вопрос";
 };
 
 const useComposerTextarea = (draft: string, isOpen: boolean, quoteKey: string) => {
@@ -65,8 +65,7 @@ const useComposerTextarea = (draft: string, isOpen: boolean, quoteKey: string) =
 };
 
 const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element => {
-  const { clearQuote, draft, isOpen, isStreaming, messages, quote, send, setDraft, stop } =
-    useChat();
+  const { canStop, clearQuote, draft, isOpen, messages, quote, send, setDraft, stop } = useChat();
   const textareaRef = useComposerTextarea(draft, isOpen, quote?.tex ?? "");
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
@@ -103,7 +102,7 @@ const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element =>
           rows={1}
           value={draft}
         />
-        {isStreaming ? (
+        {canStop ? (
           <button
             aria-label="Остановить ответ"
             className="ai-send is-stop"
@@ -134,12 +133,13 @@ const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element =>
 
 /** Exact `.ai-bottom` (composer / limit plate / status caption) from prototype.html. */
 export const ChatComposer = (): JSX.Element => {
-  const { block, degraded, draft, isStreaming, quote, rateLimitUntil } = useChat();
+  const { block, degraded, draft, isStreaming, isThreadLoading, quote, rateLimitUntil } = useChat();
   const nowMs = useClockTicker(rateLimitUntil, degraded.active);
   const mode = resolveBottomMode(block);
   const rateRemainSec =
     rateLimitUntil > nowMs ? Math.max(0, Math.ceil((rateLimitUntil - nowMs) / 1000)) : 0;
   const canSend =
+    !isThreadLoading &&
     !isStreaming &&
     mode === "composer" &&
     rateRemainSec === 0 &&

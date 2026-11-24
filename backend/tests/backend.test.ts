@@ -20,7 +20,7 @@ import {
   type JwksDocument,
 } from "../src/crypto";
 import { TrackedD1 } from "../src/db";
-import { computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
+import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
 import {
   admitRunAtomic,
   checkpointRound,
@@ -31,8 +31,8 @@ import {
   sweepExpiredRuns,
 } from "../src/quotas";
 import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
-import { AgentToolRunner, normalizeQuoteText, validateQuoteAgainstCourse } from "../src/tools";
-import { DEFAULT_POLICY, type Env, type LlmProvider, type ServerWsFrame } from "../src/types";
+import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateQuoteAgainstCourse } from "../src/tools";
+import { type Env, type LlmProvider, type ServerWsFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
 
 function makeTestEnv(db: D1Database): Env {
@@ -98,9 +98,13 @@ async function generateRs256TestKeyAndJwt(claims: Record<string, unknown>): Prom
 }
 
 describe("1. Pricing & Crypto", () => {
-  test("computes Terra and Luna costs with $0.125/1M Luna Cache Write", () => {
+  test("computes Terra and Luna costs with $0.125/1M Luna Cache Write", async () => {
+    const db = new TrackedD1(new SqliteD1Shim().asD1());
+    const { buckets } = await loadPolicy(db);
+    const low = resolveModelRoute(buckets.low);
+    const high = resolveModelRoute(buckets.high);
     // 1M uncached + 1M cached + 1M cache_write + 1M output
-    const lunaCost = computeRoundCostMicros("gpt-6-luna", {
+    const lunaCost = computeRoundCostMicros(low, {
       inputTokens: 3_000_000,
       cachedTokens: 1_000_000,
       cacheWriteTokens: 1_000_000,
@@ -109,7 +113,7 @@ describe("1. Pricing & Crypto", () => {
     // $0.10 + $0.01 + $0.125 + $0.50 = $0.735 = 735_000 micros
     expect(lunaCost).toBe(735_000);
 
-    const terraCost = computeRoundCostMicros("gpt-6.1-terra", {
+    const terraCost = computeRoundCostMicros(high, {
       inputTokens: 3_000_000,
       cachedTokens: 1_000_000,
       cacheWriteTokens: 1_000_000,
@@ -119,7 +123,7 @@ describe("1. Pricing & Crypto", () => {
     expect(terraCost).toBe(7_300_000);
 
     // Uncertain cost floor is strictly positive
-    expect(estimateUncertainRoundCostMicros("gpt-6-luna", 6000, 300)).toBeGreaterThanOrEqual(1_000);
+    expect(estimateUncertainRoundCostMicros(low, 6000, 300)).toBeGreaterThanOrEqual(1_000);
   });
 
   test("AES-GCM encrypt/decrypt and IPv6 /64 normalization", async () => {
@@ -166,7 +170,7 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(res.usage).toBeNull();
   });
 
-  test("never sends max_output_tokens to Codex endpoint", async () => {
+  test.each(["high", "low"] as const)("sends the configured reasoning effort for %s without max_output_tokens", async (bucket) => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const env = makeTestEnv(shim.asD1());
@@ -193,8 +197,9 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
       },
     });
 
+    const { model, effort } = resolveModelRoute((await loadPolicy(db)).buckets[bucket]);
     const out = await provider.runRound({
-      model: "gpt-6-luna",
+      model, effort,
       instructions: "sys",
       input: [],
       tools: [],
@@ -206,6 +211,8 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(out.completed).toBe(true);
     expect(sentBody).not.toBeNull();
     expect("max_output_tokens" in sentBody!).toBe(false);
+    expect(sentBody!.model).toBe(bucket === "high" ? "gpt-6.1-terra" : "gpt-6-luna");
+    expect(sentBody!.reasoning).toEqual({ effort: bucket === "high" ? "medium" : "low" });
     expect(sentHeaders["ChatGPT-Account-Id"]).toBe("acc_999");
     expect(sentHeaders.originator).toBe("codex_cli_rs");
   });
@@ -244,6 +251,32 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
       db.prepare("SELECT version, status FROM codex_credentials WHERE id = 1"),
     );
     expect(rowAfter).toEqual({ version: 2, status: "ok" });
+
+    let clock = 1_000_000;
+    await expect(getValidCodexCredentials(env, db, {
+      forceRefresh: true,
+      now: () => clock,
+      fetchImpl: async () => {
+        clock += 30_000;
+        return Response.json({ error: "invalid_grant" }, { status: 400 });
+      },
+    })).rejects.toMatchObject({ code: "oauth_unavailable" });
+    expect(await db.first(db.prepare("SELECT version, status, lease_owner FROM codex_credentials")))
+      .toEqual({ version: 2, status: "ok", lease_owner: null });
+
+    const late = await getValidCodexCredentials(env, db, {
+      forceRefresh: true,
+      now: () => clock,
+      fetchImpl: async () => {
+        clock += 30_000;
+        // A second owner tried the old token before the first response arrived.
+        await db.run(db.prepare("UPDATE codex_credentials SET status = 'needs_reauth', lease_owner = NULL"));
+        return Response.json({ access_token: "rotated", refresh_token: "rotated_rt" });
+      },
+    });
+    expect(late.refreshToken).toBe("rotated_rt");
+    expect(await db.first(db.prepare("SELECT version, status FROM codex_credentials")))
+      .toEqual({ version: 3, status: "ok" });
 
     // Force refresh returning invalid_grant -> marks needs_reauth & sends owner alert
     let alerted = false;
@@ -587,15 +620,17 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const now = 1_700_000_000_000;
-    const policy = { ...DEFAULT_POLICY, tiers: { guest: { lowLimit: 3 }, external: { lowLimit: 20 }, internal: { highLimit: 2, lowLimit: 3 } } };
+    const policy = await loadPolicy(db);
+    policy.buckets.high.limits.internal = 2;
+    policy.buckets.low.limits.internal = 3;
 
     // Insert 2 completed high runs
     for (let i = 0; i < 2; i += 1) {
       await db.run(
         db
           .prepare(
-            `INSERT INTO usage_runs (id, owner_key, client_request_id, payload_hash, thread_id, user_message_id, assistant_message_id, created_at, updated_at, expires_at, status, tier, quota_bucket, model, telegram_id, browser_id, ip_address, fingerprint)
-             VALUES (?, 'tg:42', ?, 'h', 't', 'u', 'a', ?, ?, ?, 'done', 'internal', 'high', 'gpt-6.1-terra', 42, 'br_42', '1.1.1.1', '')`,
+            `INSERT INTO usage_runs (id, owner_key, client_request_id, payload_hash, thread_id, user_message_id, assistant_message_id, created_at, updated_at, expires_at, status, tier, quota_bucket, model, reasoning_effort, telegram_id, browser_id, ip_address, fingerprint)
+             VALUES (?, 'tg:42', ?, 'h', 't', 'u', 'a', ?, ?, ?, 'done', 'internal', 'high', 'gpt-6.1-terra', 'medium', 42, 'br_42', '1.1.1.1', '')`,
           )
           .bind(`run_h_${i}`, `cid_h_${i}`, now - 100_000 + i * 1000, now, now),
       );
@@ -609,7 +644,6 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     );
     expect(evalDegraded.allowed).toBe(true);
     expect(evalDegraded.bucket).toBe("low");
-    expect(evalDegraded.model).toBe("gpt-6-luna");
     expect(evalDegraded.degraded.active).toBe(true);
     expect(evalDegraded.degraded.restoresAt).toBe(now - 100_000 + 86_400_000);
 
@@ -710,6 +744,15 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         ),
     ]);
 
+    const calls = db.telemetry.dbCalls;
+    const home = await buildSystemPrompt(db, "", "");
+    expect(home.instructions).toContain("Курс и документ не выбраны");
+    expect(db.telemetry.dbCalls).toBe(calls);
+    const course = await buildSystemPrompt(db, "discrete", "");
+    expect(course.instructions).toContain("на странице курса discrete");
+    expect(course.instructions).toContain("Простые числа и ОТА");
+    expect(course.instructions).not.toContain("МЫ ЗДЕСЬ");
+
     const runner = new AgentToolRunner({
       env,
       db,
@@ -731,6 +774,17 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     const r2 = await runner.execute("search_materials", JSON.stringify({ query: "арифметики" }));
     expect(r2.fromCache).toBe(true);
     expect(db.telemetry.dbCalls).toBe(callsBefore);
+
+    const limited = new AgentToolRunner({
+      env, db, currentCourse: "discrete", currentDocId: "", currentDocOrder: 0,
+      maxToolOutputChars: 40, maxTotalToolOutputChars: 45,
+    });
+    const first = await limited.execute("unknown", "{}");
+    const cached = await limited.execute("unknown", "{}");
+    const invalid = await limited.execute("unknown", "{");
+    expect(cached.fromCache).toBe(true);
+    expect(first.output.length + cached.output.length + invalid.output.length).toBe(45);
+    expect(r1.step.links?.[0]).toBe("/discrete/07_oct16_primes#thm:lec07:fta");
 
     // Quote validation: LaTeX formula + cross-block prose passes; spoofed quote fails
     expect(normalizeQuoteText("натуральное $ n \\ge 2 $")).toBe(
@@ -757,11 +811,10 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     ).toBe(false);
   });
 
-  test("executeAgentRun executes multi-round tool calls and persists final answer + cost", async () => {
+  test.each([true, false])("executeAgentRun persists final completion state (completed=%s) and cost", async (completed) => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const env = makeTestEnv(shim.asD1());
-    const policy = await loadPolicy(db);
     const now = Date.now();
 
     await db.run(
@@ -772,6 +825,8 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         .bind(now),
     );
 
+    await db.run(db.prepare("UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.model', 'gpt-6.1-terra', '$.buckets.low.effort', 'high') WHERE key = 'policy'"));
+    const policy = await loadPolicy(db);
     const adm = await admitRunAtomic(db, policy, {
       env,
       axes: { tier: "guest", telegramId: null, browserId: "br_loop", ipAddress: "5.5.5.5", fingerprint: "fp_loop" },
@@ -786,9 +841,15 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     });
     if (adm.kind !== "admitted") throw new Error("expected admitted");
 
+    expect(await db.first(db.prepare("SELECT model, reasoning_effort FROM usage_runs WHERE id = ?").bind(adm.runId)))
+      .toEqual({ model: "gpt-6.1-terra", reasoning_effort: "high" });
+    await db.run(db.prepare("UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.effort', 'low') WHERE key = 'policy'"));
+
     let roundCalls = 0;
     const fakeProvider: LlmProvider = {
       async runRound(req) {
+        expect(req.model).toBe("gpt-6.1-terra");
+        expect(req.effort).toBe("high");
         roundCalls += 1;
         if (roundCalls === 1) {
           return {
@@ -810,8 +871,8 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         expect(hasToolOutput).toBe(true);
         req.onDelta("По [Теореме 1](#thm:1) всё следует сразу.");
         return {
-          completed: true,
-          status: "completed",
+          completed,
+          status: completed ? "completed" : "incomplete",
           text: "По [Теореме 1](#thm:1) всё следует сразу.",
           truncated: false,
           outputItems: [],
@@ -833,7 +894,7 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       docId: "01",
       tier: "guest",
       bucket: adm.bucket,
-      model: adm.model,
+      route: adm.route,
       initialReserveMicros: adm.reserveMicros,
       degraded: adm.degraded,
       questionText: "Объясни теорему 1",
@@ -845,13 +906,13 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
 
     expect(roundCalls).toBe(2);
     expect(frames.some((f) => f.type === "step")).toBe(true);
-    expect(frames.some((f) => f.type === "done" && f.status === "done")).toBe(true);
+    expect(frames.some((f) => f.type === "done" && f.status === (completed ? "done" : "incomplete"))).toBe(true);
 
     const msg = await db.first<{ status: string; content_tex: string }>(
       db.prepare("SELECT status, content_tex FROM chat_messages WHERE id = ?").bind(adm.assistantMessageId),
     );
     expect(msg).toEqual({
-      status: "done",
+      status: completed ? "done" : "incomplete",
       content_tex: "По [Теореме 1](#thm:1) всё следует сразу.",
     });
 

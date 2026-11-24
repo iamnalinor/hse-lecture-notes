@@ -77,9 +77,9 @@ jobs:
         env:
           # "" on a custom domain (hse.nalinor.dev), "/<repo>" on <owner>.github.io/<repo>
           BASE_PATH: ${{ steps.pages.outputs.base_path }}/
-          VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL }}
-          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
-          VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID }}
+          VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL || 'https://hse-lecture-notes-api.nalinor.workers.dev' }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAGPcmq2WtuXcFzUF' }}
+          VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID || '8638200504' }}
         run: bun run build
 
       - uses: actions/upload-pages-artifact@v5

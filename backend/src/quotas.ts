@@ -1,9 +1,8 @@
 import { randomToken } from "./crypto";
 import type { TrackedD1 } from "./db";
-import { estimateUncertainRoundCostMicros, PRICING_VERSION } from "./pricing";
+import { estimateUncertainRoundCostMicros, resolveModelRoute, modelPricing, type ModelRoute } from "./pricing";
 import { sendOwnerAlert } from "./telegram-alerts";
 import {
-  DEFAULT_POLICY,
   type BlockInfo,
   type DegradedInfo,
   type Env,
@@ -28,22 +27,8 @@ export async function loadPolicy(db: TrackedD1): Promise<ServicePolicy> {
   const row = await db.first<{ value_json: string }>(
     db.prepare("SELECT value_json FROM service_config WHERE key = 'policy'"),
   );
-  if (!row) return DEFAULT_POLICY;
-  try {
-    const parsed = JSON.parse(row.value_json) as Partial<ServicePolicy>;
-    return {
-      ...DEFAULT_POLICY,
-      ...parsed,
-      budgets: { ...DEFAULT_POLICY.budgets, ...(parsed.budgets ?? {}) },
-      tiers: {
-        guest: { ...DEFAULT_POLICY.tiers.guest, ...(parsed.tiers?.guest ?? {}) },
-        external: { ...DEFAULT_POLICY.tiers.external, ...(parsed.tiers?.external ?? {}) },
-        internal: { ...DEFAULT_POLICY.tiers.internal, ...(parsed.tiers?.internal ?? {}) },
-      },
-    };
-  } catch {
-    return DEFAULT_POLICY;
-  }
+  if (!row) throw new Error("Service policy is missing. Run init-db.");
+  return JSON.parse(row.value_json) as ServicePolicy;
 }
 
 export interface BudgetSnapshot {
@@ -95,7 +80,6 @@ export interface IdentityAxes {
 export interface QuotaEvaluation {
   allowed: boolean;
   bucket: QuotaBucket;
-  model: ModelId;
   reserveMicros: number;
   degraded: DegradedInfo;
   block: BlockInfo | null;
@@ -131,7 +115,6 @@ export async function evaluateQuotasAndBudgets(
     return {
       allowed: false,
       bucket: "low",
-      model: "gpt-6-luna",
       reserveMicros: policy.budgets.reserveLowMicros,
       degraded: { active: false },
       block: { code: "auth_required" },
@@ -365,16 +348,15 @@ export async function evaluateQuotasAndBudgets(
     return { count, oldest };
   };
 
-  // Determine bucket, model & degraded state first
+  // Determine the quota bucket and degradation state first
   let bucket: QuotaBucket = "low";
-  let model: ModelId = "gpt-6-luna";
   let degraded: DegradedInfo = { active: false };
   let quotaBlock: BlockInfo | null = null;
 
   if (isGuest) {
     const lowKeys = useFp ? ["low_br", "low_ip", "low_fp"] : ["low_br", "low_ip"];
     const low = maxAxis(lowKeys);
-    if (low.count >= policy.tiers.guest.lowLimit) {
+    if (low.count >= policy.buckets.low.limits.guest) {
       quotaBlock = {
         code: "auth_required",
         nextAvailableAt: low.oldest ? low.oldest + DAY_MS : nowMs + DAY_MS,
@@ -382,30 +364,27 @@ export async function evaluateQuotasAndBudgets(
     }
   } else if (axes.tier === "external") {
     const low = maxAxis(["low_tg", "low_br"]);
-    if (low.count >= policy.tiers.external.lowLimit) {
+    if (low.count >= policy.buckets.low.limits.external) {
       quotaBlock = {
         code: "tier_quota_exceeded",
         nextAvailableAt: low.oldest ? low.oldest + DAY_MS : nowMs + DAY_MS,
       };
     }
   } else {
-    // internal: independent high (20 Terra) and low (80 Luna) buckets
+    // Internal users have independent high and low quotas
     const high = maxAxis(["high_tg", "high_br"]);
     const low = maxAxis(["low_tg", "low_br"]);
-    if (high.count < policy.tiers.internal.highLimit) {
+    if (high.count < policy.buckets.high.limits.internal) {
       bucket = "high";
-      model = "gpt-6.1-terra";
       degraded = { active: false };
-    } else if (low.count < policy.tiers.internal.lowLimit) {
+    } else if (low.count < policy.buckets.low.limits.internal) {
       bucket = "low";
-      model = "gpt-6-luna";
       degraded = {
         active: true,
         restoresAt: high.oldest ? high.oldest + DAY_MS : nowMs + DAY_MS,
       };
     } else {
       bucket = "low";
-      model = "gpt-6-luna";
       degraded = {
         active: true,
         restoresAt: high.oldest ? high.oldest + DAY_MS : nowMs + DAY_MS,
@@ -431,7 +410,6 @@ export async function evaluateQuotasAndBudgets(
     return {
       allowed: false,
       bucket,
-      model,
       reserveMicros,
       degraded,
       block: { code: "global_budget_exceeded" },
@@ -447,7 +425,6 @@ export async function evaluateQuotasAndBudgets(
       return {
         allowed: false,
         bucket,
-        model,
         reserveMicros,
         degraded,
         block: { code: "guest_budget_exceeded" },
@@ -462,7 +439,6 @@ export async function evaluateQuotasAndBudgets(
     return {
       allowed: false,
       bucket,
-      model,
       reserveMicros,
       degraded,
       block: quotaBlock,
@@ -483,7 +459,6 @@ export async function evaluateQuotasAndBudgets(
       return {
         allowed: false,
         bucket,
-        model,
         reserveMicros,
         degraded,
         block: { code: "concurrent_run" },
@@ -508,7 +483,6 @@ export async function evaluateQuotasAndBudgets(
       return {
         allowed: false,
         bucket,
-        model,
         reserveMicros,
         degraded,
         block: { code: "rate_limited", retryAfterSec },
@@ -521,7 +495,6 @@ export async function evaluateQuotasAndBudgets(
   return {
     allowed: true,
     bucket,
-    model,
     reserveMicros,
     degraded,
     block: null,
@@ -566,138 +539,66 @@ export async function finalizeRunAtomic(
   input: FinalizeRunInput,
 ): Promise<boolean> {
   const nowMs = input.nowMs ?? Date.now();
-  const existing = await db.first<{
-    id: string;
-    status: string;
-    tier: Tier;
-    model: ModelId;
-    thread_id: string;
-    assistant_message_id: string;
-    reserved_cost_micros: number;
-    actual_cost_micros: number;
-    created_at: number;
-  }>(
-    db
-      .prepare(
-        "SELECT id, status, tier, model, thread_id, assistant_message_id, reserved_cost_micros, actual_cost_micros, created_at FROM usage_runs WHERE id = ?",
-      )
-      .bind(input.runId),
+  const existing = await db.first<{ model: string; pricing_version: number }>(
+    db.prepare(`SELECT model, pricing_version FROM usage_runs
+                WHERE id = ? AND status = 'running'`).bind(input.runId),
   );
+  if (!existing) return false;
 
-  if (!existing || existing.status !== "running") {
-    return false;
-  }
-
-  let finalCostMicros = Math.max(existing.actual_cost_micros, Math.ceil(input.actualCostMicros));
-  const zeroOutputError =
+  const mightBeEmptyError =
     input.finalStatus === "error" &&
     input.errorCode !== "run_expired" &&
-    finalCostMicros === 0 &&
+    input.actualCostMicros === 0 &&
     (input.toolRounds ?? 0) === 0 &&
     (input.streamedOutputChars ?? (input.contentTex?.length ?? 0)) === 0;
-  if (input.isCostUncertain && !zeroOutputError) {
-    const uncertainFloor = estimateUncertainRoundCostMicros(
-      existing.model,
-      input.estimatedPromptChars ?? 6000,
-      input.streamedOutputChars ?? (input.contentTex?.length ?? 0),
-    );
-    finalCostMicros = Math.max(finalCostMicros, existing.actual_cost_micros + uncertainFloor);
-  }
-
-  // Step 1: guarded CAS on usage_runs
-  const casRes = await db.run(
-    db
-      .prepare(
-        `UPDATE usage_runs
-         SET status = ?,
-             finished_at = ?,
-             updated_at = ?,
-             reserved_cost_micros = 0,
-             actual_cost_micros = ?,
-             is_cost_uncertain = CASE WHEN ? = 1 THEN 1 ELSE is_cost_uncertain END,
-             input_tokens = COALESCE(?, input_tokens),
-             cached_tokens = COALESCE(?, cached_tokens),
-             cache_write_tokens = COALESCE(?, cache_write_tokens),
-             output_tokens = COALESCE(?, output_tokens),
-             tool_rounds = COALESCE(?, tool_rounds),
-             tool_calls = COALESCE(?, tool_calls),
-             error_code = ?
-         WHERE id = ? AND status = 'running'`,
+  const uncertainFloor = input.isCostUncertain
+    ? estimateUncertainRoundCostMicros(
+        modelPricing(existing.model, existing.pricing_version),
+        input.estimatedPromptChars ?? 6000,
+        input.streamedOutputChars ?? (input.contentTex?.length ?? 0),
       )
-      .bind(
-        input.finalStatus,
-        nowMs,
-        nowMs,
-        finalCostMicros,
-        input.isCostUncertain ? 1 : 0,
-        input.inputTokens ?? null,
-        input.cachedTokens ?? null,
-        input.cacheWriteTokens ?? null,
-        input.outputTokens ?? null,
-        input.toolRounds ?? null,
-        input.toolCalls ?? null,
-        input.errorCode ?? null,
-        input.runId,
-      ),
-  );
+    : 0;
 
-  if ((casRes.meta?.changes ?? 0) !== 1) {
-    return false;
-  }
-
-  // Step 2: we won the CAS — atomically update message, thread, budget_hourly, and release budget_reserves
-  const hourTs = hourBucketTs(existing.created_at);
-  const isGuest = existing.tier === "guest";
-  const guestDelta = isGuest ? finalCostMicros : 0;
-  const guestReserveRelease = isGuest ? existing.reserved_cost_micros : 0;
-
-  const postStmts: D1PreparedStatement[] = [
-    db
-      .prepare(
-        `UPDATE chat_messages
-         SET status = ?,
-             content_tex = COALESCE(?, content_tex),
-             steps_json = COALESCE(?, steps_json),
-             agent_items_json = COALESCE(?, agent_items_json),
-             error_message = ?,
-             updated_at = ?
-         WHERE id = ?`,
-      )
-      .bind(
-        input.messageStatus,
-        input.contentTex ?? null,
-        input.stepsJson ?? null,
-        input.agentItemsJson ?? null,
-        input.errorMessage ?? null,
-        nowMs,
-        existing.assistant_message_id,
-      ),
-    db
-      .prepare("UPDATE chat_threads SET updated_at = ? WHERE id = ?")
-      .bind(nowMs, existing.thread_id),
-    db
-      .prepare(
-        `INSERT INTO budget_hourly (hour_ts, global_actual_micros, guest_actual_micros, updated_at)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(hour_ts) DO UPDATE SET
-           global_actual_micros = budget_hourly.global_actual_micros + excluded.global_actual_micros,
-           guest_actual_micros = budget_hourly.guest_actual_micros + excluded.guest_actual_micros,
-           updated_at = excluded.updated_at`,
-      )
-      .bind(hourTs, finalCostMicros, guestDelta, nowMs),
-    db
-      .prepare(
-        `UPDATE budget_reserves
-         SET global_reserved_micros = MAX(0, global_reserved_micros - ?),
-             guest_reserved_micros = MAX(0, guest_reserved_micros - ?),
-             updated_at = ?
-         WHERE id = 1`,
-      )
-      .bind(existing.reserved_cost_micros, guestReserveRelease, nowMs),
-  ];
-
-  await db.batch(postStmts);
-  return true;
+  // Keep the run running until all accounting has been applied in this transaction.
+  // A competing finalizer sees no running row; a failure rolls back the entire batch.
+  const running = "FROM usage_runs WHERE id = ? AND status = 'running'";
+  const result = await db.batch([
+    db.prepare(`UPDATE usage_runs SET actual_cost_micros = MAX(?,
+      actual_cost_micros + CASE WHEN ? AND actual_cost_micros = 0 THEN 0 ELSE ? END)
+      WHERE id = ? AND status = 'running'`)
+      .bind(Math.ceil(input.actualCostMicros), mightBeEmptyError ? 1 : 0, uncertainFloor, input.runId),
+    db.prepare(`UPDATE chat_messages SET status = ?, content_tex = COALESCE(?, content_tex),
+      steps_json = COALESCE(?, steps_json), agent_items_json = COALESCE(?, agent_items_json),
+      error_message = ?, updated_at = ? WHERE id = (SELECT assistant_message_id ${running})`)
+      .bind(input.messageStatus, input.contentTex ?? null, input.stepsJson ?? null,
+        input.agentItemsJson ?? null, input.errorMessage ?? null, nowMs, input.runId),
+    db.prepare(`UPDATE chat_threads SET updated_at = ? WHERE id = (SELECT thread_id ${running})`)
+      .bind(nowMs, input.runId),
+    db.prepare(`INSERT INTO budget_hourly (hour_ts, global_actual_micros, guest_actual_micros, updated_at)
+      SELECT created_at - created_at % ?, actual_cost_micros,
+        CASE WHEN tier = 'guest' THEN actual_cost_micros ELSE 0 END, ? ${running}
+      ON CONFLICT(hour_ts) DO UPDATE SET
+        global_actual_micros = budget_hourly.global_actual_micros + excluded.global_actual_micros,
+        guest_actual_micros = budget_hourly.guest_actual_micros + excluded.guest_actual_micros,
+        updated_at = excluded.updated_at`)
+      .bind(HOUR_MS, nowMs, input.runId),
+    db.prepare(`UPDATE budget_reserves SET
+      global_reserved_micros = MAX(0, global_reserved_micros - run.reserved_cost_micros),
+      guest_reserved_micros = MAX(0, guest_reserved_micros -
+        CASE WHEN run.tier = 'guest' THEN run.reserved_cost_micros ELSE 0 END),
+      updated_at = ? FROM (SELECT tier, reserved_cost_micros ${running}) AS run
+      WHERE budget_reserves.id = 1`).bind(nowMs, input.runId),
+    db.prepare(`UPDATE usage_runs SET status = ?, finished_at = ?, updated_at = ?,
+      reserved_cost_micros = 0, is_cost_uncertain = MAX(is_cost_uncertain, ?),
+      input_tokens = COALESCE(?, input_tokens), cached_tokens = COALESCE(?, cached_tokens),
+      cache_write_tokens = COALESCE(?, cache_write_tokens), output_tokens = COALESCE(?, output_tokens),
+      tool_rounds = COALESCE(?, tool_rounds), tool_calls = COALESCE(?, tool_calls), error_code = ?
+      WHERE id = ? AND status = 'running'`)
+      .bind(input.finalStatus, nowMs, nowMs, input.isCostUncertain ? 1 : 0, input.inputTokens ?? null,
+        input.cachedTokens ?? null, input.cacheWriteTokens ?? null, input.outputTokens ?? null,
+        input.toolRounds ?? null, input.toolCalls ?? null, input.errorCode ?? null, input.runId),
+  ]);
+  return result.at(-1)?.meta.changes === 1;
 }
 
 export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<number> {
@@ -726,6 +627,17 @@ export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<nu
   return swept;
 }
 
+// Used inside the write transaction for both initial reservations and top-ups.
+const budgetFits = `global_reserved_micros + delta +
+    (SELECT COALESCE(SUM(global_actual_micros), 0) FROM budget_hourly WHERE hour_ts >= ?) <= ?
+    AND (NOT guest OR guest_reserved_micros + delta +
+    (SELECT COALESCE(SUM(guest_actual_micros), 0) FROM budget_hourly WHERE hour_ts >= ?) <= ?)`;
+
+function budgetLimits(policy: ServicePolicy, nowMs: number): number[] {
+  return [hourBucketTs(nowMs - WEEK_MS), policy.budgets.weeklyGlobalUsdMicros,
+    hourBucketTs(nowMs - DAY_MS), policy.budgets.dailyGuestUsdMicros];
+}
+
 /**
  * Light checkpoint after each completed LLM round (does not modify indexed columns)
  * plus reserve top-up if cumulative cost exceeds initial reserve.
@@ -748,77 +660,40 @@ export async function checkpointRound(
     nowMs: number;
   },
 ): Promise<{ updatedReservedMicros: number; canContinueToolRounds: boolean }> {
-  let updatedReservedMicros = params.currentReservedMicros;
-  let canContinueToolRounds = true;
+  const roundBuffer = Math.ceil((params.bucket === "high"
+    ? policy.budgets.reserveHighMicros
+    : policy.budgets.reserveLowMicros) / 2);
+  const target = params.cumulativeActualMicros + roundBuffer;
+  const progress = db.prepare(`UPDATE usage_runs SET
+    actual_cost_micros = ?, input_tokens = ?, cached_tokens = ?, cache_write_tokens = ?,
+    output_tokens = ?, tool_rounds = ?, tool_calls = ?, updated_at = ?
+    WHERE id = ? AND status = 'running' AND actual_cost_micros <= ?`)
+    .bind(params.cumulativeActualMicros, params.inputTokens, params.cachedTokens,
+      params.cacheWriteTokens, params.outputTokens, params.toolRounds, params.toolCalls,
+      params.nowMs, params.runId, params.cumulativeActualMicros);
 
-  // Always persist non-indexed cost & token progress for this completed round
-  await db.run(
-    db
-      .prepare(
-        `UPDATE usage_runs
-         SET actual_cost_micros = ?,
-             input_tokens = ?,
-             cached_tokens = ?,
-             cache_write_tokens = ?,
-             output_tokens = ?,
-             tool_rounds = ?,
-             tool_calls = ?,
-             updated_at = ?
-         WHERE id = ? AND status = 'running'`,
-      )
-      .bind(
-        params.cumulativeActualMicros,
-        params.inputTokens,
-        params.cachedTokens,
-        params.cacheWriteTokens,
-        params.outputTokens,
-        params.toolRounds,
-        params.toolCalls,
-        params.nowMs,
-        params.runId,
-      ),
-  );
-
-  // If actual spend is approaching/exceeding reserve, check remaining budget and top up reserve
-  const roundBuffer =
-    params.bucket === "high"
-      ? Math.ceil(policy.budgets.reserveHighMicros / 2)
-      : Math.ceil(policy.budgets.reserveLowMicros / 2);
-
-  if (params.cumulativeActualMicros + roundBuffer > params.currentReservedMicros) {
-    const budget = await readBudgetSnapshot(db, params.nowMs);
-    const delta = params.cumulativeActualMicros + roundBuffer - params.currentReservedMicros;
-    const isGuest = params.tier === "guest";
-    const globalOk =
-      budget.globalActual7d + budget.globalReserved + delta <= policy.budgets.weeklyGlobalUsdMicros;
-    const guestOk =
-      !isGuest ||
-      budget.guestActual24h + budget.guestReserved + delta <= policy.budgets.dailyGuestUsdMicros;
-
-    if (!globalOk || !guestOk) {
-      canContinueToolRounds = false;
-    } else {
-      updatedReservedMicros = params.currentReservedMicros + delta;
-      await db.batch([
-        db
-          .prepare(
-            "UPDATE usage_runs SET reserved_cost_micros = ?, updated_at = ? WHERE id = ? AND status = 'running'",
-          )
-          .bind(updatedReservedMicros, params.nowMs, params.runId),
-        db
-          .prepare(
-            `UPDATE budget_reserves
-             SET global_reserved_micros = global_reserved_micros + ?,
-                 guest_reserved_micros = guest_reserved_micros + ?,
-                 updated_at = ?
-             WHERE id = 1`,
-          )
-          .bind(delta, isGuest ? delta : 0, params.nowMs),
-      ]);
-    }
+  const stmts = [progress];
+  if (target > params.currentReservedMicros) {
+    // Use the persisted reserve for the delta so replaying a checkpoint is free.
+    stmts.push(
+      db.prepare(`UPDATE budget_reserves SET global_reserved_micros = global_reserved_micros + delta,
+        guest_reserved_micros = guest_reserved_micros + CASE WHEN guest THEN delta ELSE 0 END,
+        updated_at = ? FROM (SELECT ? - reserved_cost_micros AS delta, tier = 'guest' AS guest
+          FROM usage_runs WHERE id = ? AND status = 'running') WHERE budget_reserves.id = 1
+        AND delta > 0 AND ${budgetFits}`)
+        .bind(params.nowMs, target, params.runId, ...budgetLimits(policy, params.nowMs)),
+      // changes() is the preceding reserve update in this transaction.
+      db.prepare(`UPDATE usage_runs SET reserved_cost_micros = ?
+        WHERE id = ? AND status = 'running' AND changes() = 1`).bind(target, params.runId),
+    );
   }
-
-  return { updatedReservedMicros, canContinueToolRounds };
+  stmts.push(db.prepare("SELECT reserved_cost_micros, status FROM usage_runs WHERE id = ?").bind(params.runId));
+  const results = await db.batch<{ reserved_cost_micros: number; status: string }>(stmts);
+  const run = results.at(-1)?.results[0];
+  return {
+    updatedReservedMicros: run?.reserved_cost_micros ?? 0,
+    canContinueToolRounds: run?.status === "running" && run.reserved_cost_micros >= target,
+  };
 }
 
 // =============================================================================
@@ -848,7 +723,7 @@ export type AdmitRunResult =
       userMessageId: string;
       assistantMessageId: string;
       bucket: QuotaBucket;
-      model: ModelId;
+      route: ModelRoute;
       reserveMicros: number;
       degraded: DegradedInfo;
     }
@@ -887,11 +762,51 @@ function deriveThreadTitle(text: string, quote: QuotePayload | null): string {
   return "Новый чат";
 }
 
+function identityQuotaGuard(policy: ServicePolicy, axes: IdentityAxes, bucket: QuotaBucket, nowMs: number) {
+  const guest = axes.tier === "guest" || axes.telegramId === null;
+  const identifiers: [string, number | string][] = [["browser_id", axes.browserId]];
+  if (guest) {
+    identifiers.push(["ip_address", axes.ipAddress]);
+    if (axes.fingerprint) identifiers.push(["fingerprint", axes.fingerprint]);
+  } else {
+    identifiers.push(["telegram_id", axes.telegramId!]);
+  }
+  const dailyLimit = bucket === "high" ? policy.buckets.high.limits.internal
+    : policy.buckets.low.limits[guest ? "guest" : axes.tier];
+  const clauses: string[] = [];
+  const bindings: (number | string)[] = [];
+  for (const [column, value] of identifiers) {
+    const separateBuckets = column === "browser_id" || column === "telegram_id";
+    const bucketFilter = separateBuckets ? "AND quota_bucket = ?" : "";
+    clauses.push(
+      `NOT EXISTS (SELECT 1 FROM usage_runs WHERE ${column} = ? AND status = 'running' AND expires_at >= ?)`,
+      `(SELECT COUNT(*) FROM usage_runs WHERE ${column} = ? AND quota_bucket IN ('high', 'low') AND created_at >= ?) < ?`,
+      `(SELECT COUNT(*) FROM usage_runs WHERE ${column} = ? ${bucketFilter} AND created_at >= ? AND status != 'error') < ?`,
+    );
+    bindings.push(value, nowMs, value, nowMs - 60_000, policy.rateLimitPerMinute,
+      value, ...(separateBuckets ? [bucket] : []), nowMs - DAY_MS, dailyLimit);
+  }
+  return { sql: clauses.join(" AND "), bindings };
+}
+
 export async function admitRunAtomic(
   db: TrackedD1,
   policy: ServicePolicy,
   params: AdmitRunParams,
 ): Promise<AdmitRunResult> {
+  // A second transaction may have occupied the last slot after the preflight.
+  // Re-evaluation returns its precise block or chooses the next available bucket.
+  for (;;) {
+    const result = await tryAdmitRun(db, policy, params);
+    if (result.kind !== "reevaluate") return result;
+  }
+}
+
+async function tryAdmitRun(
+  db: TrackedD1,
+  policy: ServicePolicy,
+  params: AdmitRunParams,
+): Promise<AdmitRunResult | { kind: "reevaluate" }> {
   const nowMs = params.nowMs ?? Date.now();
   const isGuest = params.axes.tier === "guest" || params.axes.telegramId === null;
   const ownerKey = isGuest ? `br:${params.axes.browserId}` : `tg:${params.axes.telegramId}`;
@@ -1026,7 +941,7 @@ export async function admitRunAtomic(
         ? thread.browser_id === params.axes.browserId && thread.telegram_id === null
         : thread.telegram_id === params.axes.telegramId);
 
-    if (!ownsThread) {
+    if (!ownsThread || thread.course !== params.course || thread.doc_id !== params.docId) {
       return { kind: "not_found", message: "Thread not found or not owned by user" };
     }
     threadTitle = thread.title;
@@ -1043,35 +958,55 @@ export async function admitRunAtomic(
   const expiresAt = nowMs + policy.staleRunTimeoutMs;
   const quoteJson = params.quote ? JSON.stringify(params.quote) : null;
 
-  if (!creatingThread && params.retryAssistantMessageId) {
-    const retryTarget = await db.first<{ id: string; seq: number; role: string }>(
-      db
-        .prepare("SELECT id, seq, role FROM chat_messages WHERE id = ? AND thread_id = ?")
-        .bind(params.retryAssistantMessageId, threadId),
+  if (params.retryAssistantMessageId) {
+    const target = await db.first<{ id: string; seq: number; user_id: string }>(
+      db.prepare(`SELECT assistant.id, assistant.seq, user.id AS user_id
+        FROM chat_messages AS assistant JOIN chat_messages AS user
+          ON user.thread_id = assistant.thread_id AND user.seq = assistant.seq - 1 AND user.role = 'user'
+        WHERE assistant.thread_id = ? AND assistant.id = ? AND assistant.role = 'assistant'`)
+        .bind(threadId, params.retryAssistantMessageId),
     );
-    if (retryTarget && retryTarget.role === "assistant") {
-      const prevUser = await db.first<{ id: string }>(
-        db
-          .prepare(
-            "SELECT id FROM chat_messages WHERE thread_id = ? AND seq < ? AND role = 'user' ORDER BY seq DESC LIMIT 1",
-          )
-          .bind(threadId, retryTarget.seq),
-      );
-      if (prevUser) {
-        userMessageId = prevUser.id;
-        assistantMessageId = retryTarget.id;
-        retryAssistantSeq = retryTarget.seq;
-      }
+    if (!target || target.seq !== nextSeq - 1) {
+      return { kind: "conflict", message: "Only the latest assistant message can be retried" };
     }
+    userMessageId = target.user_id;
+    assistantMessageId = target.id;
+    retryAssistantSeq = target.seq;
   }
 
-  const insertStmts: D1PreparedStatement[] = [];
+  // The run row gates every write in this transaction. A denied reservation
+  // cannot leave behind a thread, messages, or a partially reset retry.
+  const route = resolveModelRoute(policy.buckets[evalRes.bucket]);
+  const quotaGuard = identityQuotaGuard(policy, params.axes, evalRes.bucket, nowMs);
+  const threadGuard = creatingThread ? "1" : `EXISTS (
+    SELECT 1 FROM chat_threads WHERE id = ? AND course = ? AND doc_id = ?
+      AND ${isGuest ? "telegram_id IS NULL AND browser_id = ?" : "telegram_id = ?"})`;
+  const threadBindings = creatingThread ? [] : [
+    threadId, params.course, params.docId, isGuest ? params.axes.browserId : params.axes.telegramId,
+  ];
+  const admitted = "EXISTS (SELECT 1 FROM usage_runs WHERE id = ?)";
+  const insertStmts: D1PreparedStatement[] = [
+    db.prepare(`INSERT INTO usage_runs (
+      id, owner_key, client_request_id, payload_hash, thread_id, user_message_id, assistant_message_id,
+      created_at, updated_at, expires_at, status, tier, quota_bucket, model, pricing_version, reasoning_effort,
+      reserved_cost_micros, telegram_id, browser_id, ip_address, fingerprint)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?, delta, ?, ?, ?, ?
+      FROM budget_reserves, (SELECT ? AS delta, ? AS guest)
+      WHERE id = 1 AND ${budgetFits} AND ${quotaGuard.sql} AND ${threadGuard}
+        AND (? IS NULL OR ? = (SELECT MAX(seq) FROM chat_messages WHERE thread_id = ?))`)
+      .bind(runId, ownerKey, params.clientRequestId, params.payloadHash, threadId, userMessageId,
+        assistantMessageId, nowMs, nowMs, expiresAt, isGuest ? "guest" : params.axes.tier, evalRes.bucket,
+        route.model, route.pricing_version, route.effort, isGuest ? null : params.axes.telegramId,
+        params.axes.browserId, params.axes.ipAddress, params.axes.fingerprint,
+        evalRes.reserveMicros, isGuest ? 1 : 0, ...budgetLimits(policy, nowMs),
+        ...quotaGuard.bindings, ...threadBindings, retryAssistantSeq, retryAssistantSeq, threadId),
+  ];
   if (creatingThread) {
     insertStmts.push(
       db
         .prepare(
           `INSERT INTO chat_threads (id, course, doc_id, title, browser_id, telegram_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE ${admitted}`,
         )
         .bind(
           threadId,
@@ -1082,89 +1017,84 @@ export async function admitRunAtomic(
           isGuest ? null : params.axes.telegramId,
           nowMs,
           nowMs,
+          runId,
         ),
     );
   } else {
     insertStmts.push(
       db
-        .prepare("UPDATE chat_threads SET updated_at = ? WHERE id = ?")
-        .bind(nowMs, threadId),
+        .prepare(`UPDATE chat_threads SET updated_at = ? WHERE id = ? AND ${admitted}`)
+        .bind(nowMs, threadId, runId),
     );
   }
 
   if (retryAssistantSeq !== null) {
     insertStmts.push(
       db
-        .prepare("DELETE FROM chat_messages WHERE thread_id = ? AND seq > ?")
-        .bind(threadId, retryAssistantSeq),
-      db
         .prepare(
           `UPDATE chat_messages
            SET status = 'running', content_tex = '', steps_json = NULL, agent_items_json = NULL, error_message = NULL, run_id = ?, updated_at = ?
-           WHERE id = ?`,
+           WHERE id = ? AND ${admitted}`,
         )
-        .bind(runId, nowMs, assistantMessageId),
+        .bind(runId, nowMs, assistantMessageId, runId),
     );
   } else {
     insertStmts.push(
       db
         .prepare(
           `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, quote_json, run_id, created_at, updated_at)
-           VALUES (?, ?, ?, 'user', 'done', ?, ?, ?, ?, ?)`,
+           SELECT ?, ?, ?, 'user', 'done', ?, ?, ?, ?, ? WHERE ${admitted}`,
         )
-        .bind(userMessageId, threadId, nextSeq, params.questionText, quoteJson, runId, nowMs, nowMs),
+        .bind(userMessageId, threadId, nextSeq, params.questionText, quoteJson, runId, nowMs, nowMs, runId),
       db
         .prepare(
           `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, run_id, created_at, updated_at)
-           VALUES (?, ?, ?, 'assistant', 'running', '', ?, ?, ?)`,
+           SELECT ?, ?, ?, 'assistant', 'running', '', ?, ?, ? WHERE ${admitted}`,
         )
-        .bind(assistantMessageId, threadId, nextSeq + 1, runId, nowMs, nowMs),
+        .bind(assistantMessageId, threadId, nextSeq + 1, runId, nowMs, nowMs, runId),
     );
   }
 
   insertStmts.push(
     db
       .prepare(
-        `INSERT INTO usage_runs (
-           id, owner_key, client_request_id, payload_hash, thread_id, user_message_id, assistant_message_id,
-           created_at, updated_at, expires_at, status, tier, quota_bucket, model, pricing_version,
-           reserved_cost_micros, telegram_id, browser_id, ip_address, fingerprint
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'running', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(
-        runId,
-        ownerKey,
-        params.clientRequestId,
-        params.payloadHash,
-        threadId,
-        userMessageId,
-        assistantMessageId,
-        nowMs,
-        nowMs,
-        expiresAt,
-        params.axes.tier,
-        evalRes.bucket,
-        evalRes.model,
-        PRICING_VERSION,
-        evalRes.reserveMicros,
-        isGuest ? null : params.axes.telegramId,
-        params.axes.browserId,
-        params.axes.ipAddress,
-        params.axes.fingerprint,
-      ),
-    db
-      .prepare(
         `UPDATE budget_reserves
          SET global_reserved_micros = global_reserved_micros + ?,
              guest_reserved_micros = guest_reserved_micros + ?,
              updated_at = ?
-         WHERE id = 1`,
+         WHERE id = 1 AND ${admitted}`,
       )
-      .bind(evalRes.reserveMicros, isGuest ? evalRes.reserveMicros : 0, nowMs),
+      .bind(evalRes.reserveMicros, isGuest ? evalRes.reserveMicros : 0, nowMs, runId),
   );
 
   try {
-    await db.batch(insertStmts);
+    // Report a lost race using the same transaction snapshot.
+    insertStmts.push(db.prepare(`SELECT CASE
+      WHEN NOT ${threadGuard} THEN 'thread_changed'
+      WHEN ? IS NOT NULL AND ? IS NOT (SELECT MAX(seq) FROM chat_messages WHERE thread_id = ?)
+        THEN 'stale_retry'
+      WHEN global_reserved_micros + ? +
+        (SELECT COALESCE(SUM(global_actual_micros), 0) FROM budget_hourly WHERE hour_ts >= ?) > ?
+        THEN 'global_budget_exceeded'
+      WHEN ? AND guest_reserved_micros + ? +
+        (SELECT COALESCE(SUM(guest_actual_micros), 0) FROM budget_hourly WHERE hour_ts >= ?) > ?
+        THEN 'guest_budget_exceeded'
+      ELSE 'reevaluate' END AS reason
+      FROM budget_reserves WHERE id = 1 AND NOT ${admitted}`)
+      .bind(...threadBindings, retryAssistantSeq, retryAssistantSeq, threadId, evalRes.reserveMicros,
+        hourBucketTs(nowMs - WEEK_MS), policy.budgets.weeklyGlobalUsdMicros, isGuest ? 1 : 0,
+        evalRes.reserveMicros, hourBucketTs(nowMs - DAY_MS), policy.budgets.dailyGuestUsdMicros, runId));
+    const result = await db.batch<{ reason: "thread_changed" | "reevaluate" | "stale_retry" | "global_budget_exceeded" | "guest_budget_exceeded" }>(insertStmts);
+    if (result[0]?.meta.changes !== 1) {
+      const reason = result.at(-1)?.results[0]?.reason;
+      if (!reason) throw new Error("Budget reserve row missing");
+      if (reason === "thread_changed") return { kind: "not_found", message: "Thread ownership changed" };
+      if (reason === "reevaluate") return { kind: "reevaluate" };
+      if (reason === "stale_retry") {
+        return { kind: "conflict", message: "Only the latest assistant message can be retried" };
+      }
+      return { kind: "blocked", block: { code: reason }, degraded: evalRes.degraded };
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("idx_usage_runs_active_thread") || msg.includes("UNIQUE constraint failed: usage_runs.thread_id")) {
@@ -1184,7 +1114,7 @@ export async function admitRunAtomic(
     userMessageId,
     assistantMessageId,
     bucket: evalRes.bucket,
-    model: evalRes.model,
+    route,
     reserveMicros: evalRes.reserveMicros,
     degraded: evalRes.degraded,
   };

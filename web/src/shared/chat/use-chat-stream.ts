@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import type {
   ChatBlock,
@@ -31,10 +31,9 @@ import {
   patchLastAssistant,
   resetRetryAssistant,
 } from "./chat-stream-helpers.ts";
-import { useRunStatusPoller } from "./use-chat-state.ts";
 
 export type StreamStateSetters = {
-  readonly loadThread: (ctx: ChatDocContext, threadId?: null | string) => Promise<void>;
+  readonly setPollRunId: (id: null | string) => void;
   readonly setActiveThreadId: (id: null | string) => void;
   readonly setBlock: (block: ChatBlock | null) => void;
   readonly setDegraded: (degraded: ChatDegraded) => void;
@@ -54,7 +53,7 @@ export type SendArgs = {
   readonly activeThreadId: null | string;
   readonly docContext: ChatDocContext;
   readonly quote: ChatQuote | null;
-  readonly retryAssistantMessageId?: string;
+  readonly retryMessage?: ChatMessage;
   readonly text: string;
 };
 
@@ -66,23 +65,30 @@ export type ChatStreamController = {
 type WsCallbackDeps = {
   readonly args: SendArgs;
   readonly clearActive: () => void;
-  readonly getRunId: () => null | string;
-  readonly onReconnectPoll: (runId: string, threadId: null | string) => void;
-  readonly setRunId: (id: null | string) => void;
   readonly setters: StreamStateSetters;
 };
 
 const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
-  const { args, clearActive, getRunId, onReconnectPoll, setRunId, setters } = deps;
-  let streamThreadId = args.activeThreadId;
+  const { args, clearActive, setters } = deps;
+  let runId: null | string = null;
+  const fail = (message: string): void => {
+    if (runId === null && args.retryMessage !== undefined) {
+      rollbackOptimisticTurn(setters, args);
+      return;
+    }
+    setters.setIsStreaming(false);
+    setters.setMessages((prev) =>
+      patchLastAssistant(prev, (m) => ({ ...m, status: "error", errorMessage: message })),
+    );
+  };
+
   return {
     onCloseUnexpected: () => {
       clearActive();
-      const rid = getRunId();
-      if (rid === null) {
-        setters.setIsStreaming(false);
+      if (runId === null) {
+        fail("Соединение прервано. Попробуйте ещё раз.");
       } else {
-        onReconnectPoll(rid, streamThreadId);
+        setters.setPollRunId(runId);
       }
     },
     onDelta: (delta) => {
@@ -92,7 +98,6 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     },
     onDone: (payload) => {
       clearActive();
-      setRunId(null);
       setters.setIsStreaming(false);
       setters.setDegraded(payload.degraded);
       if (payload.block !== null) {
@@ -109,22 +114,17 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     },
     onError: (payload) => {
       clearActive();
-      setRunId(null);
-      setters.setIsStreaming(false);
       if (payload.block !== undefined && payload.block !== null) {
         setters.setBlock(payload.block);
-        setters.setDraft(args.text);
-        setters.setQuote(args.quote);
-        setters.setMessages((prev) => prev.slice(0, -2));
-        return;
+        if (runId === null) {
+          rollbackOptimisticTurn(setters, args);
+          return;
+        }
       }
-      setters.setMessages((prev) =>
-        patchLastAssistant(prev, (m) => ({ ...m, errorMessage: payload.message, status: "error" })),
-      );
+      fail(payload.message);
     },
     onMeta: (payload) => {
-      streamThreadId = payload.threadId;
-      setRunId(payload.runId);
+      runId = payload.runId;
       setters.setActiveThreadId(payload.threadId);
       setters.setDegraded(payload.degraded);
       setters.setMessages((prev) =>
@@ -154,9 +154,13 @@ type AllowanceOutcome =
 const fetchAllowanceOutcome = async (
   turnstileHooks: TurnstileHooks,
   setters: StreamStateSetters,
+  isCurrent: () => boolean,
 ): Promise<AllowanceOutcome> => {
   try {
     const allowance = await ensureChatAllowance(turnstileHooks);
+    if (!isCurrent()) {
+      return { kind: "cancelled" };
+    }
     setters.setTier(allowance.tier);
     setters.setUser(allowance.user);
     setters.setDegraded(allowance.degraded);
@@ -174,37 +178,27 @@ const fetchAllowanceOutcome = async (
   }
 };
 
-const startOptimisticTurn = (
-  setters: StreamStateSetters,
-  args: SendArgs,
-  saveSnapshot: (msgs: null | readonly ChatMessage[]) => void,
-): void => {
+const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
   setters.setBlock(null);
   setters.setIsStreaming(true);
-  const retryId = args.retryAssistantMessageId;
+  const retryId = args.retryMessage?.id;
   if (retryId !== undefined) {
     setters.setMessages((prev) => {
-      saveSnapshot(prev);
       return resetRetryAssistant(prev, retryId);
     });
     return;
   }
-  saveSnapshot(null);
   setters.setDraft("");
   setters.setQuote(null);
   setters.setPreviousThreadId(null);
   setters.setMessages((prev) => [...prev, makeUserMsg(args.text, args.quote), makeAssistantMsg()]);
 };
 
-const rollbackOptimisticTurn = (
-  setters: StreamStateSetters,
-  args: SendArgs,
-  takeSnapshot: () => null | readonly ChatMessage[],
-): void => {
+const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
   setters.setIsStreaming(false);
-  const restored = takeSnapshot();
-  if (restored !== null) {
-    setters.setMessages(() => restored);
+  const original = args.retryMessage;
+  if (original !== undefined) {
+    setters.setMessages((prev) => prev.map((m) => (m.id === original.id ? original : m)));
     return;
   }
   setters.setMessages((prev) => prev.slice(0, -2));
@@ -212,15 +206,53 @@ const rollbackOptimisticTurn = (
   setters.setQuote(args.quote);
 };
 
+const connectStream = (
+  args: SendArgs,
+  allowance: AllowanceResponse,
+  callbacks: WsStreamCallbacks,
+): ActiveWsStream | null => {
+  try {
+    return openChatMessageStream(
+      getChatEnvConfig().apiUrl,
+      {
+        allowanceToken: allowance.allowanceToken,
+        browserToken: allowance.browserToken,
+        clientRequestId: crypto.randomUUID(),
+        course: args.docContext.course,
+        docId: args.docContext.docId,
+        quote: args.quote,
+        retryAssistantMessageId:
+          args.retryMessage === undefined || args.retryMessage.runId === null
+            ? null
+            : args.retryMessage.id,
+        text: args.text,
+        threadId: args.activeThreadId,
+      },
+      callbacks,
+    );
+  } catch {
+    callbacks.onCloseUnexpected();
+    return null;
+  }
+};
+
 export const useChatStream = (
   setters: StreamStateSetters,
   turnstileHooks: TurnstileHooks,
 ): ChatStreamController => {
   const streamRef = useRef<ActiveWsStream | null>(null);
-  const runIdRef = useRef<null | string>(null);
   const abortedPreWsRef = useRef(false);
-  const retrySnapshotRef = useRef<null | readonly ChatMessage[]>(null);
-  const pollRunStatus = useRunStatusPoller(setters, runIdRef);
+  const mountedRef = useRef(true);
+  const sendingRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      streamRef.current?.disconnect();
+    };
+  }, []);
+
+  const isCurrent = useCallback((): boolean => mountedRef.current && !abortedPreWsRef.current, []);
 
   const stopActive = useCallback((): void => {
     if (streamRef.current !== null) {
@@ -231,64 +263,42 @@ export const useChatStream = (
     cancelActiveTurnstile();
   }, []);
 
+  const clearActive = useCallback((): void => {
+    sendingRef.current = false;
+    streamRef.current = null;
+  }, []);
+
+  const startTurn = useCallback(
+    (args: SendArgs) => {
+      sendingRef.current = true;
+      abortedPreWsRef.current = false;
+      startOptimisticTurn(setters, args);
+      return buildWsCallbacks({ args, clearActive, setters });
+    },
+    [clearActive, setters],
+  );
   const sendQuestion = useCallback(
     async (args: SendArgs): Promise<void> => {
-      abortedPreWsRef.current = false;
-      startOptimisticTurn(setters, args, (snap) => {
-        retrySnapshotRef.current = snap;
-      });
-      const outcome = await fetchAllowanceOutcome(turnstileHooks, setters);
-      const wasAborted = (): boolean => abortedPreWsRef.current;
-      if (wasAborted() || outcome.kind === "blocked" || outcome.kind === "cancelled") {
-        rollbackOptimisticTurn(setters, args, () => {
-          const prev = retrySnapshotRef.current;
-          retrySnapshotRef.current = null;
-          return prev;
-        });
+      if (sendingRef.current) {
+        return;
+      }
+      const callbacks = startTurn(args);
+      const outcome = await fetchAllowanceOutcome(turnstileHooks, setters, isCurrent);
+      if (!mountedRef.current) {
         return;
       }
       if (outcome.kind === "error") {
-        setters.setIsStreaming(false);
-        setters.setMessages((prev) =>
-          patchLastAssistant(prev, (m) => ({
-            ...m,
-            errorMessage: outcome.message,
-            status: "error",
-          })),
-        );
+        callbacks.onError({ code: "allowance_error", message: outcome.message });
         return;
       }
-      const callbacks = buildWsCallbacks({
-        args,
-        clearActive: () => {
-          streamRef.current = null;
-        },
-        getRunId: () => runIdRef.current,
-        onReconnectPoll: (rid, tid) => {
-          pollRunStatus(rid, args.docContext, tid);
-        },
-        setRunId: (id) => {
-          runIdRef.current = id;
-        },
-        setters,
-      });
-      streamRef.current = openChatMessageStream(
-        getChatEnvConfig().apiUrl,
-        {
-          allowanceToken: outcome.allowance.allowanceToken,
-          browserToken: outcome.allowance.browserToken,
-          clientRequestId: crypto.randomUUID(),
-          course: args.docContext.course,
-          docId: args.docContext.docId,
-          quote: args.quote,
-          retryAssistantMessageId: args.retryAssistantMessageId ?? null,
-          text: args.text,
-          threadId: args.activeThreadId,
-        },
-        callbacks,
-      );
+      if (outcome.kind !== "ok" || !isCurrent()) {
+        clearActive();
+        rollbackOptimisticTurn(setters, args);
+        return;
+      }
+      streamRef.current = connectStream(args, outcome.allowance, callbacks);
     },
-    [pollRunStatus, setters, turnstileHooks],
+    [clearActive, isCurrent, setters, startTurn, turnstileHooks],
   );
 
   return { sendQuestion, stopActive };

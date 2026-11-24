@@ -10,9 +10,9 @@ import {
 } from "./chat.ts";
 
 describe("chat domain helpers", () => {
-  it("parses document routes and ignores home/course lists", () => {
-    expect(parseDocContext("/")).toBeNull();
-    expect(parseDocContext("/discrete")).toBeNull();
+  it("distinguishes home, course and material contexts", () => {
+    expect(parseDocContext("/")).toEqual({ course: "", docId: "" });
+    expect(parseDocContext("/discrete")).toEqual({ course: "discrete", docId: "" });
     expect(parseDocContext("/discrete/07_oct16_primes_fta")).toEqual({
       course: "discrete",
       docId: "07_oct16_primes_fta",

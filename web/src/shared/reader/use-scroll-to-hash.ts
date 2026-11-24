@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 
-import { findById, hashTarget } from "#web/shared/ui/dom.ts";
+import { findMaterialTarget } from "#web/shared/ui/dom.ts";
 
 const flashTarget = (target: Element): Element => {
   // A section is too big to light up: flash its heading (or summary of a folded ticket) instead.
@@ -30,9 +30,12 @@ const flash = (target: Element): void => {
 
 /** After navigation to `#anchor`: open folded proofs and tickets around it, scroll to it, highlight it. */
 export const useScrollToHash = (): void => {
-  const { hash, key } = useLocation();
+  const { hash, key, pathname } = useLocation();
   useEffect(() => {
-    const target = hash === "" ? null : findById(document, hashTarget(hash));
+    const target =
+      hash === ""
+        ? null
+        : findMaterialTarget(hash, pathname.split("/").findLast((part) => part !== "") ?? "");
     if (target === null) {
       return;
     }
@@ -49,5 +52,5 @@ export const useScrollToHash = (): void => {
     }
     target.scrollIntoView({ block: "start" });
     flash(target);
-  }, [hash, key]);
+  }, [hash, key, pathname]);
 };

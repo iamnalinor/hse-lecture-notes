@@ -34,23 +34,38 @@ const getWindow = (): Window & {
   turnstile?: TurnstileApi;
 } => globalThis.window;
 
-const loadExternalScript = async (src: string, id: string): Promise<void> => {
-  if (document.querySelector(`#${id}`) !== null) {
-    return;
+const scripts = new Map<string, Promise<void>>();
+
+const loadExternalScript = (src: string, id: string): Promise<void> => {
+  const existing = scripts.get(id);
+  if (existing !== undefined) {
+    return existing;
   }
-  await new Promise<void>((resolve, reject) => {
+  const pending = new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
     script.id = id;
     script.src = src;
     script.async = true;
-    script.addEventListener("load", () => {
-      resolve();
-    });
-    script.addEventListener("error", () => {
-      reject(new Error(`Failed to load ${src}`));
-    });
+    script.addEventListener(
+      "load",
+      () => {
+        resolve();
+      },
+      { once: true },
+    );
+    script.addEventListener(
+      "error",
+      () => {
+        script.remove();
+        scripts.delete(id);
+        reject(new Error(`Failed to load ${src}`));
+      },
+      { once: true },
+    );
     document.head.append(script);
   });
+  scripts.set(id, pending);
+  return pending;
 };
 
 const fpCache: { value: null | string } = { value: null };

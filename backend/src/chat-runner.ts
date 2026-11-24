@@ -228,10 +228,20 @@ export class ChatRunner extends DurableObject<Env> {
         typeof frame.clientRequestId === "string" ? frame.clientRequestId.trim() : "";
       const quote = frame.quote ?? null;
 
-      if (!course || !docId || !clientRequestId || clientRequestId.length > 128) {
+      if (typeof frame.course !== "string" || typeof frame.docId !== "string" || (!course && docId) || !clientRequestId || clientRequestId.length > 128) {
         safeSend({ type: "error", code: "invalid_request", message: "Missing required fields" });
         safeClose(4400, "invalid_request");
         return;
+      }
+      if (course) {
+        const context = docId
+          ? db.prepare("SELECT 1 FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1").bind(course, docId)
+          : db.prepare("SELECT 1 FROM course_documents WHERE course = ? LIMIT 1").bind(course);
+        if (!(await db.first(context))) {
+          safeSend({ type: "error", code: "invalid_context", message: "Учебный материал не найден" });
+          safeClose(4400, "invalid_context");
+          return;
+        }
       }
       if (!questionText && !quote) {
         safeSend({ type: "error", code: "empty_question", message: "Question or quote is required" });
@@ -248,7 +258,7 @@ export class ChatRunner extends DurableObject<Env> {
         return;
       }
       if (quote) {
-        if (typeof quote.tex !== "string" || quote.tex.length > policy.maxQuoteChars) {
+        if (!docId || typeof quote.tex !== "string" || quote.tex.length > policy.maxQuoteChars) {
           safeSend({ type: "error", code: "invalid_quote", message: "Quote exceeds limit or invalid" });
           safeClose(4400, "invalid_quote");
           return;
@@ -367,7 +377,7 @@ export class ChatRunner extends DurableObject<Env> {
         assistantMessageId: admit.assistantMessageId,
         runId: admit.runId,
         tier: allowance.tier,
-        model: admit.model,
+        model: admit.route.model,
         degraded: admit.degraded,
       });
 
@@ -384,7 +394,7 @@ export class ChatRunner extends DurableObject<Env> {
         docId,
         tier: allowance.tier,
         bucket: admit.bucket,
-        model: admit.model,
+        route: admit.route,
         initialReserveMicros: admit.reserveMicros,
         degraded: admit.degraded,
         questionText,

@@ -187,31 +187,34 @@ stray `text-sm` does nothing instead of adding an eleventh size.
     outline-offset: 2px;
   }
 
+  :root {
+    --scroll-thumb: oklch(0.708 0 0 / 0.5);
+    --scroll-thumb-hover: oklch(0.708 0 0 / 0.7);
+  }
+  :root[data-theme="dark"] {
+    --scroll-thumb: oklch(0.556 0 0 / 0.5);
+    --scroll-thumb-hover: oklch(0.556 0 0 / 0.7);
+  }
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-
-  ::-webkit-scrollbar-track {
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
     background: transparent;
   }
-
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.708 0 0 / 0.5);
+    background: var(--scroll-thumb);
     border-radius: 4px;
-    transition: background 0.2s;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.708 0 0 / 0.7);
+    background: var(--scroll-thumb-hover);
   }
-
-  :root[data-theme="dark"] ::-webkit-scrollbar-thumb {
-    background: oklch(0.556 0 0 / 0.5);
-  }
-
-  :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.556 0 0 / 0.7);
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scroll-thumb) transparent;
+    }
   }
 }
 

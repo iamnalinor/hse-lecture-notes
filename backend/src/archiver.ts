@@ -101,6 +101,11 @@ export async function runArchiveBatch(
   stats.noncesCleaned = nonceRes?.meta?.changes ?? 0;
   stats.sessionsCleaned = sessRes?.meta?.changes ?? 0;
 
+  if (!storage) {
+    logEvent("info", "archive_skipped_no_bucket", { ...stats });
+    return stats;
+  }
+
   // Find inactive threads across all days older than cutoff
   const threadsRes = await db.all<{
     id: string;
@@ -136,27 +141,27 @@ export async function runArchiveBatch(
   );
   stats.runsFound = runsRes.results.length;
 
-  if (!storage) {
-    logEvent("info", "archive_skipped_no_bucket", { ...stats });
-    return stats;
-  }
-
   const byDay = new Map<string, Array<Record<string, unknown>>>();
 
+  const messages = new Map<string, Record<string, unknown>[]>();
+  for (let i = 0; i < threadsRes.results.length; i += 50) {
+    const ids = threadsRes.results.slice(i, i + 50).map((thread) => thread.id);
+    const placeholders = ids.map(() => "?").join(",");
+    const result = await db.all<Record<string, unknown> & { thread_id: string }>(
+      db.prepare(`SELECT thread_id, id, seq, role, status, content_tex, quote_json, steps_json,
+                         error_message, run_id, created_at, updated_at
+                  FROM chat_messages WHERE thread_id IN (${placeholders}) ORDER BY thread_id, seq`).bind(...ids),
+    );
+    for (const { thread_id, ...message } of result.results) {
+      const list = messages.get(thread_id) ?? [];
+      list.push(message);
+      messages.set(thread_id, list);
+    }
+  }
   for (const thr of threadsRes.results) {
     const dayStr = new Date(thr.updated_at).toISOString().slice(0, 10);
-    const msgsRes = await db.all<Record<string, unknown>>(
-      db
-        .prepare(
-          `SELECT id, seq, role, status, content_tex, quote_json, steps_json, error_message, run_id, created_at, updated_at
-           FROM chat_messages
-           WHERE thread_id = ?
-           ORDER BY seq ASC`,
-        )
-        .bind(thr.id),
-    );
     const bucket = byDay.get(dayStr) ?? [];
-    bucket.push({ kind: "thread", thread: thr, messages: msgsRes.results });
+    bucket.push({ kind: "thread", thread: thr, messages: messages.get(thr.id) ?? [] });
     byDay.set(dayStr, bucket);
   }
 
@@ -169,7 +174,10 @@ export async function runArchiveBatch(
   }
 
   const encoder = new TextEncoder();
-  for (const [dayStr, records] of byDay.entries()) {
+  // Each day requires up to three R2 calls plus two guarded D1 deletes.
+  // Leave later days in D1 for the next batch.
+  for (const dayStr of [...byDay.keys()].sort().slice(0, 6)) {
+    const records = byDay.get(dayStr)!;
     const jsonl = `${records.map((r) => JSON.stringify(r)).join("\n")}\n`;
     const gz = await gzipBytes(encoder.encode(jsonl));
     const digest = await sha256HexBytes(gz);
@@ -182,36 +190,28 @@ export async function runArchiveBatch(
     }
     stats.archivesWritten += 1;
 
-    for (const rec of records) {
-      if (rec.kind === "thread") {
-        const thr = rec.thread as { id: string; updated_at: number };
-        // Race-safe guarded DELETE: skips if user sent a new message or started a run!
-        const del = await db.run(
-          db
-            .prepare(
-              `DELETE FROM chat_threads
-               WHERE id = ? AND updated_at = ?
-                 AND NOT EXISTS (
-                   SELECT 1 FROM usage_runs
-                   WHERE thread_id = chat_threads.id AND status = 'running'
-                 )`,
-            )
-            .bind(thr.id, thr.updated_at),
-        );
-        if ((del.meta?.changes ?? 0) >= 1) {
-          stats.threadsDeleted += 1;
-        } else {
-          stats.threadsSkippedRace += 1;
-        }
-      } else if (rec.kind === "usage_run") {
-        const r = rec.run as { id: string };
-        const del = await db.run(
-          db
-            .prepare("DELETE FROM usage_runs WHERE id = ? AND status != 'running'")
-            .bind(r.id),
-        );
-        stats.runsDeleted += del.meta?.changes ?? 0;
-      }
+    const threads = records
+      .filter((record) => record.kind === "thread")
+      .map((record) => record.thread as { id: string; updated_at: number });
+    for (let i = 0; i < threads.length; i += 40) {
+      const chunk = threads.slice(i, i + 40);
+      const pairs = chunk.map(() => "(?, ?)").join(",");
+      const deleted = await db.all<{ id: string }>(db.prepare(
+        `DELETE FROM chat_threads WHERE (id, updated_at) IN (VALUES ${pairs})
+         AND NOT EXISTS (SELECT 1 FROM usage_runs WHERE thread_id = chat_threads.id AND status = 'running') RETURNING id`,
+      ).bind(...chunk.flatMap((thread) => [thread.id, thread.updated_at])));
+      stats.threadsDeleted += deleted.results.length;
+      stats.threadsSkippedRace += chunk.length - deleted.results.length;
+    }
+    const runs = records
+      .filter((record) => record.kind === "usage_run")
+      .map((record) => (record.run as { id: string }).id);
+    for (let i = 0; i < runs.length; i += 80) {
+      const chunk = runs.slice(i, i + 80);
+      const deleted = await db.all<{ id: string }>(db.prepare(
+        `DELETE FROM usage_runs WHERE id IN (${chunk.map(() => "?").join(",")}) AND status != 'running' RETURNING id`,
+      ).bind(...chunk));
+      stats.runsDeleted += deleted.results.length;
     }
   }
 

@@ -2,7 +2,7 @@ import { CodexAuthError } from "./codex-auth";
 import { CodexUpstreamError } from "./codex-provider";
 import type { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
-import { computeRoundCostMicros } from "./pricing";
+import { computeRoundCostMicros, type ModelRoute } from "./pricing";
 import { checkpointRound, finalizeRunAtomic } from "./quotas";
 import { AGENT_TOOLS, AgentToolRunner, buildSystemPrompt } from "./tools";
 import type {
@@ -11,7 +11,6 @@ import type {
   DegradedInfo,
   Env,
   LlmProvider,
-  ModelId,
   QuotaBucket,
   QuotePayload,
   RunStatus,
@@ -32,7 +31,7 @@ export interface AgentLoopParams {
   docId: string;
   tier: Tier;
   bucket: QuotaBucket;
-  model: ModelId;
+  route: ModelRoute;
   initialReserveMicros: number;
   degraded: DegradedInfo;
   questionText: string;
@@ -141,7 +140,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     docId,
     tier,
     bucket,
-    model,
+    route,
     degraded,
     questionText,
     quote,
@@ -149,6 +148,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     isStoppedByUser,
     sendFrame,
   } = params;
+  const { model, effort } = route;
 
   const steps: ChatStep[] = [];
   const turnNewAgentItems: CodexInputItem[] = [];
@@ -162,6 +162,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
   let roundsCompleted = 0;
   let totalToolCalls = 0;
   let accumulatedText = "";
+  let upstreamIncomplete = false;
   let isCostUncertain = false;
   let estimatedPromptChars = 0;
 
@@ -224,6 +225,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
 
       const roundRes = await provider.runRound({
         model,
+        effort,
         instructions,
         input: conversationInput,
         tools: toolsForRound,
@@ -250,6 +252,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
         usage: roundRes.usage,
       });
 
+      upstreamIncomplete = !roundRes.completed || roundRes.truncated;
       if (!roundRes.completed) {
         isCostUncertain = true;
         break;
@@ -257,7 +260,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
 
       roundsCompleted += 1;
       if (roundRes.usage) {
-        const roundCost = computeRoundCostMicros(model, roundRes.usage);
+        const roundCost = computeRoundCostMicros(route, roundRes.usage);
         cumulativeCostMicros += roundCost;
         totalInputTokens += roundRes.usage.inputTokens;
         totalCachedTokens += roundRes.usage.cachedTokens;
@@ -363,8 +366,8 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       errorCode = "run_timeout";
       errorMessage = "Время генерации ответа истекло (60 с).";
       isCostUncertain = true;
-    } else if (isCostUncertain && !accumulatedText.trim()) {
-      finalStatus = "error";
+    } else if (upstreamIncomplete) {
+      finalStatus = accumulatedText.trim() ? "incomplete" : "error";
       errorCode = "upstream_incomplete";
       errorMessage = "Соединение с моделью прервалось до завершения ответа.";
     }

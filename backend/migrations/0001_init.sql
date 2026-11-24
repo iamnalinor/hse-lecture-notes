@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS usage_runs (
   status TEXT NOT NULL,             -- 'running' | 'done' | 'stopped' | 'incomplete' | 'error'
   tier TEXT NOT NULL,               -- 'guest' | 'external' | 'internal'
   quota_bucket TEXT NOT NULL,       -- 'high' | 'low'
-  model TEXT NOT NULL,              -- 'gpt-6.1-terra' | 'gpt-6-luna'
+  model TEXT NOT NULL,
+  reasoning_effort TEXT NOT NULL CHECK (length(trim(reasoning_effort)) > 0),
   pricing_version INTEGER NOT NULL DEFAULT 1,
   reserved_cost_micros INTEGER NOT NULL DEFAULT 0,
   actual_cost_micros INTEGER NOT NULL DEFAULT 0,
@@ -231,13 +232,6 @@ CREATE INDEX IF NOT EXISTS idx_block_references_to
 
 INSERT OR IGNORE INTO budget_reserves (id, global_reserved_micros, guest_reserved_micros, updated_at)
 VALUES (1, 0, 0, 0);
-
-INSERT OR IGNORE INTO service_config (key, value_json, updated_at)
-VALUES (
-  'policy',
-  '{"rateLimitPerMinute":4,"maxQuestionChars":2000,"maxQuoteChars":4000,"maxBodyBytes":32768,"maxHistoryMessages":16,"maxHistoryChars":24000,"maxToolRounds":5,"maxToolCalls":10,"maxToolOutputChars":12000,"maxTotalToolOutputChars":36000,"maxResponseChars":24000,"maxRunDurationMs":60000,"staleRunTimeoutMs":75000,"allowanceTtlMs":1800000,"sessionTtlMs":2592000000,"archiveAfterDays":30,"threadsPageSize":20,"requireLoginWithoutFingerprint":false,"budgets":{"weeklyGlobalUsdMicros":30000000,"weeklyWarnRatio":0.8,"dailyGuestUsdMicros":500000,"reserveHighMicros":40000,"reserveLowMicros":5000},"tiers":{"guest":{"lowLimit":3},"external":{"lowLimit":20},"internal":{"highLimit":20,"lowLimit":80}}}',
-  0
-);
 
 INSERT OR IGNORE INTO service_config (key, value_json, updated_at)
 VALUES (

@@ -1,3 +1,5 @@
+import { hashTarget } from "#web/shared/ui/dom.ts";
+
 export type InlineSpan =
   | { readonly end: number; readonly kind: "bold"; readonly text: string }
   | { readonly end: number; readonly kind: "code"; readonly text: string }
@@ -7,23 +9,40 @@ export type ParsedPiece =
   | { readonly kind: "plain"; readonly pos: number; readonly text: string }
   | { readonly kind: "span"; readonly pos: number; readonly span: InlineSpan };
 
+const headingTags = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
+
 export type BlockSegment =
   | { readonly kind: "code"; readonly lang: string; readonly value: string }
   | { readonly kind: "display-math"; readonly value: string }
+  | { readonly kind: "heading"; readonly tag: (typeof headingTags)[number]; readonly value: string }
   | { readonly kind: "list"; readonly items: readonly string[]; readonly ordered: boolean }
   | { readonly kind: "paragraph"; readonly value: string };
 
+export const isMaterialLink = (target: string): boolean => {
+  const [path = "", hash, extra] = target.split("#", 3);
+  return (
+    extra === undefined &&
+    hash !== undefined &&
+    /^\/[a-z]+\/[\w-]+$/u.test(path) &&
+    /^[\p{L}\p{N}_.:-]+$/u.test(hashTarget(hash))
+  );
+};
+
 const matchMdRef = (text: string, pos: number): InlineSpan | null => {
-  const closeBracket = text.indexOf("](#", pos + 1);
+  const closeBracket = text.indexOf("](", pos + 1);
   if (closeBracket === -1) {
     return null;
   }
-  const closeParen = text.indexOf(")", closeBracket + 3);
+  const closeParen = text.indexOf(")", closeBracket + 2);
   if (closeParen === -1) {
     return null;
   }
   const label = text.slice(pos + 1, closeBracket);
-  const target = text.slice(closeBracket + 3, closeParen);
+  const href = text.slice(closeBracket + 2, closeParen);
+  const target = href.startsWith("#") ? href.slice(1) : href;
+  if (!href.startsWith("#") && !isMaterialLink(href)) {
+    return null;
+  }
   return label === "" || target === "" || label.includes("\n")
     ? null
     : { end: closeParen + 1, kind: "ref", label, target };
@@ -155,12 +174,32 @@ const parseParagraph = (para: string): BlockSegment | null => {
 };
 
 const appendParagraphs = (trimmed: string, blocks: BlockSegment[]): void => {
-  for (const para of trimmed.split(/\n{2,}/)) {
-    const seg = parseParagraph(para);
-    if (seg !== null) {
-      blocks.push(seg);
+  const lines: string[] = [];
+  const flush = (): void => {
+    const segment = parseParagraph(lines.join("\n"));
+    if (segment !== null) {
+      blocks.push(segment);
+    }
+    lines.length = 0;
+  };
+
+  for (const line of trimmed.split("\n")) {
+    const match = /^ {0,3}(#{1,6})(?=[ \t]|$)/u.exec(line);
+    const tag = headingTags[(match?.[1]?.length ?? 0) - 1];
+    if (match !== null && tag !== undefined) {
+      flush();
+      blocks.push({
+        kind: "heading",
+        tag,
+        value: line.slice(match[0].length).trimEnd().replace(/\s#+$/u, "").trim(),
+      });
+    } else if (line.trim() === "") {
+      flush();
+    } else {
+      lines.push(line);
     }
   }
+  flush();
 };
 
 const appendProseSegment = (source: string, blocks: BlockSegment[]): void => {

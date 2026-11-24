@@ -1,12 +1,20 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router";
+
+import { labelIndexQuery } from "#web/api/queries.ts";
+import { paths } from "#web/domain/paths.ts";
+import { findMaterialTarget } from "#web/shared/ui/dom.ts";
 
 import { ChatComposer } from "./chat-composer.tsx";
 import { useChat } from "./chat-context.tsx";
 import { SparklesIcon } from "./chat-icons.tsx";
+import { isMaterialLink } from "./chat-markdown-parse.ts";
 import { ChatMessageView } from "./chat-message-view.tsx";
 import { ChatEmptyView, ChatPanelHeader, TurnstileModal } from "./chat-panel-parts.tsx";
 import { ChatRefPreview } from "./chat-ref-preview.tsx";
+import { ChatResizeHandle } from "./chat-resize-handle.tsx";
 
 const isMobileViewport = (): boolean => globalThis.window.matchMedia("(max-width: 720px)").matches;
 const isReducedMotion = (): boolean =>
@@ -16,7 +24,7 @@ const focusHeaderChatButton = (): void => {
   document.querySelector<HTMLButtonElement>(".ai-head-btn")?.focus();
 };
 
-const highlightTargetBlock = (target: HTMLElement): void => {
+const highlightTargetBlock = (target: Element): void => {
   const details = target.closest("details");
   if (details !== null && !details.open) {
     details.open = true;
@@ -70,21 +78,75 @@ const useAutoScroll = (scrollerRef: { current: HTMLDivElement | null }, dep: unk
   }, [dep, scrollerRef]);
 };
 
-const useJumpToBlock = (close: () => void, onMobileBack: () => void) =>
-  useCallback(
+const useMaterialNavigation = (course: string, close: () => void) => {
+  const client = useQueryClient();
+  const navigate = useNavigate();
+  return useCallback(
+    async (anchor: string): Promise<void> => {
+      if (isMaterialLink(anchor)) {
+        if (isMobileViewport()) {
+          close();
+        }
+        await navigate(anchor);
+        return;
+      }
+      const origin = globalThis.location.pathname;
+      const index = await client.query(labelIndexQuery);
+      const label = index[course]?.[anchor];
+      if (label === undefined || globalThis.location.pathname !== origin) {
+        return;
+      }
+
+      if (isMobileViewport()) {
+        close();
+      }
+      await navigate(paths.lecture(course, label.weekId, anchor));
+    },
+    [client, close, course, navigate],
+  );
+};
+
+const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => void) => {
+  const { isOpen, close } = chat;
+  const { course, docId } = chat.docContext;
+  const documentPrefix = `${paths.lecture(course, docId)}#`;
+  const openMissing = useMaterialNavigation(course, close);
+  const pendingRef = useRef<Element | null>(null);
+  useEffect(() => {
+    const target = pendingRef.current;
+    if (isOpen || target === null) {
+      return;
+    }
+    const frame = globalThis.requestAnimationFrame(() => {
+      pendingRef.current = null;
+      highlightTargetBlock(target);
+    });
+    return () => {
+      globalThis.cancelAnimationFrame(frame);
+    };
+  }, [isOpen]);
+
+  return useCallback(
     (blockId: string): void => {
-      const target = document.querySelector<HTMLElement>(`#${CSS.escape(blockId)}`);
+      const anchor = blockId.startsWith(documentPrefix)
+        ? blockId.slice(documentPrefix.length)
+        : blockId;
+      const target = findMaterialTarget(anchor, docId);
       if (target === null) {
+        void openMissing(blockId);
         return;
       }
       if (isMobileViewport()) {
+        pendingRef.current = target;
         close();
         onMobileBack();
+        return;
       }
       highlightTargetBlock(target);
     },
-    [close, onMobileBack],
+    [close, docId, documentPrefix, onMobileBack, openMissing],
   );
+};
 
 /** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
 export const ChatPanel = (): JSX.Element | null => {
@@ -100,7 +162,7 @@ export const ChatPanel = (): JSX.Element | null => {
     focusHeaderChatButton();
   }, [chat]);
 
-  const jumpToBlock = useJumpToBlock(chat.close, () => {
+  const jumpToBlock = useJumpToBlock(chat, () => {
     setShowMobileBack(true);
   });
 
@@ -116,13 +178,14 @@ export const ChatPanel = (): JSX.Element | null => {
   });
   useAutoScroll(scrollerRef, chat.messages);
 
-  if (!chat.isConfigured || chat.docContext === null) {
+  if (!chat.isConfigured) {
     return null;
   }
 
   return (
     <>
       <aside aria-label="Чат с ИИ" className="ai-panel" id="ai-panel" ref={setPanelEl}>
+        <ChatResizeHandle />
         <ChatPanelHeader
           historyOpen={historyOpen}
           onClose={handleClose}
@@ -136,8 +199,10 @@ export const ChatPanel = (): JSX.Element | null => {
               ? !chat.isThreadLoading && <ChatEmptyView />
               : chat.messages.map((message) => (
                   <ChatMessageView
-                    isStreaming={chat.isStreaming}
-                    key={message.id}
+                    canRetry={
+                      !chat.isStreaming && !chat.isThreadLoading && message === chat.messages.at(-1)
+                    }
+                    key={message.renderKey ?? message.id}
                     message={message}
                     onJumpToBlock={jumpToBlock}
                     onRetry={(msgId) => {

@@ -8,6 +8,9 @@ const Probe = () => {
   useScrollToHash();
   return (
     <>
+      <section id="об-экзамене">
+        <h1>Об экзамене</h1>
+      </section>
       <section id="sec:exam1:laplace">
         <details data-ticket="sec:exam1:laplace">
           <summary>1. Разложение Лапласа</summary>
@@ -30,6 +33,17 @@ const Probe = () => {
 };
 
 describe("useScrollToHash", () => {
+  it("opens the encoded exam overview citation saved in older answers", () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const view = renderWithApp(
+      <Probe />,
+      `/algebra/exam1#sec:exam1:${encodeURIComponent("об-экзамене")}`,
+    );
+    expect(view.getByRole("heading", { name: "Об экзамене" })).toHaveClass("flash");
+    expect(scroll).toHaveBeenCalled();
+  });
+
   it("opens a ticket section's own details when jumping to the section anchor", () => {
     Element.prototype.scrollIntoView = vi.fn();
     renderWithApp(<Probe />, "/algebra/exam1#sec:exam1:laplace");

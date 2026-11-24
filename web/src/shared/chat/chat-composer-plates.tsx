@@ -36,6 +36,15 @@ const formatClockTime = (timestampMs: null | number | undefined): null | string 
   return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
 
+const RetryButton = (): JSX.Element => {
+  const { clearBlock } = useChat();
+  return (
+    <button className="ai-btn ai-btn-2" onClick={clearBlock} type="button">
+      Попробовать снова
+    </button>
+  );
+};
+
 export const BottomPlate = ({
   mode,
 }: {
@@ -62,6 +71,7 @@ export const BottomPlate = ({
             <p>{`Слишком большая нагрузка, попробуйте позже.${keepNote}`}</p>
           </div>
         </div>
+        <RetryButton />
       </div>
     );
   }
@@ -93,6 +103,7 @@ export const BottomPlate = ({
               </>
             )}
           </button>
+          <RetryButton />
         </div>
       </div>
     );
@@ -112,6 +123,7 @@ export const BottomPlate = ({
           </>
         )}
       </p>
+      <RetryButton />
     </div>
   );
 };
@@ -137,14 +149,25 @@ export const BottomCaption = ({ mode, nowMs, rateRemainSec }: CaptionProps): JSX
     );
   }
 
-  if (tier === "external" && mode !== "down" && user !== null) {
+  const degradedCopy = mode === "composer" ? formatDegradedCaption(degraded, nowMs) : null;
+  if (user !== null && tier !== "guest") {
     return (
       <p className="ai-caption ai-fade">
         <InfoIcon />
         <span>
-          У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который есть в
-          чате потока.
-          <br />
+          {tier === "external" && (
+            <>
+              У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который
+              есть в чате потока.
+              <br />
+            </>
+          )}
+          {degradedCopy !== null && (
+            <>
+              {degradedCopy}
+              <br />
+            </>
+          )}
           {`Вы вошли как ${user.name}. `}
           <button
             disabled={isLoginBusy}
@@ -160,7 +183,6 @@ export const BottomCaption = ({ mode, nowMs, rateRemainSec }: CaptionProps): JSX
     );
   }
 
-  const degradedCopy = mode === "composer" ? formatDegradedCaption(degraded, nowMs) : null;
   if (degradedCopy !== null) {
     return (
       <p className="ai-caption ai-fade">

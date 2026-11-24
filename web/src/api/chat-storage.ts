@@ -102,7 +102,7 @@ export const withBrowserInitLock = async <T>(work: () => Promise<T>): Promise<T>
 export const subscribeAuthStorage = (onChange: () => void): (() => void) => {
   const watched = new Set([KEY_BROWSER, KEY_SESSION, KEY_USER, KEY_TIER]);
   const listener = (event: StorageEvent): void => {
-    if (event.key !== null && watched.has(event.key)) {
+    if (event.key === null || watched.has(event.key)) {
       onChange();
     }
   };

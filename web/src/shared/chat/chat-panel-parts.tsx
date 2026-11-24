@@ -56,33 +56,32 @@ export const ChatPanelHeader = ({
   onClose,
   onToggleHistory,
 }: PanelHeaderProps): JSX.Element => {
-  const { activeThreadId, isLoginBusy, login, messages, newChat, selectThread, threads, tier } =
-    useChat();
-
+  const chat = useChat();
   return (
     <div className="ai-top">
       <div className="ai-title">
         <SparklesIcon />
         <span>Чат</span>
       </div>
-      {tier === "guest" && (
+      {chat.tier === "guest" && (
         <button
           className="ai-text-btn"
-          disabled={isLoginBusy}
+          disabled={chat.isLoginBusy}
           onClick={() => {
-            void login();
+            void chat.login();
           }}
           type="button"
         >
-          {isLoginBusy ? <span className="ai-spin" /> : <TelegramIcon />}
+          {chat.isLoginBusy ? <span className="ai-spin" /> : <TelegramIcon />}
           Войти
         </button>
       )}
-      {threads.length > 0 && (
+      {chat.threads.length > 0 && (
         <button
           aria-expanded={historyOpen}
           aria-label="История чатов"
           className="ai-icon-btn"
+          disabled={chat.isStreaming}
           onClick={onToggleHistory}
           title="История чатов"
           type="button"
@@ -93,8 +92,9 @@ export const ChatPanelHeader = ({
       <button
         aria-label="Новый чат"
         className="ai-icon-btn"
-        hidden={messages.length === 0}
-        onClick={newChat}
+        disabled={chat.isStreaming}
+        hidden={chat.messages.length === 0}
+        onClick={chat.newChat}
         title="Новый чат"
         type="button"
       >
@@ -109,14 +109,15 @@ export const ChatPanelHeader = ({
       >
         <CloseIcon />
       </button>
-      {historyOpen && threads.length > 0 && (
+      {historyOpen && chat.threads.length > 0 && (
         <div className="ai-hist-menu ai-fade">
-          {threads.map((thread) => (
+          {chat.threads.map((thread) => (
             <button
-              className={thread.id === activeThreadId ? "ai-hist-item is-on" : "ai-hist-item"}
+              className={thread.id === chat.activeThreadId ? "ai-hist-item is-on" : "ai-hist-item"}
+              disabled={chat.isStreaming}
               key={thread.id}
               onClick={() => {
-                selectThread(thread.id);
+                chat.selectThread(thread.id);
                 onToggleHistory();
               }}
               type="button"
@@ -133,6 +134,12 @@ export const ChatPanelHeader = ({
 export const ChatEmptyView = (): JSX.Element => {
   const { docContext, previousThreadId, quote, restorePreviousThread, send } = useChat();
   const suggestions = getLectureSuggestions(docContext);
+  let title = "Чат по конспектам";
+  if (docContext.docId !== "") {
+    title = "Вопрос по материалу";
+  } else if (docContext.course !== "") {
+    title = "Вопрос по курсу";
+  }
 
   return (
     <div className="ai-empty ai-enter">
@@ -144,11 +151,8 @@ export const ChatEmptyView = (): JSX.Element => {
           </button>
         </div>
       )}
-      <h2>Спросите о лекции</h2>
-      <p>
-        Выделите непонятный фрагмент конспекта — он прикрепится к вопросу. ИИ знает эту лекцию и
-        может заглянуть в соседние.
-      </p>
+      <h2>{title}</h2>
+      {docContext.docId !== "" && <p>Выделите фрагмент материала, чтобы задать вопрос о нём.</p>}
       {quote === null && (
         <div className="ai-sugg">
           {suggestions.map((prompt) => (
