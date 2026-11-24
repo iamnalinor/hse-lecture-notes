@@ -809,7 +809,7 @@ def sync_to_cloudflare(
             valid_blocks = [b for b in chunk if len(b.id.encode("utf-8")) <= 64]
             vectors = [
                 {"id": b.id, "values": emb}
-                for b, emb in zip(chunk, embeddings)
+                for b, emb in zip(chunk, embeddings, strict=True)
                 if len(b.id.encode("utf-8")) <= 64
             ]
             cf.vectorize_upsert(vectors)

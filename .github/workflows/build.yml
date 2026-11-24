@@ -62,6 +62,10 @@ jobs:
           ./scripts/setup.sh
           echo "$HOME/.TinyTeX/bin/x86_64-linux" >> "$GITHUB_PATH"
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: web/.bun-version
+
       - name: Tests
         run: uv run pytest -q
 
@@ -170,6 +174,9 @@ jobs:
         working-directory: web
         env:
           BASE_PATH: /
+          VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL || 'https://hse-lecture-notes-api.nalinor.workers.dev' }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAGPcmq2WtuXcFzUF' }}
+          VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID || '8638200504' }}
         run: |
           find public/data -name index.html -delete
           shopt -s nullglob
