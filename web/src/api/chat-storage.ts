@@ -36,6 +36,11 @@ const safeSet = (key: string, value: null | string): void => {
   }
 };
 
+export const readPageThread = (key: string): null | string => safeGet(`hse_chat_thread:${key}`);
+export const savePageThread = (key: string, id: null | string): void => {
+  safeSet(`hse_chat_thread:${key}`, id);
+};
+
 const parseStoredUser = (raw: null | string): ChatUser | null => {
   if (raw === null) {
     return null;

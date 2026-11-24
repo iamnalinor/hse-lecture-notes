@@ -29,9 +29,9 @@ import {
   useChatAuthState,
   useRootOpenClassSync,
   useTelegramAuthActions,
-  useThreadState,
 } from "./use-chat-state.ts";
 import { type StreamStateSetters, useChatStream } from "./use-chat-stream.ts";
+import { useThreadState } from "./use-thread-state.ts";
 
 export const TURNSTILE_HOST_ID = "hse-turnstile-host";
 
@@ -186,7 +186,9 @@ const useChatSessionValue = ({
   const isConfigured = isChatConfigured();
   const { draft, setDraft, quote, setQuote } = composer;
 
-  const thr = useThreadState(isOpen, isConfigured);
+  const { pathname } = useLocation();
+  const pageKey = `${auth.user?.id ?? "guest"}:/${pathname.split("/").filter(Boolean).join("/")}`;
+  const thr = useThreadState(isOpen, isConfigured, pageKey);
   useRootOpenClassSync(isOpen);
 
   const setters: StreamStateSetters = {

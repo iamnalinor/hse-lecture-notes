@@ -1,24 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  fetchChatRunStatus,
-  fetchChatThread,
-  loginViaTelegram,
-  logoutChatSession,
-  type ThreadResponse,
-} from "#web/api/chat-client.ts";
-import { readStoredAuth, subscribeAuthStorage } from "#web/api/chat-storage.ts";
-import { type TurnstileHooks, warmupChatWidgets } from "#web/api/chat-widgets.ts";
-import {
-  type ChatBlock,
-  type ChatDegraded,
-  type ChatMessage,
-  type ChatTier,
-  type ChatUser,
-  nextRunPollDelayMs,
-} from "#web/domain/chat.ts";
+import type { TurnstileHooks } from "#web/api/chat-widgets.ts";
+import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat.ts";
 
-import { useThreadHistory } from "./use-thread-history.ts";
+import { loginViaTelegram, logoutChatSession } from "#web/api/chat-client.ts";
+import { readStoredAuth, subscribeAuthStorage } from "#web/api/chat-storage.ts";
 
 export const useRootOpenClassSync = (isOpen: boolean): void => {
   const savedScrollYRef = useRef<null | number>(null);
@@ -111,92 +97,6 @@ export const useChatAuthState = () => {
   };
 };
 
-const readThread = async (threadId?: null | string): Promise<null | ThreadResponse> => {
-  try {
-    return await fetchChatThread(threadId);
-  } catch {
-    return null;
-  }
-};
-
-export const useThreadState = (isOpen: boolean, isConfigured: boolean) => {
-  const history = useThreadHistory();
-  const { replacePage } = history;
-  const [activeThreadId, setActiveThreadId] = useState<null | string>(null);
-  const [messages, setMessages] = useState<readonly ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [isThreadLoading, setIsThreadLoading] = useState(
-    () => isConfigured && readStoredAuth().browserToken !== null,
-  );
-
-  const [pollRunId, setPollRunId] = useState<null | string>(null);
-  const requestRef = useRef(0);
-  const invalidateLoad = useCallback(() => {
-    requestRef.current += 1;
-    setIsThreadLoading(false);
-  }, []);
-  const loadThread = useCallback(
-    async (requestedThreadId?: null | string): Promise<void> => {
-      const request = ++requestRef.current;
-      const data = await readThread(requestedThreadId);
-      if (request !== requestRef.current) {
-        return;
-      }
-      setIsThreadLoading(false);
-      if (data === null) {
-        return;
-      }
-      const items = data.thread?.messages ?? [];
-      const last = items.at(-1);
-      const run = last?.role === "assistant" && last.status === "running" ? last.runId : null;
-      replacePage(data);
-      setActiveThreadId(data.thread?.id ?? null);
-      setMessages(items);
-      setIsStreaming(run !== null);
-      setPollRunId(run);
-    },
-    [replacePage],
-  );
-
-  useRunStatusPoller({ runId: pollRunId, threadId: activeThreadId, loadThread });
-
-  const openedRef = useRef(false);
-  useEffect(() => {
-    if (!isOpen || !isConfigured || openedRef.current) {
-      return;
-    }
-    openedRef.current = true;
-    if (readStoredAuth().browserToken !== null) {
-      // Defer the first fetch until the panel has committed its loading state.
-      queueMicrotask(() => void loadThread());
-    }
-  }, [isConfigured, isOpen, loadThread]);
-
-  useEffect(() => {
-    if (isOpen && isConfigured) {
-      warmupChatWidgets();
-    }
-  }, [isConfigured, isOpen]);
-
-  return {
-    activeThreadId,
-    canStop: isStreaming && pollRunId === null,
-    invalidateLoad,
-    isStreaming,
-    isThreadLoading,
-    loadThread: (threadId: string) => {
-      setIsThreadLoading(true);
-      return loadThread(threadId);
-    },
-    messages,
-    setActiveThreadId,
-    setIsStreaming,
-    setMessages,
-    setPollRunId,
-    ...history,
-  };
-};
-
 type LoginDeps = {
   readonly onLogin: (account: ChatUser | null) => void;
   readonly setBlock: (next: ChatBlock | null) => void;
@@ -240,43 +140,6 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
   }, [deps, login]);
 
   return { isLoginBusy, login, switchAccount };
-};
-
-type PollTarget = {
-  readonly runId: null | string;
-  readonly threadId: null | string;
-  readonly loadThread: (threadId: null | string) => Promise<void>;
-};
-
-const useRunStatusPoller = ({ runId, threadId, loadThread }: PollTarget): void => {
-  useEffect(() => {
-    if (runId === null) {
-      return;
-    }
-    let isActive = true;
-    let attempt = 0;
-    let timer: ReturnType<typeof globalThis.setTimeout>;
-    const tick = async (): Promise<void> => {
-      if (!document.hidden) {
-        try {
-          const status = await fetchChatRunStatus(runId);
-          if (isActive && status?.status !== "running") {
-            await loadThread(threadId);
-          }
-        } catch {
-          // A temporary connection error leaves the saved run eligible for the next poll.
-        }
-      }
-      if (isActive) {
-        timer = globalThis.setTimeout(() => void tick(), nextRunPollDelayMs(++attempt));
-      }
-    };
-    timer = globalThis.setTimeout(() => void tick(), nextRunPollDelayMs(0));
-    return () => {
-      isActive = false;
-      globalThis.clearTimeout(timer);
-    };
-  }, [loadThread, runId, threadId]);
 };
 
 export const useCopyFeedback = () => {

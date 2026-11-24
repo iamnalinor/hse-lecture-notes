@@ -88,7 +88,7 @@ it("discards another account's late history after a storage event", async () => 
     globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_user" }));
     await Promise.resolve();
   });
-  expect(chat.current.activeThreadId).toBe("two");
+  expect(chat.current.activeThreadId).toBeNull();
   await act(async () => {
     pending.resolve(thread("one"));
     await pending.promise;
@@ -179,6 +179,7 @@ it("polls a restored running turn through a failed request to completion", async
     status: "done",
     expiresAt: 1000,
   });
+  localStorage.setItem("hse_chat_thread:guest:/", "t");
   const chat = mount();
   await act(async () => {
     chat.current.toggle();
@@ -225,7 +226,7 @@ it("keeps the guest draft on login and clears it when switching between accounts
   expect(chat.current.draft).toBe("");
 });
 
-it("keeps a streaming conversation across pages and sends the new page on the next turn", async () => {
+it("keeps the pending answer on its original page and starts a fresh chat on another", async () => {
   const view = renderHook(() => ({ chat: useChat(), go: useNavigate() }), {
     wrapper: ({ children }: { readonly children: ReactNode }) => (
       <MemoryRouter>
@@ -233,6 +234,9 @@ it("keeps a streaming conversation across pages and sends the new page on the ne
       </MemoryRouter>
     ),
   }).result;
+  act(() => {
+    view.current.chat.toggle();
+  });
   await act(() => view.current.chat.send("Первый вопрос"));
   const call = vi.mocked(openChatMessageStream).mock.calls[0];
   if (call === undefined) {
@@ -267,11 +271,12 @@ it("keeps a streaming conversation across pages and sends the new page on the ne
   });
   await act(() => view.current.chat.send("А здесь?"));
   expect(vi.mocked(openChatMessageStream).mock.calls[1]?.[1]).toMatchObject({
-    threadId: "t",
+    threadId: null,
     course: "algebra",
     docId: "",
   });
-  expect(view.current.chat.messages[0]?.page).toEqual({ course: "", docId: "" });
+  expect(view.current.chat.messages[0]?.page).toEqual({ course: "algebra", docId: "" });
+  expect(localStorage.getItem("hse_chat_thread:guest:/")).toBe("t");
 });
 
 it("loads the next history page without replacing the open thread", async () => {
@@ -288,6 +293,32 @@ it("loads the next history page without replacing the open thread", async () => 
   await act(() => chat.current.loadMore());
   expect(fetchChatThread).toHaveBeenLastCalledWith(null, first.threads[0]);
   expect(chat.current.threads.map((item) => item.id)).toEqual(["z", "a"]);
-  expect(chat.current.activeThreadId).toBe("z");
+  expect(chat.current.activeThreadId).toBeNull();
   expect(chat.current.hasMore).toBe(false);
+});
+
+it("remembers the history selection per page across reloads and forgets it for a new chat", async () => {
+  saveBrowserToken("browser");
+  vi.mocked(fetchChatThread).mockImplementation((id) => Promise.resolve(thread(id ?? "latest")));
+  const first = mount();
+  await act(async () => {
+    first.current.toggle();
+    await Promise.resolve();
+  });
+  expect(first.current.activeThreadId).toBeNull();
+  await act(async () => {
+    first.current.selectThread("chosen");
+    await Promise.resolve();
+  });
+  expect(first.current.activeThreadId).toBe("chosen");
+  const second = mount();
+  await act(async () => {
+    second.current.toggle();
+    await Promise.resolve();
+  });
+  expect(second.current.activeThreadId).toBe("chosen");
+  act(() => {
+    second.current.newChat();
+  });
+  expect(localStorage.getItem("hse_chat_thread:guest:/")).toBeNull();
 });

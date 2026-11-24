@@ -2,8 +2,8 @@ import { useCallback, useState } from "react";
 
 import type { ChatDocContext, ChatQuote, ChatUser } from "#web/domain/chat.ts";
 
-import type { useThreadState } from "./use-chat-state.ts";
 import type { ChatStreamController } from "./use-chat-stream.ts";
+import type { useThreadState } from "./use-thread-state.ts";
 
 export const useComposerDraft = (docKey: string, user: ChatUser | null) => {
   type Draft = {
