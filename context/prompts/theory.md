@@ -23,6 +23,7 @@
 - Примеры и замечания в теорию не идут. Исключение — соглашения курса.
 - Формулировки — те же, что в конспекте; можно короче, но без потери условий.
 - Текст — по `context/style/writing-ru.md`.
+- Вопросы чата — по `chat-suggestions/README.md`: ровно 6 разных вопросов про то, что есть на странице (понятие, доказательство, ловушка, приём, правило): ключ `theory` в `chat-suggestions/<course>.yaml`, правки и после них `uv run scripts/build_chat_suggestions.py`.
 - После правки: `uv run scripts/lint.py` и `uv run scripts/build.py --only theory/<course>.md`.
 
 ## Расширения на потом

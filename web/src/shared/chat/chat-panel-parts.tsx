@@ -2,7 +2,7 @@ import { type JSX, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router";
 
-import { getLectureSuggestions } from "#web/domain/chat-suggestion-pools.ts";
+import { getChatSuggestions } from "#web/domain/chat-suggestion-pools.ts";
 import { pageUrl, routeOf } from "#web/domain/seo.ts";
 
 import { TURNSTILE_HOST_ID, useChat } from "./chat-context.tsx";
@@ -180,7 +180,7 @@ export const ChatPanelHeader = ({
 export const ChatEmptyView = (): JSX.Element => {
   const { docContext, quote, send } = useChat();
   const { course, docId } = docContext;
-  const suggestions = useMemo(() => getLectureSuggestions({ course, docId }), [course, docId]);
+  const suggestions = useMemo(() => getChatSuggestions({ course, docId }), [course, docId]);
   let title = "Чат по конспектам";
   if (docContext.docId !== "") {
     title = "Вопрос по материалу";

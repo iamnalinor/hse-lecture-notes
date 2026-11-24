@@ -2,92 +2,34 @@ import type { ChatDocContext } from "./chat.ts";
 
 import chatSuggestionsData from "./chat-suggestions.json";
 
+/** Сколько подсказок видно в пустом чате. */
 export const SUGGESTIONS_SHOWN = 3;
-const SUGGESTIONS_POOL_SIZE = 6;
 
-export const HOME_CHAT_SUGGESTIONS: readonly string[] = [
-  "В каких курсах разбирают индукцию?",
-  "Где найти примеры работы с указателями на C?",
-  "С какого курса и темы лучше начать повторение к сессии?",
-  "Составь план подготовки к экзаменам на неделю по всем курсам",
-  "Какие темы пересекаются между алгеброй, матанализом и дискретной математикой?",
-  "Где в конспектах разбирают метод Гаусса и ранг матрицы?",
-];
-
-export const COURSE_CHAT_SUGGESTIONS: readonly string[] = [
-  "Какие темы входят в курс?",
-  "С какой лекции начать?",
-  "Какие материалы помогут подготовиться к контрольной?",
-  "Какие темы курса самые важные для экзамена?",
-  "Составь план повторения курса на 5 дней",
-  "Какие определения и теоремы курса нужно знать наизусть?",
-];
-
-const LECTURE_CHAT_SUGGESTIONS: readonly string[] = [
-  "Объясни ключевую идею этого материала простыми словами",
-  "Разбери главное доказательство по шагам",
-  "Приведи наглядный пример и контрпример по теме",
-  "Какие типичные ошибки студентов по этой теме?",
-  "Дай три задачи по теме от простой к сложной, без решений",
-  "Проверь меня: задай 5 коротких вопросов по этой лекции",
-];
-
-const THEORY_CHAT_SUGGESTIONS: readonly string[] = [
-  "Выстрой карту зависимостей между главными теоремами курса",
-  "Какие доказательства из списка чаще всего просят на экзамене?",
-  "Как быстро выучить доказательства: с чего начать и что можно пропустить?",
-  "Спроси меня формулировку случайной теоремы и проверь ответ",
-  "Какие теоремы легко перепутать и чем они отличаются?",
-  "Какие определения здесь самые коварные и почему?",
-];
-
-const PROGRAM_CHAT_SUGGESTIONS: readonly string[] = [
-  "Какие темы программы самые важные для экзамена?",
-  "Как основные разделы программы логически связаны между собой?",
-  "С каких определений и теорем лучше начать повторение?",
-  "Составь расписание повторения программы за 7 дней",
-  "Какие темы программы обычно вызывают больше всего вопросов?",
-  "Какие темы можно учить параллельно, а какие строго по порядку?",
-];
-
-const PREP_CHAT_SUGGESTIONS: readonly string[] = [
-  "Какие типовые приёмы нужны для задач этой работы?",
-  "На какие частые ошибки в решениях стоит обратить внимание?",
-  "Собери короткий чек-лист формул и теорем перед работой",
-  "Дай похожую тренировочную задачу и подскажи только первый шаг",
-  "Как распределить время на работе и с каких задач начинать?",
-  "Проверь моё решение: я пришлю его, а ты найдёшь пробелы",
-];
-
+/**
+Вопросы лежат в `chat-suggestions/*.yaml`, JSON собирает
+`scripts/build_chat_suggestions.py`. Ключи: `@home`, `<course>`, `<course>/<id>`.
+*/
 const SUGGESTIONS_MAP: Readonly<Record<string, readonly string[]>> = chatSuggestionsData;
 
-const genericPoolFor = (docId: string): readonly string[] => {
-  if (docId === "theory") {
-    return THEORY_CHAT_SUGGESTIONS;
+/** Для страниц без своих вопросов: три универсальных, всегда в одном порядке. */
+export const FALLBACK_CHAT_SUGGESTIONS: readonly string[] = [
+  "Объясни ключевую идею этой страницы простыми словами",
+  "Какие здесь типичные ошибки и как их избежать?",
+  "Проверь меня: задай несколько коротких вопросов по этому материалу",
+];
+
+const keyOf = ({ course, docId }: ChatDocContext): string => {
+  if (course === "") {
+    return "@home";
   }
-  if (docId === "program") {
-    return PROGRAM_CHAT_SUGGESTIONS;
-  }
-  if (/^(?:colloq|exam|kr|quiz)/u.test(docId)) {
-    return PREP_CHAT_SUGGESTIONS;
-  }
-  return LECTURE_CHAT_SUGGESTIONS;
+  return docId === "" ? course : `${course}/${docId}`;
 };
 
-/** Returns the pool (up to 6) of study prompts for the page; tailored ones go first. */
-export const getLectureSuggestionPool = (docContext: ChatDocContext): readonly string[] => {
-  if (docContext.course === "") {
-    return HOME_CHAT_SUGGESTIONS;
-  }
-  if (docContext.docId === "") {
-    return COURSE_CHAT_SUGGESTIONS;
-  }
-  const tailored = SUGGESTIONS_MAP[`${docContext.course}/${docContext.docId}`] ?? [];
-  const generic = genericPoolFor(docContext.docId).filter((q) => !tailored.includes(q));
-  return [...tailored, ...generic].slice(0, SUGGESTIONS_POOL_SIZE);
-};
+/** Пул страницы: 6 своих вопросов или три фиксированных универсальных. */
+export const getChatSuggestionPool = (docContext: ChatDocContext): readonly string[] =>
+  SUGGESTIONS_MAP[keyOf(docContext)] ?? FALLBACK_CHAT_SUGGESTIONS;
 
-/** Picks `count` distinct random prompts from the pool. */
+/** Берёт `count` разных случайных вопросов из пула. */
 export const pickRandomSuggestions = (
   pool: readonly string[],
   count: number = SUGGESTIONS_SHOWN,
@@ -99,6 +41,8 @@ export const pickRandomSuggestions = (
     .slice(0, count)
     .map((item) => item.prompt);
 
-/** Returns 3 random study prompts for the current page. */
-export const getLectureSuggestions = (docContext: ChatDocContext): readonly string[] =>
-  pickRandomSuggestions(getLectureSuggestionPool(docContext));
+/** Подсказки для текущей страницы: 3 случайных из шести; у запасного набора порядок не меняется. */
+export const getChatSuggestions = (docContext: ChatDocContext): readonly string[] => {
+  const pool = getChatSuggestionPool(docContext);
+  return pool === FALLBACK_CHAT_SUGGESTIONS ? pool : pickRandomSuggestions(pool);
+};

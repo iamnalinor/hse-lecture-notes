@@ -90,6 +90,7 @@ Front matter и id — `context/markup.md` §11 («Подготовка к кв�
 
 - `uv run scripts/lint.py` без ошибок (страница и банк);
 - `uv run scripts/build.py --only prep/<course>/<prep>.md` без ошибок и overfull box; посмотри PNG страниц (`uv run scripts/render_pages.py build/pdf/<course>/<prep>.pdf --dpi 80`) и страницу на сайте с телефона;
+- вопросы чата: ключ — id страницы (`kr1`, `colloq1`, `quiz-<slug>`) в `chat-suggestions/<course>.yaml`, 6 штук про приёмы и ловушки именно этой работы (правила в `chat-suggestions/README.md`), затем `uv run scripts/build_chat_suggestions.py`;
 - первая подготовка такого вида у курса — допиши её в подпись курса `OFFER` в `web/scripts/og-images.ts` и перерисуй картинки (`cd web && bun og:images`).
 
 ## Отчёт (последнее сообщение агента)

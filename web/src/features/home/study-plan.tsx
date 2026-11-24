@@ -76,7 +76,7 @@ export const StudyPlan = ({
       <Legend max={scale.max} perWeek={weeks !== undefined} />
       <figcaption className="px-4 pb-3 text-center text-footnote text-muted">
         Кредиты за год: {sums.shown} по дисциплинам выше · {sums.withHidden} с учебной практикой и
-        физкультурой · {sums.withEnglish} с английским (факультатив).
+        физкультурой · {sums.withEnglish} с английским (факультатив)
       </figcaption>
     </figure>
   );

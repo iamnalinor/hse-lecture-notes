@@ -40,4 +40,6 @@
 - стали известны даты КР, репетиций, экзаменов — столбец «Когда»;
 - начался второй семестр — даты второго семестра в его таблице.
 
+Вопросы чата к странице: ключ `program` в `chat-suggestions/<course>.yaml` (6 штук, правила в `chat-suggestions/README.md`); при изменении правил или дат поправь и их, затем `uv run scripts/build_chat_suggestions.py`.
+
 После правки: `uv run scripts/lint.py program/<course>.md`, `uv run scripts/build.py --only program/<course>.md`, посмотреть PDF (`uv run scripts/render_pages.py build/pdf/<course>/program.pdf`) и страницу на телефоне (карточки таблиц).
