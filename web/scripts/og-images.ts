@@ -58,12 +58,15 @@ type Card = {
   /** What the site has for the card's course (or for all of them): the footer line. */
   readonly offer: string;
   readonly symbol: string;
-  /** Font size of the symbol in px: the site card fits every course's symbol beside the brand. */
+  /** Font size of a course symbol in px. */
   readonly symbolSize?: number;
   readonly title: string;
   /** Font size of the title in px: a long course name must fit in two lines. */
   readonly titleSize?: number;
 };
+
+const symbolHtml = (symbol: string, size: number): string =>
+  symbol === "" ? "" : `<div class="symbol" style="font-size: ${String(size)}px">${symbol}</div>`;
 
 const html = ({
   kicker,
@@ -79,7 +82,7 @@ const html = ({
 <style>${STYLE}</style></head>
 <body>
   <div class="brand"><span class="logo">ПИ</span>${SITE_NAME} ВШЭ</div>
-  <div class="symbol" style="font-size: ${String(symbolSize)}px">${symbol}</div>
+  ${symbolHtml(symbol, symbolSize)}
   <div class="kicker">${kicker}</div>
   <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
   <p class="note">${note}</p>
@@ -112,8 +115,7 @@ const siteCard: Card = {
   kicker: "1 курс · 2026/27",
   note: COURSES.map((course) => course.name).join(" · "),
   offer: "Теория · ПУД · подготовка к КР и коллоквиумам",
-  symbol: tex(COURSES.map((course) => course.symbol).join(String.raw`\quad `)),
-  symbolSize: 38,
+  symbol: "",
   title: "Конспекты лекций",
 };
 

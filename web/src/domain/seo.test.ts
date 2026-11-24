@@ -74,6 +74,7 @@ describe("seo", () => {
     );
     expect(tags).toContain('<meta name="twitter:card" content="summary_large_image" />');
     expect(headTags(home)).toContain("https://hse.nalinor.dev/og/site.png");
+    expect(headTags(home)).toContain('<meta name="twitter:card" content="summary_large_image" />');
   });
 
   it("escapes the text it puts into HTML, also inside JSON-LD", () => {

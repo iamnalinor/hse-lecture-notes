@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { executeAgentRun } from "./agent-loop";
 import { r2ToArchiveStorage, runArchiveBatch, type ArchiveBatchStats } from "./archiver";
 import { resolveBrowserToken, verifyAllowanceToken } from "./auth";
-import { CodexResponsesProvider } from "./codex-provider";
+import { createLlmProvider } from "./llm-provider";
 import { normalizeIpAddress, sha256Hex } from "./crypto";
 import { TrackedD1 } from "./db";
 import { logEvent, maskId } from "./logger";
@@ -287,6 +287,8 @@ export class ChatRunner extends DurableObject<Env> {
         }),
       );
 
+      // Validate provider settings before reserving quota or creating a running message.
+      const provider = createLlmProvider(this.env, db);
       const admit = await admitRunAtomic(db, policy, {
         env: this.env,
         axes: {
@@ -381,7 +383,6 @@ export class ChatRunner extends DurableObject<Env> {
         degraded: admit.degraded,
       });
 
-      const provider = new CodexResponsesProvider(this.env, db);
       await executeAgentRun({
         env: this.env,
         db,

@@ -2,7 +2,7 @@ import { FIRST_TURN_TITLE_PROMPT } from "./system-prompt";
 import { ThreadTitleStream } from "./thread-title";
 import { CodexAuthError } from "./codex-auth";
 import { ProxyConnectError, ResponseEofError } from "./socks5-fetch";
-import { CodexUpstreamError } from "./codex-provider";
+import { LlmUpstreamError } from "./responses-stream";
 import type { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
 import { computeRoundCostMicros, type ModelRoute } from "./pricing";
@@ -145,7 +145,7 @@ function describeRunError(err: unknown, code: string): string {
   }
   const detail = (err instanceof Error ? err.message : String(err)).trim().slice(0, 400);
   if (err instanceof CodexAuthError) return `Ошибка авторизации Codex (${code}): ${detail}`;
-  if (err instanceof CodexUpstreamError) return `Ошибка модели HTTP ${err.status} (${code}): ${detail}`;
+  if (err instanceof LlmUpstreamError) return `Ошибка модели HTTP ${err.status} (${code}): ${detail}`;
   return `Ошибка сервера (${code}): ${detail}`;
 }
 
@@ -461,7 +461,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     const abortedByUser = isStoppedByUser();
     const isProxyError = err instanceof ProxyConnectError;
     const isAuthErr = err instanceof CodexAuthError;
-    const isUpstreamErr = err instanceof CodexUpstreamError;
+    const isUpstreamErr = err instanceof LlmUpstreamError;
 
     const errorCode = abortedByUser
       ? "user_stopped"

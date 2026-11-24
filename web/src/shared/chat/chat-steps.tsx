@@ -6,6 +6,7 @@ import { TexText } from "#web/shared/reader/tex-text.tsx";
 
 import { ChevronIcon, ReadStepIcon, SearchStepIcon } from "./chat-icons.tsx";
 import { isMaterialLink } from "./chat-markdown-parse.ts";
+import { ChatResponseStatus } from "./chat-response-status.tsx";
 
 const pluralSteps = (n: number): string => {
   const abs = Math.abs(n) % 100;
@@ -120,6 +121,19 @@ type StepsBlockProps = {
   readonly steps: readonly ChatStep[];
 };
 
+const RunningSummary = ({
+  isBackgroundResponse,
+  isCheckingBrowser,
+}: Pick<StepsBlockProps, "isBackgroundResponse" | "isCheckingBrowser">): JSX.Element => {
+  if (isCheckingBrowser) {
+    return <>Проверяем браузер…</>;
+  }
+  if (isBackgroundResponse) {
+    return <>Отвечаю в фоне…</>;
+  }
+  return <ChatResponseStatus />;
+};
+
 /** Exact `.ai-steps` collapsible search/read timeline from prototype.html. */
 export const ChatStepsBlock = ({
   isBackgroundResponse,
@@ -136,11 +150,14 @@ export const ChatStepsBlock = ({
 
   const isOpen = isRunningSteps || stepsOpen;
   const count = steps.length;
-  const responseSummary = isBackgroundResponse ? "Готовлю ответ в фоне" : "Готовлю ответ";
-  const runningSummary = isCheckingBrowser ? "Проверяем браузер" : responseSummary;
-  const summary = isRunningSteps
-    ? runningSummary
-    : `Посмотрел конспекты: ${count} ${pluralSteps(count)}`;
+  const summary = isRunningSteps ? (
+    <RunningSummary
+      isBackgroundResponse={isBackgroundResponse}
+      isCheckingBrowser={isCheckingBrowser}
+    />
+  ) : (
+    `Посмотрел конспекты: ${count} ${pluralSteps(count)}`
+  );
   const boxClass = `ai-steps ai-fade${isOpen ? " is-open" : ""}${isRunningSteps ? " is-run" : ""}`;
 
   return (
@@ -155,6 +172,7 @@ export const ChatStepsBlock = ({
           }}
           type="button"
         >
+          {isRunningSteps && <span aria-hidden="true" className="ai-status-icon" />}
           <span className="ai-steps-sum">{summary}</span>
           <ChevronIcon />
         </button>

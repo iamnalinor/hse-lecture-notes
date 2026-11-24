@@ -12,6 +12,26 @@ Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
 The service policy lives in D1 under `service_config.policy`. `policy.json` contains illustrative bootstrap defaults for each bucket’s model, reasoning effort, pricing version and per-tier limits. Production limits belong only in D1; keep private policy files and user assignments outside the checkout. `init-db` seeds the policy once. Use `set-policy` with a full policy or a partial JSON object to update it. New runs use the current policy and keep their model, effort and pricing version through completion. Versioned tariffs live in `src/pricing.ts`. Deploy a new tariff version before selecting it in the policy.
 
+## LLM provider selection
+
+`LlmProvider` has two implementations: Codex OAuth (the default) and the standard OpenAI **Responses API** with API-key authentication. `ChatRunner` selects the provider from runtime environment variables; no code changes are needed to switch. Existing installations keep using Codex when `LLM_PROVIDER` is unset or `codex`. Setting an OpenAI key alone never switches providers.
+
+For OpenAI, set these Worker environment variables/secrets (or put them in `backend/.env` for local `wrangler dev`; `.env` is ignored by Git):
+
+```dotenv
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your-api-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+`OPENAI_API_KEY` is a secret. `OPENAI_BASE_URL` is optional and defaults to `https://api.openai.com/v1`; the provider appends `/responses`, preserving custom path prefixes and accepting trailing slashes. A custom endpoint must support the Responses API, SSE streaming and function calling; a gateway that only implements `/chat/completions` is insufficient. For a local mock, an HTTP URL is supported. OpenAI requests use direct fetch and do not use `CODEX_PROXY_URL`, OAuth refresh tokens or Codex-specific headers.
+
+Models, reasoning effort, pricing versions, quotas and budgets remain in the existing D1 policy. The selected endpoint must accept the configured model names and reasoning effort, and the policy must select a published tariff for those models. Switching provider does not rewrite the policy or tariff table.
+
+Both providers share Responses stream parsing, token accounting, tool calls, output limits and cancellation. OpenAI sends `store: false`, replays encrypted reasoning between tool rounds, and preserves optional tool arguments with `strict: false`. HTTP and stream failures are surfaced without automatic retries of possibly billable requests. To switch back, set `LLM_PROVIDER=codex` or remove it.
+
+Protocol reference: [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create).
+
 ## Setup & Deployment
 
 ```bash
@@ -59,3 +79,18 @@ bun run admin status --remote
 Authenticated accounts without a row in `telegram_account_tiers` use `default` (low bucket only). Assigned `student` and `extended` accounts have separate high and low limits over a rolling 24-hour window: high is used first, then low. Unauthenticated visitors remain `guest`. Limits are read from the database policy, independently for each tier. Tier changes apply to existing sessions and allowance tokens on their next request.
 
 Roster sync replaces only student assignments created by roster sync. It preserves manually assigned tiers, including `extended`. Use `set-tier` to change or remove a manual assignment. Telegram IDs and private policy values must never be committed.
+
+## Checks
+
+```bash
+bun run typecheck
+bun test
+# Opt-in real API checks: one short answer and a two-round tool exchange.
+# Uses the key and optional OPENAI_BASE_URL from the ignored root .env.
+env -u OPENAI_API_KEY -u OPENAI_BASE_URL OPENAI_LIVE_TESTS=1 \
+  bun --env-file=../.env test tests/openai-live.test.ts
+```
+
+The command clears inherited key/base URL values before loading the file, because Bun preserves existing environment variables over `.env` values.
+
+Live tests default to `gpt-6-luna` with low reasoning effort. Override `OPENAI_TEST_MODEL` and `OPENAI_TEST_EFFORT` for a model supported by the endpoint. They are skipped in the ordinary suite and never switch the active Worker provider.

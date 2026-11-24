@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router";
 import { expect, it, vi } from "vitest";
 
@@ -15,6 +15,7 @@ import { BottomCaption } from "./chat-composer-plates.tsx";
 import { ChatPanelHeader } from "./chat-panel-parts.tsx";
 import { ChatPanel } from "./chat-panel.tsx";
 import { ChatResizeHandle } from "./chat-resize-handle.tsx";
+import responseVerbs from "./chat-response-verbs.json";
 import { applyMetaMessageIds, makeAssistantMsg, makeUserMsg } from "./chat-stream-helpers.ts";
 import { ChatToggleButton } from "./chat-toggle-button.tsx";
 import { SelectionAskButton } from "./selection-ask-button.tsx";
@@ -310,18 +311,31 @@ const statusPanel = () => (
   </MemoryRouter>
 );
 
-it("uses the response status component for browser verification and then model waiting", () => {
+it("rotates response words every five seconds while browser and background statuses stay fixed", async () => {
+  vi.useFakeTimers();
   vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  const random = vi.spyOn(Math, "random").mockReturnValue(0);
   state.messages = [makeAssistantMsg(state.docContext)];
   state.isCheckingBrowser = true;
   try {
     const view = render(statusPanel());
-    const status = screen.getByText("Проверяем браузер");
+    const status = screen.getByText("Проверяем браузер…");
+    await act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByText("Проверяем браузер…")).toBe(status);
     expect(status).toHaveClass("ai-steps-sum");
     expect(status.closest(".ai-steps")).toHaveClass("is-run");
     state.isCheckingBrowser = false;
     view.rerender(statusPanel());
-    expect(screen.getByText("Готовлю ответ")).toBe(status);
+    expect(screen.getByText(`${responseVerbs[0]}…`)).toBe(status);
+    random.mockReturnValue(0.999);
+    view.rerender(statusPanel());
+    expect(screen.getByText(`${responseVerbs[0]}…`)).toBe(status);
+    await act(() => vi.advanceTimersByTime(4999));
+    expect(screen.getByText(`${responseVerbs[0]}…`)).toBe(status);
+    await act(() => vi.advanceTimersByTime(1));
+    expect(screen.getByText(`${responseVerbs.at(-1)}…`)).toBe(status);
+    await act(() => vi.advanceTimersByTime(5000));
+    expect(screen.getByText(`${responseVerbs.at(-2)}…`)).toBe(status);
     state.isStreaming = true;
     state.canStop = false;
     state.messages = state.messages.map((message) => ({
@@ -329,9 +343,18 @@ it("uses the response status component for browser verification and then model w
       contentTex: "Частичный ответ",
     }));
     view.rerender(statusPanel());
-    expect(screen.getByText("Готовлю ответ в фоне")).toBe(status);
+    expect(screen.getByText("Отвечаю в фоне…")).toBe(status);
+    await act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByText("Отвечаю в фоне…")).toBe(status);
     expect(view.container.querySelector(".ai-answer")).toHaveTextContent("Частичный ответ");
+    state.canStop = true;
+    state.messages = [makeAssistantMsg(state.docContext)];
+    view.rerender(statusPanel());
+    expect(screen.getByText(`${responseVerbs.at(-1)}…`)).toBeVisible();
+    view.unmount();
   } finally {
+    vi.useRealTimers();
+    random.mockRestore();
     state.isCheckingBrowser = false;
     state.isStreaming = false;
     state.canStop = true;

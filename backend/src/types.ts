@@ -19,6 +19,8 @@ export interface Env {
   ARCHIVE_BUCKET?: R2Bucket;
 
   // Vars
+  LLM_PROVIDER?: string;
+  OPENAI_BASE_URL?: string;
   ALLOWED_ORIGINS: string;
   TURNSTILE_EXPECTED_HOSTNAMES: string;
   CODEX_OAUTH_CLIENT_ID: string;
@@ -28,6 +30,7 @@ export interface Env {
   TELEGRAM_ISSUER: string;
 
   // Secrets
+  OPENAI_API_KEY?: string;
   ALLOWANCE_JWT_SECRET: string;
   BROWSER_TOKEN_SECRET: string;
   CODEX_CREDENTIALS_ENCRYPTION_KEY: string;
