@@ -76,8 +76,8 @@ def tex_env() -> dict[str, str]:
     return env
 
 
-# Подготовка к контрольной (krN), коллоквиуму (colloqN) или квизу (quiz-<slug>): имя файла = id
-# страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
+# Подготовка к контрольной (krN), коллоквиуму (colloqN), экзамену (examN) или квизу (quiz-<slug>):
+# имя файла = id страницы на сайте. Id квиза — по теме (quiz-o-symbols), номер («Квиз 4») — в front matter quiz_number.
 # = PREP_IDS в web/src/domain/preps.ts (маршруты сайта)
 # synced в front matter: с чем сверен конспект. Порядок в courses.json фиксированный (сначала лекция).
 SYNCED_PARTS = ("lecture", "seminars")
@@ -90,13 +90,13 @@ def synced_parts(value: object) -> list[str]:
     return [p for p in SYNCED_PARTS if p in value]
 
 
-PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq)(?P<n>\d+)|(?P<quiz>quiz)-[a-z0-9][a-z0-9-]*")
-PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2", "quiz-o-symbols")
+PREP_ID_RE = re.compile(r"(?P<kind>kr|colloq|exam)(?P<n>\d+)|(?P<quiz>quiz)-[a-z0-9][a-z0-9-]*")
+PREP_IDS = ("kr1", "kr2", "kr3", "colloq1", "colloq2", "exam1", "exam2", "quiz-o-symbols", "quiz-limits")
 PREP_FILES = ", ".join(f"{i}.md" for i in PREP_IDS)
 
 
 def prep_kind(prep_id: str) -> str:
-    """kr1 → kr, colloq1 → colloq, quiz-o-symbols → quiz."""
+    """kr1 → kr, colloq1 → colloq, exam1 → exam, quiz-o-symbols → quiz."""
     m = PREP_ID_RE.fullmatch(prep_id)
     if not m:
         return ""

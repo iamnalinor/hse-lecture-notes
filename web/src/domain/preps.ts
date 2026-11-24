@@ -8,16 +8,26 @@ Preparation pages live next to lectures: `/<course>/kr1` for a test (`prep/<cour
 `/<course>/quiz-o-symbols` for a short quiz (`prep/<course>/quiz-<slug>.md`): the id names the topic,
 the number (front matter `quiz_number`, from the course planning table) is only in the displayed name. The build accepts the same ids (`PREP_IDS` in `scripts/build.py`).
 */
-export const PREP_IDS = ["kr1", "kr2", "kr3", "colloq1", "colloq2", "quiz-o-symbols"] as const;
+export const PREP_IDS = [
+  "kr1",
+  "kr2",
+  "kr3",
+  "colloq1",
+  "colloq2",
+  "exam1",
+  "exam2",
+  "quiz-o-symbols",
+  "quiz-limits",
+] as const;
 
 type DatedPrep = Extract<PrepEntry, { readonly date: string }>;
 
 /** A prep with a day; one without (`undatedPreps`) never names a day anywhere on the site. */
 export const isDated = (prep: PrepEntry): prep is DatedPrep => "date" in prep;
 
-const PREP_ID = /^(?:(?<kind>kr|colloq)(?<number>\d+)|quiz-[a-z0-9][a-z0-9-]*)$/u;
+const PREP_ID = /^(?:(?<kind>kr|colloq|exam)(?<number>\d+)|quiz-[a-z0-9][a-z0-9-]*)$/u;
 
-type PrepKind = "colloq" | "kr" | "quiz";
+type PrepKind = "colloq" | "exam" | "kr" | "quiz";
 
 const parse = (id: string): undefined | { readonly kind: PrepKind; readonly number: string } => {
   const match = PREP_ID.exec(id);
@@ -28,14 +38,16 @@ const parse = (id: string): undefined | { readonly kind: PrepKind; readonly numb
   if (number === undefined) {
     return { kind: "quiz", number: "" };
   }
-  return { kind: match.groups?.["kind"] === "colloq" ? "colloq" : "kr", number };
+  const raw = match.groups?.["kind"];
+  const kind: PrepKind = raw === "colloq" || raw === "exam" ? raw : "kr";
+  return { kind, number };
 };
 
 export const isPrepId = (doc: string): boolean => PREP_ID.test(doc);
 
 /**
-`kr1` → `КР-1`, `colloq1` → `Коллоквиум 1`, a quiz → `Квиз 4` by its `quizNumber` (front matter
-`quiz_number`; the topic is shown separately, see `prepTopicName`).
+`kr1` → `КР-1`, `colloq1` → `Коллоквиум 1`, `exam1` → `Экзамен 1`, a quiz → `Квиз 4` by its `quizNumber`
+(front matter `quiz_number`; the topic is shown separately, see `prepTopicName`).
 */
 export const prepName = (id: string, quizNumber?: number): string => {
   const prep = parse(id);
@@ -46,6 +58,9 @@ export const prepName = (id: string, quizNumber?: number): string => {
     case "colloq": {
       return `Коллоквиум ${prep.number}`;
     }
+    case "exam": {
+      return `Экзамен ${prep.number}`;
+    }
     case "quiz": {
       return quizNumber === undefined ? "Квиз" : `Квиз ${String(quizNumber)}`;
     }
@@ -55,12 +70,15 @@ export const prepName = (id: string, quizNumber?: number): string => {
   }
 };
 
-/** Button, crumb and search label: `Подготовка к КР-1`, `Подготовка к коллоквиуму 1`, `Подготовка к квизу 4`. */
+/** Button, crumb and search label: `Подготовка к КР-1`, `Подготовка к коллоквиуму 1`, `Подготовка к экзамену 1`, `Подготовка к квизу 4`. */
 export const prepGoal = (id: string, quizNumber?: number): string => {
   const prep = parse(id);
   switch (prep?.kind) {
     case "colloq": {
       return `Подготовка к коллоквиуму ${prep.number}`;
+    }
+    case "exam": {
+      return `Подготовка к экзамену ${prep.number}`;
     }
     case "quiz": {
       return quizNumber === undefined
@@ -78,11 +96,14 @@ export const prepGoal = (id: string, quizNumber?: number): string => {
 export const prepTopicName = (name: string, topic?: string): string =>
   topic === undefined || topic === "" ? name : `${name} (${topic})`;
 
-/** What the page holds: a test is about problems, a colloquium about theory and proofs, a quiz about a few problem types. */
+/** What the page holds: a test is about problems, a colloquium about theory and proofs, an exam about both, a quiz about a few problem types. */
 export const prepContents = (id: string): string => {
   switch (parse(id)?.kind) {
     case "colloq": {
       return "Определения, теоремы, ход доказательств, вопросы с ответами";
+    }
+    case "exam": {
+      return "Билеты с доказательствами, определения, задачи с ответами";
     }
     case "quiz": {
       return "Типы задач, как решать, разобранные примеры";
@@ -99,6 +120,9 @@ export const prepDescription = (id: string): string => {
   switch (parse(id)?.kind) {
     case "colloq": {
       return "определения, теоремы и доказательства к коллоквиуму";
+    }
+    case "exam": {
+      return "билеты с доказательствами, определения и задачи к экзамену";
     }
     case "quiz": {
       return "типы задач и разобранные примеры к квизу";
@@ -149,7 +173,7 @@ day; a quiz announced for a week without the day — that week (`23.11–27.11`)
 */
 export const prepWhen = (prep: DatedPrep): string => {
   const kind = parse(prep.id)?.kind;
-  return (kind === "colloq" || kind === "quiz") && prep.activeUntil !== prep.date
+  return (kind === "colloq" || kind === "exam" || kind === "quiz") && prep.activeUntil !== prep.date
     ? `${shortDate(prep.date)}–${shortDate(prep.activeUntil)}`
     : shortDate(prep.date);
 };

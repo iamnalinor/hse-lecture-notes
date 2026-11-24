@@ -1,0 +1,644 @@
+about: Тренировочные билеты к экзамену с примерными задачами.
+
+ticket:
+  - kind: proof
+    title: Теорема с доказательством
+    count: 1
+    proofs: true
+  - kind: definition
+    title: Определения и формулировки
+    count: 2
+  - kind: problem
+    title: Задачи
+    count: 3
+
+questions:
+  # --- Доказательства (15 билетов) ---
+  - id: proof-kronecker-capelli
+    kind: proof
+    topic: kronecker-capelli
+    text: Сформулируйте и докажите теорему Кронекера–Капелли.
+    refs: [thm:lec08:kronecker-capelli, rem:exam1:proof-kronecker-capelli]
+
+  - id: proof-fsr-existence
+    kind: proof
+    topic: fsr-existence
+    text: Дайте определение ФСР и докажите теорему о существовании ФСР однородной СЛАУ.
+    refs: [def:lec09:fsr, thm:lec09:fsr-existence, rem:exam1:proof-fsr-existence]
+
+  - id: proof-nonzero-solution
+    kind: proof
+    topic: nonzero-solution
+    text: >-
+      Сформулируйте и докажите критерий существования ненулевого решения однородной квадратной СЛАУ
+      (как следствие теоремы о существовании ФСР).
+    refs: [cor:lec09:nonzero-solution, rem:exam1:proof-nonzero-solution]
+
+  - id: proof-homogeneous
+    kind: proof
+    topic: homogeneous
+    text: Сформулируйте и докажите теорему о структуре общего решения однородной СЛАУ.
+    refs: [thm:lec10:homogeneous, rem:exam1:proof-homogeneous]
+
+  - id: proof-nonhomogeneous
+    kind: proof
+    topic: nonhomogeneous
+    text: >-
+      Сформулируйте и докажите теорему о структуре общего решения неоднородной СЛАУ
+      (теорема для однородной системы считается известной).
+    refs: [thm:lec10:nonhomogeneous, rem:exam1:proof-nonhomogeneous]
+
+  - id: proof-trig-mult
+    kind: proof
+    topic: trig-mult
+    text: Сформулируйте и докажите правила умножения и деления комплексных чисел в тригонометрической форме.
+    refs: [thm:lec11:trig-mult, rem:exam1:proof-trig-mult]
+
+  - id: proof-moivre
+    kind: proof
+    topic: moivre
+    text: Выпишите формулу Муавра и докажите её.
+    refs: [thm:lec11:moivre, rem:exam1:proof-moivre]
+
+  - id: proof-roots
+    kind: proof
+    topic: roots
+    text: Выпишите формулу для комплексных корней $n$-й степени и приведите её вывод.
+    refs: [thm:lec11:roots, rem:exam1:proof-roots]
+
+  - id: proof-bezout
+    kind: proof
+    topic: bezout
+    text: Докажите теорему Безу и выведите разложение многочлена на линейные множители над $\mathbb{C}$.
+    refs: [thm:lec12:bezout, cor:lec12:linear-factors, rem:exam1:proof-bezout]
+
+  - id: proof-real-poly
+    kind: proof
+    topic: real-poly
+    text: >-
+      Докажите утверждение о сопряжённых корнях многочлена с вещественными коэффициентами
+      и выведите разложение вещественного многочлена на неприводимые множители над $\R$.
+    refs: [prop:lec12:conjugate-root, thm:lec12:real-factorization, rem:exam1:proof-real-poly]
+
+  - id: proof-dot-coords
+    kind: proof
+    topic: dot-coords
+    text: Выведите формулу скалярного произведения векторов в произвольном базисе трёхмерного пространства.
+    refs: [def:lec12:gram, thm:lec12:dot-coordinates, rem:exam1:proof-dot-coords]
+
+  - id: proof-cross-coords
+    kind: proof
+    topic: cross-coords
+    text: Выведите формулу векторного произведения в правом ортонормированном базисе.
+    refs: [thm:lec13:cross-coords, rem:exam1:proof-cross-coords]
+
+  - id: proof-volume
+    kind: proof
+    topic: volume
+    text: Сформулируйте и докажите теорему о геометрическом смысле смешанного произведения (связь с объёмом).
+    refs: [thm:lec13:volume, cor:lec13:coplanar, rem:exam1:proof-volume]
+
+  - id: proof-plane-equation
+    kind: proof
+    topic: plane-equation
+    text: >-
+      Докажите, что в ПДСК любая плоскость задаётся линейным уравнением и любое линейное уравнение
+      с ненулевым вектором коэффициентов задаёт плоскость.
+    refs: [thm:lec14:plane-equation, rem:exam1:proof-plane-equation]
+
+  - id: proof-subgroup-criterion
+    kind: proof
+    topic: subgroup-criterion
+    text: Дайте определение подгруппы и докажите критерий подгруппы.
+    refs: [def:lec16:subgroup, thm:lec16:criterion, rem:exam1:proof-subgroup-criterion]
+
+  # --- Определения и формулировки (46 вопросов) ---
+  - id: def-fsr
+    kind: definition
+    topic: fsr-existence
+    text: Дайте определение фундаментальной системы решений (ФСР) однородной СЛАУ.
+    refs: [def:lec09:fsr]
+
+  - id: def-nonzero-criterion
+    kind: definition
+    topic: nonzero-solution
+    text: Сформулируйте критерий существования ненулевого решения однородной квадратной СЛАУ.
+    refs: [cor:lec09:nonzero-solution]
+
+  - id: def-general-homogeneous
+    kind: definition
+    topic: homogeneous
+    text: Сформулируйте теорему о структуре общего решения однородной СЛАУ.
+    refs: [thm:lec10:homogeneous, def:lec10:general-homogeneous]
+
+  - id: def-general-nonhomogeneous
+    kind: definition
+    topic: nonhomogeneous
+    text: Сформулируйте теорему о структуре общего решения неоднородной СЛАУ.
+    refs: [thm:lec10:nonhomogeneous, def:lec10:general-nonhomogeneous]
+
+  - id: def-complex-forms
+    kind: definition
+    topic: trig-mult
+    text: Что такое алгебраическая и тригонометрическая формы записи комплексного числа?
+    refs: [def:lec10:algebraic, eq:lec11:trig, def:lec11:trig-form]
+
+  - id: def-mod-arg
+    kind: definition
+    topic: trig-mult
+    text: Дайте определения модуля и аргумента комплексного числа. Что такое главное значение аргумента?
+    refs: [def:lec11:modulus, def:lec11:argument, rem:lec11:arg-convention]
+
+  - id: def-trig-mult
+    kind: definition
+    topic: trig-mult
+    text: Сформулируйте правила умножения и деления комплексных чисел в тригонометрической форме.
+    refs: [thm:lec11:trig-mult]
+
+  - id: def-moivre
+    kind: definition
+    topic: moivre
+    text: Выпишите формулу Муавра для возведения комплексного числа в целую степень.
+    answer: >-
+      При $z \ne 0$ формула верна и для всех целых $n \le 0$: $z^0 = 1$,
+      $z^{-m} = (z^{-1})^m = r^{-m}\bigl(\cos(-m\varphi) + i\sin(-m\varphi)\bigr)$.
+    refs: [thm:lec11:moivre]
+
+  - id: def-roots
+    kind: definition
+    topic: roots
+    text: Дайте определение корня $n$-й степени из комплексного числа, выпишите формулу всех корней и опишите их геометрическое расположение.
+    answer: >-
+      При $w = 0$ корень единственный: $z = 0$ (аргумент не определён).
+      При $w \ne 0$ все $n$ корней лежат на окружности радиуса $\sqrt[n]{\rho}$ с шагом аргумента $\frac{2\pi}{n}$:
+      при $n \ge 3$ это вершины правильного $n$-угольника, при $n = 2$ — две противоположные точки $\pm z_0$.
+    refs: [def:lec11:root, thm:lec11:roots]
+
+  - id: def-conjugate-division
+    kind: definition
+    topic: complex-eq
+    text: Что такое комплексное сопряжение? Как делить комплексные числа в алгебраической форме?
+    refs: [def:lec11:conjugate, prop:lec11:complex-division]
+
+  - id: def-euler
+    kind: definition
+    topic: complex-roots
+    text: Выпишите формулу Эйлера и выражения для косинуса и синуса через экспоненту.
+    refs: [def:lec11:euler, cor:lec11:euler-cos-sin]
+
+  - id: def-fta-bezout
+    kind: definition
+    topic: bezout
+    text: Сформулируйте основную теорему алгебры и теорему Безу.
+    refs: [thm:lec11:fta, thm:lec12:bezout]
+
+  - id: def-linear-factors
+    kind: definition
+    topic: bezout
+    text: Сформулируйте теорему о разложении комплексного многочлена на линейные множители над $\mathbb{C}$.
+    refs: [cor:lec12:linear-factors]
+
+  - id: def-multiplicity
+    kind: definition
+    topic: poly-factor
+    text: Дайте определение корня кратности $k$ многочлена.
+    refs: [def:lec12:multiplicity]
+
+  - id: def-vieta3
+    kind: definition
+    topic: poly-factor
+    text: Выпишите формулы Виета для приведённого многочлена третьей степени.
+    answer: 'Для кубического многочлена $x^3 + px^2 + qx + r$ с корнями $c_1, c_2, c_3$:'
+    refs: [thm:lec12:vieta, eq:lec12:vieta3]
+
+  - id: def-irreducible
+    kind: definition
+    topic: real-poly
+    text: Какие многочлены называются неприводимыми? Какие многочлены неприводимы над $\mathbb{C}$ и над $\R$?
+    refs: [def:lec12:irreducible, prop:lec12:irreducible-list]
+
+  - id: def-conjugate-root
+    kind: definition
+    topic: real-poly
+    text: Каким свойством обладают комплексные корни многочлена с вещественными коэффициентами? Приведите пример.
+    answer: 'Пример: у $x^2 + 1$ (вещественные коэффициенты) корни $i$ и $-i = \bar i$; у $x^4 + 4$ — пары $1 \pm i$ и $-1 \pm i$.'
+    refs: [prop:lec12:conjugate-root]
+
+  - id: def-basis-onb
+    kind: definition
+    topic: dot-coords
+    text: Дайте определения базиса в $V_3$ и ортонормированного базиса (ОНБ). Как выражаются скалярное произведение и длина вектора в ОНБ?
+    refs: [def:lec12:basis, def:lec12:onb, cor:lec12:onb]
+
+  - id: def-dot-any-basis
+    kind: definition
+    topic: dot-coords
+    text: Выпишите формулу скалярного произведения векторов в произвольном (не обязательно ортонормированном) базисе.
+    refs: [def:lec12:gram, thm:lec12:dot-coordinates]
+
+  - id: def-orientation
+    kind: definition
+    topic: cross-coords
+    text: Дайте определение правой и левой тройки некомпланарных векторов в пространстве.
+    refs: [def:lec13:orientation]
+
+  - id: def-cross
+    kind: definition
+    topic: cross-coords
+    text: Дайте определение векторного произведения в трёхмерном пространстве и сформулируйте его три алгебраических свойства.
+    refs: [def:lec13:cross, thm:lec13:cross-props]
+
+  - id: def-cross-coords
+    kind: definition
+    topic: cross-coords
+    text: Выпишите координатную формулу векторного произведения в правом ортонормированном базисе.
+    refs: [thm:lec13:cross-coords]
+
+  - id: def-collinear
+    kind: definition
+    topic: vectors
+    text: Сформулируйте критерий коллинеарности двух векторов через векторное произведение и связь с площадью.
+    refs: [prop:lec13:collinear]
+
+  - id: def-mixed-volume
+    kind: definition
+    topic: volume
+    text: Дайте определение смешанного произведения. Как через него вычисляются объёмы параллелепипеда и тетраэдра?
+    refs: [def:lec13:mixed, thm:lec13:volume, cor:lec13:coplanar]
+
+  - id: def-mixed-coords
+    kind: definition
+    topic: vectors
+    text: Выпишите формулу смешанного произведения в правом ОНБ и критерий компланарности трёх векторов.
+    refs: [thm:lec13:mixed-coords, cor:lec13:coplanar]
+
+  - id: def-cartesian
+    kind: definition
+    topic: plane-equation
+    text: Дайте определение прямоугольной декартовой системы координат (ПДСК).
+    refs: [def:lec13:cartesian]
+
+  - id: def-surface-normal
+    kind: definition
+    topic: plane-equation
+    text: Что такое уравнение поверхности и его геометрический образ? Что такое нормальный вектор плоскости?
+    refs: [def:lec14:surface, def:lec14:normal]
+
+  - id: def-plane-equation
+    kind: definition
+    topic: plane-equation
+    text: Сформулируйте теорему об общем уравнении плоскости в ПДСК.
+    refs: [thm:lec14:plane-equation]
+
+  - id: def-intercepts
+    kind: definition
+    topic: planes-lines
+    text: Выпишите уравнение плоскости в отрезках и объясните геометрический смысл параметров.
+    refs: [def:lec14:intercepts]
+
+  - id: def-two-planes
+    kind: definition
+    topic: positions
+    text: Опишите случаи взаимного расположения двух плоскостей в пространстве и критерий для каждого из них.
+    answer: >-
+      Для плоскостей $A_1 x + B_1 y + C_1 z + D_1 = 0$ и $A_2 x + B_2 y + C_2 z + D_2 = 0$ матрица
+      $F = \begin{pmatrix} A_1 & B_1 & C_1 \\ A_2 & B_2 & C_2 \end{pmatrix}$ составлена из координат нормалей,
+      а $G = \begin{pmatrix} A_1 & B_1 & C_1 & D_1 \\ A_2 & B_2 & C_2 & D_2 \end{pmatrix}$ получена добавлением
+      столбца свободных коэффициентов.
+    refs: [thm:lec14:two-planes]
+
+  - id: def-angles-plane-line
+    kind: definition
+    topic: positions
+    text: Выпишите формулы угла между двумя плоскостями и угла между прямой и плоскостью.
+    refs: [def:lec14:angle-planes, def:lec14:angle-line-plane]
+
+  - id: def-line-equations
+    kind: definition
+    topic: planes-lines
+    text: Выпишите векторное, параметрические, канонические и общие уравнения прямой в пространстве.
+    answer: >-
+      Через точку $M_0(x_0, y_0, z_0)$ с направляющим вектором $\vec s = (s_1, s_2, s_3) \ne \vec 0$:
+      векторное $\vec r = \vec r_0 + t\vec s$;
+      параметрические $x = x_0 + s_1 t$, $y = y_0 + s_2 t$, $z = z_0 + s_3 t$;
+      канонические $\frac{x - x_0}{s_1} = \frac{y - y_0}{s_2} = \frac{z - z_0}{s_3}$
+      (при $s_i = 0$ это не деление на ноль, а соглашение: соответствующий числитель равен нулю, например $s_1 = 0 \Rightarrow x = x_0$);
+      общие — система двух пересекающихся плоскостей $A_1 x + B_1 y + C_1 z + D_1 = 0$,
+      $A_2 x + B_2 y + C_2 z + D_2 = 0$ с неколлинеарными нормалями.
+    refs: [def:lec14:direction]
+
+  - id: def-line-plane
+    kind: definition
+    topic: positions
+    text: Сформулируйте условия взаимного расположения прямой и плоскости в пространстве.
+    refs: [thm:lec14:line-plane]
+
+  - id: def-two-lines-coplanar
+    kind: definition
+    topic: positions
+    text: Сформулируйте критерий принадлежности двух прямых в пространстве одной плоскости.
+    refs: [thm:lec14:two-lines]
+
+  - id: def-direction-cosines
+    kind: definition
+    topic: planes-lines
+    text: Дайте определение направляющих косинусов ненулевого вектора в ОНБ и укажите тождество, которым они связаны.
+    refs: [def:lec14:direction-cosines]
+
+  - id: def-point-plane-dist
+    kind: definition
+    topic: symmetry
+    text: Выпишите нормальное уравнение плоскости и формулу расстояния от точки до плоскости.
+    refs: [def:lec14:normal-equation, prop:lec14:point-plane]
+
+  - id: def-maps
+    kind: definition
+    topic: groups
+    text: Дайте определения инъективного, сюръективного и биективного отображений; приведите примеры.
+    answer: 'Примеры на $\R \to \R$: $e^x$ — инъекция, не сюръекция; $x^3 - x$ — сюръекция, не инъекция; $x + 1$ — биекция.'
+    refs: [def:lec15:injection]
+
+  - id: def-operation-monoid
+    kind: definition
+    topic: groups
+    text: Дайте определения ассоциативной и коммутативной бинарной операции, полугруппы и моноида; приведите примеры.
+    answer: 'Примеры: $(\N, +)$ (натуральные с $1$) — полугруппа без нейтрального; $(\Z, \cdot)$ — моноид с нейтральным $1$, не группа.'
+    refs: [def:lec15:operation, def:lec15:groupoid, def:lec15:neutral]
+
+  - id: def-group-abelian
+    kind: definition
+    topic: subgroup-criterion
+    text: Дайте определения группы и абелевой группы; приведите примеры абелевой и неабелевой групп.
+    answer: 'Примеры: $(\Z, +)$ — абелева группа; $S_3$ и $GL_2(\R)$ — неабелевы группы.'
+    refs: [def:lec16:group, def:lec16:abelian]
+
+  - id: def-symmetric-gl-sl
+    kind: definition
+    topic: groups
+    text: Что такое симметрическая группа $S_n$ (сколько в ней элементов), общая линейная группа $GL_n(\R)$ и специальная линейная группа $SL_n(\R)$?
+    refs: [def:lec16:symmetric, def:lec16:gl, def:lec16:sl]
+
+  - id: def-order-cayley
+    kind: definition
+    topic: groups
+    text: Что такое порядок группы и таблица Кэли конечной группы?
+    refs: [def:lec16:order, def:lec16:cayley]
+
+  - id: def-homomorphism-iso
+    kind: definition
+    topic: groups
+    text: Дайте определения гомоморфизма и изоморфизма групп; приведите примеры.
+    answer: 'Примеры: $\det\colon GL_n(\R) \to (\R \setminus \{0\}, \cdot)$ — гомоморфизм; $\ln\colon (\R_{>0}, \cdot) \to (\R, +)$ и $D_3 \cong S_3$ — изоморфизмы.'
+    refs: [def:lec16:homomorphism, def:lec16:iso]
+
+  - id: def-iso-props
+    kind: definition
+    topic: groups
+    text: Сформулируйте свойства тождественного отображения, обратного к изоморфизму и композиции гомоморфизмов (изоморфизмов).
+    refs: [prop:lec16:iso-props]
+
+  - id: def-cyclic-order
+    kind: definition
+    topic: groups
+    text: Дайте определения циклической группы и порядка элемента группы; приведите пример.
+    answer: 'Пример: $(\Z_n, +) = \langle \bar 1 \rangle$ — циклическая группа порядка $n$; в $(\Z_6, +)$ имеем $\operatorname{ord} \bar 2 = 3$.'
+    refs: [def:lec17:cyclic, def:lec17:order]
+
+  - id: def-cyclic-iso
+    kind: definition
+    topic: groups
+    text: Сформулируйте теорему о классификации циклических групп с точностью до изоморфизма.
+    refs: [thm:lec17:cyclic-iso]
+
+  - id: def-subgroup
+    kind: definition
+    topic: subgroup-criterion
+    text: Дайте определение подгруппы; приведите пример группы и её собственной подгруппы.
+    answer: 'Пример: $SL_n(\R) \le GL_n(\R)$ или $2\Z \le (\Z, +)$.'
+    refs: [def:lec16:subgroup]
+
+  # --- Задачи (21 со страницы + 8 новых = 29 вопросов) ---
+  - id: prob-slau-general
+    kind: problem
+    topic: slau
+    text: >-
+      Исследуйте систему $\{x_1 + x_2 + x_3 + x_4 = 2,\ 2x_1 + x_2 + 3x_3 = 5,\ x_1 - x_2 + 3x_3 - 3x_4 = 4\}$
+      на совместность и запишите общее решение с выделенным частным решением и ФСР.
+    refs: [prob:exam1:slau-general]
+
+  - id: prob-slau-is-fsr
+    kind: problem
+    topic: slau
+    text: >-
+      Для системы $\{x_1 + x_2 - x_3 + 2x_4 = 0,\ 2x_1 + x_2 + x_3 + x_4 = 0\}$ и столбцов
+      $v_1 = (-1, 0, 1, 1)^T$, $v_2 = (-3, 6, 1, -1)^T$, $v_3 = (2, -6, 0, 2)^T$, $v_4 = (1, 1, 0, 1)^T$
+      выясните, какие пары образуют ФСР.
+    refs: [prob:exam1:slau-is-fsr]
+
+  - id: prob-slau-extra
+    kind: problem
+    topic: slau
+    text: Найдите ФСР однородной системы $\{x_1 - 2x_2 + 3x_3 = 0,\ 2x_1 - 3x_2 + 4x_3 = 0\}$.
+    answer: >-
+      После $\rw{II} - 2\cdot\rw{I}$: $x_2 = 2x_3$, $x_1 = 2x_2 - 3x_3 = x_3$.
+      Ранг $2$, в ФСР один вектор: $\Phi_1 = (1, 2, 1)^T$.
+
+  - id: prob-lu-yes
+    kind: problem
+    topic: lu
+    text: >-
+      Найдите $LU$-разложение матрицы $A = \begin{pmatrix} 2 & -1 & 3 \\ 4 & -1 & 4 \\ -2 & 4 & -5 \end{pmatrix}$
+      ($L$ — с единицами на диагонали).
+    refs: [prob:exam1:lu-yes]
+
+  - id: prob-lu-no
+    kind: problem
+    topic: lu
+    text: >-
+      Можно ли представить матрицу $A = \begin{pmatrix} 1 & 2 & 1 \\ 2 & 4 & 3 \\ 1 & 3 & 2 \end{pmatrix}$
+      в виде $A = LU$ ($L$ — нижнетреугольная с единицами на диагонали)?
+    refs: [prob:exam1:lu-no]
+
+  - id: prob-lu-extra
+    kind: problem
+    topic: lu
+    text: >-
+      Можно ли представить матрицу $A = \begin{pmatrix} 0 & 2 \\ 3 & 5 \end{pmatrix}$ в виде $LU$
+      ($L$ — нижнетреугольная с единицами на диагонали)?
+    answer: >-
+      Нельзя: из элемента $(1, 1)$ произведения $LU$ следует $u_{11} = 0$, тогда элемент $(2, 1)$ равен
+      $l_{21} u_{11} = 0 \ne 3$.
+
+  - id: prob-complex-system
+    kind: problem
+    topic: complex-eq
+    text: 'Решите систему над $\mathbb{C}$: $(1 + i)z_1 + (2 - i)z_2 = 7 + 4i$, $(2 - i)z_1 - i z_2 = 5 - 5i$.'
+    refs: [prob:exam1:complex-system]
+
+  - id: prob-complex-quadratic
+    kind: problem
+    topic: complex-eq
+    text: Решите уравнение $z^2 - (5 + i)z + (8 + 4i) = 0$ в $\mathbb{C}$.
+    refs: [prob:exam1:complex-quadratic]
+
+  - id: prob-complex-eq-extra
+    kind: problem
+    topic: complex-eq
+    text: Решите уравнение $z^2 - 4z + 13 = 0$ в $\mathbb{C}$.
+    answer: 'Дискриминант $D = 16 - 52 = -36 = (6i)^2$; корни $z = \frac{4 \pm 6i}{2} = 2 \pm 3i$.'
+
+  - id: prob-complex-power
+    kind: problem
+    topic: complex-roots
+    text: 'Вычислите в алгебраической форме $\dfrac{(1 - i\sqrt3)^7 (-1 - i)^6}{(\sqrt3 + i)^4}$.'
+    refs: [prob:exam1:complex-power]
+
+  - id: prob-complex-roots-filter
+    kind: problem
+    topic: complex-roots
+    text: >-
+      Найдите все корни уравнения $z^4 + 8 - 8i\sqrt3 = 0$, для которых
+      $\dfrac{\pi}{2} < \arg\!\left(\dfrac{z}{1 + i}\right) < \pi$.
+    refs: [prob:exam1:complex-roots-filter]
+
+  - id: prob-complex-roots-extra
+    kind: problem
+    topic: complex-roots
+    text: Вычислите $(1 + i)^{10}$ в алгебраической форме.
+    answer: >-
+      $1 + i = \sqrt2\big(\cos\frac{\pi}{4} + i\sin\frac{\pi}{4}\big)$, по Муавру
+      $(\sqrt2)^{10}\big(\cos\frac{5\pi}{2} + i\sin\frac{5\pi}{2}\big) = 32i$.
+
+  - id: prob-poly-x6
+    kind: problem
+    topic: poly-factor
+    text: Найдите комплексные корни $x^6 + 64$ и разложите многочлен на неприводимые над $\mathbb{C}$ и над $\R$.
+    refs: [prob:exam1:poly-x6]
+
+  - id: prob-poly-known-root
+    kind: problem
+    topic: poly-factor
+    text: >-
+      Известно, что $1 + 2i$ — корень $x^4 - x^3 + x^2 + 9x - 10$. Найдите все корни и разложите
+      многочлен на неприводимые над $\R$ и над $\mathbb{C}$.
+    refs: [prob:exam1:poly-known-root]
+
+  - id: prob-poly-extra
+    kind: problem
+    topic: poly-factor
+    text: Разложите многочлен $x^4 + 64$ на неприводимые множители над $\R$.
+    answer: >-
+      Дополняем до квадрата: $x^4 + 16x^2 + 64 - 16x^2 = (x^2 + 8)^2 - (4x)^2 = (x^2 - 4x + 8)(x^2 + 4x + 8)$
+      (у обоих $D = -16 < 0$).
+
+  - id: prob-vec-dots
+    kind: problem
+    topic: vectors
+    text: >-
+      В ОНБ даны $\vec a = (1, 2, 0)$, $\vec b = (1, 1, 1)$, $\vec c = (2, -1, 1)$.
+      Найдите $\vec x \perp \vec a$ с $(\vec x, \vec b) = 4$, $(\vec x, \vec c) = 8$.
+    refs: [prob:exam1:vec-dots]
+
+  - id: prob-vec-tetra
+    kind: problem
+    topic: vectors
+    text: >-
+      Заданы вершины тетраэдра $A(1, 0, 2)$, $B(3, 1, 2)$, $C(1, 2, 4)$, $D(2, 3, 0)$.
+      Найдите площадь грани $ABC$, объём тетраэдра и высоту из $D$ на $ABC$.
+    refs: [prob:exam1:vec-tetra]
+
+  - id: prob-vec-extra
+    kind: problem
+    topic: vectors
+    text: >-
+      Найдите площадь параллелограмма, построенного на векторах $\vec a = 3\vec p + \vec q$ и
+      $\vec b = \vec p - 2\vec q$, если $|\vec p| = 2$, $|\vec q| = 4$, $\angle(\vec p, \vec q) = \frac{\pi}{6}$.
+    answer: >-
+      $[\vec a, \vec b] = -6[\vec p, \vec q] + [\vec q, \vec p] = -7[\vec p, \vec q]$;
+      площадь $S = 7 \cdot 2 \cdot 4 \cdot \sin\frac{\pi}{6} = 28$.
+
+  - id: prob-triangle
+    kind: problem
+    topic: planes-lines
+    text: >-
+      В треугольнике $A(1, 2)$, $B(4, 6)$, $C(6, -10)$ на плоскости составьте общие уравнения медианы,
+      высоты и биссектрисы из вершины $A$.
+    refs: [prob:exam1:triangle]
+
+  - id: prob-pencil
+    kind: problem
+    topic: planes-lines
+    text: >-
+      Составьте уравнение плоскости через линию пересечения $x + 2y - z - 3 = 0$ и $2x - y + 3z - 1 = 0$,
+      отсекающей равные ненулевые отрезки на осях $Oy$ и $Oz$.
+    refs: [prob:exam1:pencil]
+
+  - id: prob-plane-dist-extra
+    kind: problem
+    topic: planes-lines
+    text: Найдите расстояние от точки $M_0(3, -1, 2)$ до плоскости $2x + y - 2z + 8 = 0$.
+    answer: 'По формуле расстояния: $\rho = \dfrac{|2\cdot 3 - 1 - 2\cdot 2 + 8|}{\sqrt{4 + 1 + 4}} = \dfrac{9}{3} = 3$.'
+
+  - id: prob-two-lines
+    kind: problem
+    topic: positions
+    text: >-
+      Проверьте, что прямые $\frac{x - 1}{2} = \frac{y + 1}{1} = \frac{z - 2}{-1}$ и
+      $x = 2 + u,\ y = -2 + 2u,\ z = 4 - 3u$ пересекаются; найдите точку пересечения и плоскость через них.
+    refs: [prob:exam1:two-lines]
+
+  - id: prob-lines-skew
+    kind: problem
+    topic: positions
+    text: >-
+      Установите взаимное расположение прямых $\frac{x}{1} = \frac{y - 1}{-2} = \frac{z + 1}{2}$ и
+      $x = -2 + 2u,\ y = 1 + 2u,\ z = u$ и найдите расстояние между ними.
+    refs: [prob:exam1:lines-skew]
+
+  - id: prob-sym-plane
+    kind: problem
+    topic: symmetry
+    text: >-
+      Найдите проекцию и точку, симметричную $M_0(5, -1, 6)$ относительно плоскости
+      $2x - y + 2z - 5 = 0$.
+    refs: [prob:exam1:sym-plane]
+
+  - id: prob-sym-line
+    kind: problem
+    topic: symmetry
+    text: >-
+      Найдите точку, симметричную $M_0(4, 2, 2)$ относительно прямой
+      $\frac{x - 1}{1} = \frac{y + 1}{2} = \frac{z - 2}{-2}$.
+    refs: [prob:exam1:sym-line]
+
+  - id: prob-operation-check
+    kind: problem
+    topic: groups
+    text: >-
+      На $\R$ задана операция $a * b = a + b - 2ab$. Является ли $(\R, *)$ полугруппой, моноидом, группой?
+      Тот же вопрос для $(\R \setminus \{\frac12\}, *)$.
+    refs: [prob:exam1:operation-check]
+
+  - id: prob-group-check
+    kind: problem
+    topic: groups
+    text: >-
+      Проверьте, является ли $H = \left\{\begin{pmatrix} a & b \\ 0 & a^{-1} \end{pmatrix} \mid a \ne 0,\ b \in \R\right\}$
+      подгруппой $GL_2(\R)$, абелева ли она, и является ли $f(A) = a$ гомоморфизмом в $(\R \setminus \{0\}, \cdot)$.
+    refs: [prob:exam1:group-check]
+
+  - id: prob-group-orders
+    kind: problem
+    topic: groups
+    text: >-
+      Найдите порядки $\bar 3, \bar 4, \bar 5, \bar 6$ и порождающие $(\Z_{12}, +)$.
+      Изоморфны ли $(\Z_4, +)$ и $(\Z_8^*, \cdot)$?
+    refs: [prob:exam1:group-orders]
+
+  - id: prob-groups-extra
+    kind: problem
+    topic: groups
+    text: Найдите порядок подстановки $\sigma = (1\;2\;3)(4\;5)$ в $S_5$ и порядок $\bar 4$ в $(\Z_{18}, +)$.
+    answer: >-
+      $\operatorname{ord} \sigma = \operatorname{lcm}(3, 2) = 6$;
+      $\operatorname{ord} \bar 4 = \frac{18}{\text{НОД}(4, 18)} = 9$.

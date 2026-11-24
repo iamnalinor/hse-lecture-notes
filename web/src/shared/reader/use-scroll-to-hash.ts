@@ -3,9 +3,19 @@ import { useLocation } from "react-router";
 
 import { findById, hashTarget } from "#web/shared/ui/dom.ts";
 
+const flashTarget = (target: Element): Element => {
+  // A section is too big to light up: flash its heading (or summary of a folded ticket) instead.
+  if (target.tagName !== "SECTION") {
+    return target;
+  }
+  const first = target.firstElementChild;
+  return first?.matches("details[data-ticket]") === true
+    ? (first.querySelector(":scope > summary") ?? first)
+    : (first ?? target);
+};
+
 const flash = (target: Element): void => {
-  // A section is too big to light up: flash its heading instead.
-  const element = target.tagName === "SECTION" ? (target.firstElementChild ?? target) : target;
+  const element = flashTarget(target);
   element.classList.remove("flash");
   element.getBoundingClientRect(); // restart the animation when the same anchor is hit twice
   element.classList.add("flash");
@@ -18,13 +28,17 @@ const flash = (target: Element): void => {
   );
 };
 
-/** After navigation to `#anchor`: open folded proofs around it, scroll to it, highlight it. */
+/** After navigation to `#anchor`: open folded proofs and tickets around it, scroll to it, highlight it. */
 export const useScrollToHash = (): void => {
   const { hash, key } = useLocation();
   useEffect(() => {
     const target = hash === "" ? null : findById(document, hashTarget(hash));
     if (target === null) {
       return;
+    }
+    const ownTicket = target.querySelector(":scope > details[data-ticket]");
+    if (ownTicket instanceof HTMLDetailsElement) {
+      ownTicket.open = true;
     }
     for (
       let node = target.closest("details");

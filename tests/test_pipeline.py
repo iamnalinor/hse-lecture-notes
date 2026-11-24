@@ -738,7 +738,20 @@ def test_colloq_without_problems(demo: Path):
     p.write_text(text.replace("## Что нужно знать", "## Теория"), encoding="utf-8")
     res = lint(demo)
     assert res.returncode != 0
-    assert "нет ни одного подраздела «## Что нужно знать»" in res.stdout, res.stdout
+    assert "нет ни раздела «# Билеты», ни подраздела «## Что нужно знать»" in res.stdout, res.stdout
+
+
+def test_prep_tickets_requires_h2(demo: Path):
+    """Раздел «# Билеты» без заголовков «## » (например, только «### ») не проходит линтер."""
+    p = demo / "prep" / "algebra" / "exam1.md"
+    p.write_text(
+        "---\ncourse: algebra\ntitle: \"Подготовка к экзамену 1\"\n---\n\n"
+        "# Об экзамене\n\nТекст.\n\n# Билеты\n\n### 1. Вопрос\n\nОтвет.\n",
+        encoding="utf-8",
+    )
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "в разделе «# Билеты» нет ни одного билета уровня «## »" in res.stdout, res.stdout
 
 
 @pytest.mark.parametrize(
@@ -764,7 +777,7 @@ def test_lint_colloq_catches(demo: Path, old: str, new: str, expected: str):
     assert expected in res.stdout, res.stdout
 
 
-@pytest.mark.parametrize("name", ["colloq3", "kr4", "exam1"])
+@pytest.mark.parametrize("name", ["colloq3", "kr4", "exam3"])
 def test_prep_unknown_name(demo: Path, name: str):
     """Имя файла подготовки — только то, под что есть маршрут на сайте."""
     make_colloq(demo, name)
@@ -856,7 +869,7 @@ def test_quiz_topic_only_on_quiz(demo: Path):
     assert "quiz_topic — только у квиза" in res.stdout, res.stdout
 
 
-@pytest.mark.parametrize("name", ["quiz-limits", "quiz1", "quiz"])
+@pytest.mark.parametrize("name", ["quiz-unknown", "quiz1", "quiz"])
 def test_quiz_unknown_name(demo: Path, name: str):
     """Квиз — тоже только с маршрутом на сайте: новое имя добавляют в PREP_IDS."""
     make_quiz(demo, name)
@@ -1209,3 +1222,42 @@ def test_pdf_inline_code_preserves_quote_comma(demo: Path):
     pdf = demo / "build" / "pdf" / "algebra" / "01_sep03_matrices.pdf"
     text = "\n".join(page.get_text() for page in pymupdf.open(pdf))
     assert 'printf("%d", x)' in text, text
+
+
+def test_exam_prep_lint_and_build(demo: Path):
+    """Подготовка к экзамену (exam1.md): `# Об экзамене`, `# Билеты`, метки `:exam1:`, окно дат в шапке."""
+    prep_dir = demo / "prep" / "algebra"
+    prep_dir.mkdir(parents=True, exist_ok=True)
+    exam = prep_dir / "exam1.md"
+    exam.write_text(
+        """---
+course: algebra
+title: "Подготовка к экзамену 1: алгебра"
+date: 2026-12-21
+active_until: 2026-12-30
+---
+
+# Об экзамене
+
+Письменный экзамен в сессию.
+
+# Билеты
+
+## 1. Матрицы {#sec:exam1:matrices}
+
+::: {.definition ref="def:lec01:matrix"}
+:::
+
+::: {.remark #rem:exam1:proof-matrices title="доказательство"}
+Шаг 1. По определению [-@def:lec01:matrix].
+:::
+""",
+        encoding="utf-8",
+    )
+    res = lint(demo, str(exam))
+    assert res.returncode == 0, res.stdout
+    res_b = build(demo, "--no-pdf", "--only", "prep/algebra/exam1.md")
+    assert res_b.returncode == 0, res_b.stderr
+    meta = json.loads((demo / "build" / "site-data" / "algebra" / "exam1" / "meta.json").read_text(encoding="utf-8"))
+    assert "Подготовка к экзамену 1" in meta["header_line"]
+    assert "21.12–30.12.2026" in meta["header_line"]

@@ -52,7 +52,7 @@ REQUIRED_META = ["course", "lecture", "date", "title"]
 TYPE_OF_PREFIX = {v: k for k, v in PREFIX.items()} | {"fig": "figure", "eq": "equation", "sec": "section"}
 # средняя часть — id страницы: kr1, colloq1, quiz-o-symbols (дефисы в ней однозначны: разделитель — «:»)
 PREP_LABEL_RE = re.compile(
-    r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq)\d+|quiz-[a-z0-9][a-z0-9-]*):[a-z0-9][a-z0-9-]*$"
+    r"^(ex|rem|prob|fig|eq|sec):((?:kr|colloq|exam)\d+|quiz-[a-z0-9][a-z0-9-]*):[a-z0-9][a-z0-9-]*$"
 )
 ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
@@ -585,9 +585,9 @@ PREP_GONE = re.compile(r"(Вопросы для самопроверки|Сам�
 
 
 def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> None:
-    """Подготовка к КР, коллоквиуму или квизу (prep/<course>/krN.md, colloqN.md, quiz-<slug>.md).
+    """Подготовка к КР, коллоквиуму, экзамену или квизу (prep/<course>/krN.md, colloqN.md, examN.md, quiz-<slug>.md).
 
-    Свои метки prob:krN:… (prob:colloqN:…, prob:quiz-<slug>:…), теория — ref= на блоки конспектов.
+    Свои метки prob:krN:… (prob:colloqN:…, prob:examN:…, prob:quiz-<slug>:…), теория — ref= на блоки конспектов.
     """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem
@@ -605,7 +605,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         rep.err(rel, f"имя файла подготовки — {build.PREP_FILES} (маршруты сайта)")
     kind = build.prep_kind(exam)
     colloq = kind == "colloq"
-    event = {"colloq": "коллоквиума", "quiz": "квиза"}.get(kind, "КР")
+    event = {"colloq": "коллоквиума", "exam": "экзамена", "quiz": "квиза"}.get(kind, "КР")
     # номер квиза — из таблицы планирования курса, его имя на сайте («Квиз 4»); тема — в скобках
     if kind == "quiz" and meta.get("quiz_topic") in (None, ""):
         rep.err(rel, "в front matter нет поля quiz_topic (тема квиза: на сайте «Квиз 4 (<тема>)»)")
@@ -717,7 +717,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     check_texts(rep, rel, blocks)
     check_practice(rep, rel, blocks)
     h1 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 1]
-    first = {"colloq": "О коллоквиуме", "quiz": "О квизе"}.get(kind, "О контрольной")
+    first = {"colloq": "О коллоквиуме", "exam": "Об экзамене", "quiz": "О квизе"}.get(kind, "О контрольной")
     if not h1 or h1[0] != first:
         rep.err(rel, f"первый раздел — «# {first}»")
     h2 = [text_of_block(b).strip() for b in blocks if b["t"] == "Header" and b["c"][0] == 2]
@@ -725,12 +725,27 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     for title in h1 + h2:
         if PREP_GONE.match(title):
             rep.err(rel, f"раздела «{title}» на странице подготовки нет: тренируются генератором билетов")
-    # коллоквиум — устная теория: задачи по желанию, обязательны разделы «Что нужно знать»
-    # КР по новой схеме (context/prompts/prep.md): задачи по типам в «# Задачи»; по старой — «## Прототипы»
-    if colloq and "Что нужно знать" not in h2:
-        rep.err(rel, "нет ни одного подраздела «## Что нужно знать»")
-    elif not colloq and "Задачи" not in h1 and "Прототипы" not in h2:
+    # коллоквиум — устная теория: «# Билеты» (новая схема) или «## Что нужно знать» (старая)
+    # экзамен — «# Билеты» и/или «# Задачи»; КР/квиз — «# Задачи» (новая схема) или «## Прототипы» (старая)
+    if colloq and "Билеты" not in h1 and "Что нужно знать" not in h2:
+        rep.err(rel, "нет ни раздела «# Билеты», ни подраздела «## Что нужно знать»")
+    elif kind == "exam" and "Билеты" not in h1 and "Задачи" not in h1:
+        rep.err(rel, "нет ни раздела «# Билеты», ни раздела «# Задачи»")
+    elif kind not in ("colloq", "exam") and "Задачи" not in h1 and "Прототипы" not in h2:
         rep.err(rel, "нет задач: ни раздела «# Задачи», ни одного подраздела «## Прототипы»")
+    if "Билеты" in h1:
+        in_tickets = False
+        has_ticket_h2 = False
+        for b in blocks:
+            if b["t"] == "Header" and b["c"][0] == 1:
+                if in_tickets:
+                    break
+                in_tickets = text_of_block(b).strip() == "Билеты"
+            elif in_tickets and b["t"] == "Header" and b["c"][0] == 2:
+                has_ticket_h2 = True
+                break
+        if not has_ticket_h2:
+            rep.err(rel, "в разделе «# Билеты» нет ни одного билета уровня «## »")
     lint_bank(path, course, exam, labels, own, rep)
     # на сайте генератор встаёт в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
     generator = f"sec:{exam}:{ticket_bank.GENERATOR_SECTION}"

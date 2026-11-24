@@ -1,6 +1,7 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { Route, Routes, useNavigate } from "react-router";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { renderWithApp } from "#web/test/render.tsx";
 
@@ -193,5 +194,147 @@ describe("FragmentView slots", () => {
     expect(document.querySelector('[id="other"]')).not.toContainElement(
       screen.getByRole("button", { name: "Сгенерировать" }),
     );
+  });
+});
+
+const TICKETS_HTML = `
+<section id="билеты" class="level1">
+  <h1>Билеты</h1>
+  <section id="sec:exam1:laplace" class="level2">
+    <h2>1. Разложение определителя по строке</h2>
+    <div id="rem:exam1:proof-laplace" class="nb nb-remark nb-style-remark" data-type="remark" data-number="1">
+      <div class="nb-head"><span class="nb-name">Замечание 1 (доказательство)</span></div>
+      <div class="nb-body"><p>Шаг 1. Линейность по строке.</p></div>
+    </div>
+  </section>
+  <section id="sec:exam1:lu" class="level2">
+    <h2>2. <span class="math inline">LU</span>-разложение</h2>
+    <p>Условие главных миноров.</p>
+  </section>
+</section>
+<section id="задачи" class="level1">
+  <h1>Задачи</h1>
+  <section id="sec:exam1:rank" class="level2">
+    <h2>1. Ранг матрицы</h2>
+    <p>Привести к ступенчатому виду.</p>
+  </section>
+</section>`;
+
+const LectureStub = () => {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => {
+        void navigate(-1);
+      }}
+      type="button"
+    >
+      Назад
+    </button>
+  );
+};
+
+describe("FragmentView ticket list", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it("folds tickets in «Билеты» on prep pages into a compact list and opens them on click", async () => {
+    renderWithApp(
+      <FragmentView
+        course="algebra"
+        docId="exam1"
+        html={TICKETS_HTML}
+        lecture={undefined}
+        variant="prep"
+      />,
+    );
+
+    const details = [...document.querySelectorAll<HTMLDetailsElement>("section#билеты details")];
+    expect(details).toHaveLength(2);
+    expect(details[0]?.open).toBe(false);
+    expect(details[1]?.open).toBe(false);
+
+    // Leading numbers are split into tabular columns, math inside titles still renders.
+    expect(screen.getByText("1.")).toBeInTheDocument();
+    expect(screen.getByText("Разложение определителя по строке")).toBeInTheDocument();
+    expect(document.querySelector("section#билеты .katex")).not.toBeNull();
+
+    // Non-ticket sections («Задачи») stay open as regular prose sections.
+    expect(document.querySelector("section#задачи details")).toBeNull();
+    expect(screen.getByText("Привести к ступенчатому виду.")).toBeVisible();
+
+    await userEvent.click(screen.getByText("Разложение определителя по строке"));
+    expect(details[0]?.open).toBe(true);
+    expect(details[1]?.open).toBe(false);
+  });
+
+  it("expands and collapses all tickets with the bulk buttons", async () => {
+    renderWithApp(
+      <FragmentView
+        course="algebra"
+        docId="exam1"
+        html={TICKETS_HTML}
+        lecture={undefined}
+        variant="prep"
+      />,
+    );
+
+    const expandAll = screen.getByRole("button", { name: "Раскрыть все" });
+    const collapseAll = screen.getByRole("button", { name: "Свернуть все" });
+    const details = [...document.querySelectorAll<HTMLDetailsElement>("section#билеты details")];
+
+    expect(expandAll).toBeEnabled();
+    expect(collapseAll).toBeDisabled();
+
+    await userEvent.click(expandAll);
+    expect(details.every((item) => item.open)).toBe(true);
+    expect(expandAll).toBeDisabled();
+    expect(collapseAll).toBeEnabled();
+
+    await userEvent.click(collapseAll);
+    expect(details.every((item) => !item.open)).toBe(true);
+    expect(expandAll).toBeEnabled();
+    expect(collapseAll).toBeDisabled();
+  });
+
+  it("restores open tickets after navigating to a lecture and going back", async () => {
+    const htmlWithRef = TICKETS_HTML.replace(
+      "<p>Шаг 1. Линейность по строке.</p>",
+      '<p>См. <a href="../x/#y" class="ref" data-ref="def:lec02:transpose">2.9 (лекция 2)</a>.</p>',
+    );
+    renderWithApp(
+      <Routes>
+        <Route
+          element={
+            <FragmentView
+              course="algebra"
+              docId="exam1"
+              html={htmlWithRef}
+              lecture={undefined}
+              variant="prep"
+            />
+          }
+          path="/algebra/exam1"
+        />
+        <Route element={<LectureStub />} path="/algebra/02_sep09_gauss_method" />
+      </Routes>,
+      "/algebra/exam1",
+    );
+
+    await userEvent.click(screen.getByText("Разложение определителя по строке"));
+    await userEvent.click(screen.getByRole("link", { name: "2.9 (лекция 2)" }));
+    expect(screen.queryByText("Разложение определителя по строке")).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Назад" }));
+    const details = [...document.querySelectorAll<HTMLDetailsElement>("section#билеты details")];
+    expect(details[0]?.open).toBe(true);
+    expect(details[1]?.open).toBe(false);
+    expect(screen.getByRole("button", { name: "Свернуть все" })).toBeEnabled();
+  });
+
+  it("does not fold «Билеты» outside prep pages", () => {
+    view(TICKETS_HTML);
+    expect(document.querySelectorAll("details")).toHaveLength(0);
   });
 });
