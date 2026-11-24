@@ -400,6 +400,7 @@ export class ChatRunner extends DurableObject<Env> {
         db,
         provider,
         requestTitle: admit.requestTitle,
+        questionCreatedAt: admit.questionCreatedAt,
         policy,
         runId: admit.runId,
         threadId: admit.threadId,

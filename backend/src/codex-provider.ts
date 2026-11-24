@@ -1,6 +1,6 @@
 import { getValidCodexCredentials, type CodexCredentialsPayload } from "./codex-auth";
 import type { TrackedD1 } from "./db";
-import { fetchViaProxy, ProxyConnectError } from "./socks5-fetch";
+import { fetchViaProxy, ProxyConnectError, ResponseEofError } from "./socks5-fetch";
 import type {
   CodexInputItem,
   Env,
@@ -134,6 +134,7 @@ export async function parseCodexSseStream(
   const decoder = new TextDecoder();
   let buffer = "";
   let streamedText = "";
+  let sawResponseEvent = false;
   let truncated = false;
   let completed = false;
   let finalStatus = "incomplete";
@@ -150,6 +151,8 @@ export async function parseCodexSseStream(
     } catch {
       return;
     }
+
+    if (evt.type?.startsWith("response.")) sawResponseEvent = true;
 
     if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
       if (truncated) return;
@@ -196,7 +199,10 @@ export async function parseCodexSseStream(
 
   try {
     while (true) {
-      const { value, done } = await reader.read();
+      const { value, done } = await reader.read().catch((err: unknown) => {
+        if (!sawResponseEvent && !buffer.includes("response.")) throw new ResponseEofError("before_event");
+        throw err;
+      });
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
@@ -204,6 +210,7 @@ export async function parseCodexSseStream(
       while (newlineIdx !== -1) {
         const line = buffer.slice(0, newlineIdx).replace(/\r$/, "");
         buffer = buffer.slice(newlineIdx + 1);
+        if (/^event:\s*response\./.test(line)) sawResponseEvent = true;
         if (line.startsWith("data:")) {
           processDataLine(line.slice(5));
         }
@@ -217,6 +224,7 @@ export async function parseCodexSseStream(
     buffer += decoder.decode();
     if (!truncated && buffer.trim()) {
       for (const line of buffer.split(/\r?\n/)) {
+        if (/^event:\s*response\./.test(line)) sawResponseEvent = true;
         if (line.startsWith("data:")) {
           processDataLine(line.slice(5));
         }
@@ -229,6 +237,8 @@ export async function parseCodexSseStream(
       // ignore cancel errors on aborted streams
     }
   }
+
+  if (!sawResponseEvent && !buffer.includes("response.")) throw new ResponseEofError("before_event");
 
   const rawItems = completedResponseOutput ?? streamedItems;
   const { outputItems, functionCalls, fallbackText } = parseOutputItems(rawItems);
@@ -300,7 +310,8 @@ export class CodexResponsesProvider implements LlmProvider {
   async runRound(req: LlmRoundRequest): Promise<LlmRoundResult> {
     let creds = await this.loadCreds(false);
 
-    let retriedProxy = false;
+    const roundKey = crypto.randomUUID();
+    let retriedTransport = false;
     let refreshedAuth = false;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       req.signal.throwIfAborted();
@@ -327,6 +338,7 @@ export class CodexResponsesProvider implements LlmProvider {
 
         const headers: Record<string, string> = {
           Authorization: `Bearer ${creds.accessToken}`,
+          "Idempotency-Key": roundKey,
           "Content-Type": "application/json",
           Accept: "text/event-stream",
           "User-Agent": "codex_cli_rs/0.114.0 (Linux; x86_64)",
@@ -336,24 +348,12 @@ export class CodexResponsesProvider implements LlmProvider {
           headers["ChatGPT-Account-Id"] = creds.accountId;
         }
 
-        let resp: Response;
-        try {
-          resp = await this.fetchImpl(this.env.CODEX_RESPONSES_URL, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload),
-            signal: localAbort.signal,
-          });
-        } catch (fetchErr) {
-          if (fetchErr instanceof ProxyConnectError) {
-            const temporary = fetchErr.reply === null || [1, 3, 4, 5, 6].includes(fetchErr.reply);
-            if (!temporary || attempt >= 2 || retriedProxy || req.signal.aborted) throw fetchErr;
-            retriedProxy = true;
-            await new Promise(resolve => setTimeout(resolve, 400 + Math.random() * 200));
-            continue;
-          }
-          throw fetchErr;
-        }
+        const resp = await this.fetchImpl(this.env.CODEX_RESPONSES_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+          signal: localAbort.signal,
+        });
 
         if (resp.status === 401 && !refreshedAuth && attempt < 2) {
           refreshedAuth = true;
@@ -380,6 +380,14 @@ export class CodexResponsesProvider implements LlmProvider {
           req.onDelta,
           () => localAbort.abort("max_response_chars"),
         );
+      } catch (error) {
+        const proxyFailure = error instanceof ProxyConnectError &&
+          (error.reply === null || [1, 2, 3, 4, 5, 6].includes(error.reply));
+        const unconfirmed = error instanceof ResponseEofError && error.stage !== "body";
+        if ((!proxyFailure && !unconfirmed) || retriedTransport || req.signal.aborted || attempt >= 2) throw error;
+        retriedTransport = true;
+        if (unconfirmed) req.onUnconfirmedRetry?.();
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
       } finally {
         req.signal.removeEventListener("abort", onParentAbort);
       }

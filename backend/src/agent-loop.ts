@@ -38,6 +38,7 @@ export interface AgentLoopParams {
   route: ModelRoute;
   initialReserveMicros: number;
   degraded: DegradedInfo;
+  questionCreatedAt: number;
   questionText: string;
   quote: QuotePayload | null;
   signal: AbortSignal;
@@ -46,6 +47,7 @@ export interface AgentLoopParams {
 }
 
 interface HistoryRow {
+  created_at: number;
   course: string;
   doc_id: string;
   role: "user" | "assistant";
@@ -82,7 +84,7 @@ async function loadThreadHistoryInput(
   const rows = await db.all<HistoryRow & { id: string }>(
     db
       .prepare(
-        `SELECT m.id, m.role, m.status, m.course, m.doc_id, m.content_tex, m.quote_json
+        `SELECT m.id, m.created_at, m.role, m.status, m.course, m.doc_id, m.content_tex, m.quote_json
          FROM chat_messages m
          WHERE m.thread_id = ? AND (m.run_id IS NULL OR m.run_id != ?) AND m.status IN ('done', 'stopped', 'incomplete')
          ORDER BY seq DESC
@@ -117,11 +119,7 @@ async function loadThreadHistoryInput(
       }
     }
     if (r.role === "user") {
-      items.push({
-        type: "message",
-        role: "user",
-        content: [{ type: "input_text", text: `Страница на момент вопроса: /${[r.course, r.doc_id].filter(Boolean).join("/")}\n` + formatUserTurnContent(r.content_tex, quote) }],
-      });
+      items.push(userTurn(r.course, r.doc_id, r.created_at, r.content_tex, quote));
     } else if (r.content_tex.trim()) {
       items.push({
         type: "message",
@@ -141,7 +139,7 @@ function describeRunError(err: unknown, code: string): string {
     return `Прокси отклонил подключение к модели (SOCKS5 REP=${err.reply}).`;
   }
   if (err instanceof ResponseEofError) {
-    return err.stage === "headers"
+    return err.stage === "before_event" ? "Соединение с моделью оборвалось до подтверждения начала ответа (EOF)." : err.stage === "headers"
       ? "Соединение с моделью оборвалось до получения заголовков ответа (EOF)."
       : "Соединение с моделью оборвалось во время получения ответа (EOF).";
   }
@@ -156,6 +154,16 @@ const moscowClock = new Intl.DateTimeFormat("ru-RU", {
   dateStyle: "short",
   timeStyle: "short",
 });
+
+function userTurn(course: string, docId: string, createdAt: number, question: string, quote: QuotePayload | null): CodexInputItem {
+  const path = "/" + [course, docId].filter(Boolean).join("/");
+  const context = `Страница на момент вопроса: ${path}\nДата и время вопроса (МСК): ${moscowClock.format(createdAt)}`;
+  return {
+    type: "message",
+    role: "user",
+    content: [{ type: "input_text", text: `${context}\n\n${formatUserTurnContent(question, quote)}` }],
+  };
+}
 
 export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
   const {
@@ -204,19 +212,9 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     policy,
   );
 
-  const userTurnItem: CodexInputItem = {
-    type: "message",
-    role: "user",
-    content: [{ type: "input_text", text: formatUserTurnContent(questionText, quote) }],
-  };
   const conversationInput: CodexInputItem[] = [
     ...historyItems,
-    {
-      type: "message",
-      role: "developer",
-      content: [{ type: "input_text", text: `Дата и время вопроса (МСК): ${moscowClock.format(new Date())}.` }],
-    },
-    userTurnItem,
+    userTurn(course, docId, params.questionCreatedAt, questionText, quote),
   ];
 
   const toolRunner = new AgentToolRunner({
@@ -277,6 +275,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
         tools: toolsForRound,
         maxResponseChars: remainingChars,
         signal: timeoutAbort.signal,
+        onUnconfirmedRetry: () => { isCostUncertain = true; },
         onDelta: (delta) => {
           streamed = true;
           emit(titleStream ? titleStream.push(delta) : delta);

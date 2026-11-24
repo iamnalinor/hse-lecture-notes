@@ -64,6 +64,25 @@ it("keeps the user bubble mounted when the server assigns message IDs", () => {
   vi.unstubAllGlobals();
 });
 
+it("shows and copies the agent link without a trailing slash", () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  vi.stubGlobal("navigator", { clipboard: { writeText } });
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  state.messages = [];
+  render(
+    <MemoryRouter initialEntries={["/calculus/quiz-o-symbols/"]}>
+      <QueryClientProvider client={new QueryClient()}>
+        <ChatPanel />
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
+  const url = "https://hse.nalinor.dev/calculus/quiz-o-symbols";
+  expect(screen.getByText(url)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: `Копировать ссылку ${url}` }));
+  expect(writeText).toHaveBeenCalledWith(url);
+  vi.unstubAllGlobals();
+});
+
 it("highlights streamed C code and copies its original text", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal("navigator", { clipboard: { writeText } });

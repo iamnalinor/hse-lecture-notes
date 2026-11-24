@@ -234,7 +234,7 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(sentHeaders.originator).toBe("codex_cli_rs");
   });
 
-  test.each([[5, true, 2], [5, false, 2], [2, false, 1], ["eof", false, 1]] as const)("bounds proxy retries (reply=%s, recovers=%s)", async (reply, recovers, expectedAttempts) => {
+  test.each([[5, true, 2], [5, false, 2], [2, false, 2], ["eof", false, 2], ["eof", true, 2]] as const)("bounds proxy retries (reply=%s, recovers=%s)", async (reply, recovers, expectedAttempts) => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     let attempts = 0;
@@ -256,6 +256,30 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     else await expect(result).rejects.toBe(error);
     expect(attempts).toBe(expectedAttempts);
   });
+
+  test.each([["", 2], ["response.created", 1], ["response.in_progress", 1], ["response.output_item.added", 1]] as const)(
+    "only retries an interrupted stream without a response event (%s)", async (event, expectedAttempts) => {
+      const shim = new SqliteD1Shim();
+      const db = new TrackedD1(shim.asD1());
+      const keys: Array<string | null> = [];
+      const provider = new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
+        getCredentialsImpl: async () => ({ accessToken: "token", refreshToken: "", accountId: "", expiresAt: 0 }),
+        fetchImpl: async (_url, init) => {
+          keys.push(new Headers(init?.headers).get("Idempotency-Key"));
+          const line = event ? `data: ${JSON.stringify({ type: event })}\n` : ": keepalive\n";
+          return new Response(makeSseStream([keys.length === 1 ? line : 'data: {"type":"response.completed"}\n']));
+        },
+      });
+      const result = await provider.runRound({
+        ...resolveModelRoute((await loadPolicy(db)).buckets.low), instructions: "", input: [], tools: [],
+        maxResponseChars: 50, signal: new AbortController().signal, onDelta: () => {},
+      });
+      expect(keys).toHaveLength(expectedAttempts);
+      expect(keys[0]).toBeTruthy();
+      expect(new Set(keys).size).toBe(1);
+      expect(result.completed).toBe(!event);
+    },
+  );
 
   test("OAuth refresh uses CAS version bump and marks needs_reauth on invalid_grant", async () => {
     const shim = new SqliteD1Shim();
@@ -855,7 +879,7 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const env = makeTestEnv(shim.asD1());
-    const now = Date.now();
+    const now = Date.parse("2026-11-24T21:15:00Z");
 
     await db.run(
       db
@@ -885,14 +909,23 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       .toEqual({ model: "gpt-6.1-terra", reasoning_effort: "high" });
     await db.run(db.prepare("UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.effort', 'low') WHERE key = 'policy'"));
 
+    await db.run(db.prepare(
+      `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at)
+       VALUES ('earlier', ?, 0, 'user', 'done', 'Предыдущий вопрос', '', '', ?, ?)`,
+    ).bind(adm.threadId, now - 3600000, now - 3600000));
+
     let roundCalls = 0;
     const fakeProvider: LlmProvider = {
       async runRound(req) {
-        const clock = req.input[0];
-        if (clock?.type !== "message") throw new Error("missing server clock");
-        expect(clock.role).toBe("developer");
-        expect(clock.content[0]?.text).toMatch(/Москва.*\d{2}\.\d{2}\.\d{4}.*\d{2}:\d{2}/u);
-        expect(req.input[1]).toMatchObject({ role: "user" });
+        const previous = req.input[0];
+        if (previous?.type !== "message") throw new Error("missing previous turn");
+        expect(previous.content[0]?.text).toContain("Страница на момент вопроса: /\nДата и время вопроса (МСК): 24.11.2026, 23:15");
+        const question = req.input[1];
+        if (question?.type !== "message") throw new Error("missing user turn");
+        expect(question.role).toBe("user");
+        expect(question.content[0]?.text).toContain("Страница на момент вопроса: /discrete/01");
+        expect(question.content[0]?.text).toContain("25.11.2026, 00:15");
+        expect(question.content[0]?.text).toContain("Объясни теорему 1");
         expect(req.model).toBe("gpt-6.1-terra");
         expect(req.effort).toBe("high");
         roundCalls += 1;
@@ -935,6 +968,7 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       db,
       provider: fakeProvider,
       requestTitle: adm.requestTitle,
+      questionCreatedAt: adm.questionCreatedAt,
       policy,
       runId: adm.runId,
       threadId: adm.threadId,

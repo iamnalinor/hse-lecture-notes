@@ -149,7 +149,7 @@ export interface CodexFunctionTool {
 export type CodexInputItem =
   | {
       type: "message";
-      role: "developer" | "user" | "assistant";
+      role: "user" | "assistant";
       content: Array<{ type: "input_text" | "output_text"; text: string }>;
     }
   | {
@@ -188,6 +188,7 @@ export interface LlmRoundRequest {
   maxResponseChars: number;
   signal: AbortSignal;
   onDelta: (delta: string) => void;
+  onUnconfirmedRetry?: () => void;
 }
 
 export interface LlmRoundResult {

@@ -106,7 +106,7 @@ function indexOfBytes(haystack: Uint8Array, needle: Uint8Array): number {
 }
 
 export class ResponseEofError extends Error {
-  constructor(readonly stage: "headers" | "body") {
+  constructor(readonly stage: "headers" | "before_event" | "body") {
     super(`Unexpected EOF while reading HTTP response ${stage}`);
   }
 }

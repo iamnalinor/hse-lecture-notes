@@ -718,6 +718,7 @@ export interface AdmitRunParams {
 export type AdmitRunResult =
   | {
       kind: "admitted";
+      questionCreatedAt: number;
       runId: string;
       threadId: string;
       threadTitle: string;
@@ -955,13 +956,14 @@ async function tryAdmitRun(
   const runId = `run_${randomToken(12)}`;
   let userMessageId = `msg_${randomToken(12)}`;
   let assistantMessageId = `msg_${randomToken(12)}`;
+  let questionCreatedAt = nowMs;
   let retryAssistantSeq: number | null = null;
   const expiresAt = nowMs + policy.staleRunTimeoutMs;
   const quoteJson = params.quote ? JSON.stringify(params.quote) : null;
 
   if (params.retryAssistantMessageId) {
-    const target = await db.first<{ id: string; seq: number; user_id: string }>(
-      db.prepare(`SELECT assistant.id, assistant.seq, user.id AS user_id
+    const target = await db.first<{ id: string; seq: number; user_id: string; created_at: number }>(
+      db.prepare(`SELECT assistant.id, assistant.seq, user.id AS user_id, user.created_at
         FROM chat_messages AS assistant JOIN chat_messages AS user
           ON user.thread_id = assistant.thread_id AND user.seq = assistant.seq - 1 AND user.role = 'user'
         WHERE assistant.thread_id = ? AND assistant.id = ? AND assistant.role = 'assistant'`)
@@ -970,6 +972,7 @@ async function tryAdmitRun(
     if (!target || target.seq !== nextSeq - 1) {
       return { kind: "conflict", message: "Only the latest assistant message can be retried" };
     }
+    questionCreatedAt = target.created_at;
     userMessageId = target.user_id;
     assistantMessageId = target.id;
     retryAssistantSeq = target.seq;
@@ -1107,6 +1110,7 @@ async function tryAdmitRun(
 
   return {
     kind: "admitted",
+    questionCreatedAt,
     runId,
     threadId,
     threadTitle,

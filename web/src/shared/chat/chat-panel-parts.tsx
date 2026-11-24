@@ -217,7 +217,7 @@ export const ChatEmptyView = (): JSX.Element => {
 const AgentLinkCard = (): JSX.Element => {
   const { pathname } = useLocation();
   const { copyText, isCopied } = useCopyFeedback();
-  const url = pageUrl(routeOf(pathname));
+  const url = pageUrl(routeOf(pathname)).replace(/\/$/u, "");
 
   return (
     <section aria-labelledby="ai-agent-title" className="ai-agent">
