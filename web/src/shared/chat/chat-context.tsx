@@ -55,16 +55,18 @@ export type ChatContextValue = {
   readonly messages: readonly ChatMessage[];
   readonly newChat: () => void;
   readonly openWithQuote: (quote: ChatQuote) => void;
-  readonly previousThreadId: null | string;
   readonly quote: ChatQuote | null;
   readonly rateLimitUntil: number;
-  readonly restorePreviousThread: () => void;
   readonly retryMessage: (assistantMsgId: string) => Promise<void>;
   readonly selectThread: (threadId: string) => void;
   readonly send: (overrideText?: string) => Promise<void>;
   readonly setDraft: (value: string) => void;
   readonly stop: () => void;
   readonly switchAccount: () => Promise<void>;
+  readonly loadMore: () => Promise<void>;
+  readonly hasMore: boolean;
+  readonly moreError: boolean;
+  readonly isLoadingMore: boolean;
   readonly threads: readonly ChatThreadSummary[];
   readonly tier: ChatTier;
   readonly toggle: () => void;
@@ -121,8 +123,8 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
       return;
     }
     a.thr.invalidateLoad();
-    if (a.thr.activeThreadId !== null) {
-      a.thr.setPreviousThreadId(a.thr.activeThreadId);
+    if (a.quote?.messageId !== undefined) {
+      a.setQuote(null);
     }
     a.thr.setActiveThreadId(null);
     a.thr.setMessages([]);
@@ -131,30 +133,27 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     a.setQuote(nextQuote);
     a.setIsOpen(true);
   },
-  previousThreadId: a.thr.previousThreadId,
   quote: a.quote,
   rateLimitUntil: a.auth.rateLimitUntil,
-  restorePreviousThread: () => {
-    if (a.thr.isStreaming || a.thr.previousThreadId === null) {
-      return;
-    }
-    const target = a.thr.previousThreadId;
-    a.thr.setPreviousThreadId(null);
-    void a.thr.loadThread(a.docContext, target);
-  },
   retryMessage: a.retryMessage,
   selectThread: (threadId: string) => {
     if (a.thr.isStreaming) {
       return;
     }
-    a.thr.setPreviousThreadId(null);
-    void a.thr.loadThread(a.docContext, threadId);
+    if (a.quote?.messageId !== undefined) {
+      a.setQuote(null);
+    }
+    void a.thr.loadThread(threadId);
   },
   send: a.send,
   setDraft: a.setDraft,
   stop: a.stop,
   switchAccount: a.tgAuth.switchAccount,
   threads: a.thr.threads,
+  loadMore: a.thr.loadMore,
+  moreError: a.thr.moreError,
+  hasMore: a.thr.hasMore,
+  isLoadingMore: a.thr.isLoadingMore,
   tier: a.auth.tier,
   toggle: () => {
     a.setIsOpen((prev) => !prev);
@@ -187,7 +186,7 @@ const useChatSessionValue = ({
   const isConfigured = isChatConfigured();
   const { draft, setDraft, quote, setQuote } = composer;
 
-  const thr = useThreadState(docContext, isOpen, isConfigured);
+  const thr = useThreadState(isOpen, isConfigured);
   useRootOpenClassSync(isOpen);
 
   const setters: StreamStateSetters = {
@@ -198,7 +197,6 @@ const useChatSessionValue = ({
     setDraft,
     setIsStreaming: thr.setIsStreaming,
     setMessages: thr.setMessages,
-    setPreviousThreadId: thr.setPreviousThreadId,
     setQuote,
     setThreads: thr.setThreads,
     setTier: auth.setTier,
@@ -281,7 +279,7 @@ export const ChatProvider = ({
       composer={composer}
       docContext={docContext}
       isOpen={isOpen}
-      key={`${docKey}:${auth.user?.id ?? "guest"}`}
+      key={auth.user?.id ?? "guest"}
       setIsOpen={setIsOpen}
       tgAuth={tgAuth}
       turnstileHooks={turnstileHooks}

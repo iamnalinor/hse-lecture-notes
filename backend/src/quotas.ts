@@ -1,6 +1,7 @@
 import { randomToken } from "./crypto";
 import type { TrackedD1 } from "./db";
 import { estimateUncertainRoundCostMicros, resolveModelRoute, modelPricing, type ModelRoute } from "./pricing";
+import { shortenThreadTitle } from "./thread-title";
 import { sendOwnerAlert } from "./telegram-alerts";
 import {
   type BlockInfo,
@@ -720,9 +721,11 @@ export type AdmitRunResult =
       runId: string;
       threadId: string;
       threadTitle: string;
+      generatedTitle: string | null;
       userMessageId: string;
       assistantMessageId: string;
       bucket: QuotaBucket;
+      requestTitle: boolean;
       route: ModelRoute;
       reserveMicros: number;
       degraded: DegradedInfo;
@@ -732,6 +735,7 @@ export type AdmitRunResult =
       runId: string;
       threadId: string;
       threadTitle: string;
+      generatedTitle: string | null;
       userMessageId: string;
       assistantMessageId: string;
       status: RunStatus;
@@ -753,13 +757,7 @@ export type AdmitRunResult =
 
 function deriveThreadTitle(text: string, quote: QuotePayload | null): string {
   const cleaned = text.replace(/\s+/g, " ").trim();
-  if (cleaned.length > 0) {
-    return cleaned.length > 72 ? `${cleaned.slice(0, 71).trimEnd()}…` : cleaned;
-  }
-  if (quote?.label) {
-    return quote.label.length > 72 ? `${quote.label.slice(0, 71).trimEnd()}…` : quote.label;
-  }
-  return "Новый чат";
+  return shortenThreadTitle(cleaned || quote?.label || "Новый чат");
 }
 
 function identityQuotaGuard(policy: ServicePolicy, axes: IdentityAxes, bucket: QuotaBucket, nowMs: number) {
@@ -846,9 +844,9 @@ async function tryAdmitRun(
 
   if (idempRow) {
     // Verify current caller actually owns the duplicate's thread
-    const thread = await db.first<{ id: string; title: string; browser_id: string | null; telegram_id: number | null }>(
+    const thread = await db.first<{ id: string; generated_title: string | null; title: string; browser_id: string | null; telegram_id: number | null }>(
       db
-        .prepare("SELECT id, title, browser_id, telegram_id FROM chat_threads WHERE id = ?")
+        .prepare("SELECT id, generated_title, title, browser_id, telegram_id FROM chat_threads WHERE id = ?")
         .bind(idempRow.thread_id),
     );
     const ownsThread =
@@ -863,7 +861,8 @@ async function tryAdmitRun(
       kind: "duplicate",
       runId: idempRow.id,
       threadId: idempRow.thread_id,
-      threadTitle: thread.title,
+      threadTitle: thread.generated_title ?? thread.title,
+      generatedTitle: thread.generated_title,
       userMessageId: idempRow.user_message_id,
       assistantMessageId: idempRow.assistant_message_id,
       status: idempRow.status,
@@ -919,20 +918,21 @@ async function tryAdmitRun(
   // 4. Verify existing thread ownership or prepare new thread
   let threadId = params.threadId;
   let threadTitle = deriveThreadTitle(params.questionText, params.quote);
+  let generatedTitle: string | null = null;
   let nextSeq = 1;
   let creatingThread = false;
 
   if (threadId) {
     const [threadRes, seqRes] = await db.batch<Record<string, unknown>>([
       db
-        .prepare("SELECT id, title, course, doc_id, browser_id, telegram_id FROM chat_threads WHERE id = ?")
+        .prepare("SELECT id, generated_title, title, browser_id, telegram_id FROM chat_threads WHERE id = ?")
         .bind(threadId),
       db
         .prepare("SELECT COALESCE(MAX(seq), 0) AS max_seq FROM chat_messages WHERE thread_id = ?")
         .bind(threadId),
     ]);
     const thread = threadRes?.results[0] as
-      | { id: string; title: string; course: string; doc_id: string; browser_id: string | null; telegram_id: number | null }
+      | { id: string; generated_title: string | null; title: string; browser_id: string | null; telegram_id: number | null }
       | undefined;
 
     const ownsThread =
@@ -941,10 +941,11 @@ async function tryAdmitRun(
         ? thread.browser_id === params.axes.browserId && thread.telegram_id === null
         : thread.telegram_id === params.axes.telegramId);
 
-    if (!ownsThread || thread.course !== params.course || thread.doc_id !== params.docId) {
+    if (!ownsThread) {
       return { kind: "not_found", message: "Thread not found or not owned by user" };
     }
-    threadTitle = thread.title;
+    generatedTitle = thread.generated_title;
+    threadTitle = generatedTitle ?? thread.title;
     nextSeq = Number(seqRes?.results[0]?.max_seq ?? 0) + 1;
   } else {
     creatingThread = true;
@@ -979,10 +980,10 @@ async function tryAdmitRun(
   const route = resolveModelRoute(policy.buckets[evalRes.bucket]);
   const quotaGuard = identityQuotaGuard(policy, params.axes, evalRes.bucket, nowMs);
   const threadGuard = creatingThread ? "1" : `EXISTS (
-    SELECT 1 FROM chat_threads WHERE id = ? AND course = ? AND doc_id = ?
+    SELECT 1 FROM chat_threads WHERE id = ?
       AND ${isGuest ? "telegram_id IS NULL AND browser_id = ?" : "telegram_id = ?"})`;
   const threadBindings = creatingThread ? [] : [
-    threadId, params.course, params.docId, isGuest ? params.axes.browserId : params.axes.telegramId,
+    threadId, isGuest ? params.axes.browserId : params.axes.telegramId,
   ];
   const admitted = "EXISTS (SELECT 1 FROM usage_runs WHERE id = ?)";
   const insertStmts: D1PreparedStatement[] = [
@@ -1005,13 +1006,11 @@ async function tryAdmitRun(
     insertStmts.push(
       db
         .prepare(
-          `INSERT INTO chat_threads (id, course, doc_id, title, browser_id, telegram_id, created_at, updated_at)
-           SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE ${admitted}`,
+          `INSERT INTO chat_threads (id, title, browser_id, telegram_id, created_at, updated_at)
+           SELECT ?, ?, ?, ?, ?, ? WHERE ${admitted}`,
         )
         .bind(
           threadId,
-          params.course,
-          params.docId,
           threadTitle,
           isGuest ? params.axes.browserId : null,
           isGuest ? null : params.axes.telegramId,
@@ -1042,16 +1041,16 @@ async function tryAdmitRun(
     insertStmts.push(
       db
         .prepare(
-          `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, quote_json, run_id, created_at, updated_at)
-           SELECT ?, ?, ?, 'user', 'done', ?, ?, ?, ?, ? WHERE ${admitted}`,
+          `INSERT INTO chat_messages (id, thread_id, course, doc_id, seq, role, status, content_tex, quote_json, run_id, created_at, updated_at)
+           SELECT ?, ?, ?, ?, ?, 'user', 'done', ?, ?, ?, ?, ? WHERE ${admitted}`,
         )
-        .bind(userMessageId, threadId, nextSeq, params.questionText, quoteJson, runId, nowMs, nowMs, runId),
+        .bind(userMessageId, threadId, params.course, params.docId, nextSeq, params.questionText, quoteJson, runId, nowMs, nowMs, runId),
       db
         .prepare(
-          `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, run_id, created_at, updated_at)
-           SELECT ?, ?, ?, 'assistant', 'running', '', ?, ?, ? WHERE ${admitted}`,
+          `INSERT INTO chat_messages (id, thread_id, course, doc_id, seq, role, status, content_tex, run_id, created_at, updated_at)
+           SELECT ?, ?, ?, ?, ?, 'assistant', 'running', '', ?, ?, ? WHERE ${admitted}`,
         )
-        .bind(assistantMessageId, threadId, nextSeq + 1, runId, nowMs, nowMs, runId),
+        .bind(assistantMessageId, threadId, params.course, params.docId, nextSeq + 1, runId, nowMs, nowMs, runId),
     );
   }
 
@@ -1111,6 +1110,8 @@ async function tryAdmitRun(
     runId,
     threadId,
     threadTitle,
+    generatedTitle,
+    requestTitle: !generatedTitle && (creatingThread || retryAssistantSeq === 2),
     userMessageId,
     assistantMessageId,
     bucket: evalRes.bucket,

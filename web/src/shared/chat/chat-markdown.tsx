@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from "react";
+import { createContext, type JSX, type ReactNode, use } from "react";
 
 import { splitTex } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
@@ -12,6 +12,8 @@ import {
   safeStreamCut,
   scanInlinePieces,
 } from "./chat-markdown-parse.ts";
+
+export const MessageMaterialPathContext = createContext("");
 
 const pushAnimatedWords = (nodes: ReactNode[], value: string, prefix: string): void => {
   const chunks = value.match(/\S+|\s+/g) ?? [value];
@@ -51,14 +53,22 @@ type RefAnchorArgs = {
   readonly target: string;
 };
 
-const renderRefAnchor = ({ key, label, onJumpToBlock, target }: RefAnchorArgs): JSX.Element => {
+const renderRefAnchor = (
+  { key, label, onJumpToBlock, target }: RefAnchorArgs,
+  path: string,
+): JSX.Element => {
   const inner: ReactNode[] = [];
   pushTexNodes(inner, label, { isAnimated: false, keyPrefix: `${key}-l` });
   return (
     <a
       className="ref"
-      data-ref={isMaterialLink(target) ? undefined : target}
-      href={isMaterialLink(target) ? target : `#${target}`}
+      data-ref={
+        isMaterialLink(target) ||
+        (path !== "" && path !== globalThis.location.pathname.replace(/\/$/u, ""))
+          ? undefined
+          : target
+      }
+      href={isMaterialLink(target) ? target : `${path}#${target}`}
       key={key}
       onClick={(event) => {
         if (
@@ -83,15 +93,19 @@ const renderRefAnchor = ({ key, label, onJumpToBlock, target }: RefAnchorArgs): 
 const renderInlineSpan = (
   span: InlineSpan,
   key: string,
-  onJumpToBlock?: (blockId: string) => void,
+  {
+    path,
+    onJumpToBlock,
+  }: { readonly path: string; readonly onJumpToBlock: RefAnchorArgs["onJumpToBlock"] },
 ): JSX.Element => {
   if (span.kind === "ref") {
-    return renderRefAnchor({ key, label: span.label, onJumpToBlock, target: span.target });
+    return renderRefAnchor({ key, label: span.label, onJumpToBlock, target: span.target }, path);
   }
-  if (span.kind === "bold") {
+  if (span.kind === "bold" || span.kind === "italic") {
+    const Tag = span.kind === "bold" ? "strong" : "em";
     const inner: ReactNode[] = [];
     pushTexNodes(inner, span.text, { isAnimated: false, keyPrefix: `${key}-b` });
-    return <strong key={key}>{inner}</strong>;
+    return <Tag key={key}>{inner}</Tag>;
   }
   return <code key={key}>{span.text}</code>;
 };
@@ -108,12 +122,13 @@ export const InlineTeX = ({
   onJumpToBlock,
   text,
 }: InlineProps): JSX.Element => {
+  const path = use(MessageMaterialPathContext);
   const nodes: ReactNode[] = [];
   for (const piece of scanInlinePieces(text)) {
     if (piece.kind === "plain") {
       pushTexNodes(nodes, piece.text, { isAnimated, keyPrefix: `p-${piece.pos}` });
     } else {
-      nodes.push(renderInlineSpan(piece.span, `t-${piece.pos}`, onJumpToBlock));
+      nodes.push(renderInlineSpan(piece.span, `t-${piece.pos}`, { path, onJumpToBlock }));
     }
   }
   return <>{nodes}</>;

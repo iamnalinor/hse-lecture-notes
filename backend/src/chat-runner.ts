@@ -7,7 +7,7 @@ import { normalizeIpAddress, sha256Hex } from "./crypto";
 import { TrackedD1 } from "./db";
 import { logEvent, maskId } from "./logger";
 import { admitRunAtomic, loadPolicy } from "./quotas";
-import { validateQuoteAgainstCourse } from "./tools";
+import { validateAssistantQuote, validateQuoteAgainstCourse } from "./tools";
 import type { ClientWsFrame, Env, ServerWsFrame } from "./types";
 
 const AUTH_FRAME_TIMEOUT_MS = 5_000;
@@ -226,11 +226,17 @@ export class ChatRunner extends DurableObject<Env> {
       const docId = typeof frame.docId === "string" ? frame.docId.trim() : "";
       const clientRequestId =
         typeof frame.clientRequestId === "string" ? frame.clientRequestId.trim() : "";
-      const quote = frame.quote ?? null;
+      let quote = frame.quote ?? null;
 
-      if (typeof frame.course !== "string" || typeof frame.docId !== "string" || (!course && docId) || !clientRequestId || clientRequestId.length > 128) {
-        safeSend({ type: "error", code: "invalid_request", message: "Missing required fields" });
+      if (!clientRequestId || clientRequestId.length > 128) {
+        safeSend({ type: "error", code: "invalid_request", message: "Некорректный идентификатор запроса" });
         safeClose(4400, "invalid_request");
+        return;
+      }
+      if ((frame.course != null && typeof frame.course !== "string") ||
+          (frame.docId != null && typeof frame.docId !== "string") || (!course && docId)) {
+        safeSend({ type: "error", code: "invalid_context", message: "Некорректная страница для вопроса" });
+        safeClose(4400, "invalid_context");
         return;
       }
       if (course) {
@@ -258,21 +264,25 @@ export class ChatRunner extends DurableObject<Env> {
         return;
       }
       if (quote) {
-        if (!docId || typeof quote.tex !== "string" || quote.tex.length > policy.maxQuoteChars) {
+        if (typeof quote.tex !== "string" || quote.tex.length > policy.maxQuoteChars) {
           safeSend({ type: "error", code: "invalid_quote", message: "Quote exceeds limit or invalid" });
           safeClose(4400, "invalid_quote");
           return;
         }
-        const validQuote = await validateQuoteAgainstCourse(db, course, docId, quote);
+        const assistantQuote = quote.messageId !== undefined;
+        const validQuote = assistantQuote
+          ? await validateAssistantQuote(db, frame.threadId ?? null, quote, btCheck.browserId, allowance.tgId)
+          : Boolean(docId) && await validateQuoteAgainstCourse(db, course, docId, quote);
         if (!validQuote) {
           safeSend({
             type: "error",
             code: "invalid_quote",
-            message: "Attached quote was not found in the current lecture notes",
+            message: assistantQuote ? "Фрагмент не найден в ответе этого диалога" : "Фрагмент не найден в материале",
           });
           safeClose(4400, "invalid_quote");
           return;
         }
+        if (assistantQuote) quote = { messageId: quote.messageId, label: "Ответ ассистента", tex: quote.tex };
       }
 
       const retryAssistantMessageId =
@@ -287,7 +297,7 @@ export class ChatRunner extends DurableObject<Env> {
           course,
           docId,
           text: questionText,
-          quote: quote ? { blockId: quote.blockId ?? null, tex: quote.tex } : null,
+          quote: quote ? { blockId: quote.blockId ?? null, messageId: quote.messageId ?? null, tex: quote.tex } : null,
         }),
       );
 
@@ -347,6 +357,7 @@ export class ChatRunner extends DurableObject<Env> {
           type: "meta",
           threadId: admit.threadId,
           threadTitle: admit.threadTitle,
+          generatedTitle: admit.generatedTitle,
           userMessageId: admit.userMessageId,
           assistantMessageId: admit.assistantMessageId,
           runId: admit.runId,
@@ -373,6 +384,7 @@ export class ChatRunner extends DurableObject<Env> {
         type: "meta",
         threadId: admit.threadId,
         threadTitle: admit.threadTitle,
+        generatedTitle: admit.generatedTitle,
         userMessageId: admit.userMessageId,
         assistantMessageId: admit.assistantMessageId,
         runId: admit.runId,
@@ -386,6 +398,7 @@ export class ChatRunner extends DurableObject<Env> {
         env: this.env,
         db,
         provider,
+        requestTitle: admit.requestTitle,
         policy,
         runId: admit.runId,
         threadId: admit.threadId,

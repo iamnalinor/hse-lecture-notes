@@ -1,15 +1,14 @@
-import { type JSX, useEffect, useState } from "react";
+import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react-dom";
+import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type RefCardState = {
   readonly bodyHtml: string;
   readonly heading: string;
   readonly id: string;
-  readonly left: number;
+  readonly anchor: HTMLElement;
   readonly subtitle: string;
   readonly tone: string;
-  readonly top: number;
-  readonly width: number;
 };
 
 const KIND_TONES: Readonly<Record<string, string>> = {
@@ -74,49 +73,38 @@ const extractDomBlockPreview = (
   return bodyHtml === "" ? null : { bodyHtml, ...readHeadingMeta(el, id) };
 };
 
-const computePosition = (
-  anchor: HTMLElement,
-): { readonly left: number; readonly top: number; readonly width: number } => {
-  const rect = anchor.getBoundingClientRect();
-  const width = Math.min(430, globalThis.window.innerWidth - 24);
-  const estHeight = 220;
-  let top = rect.bottom + 8;
-  if (top + estHeight > globalThis.window.innerHeight - 12 && rect.top - estHeight - 8 >= 12) {
-    top = rect.top - estHeight - 8;
-  }
-  return {
-    left: Math.round(Math.max(12, Math.min(rect.left, globalThis.window.innerWidth - width - 12))),
-    top: Math.round(Math.max(12, Math.min(top, globalThis.window.innerHeight - estHeight - 12))),
-    width,
-  };
-};
-
 const useRefHoverListener = (
   panelElement: HTMLElement | null,
   onCardChange: (next: null | RefCardState) => void,
-): void => {
+) => {
+  const closeTimerRef = useRef<null | ReturnType<typeof globalThis.setTimeout>>(null);
+  const hold = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      globalThis.clearTimeout(closeTimerRef.current);
+    }
+  }, []);
+  const leave = useCallback(() => {
+    hold();
+    closeTimerRef.current = globalThis.setTimeout(() => {
+      onCardChange(null);
+    }, 140);
+  }, [hold, onCardChange]);
   useEffect(() => {
     if (panelElement === null) {
       return;
     }
     let openTimer: null | ReturnType<typeof globalThis.setTimeout> = null;
-    let closeTimer: null | ReturnType<typeof globalThis.setTimeout> = null;
 
     const clearTimers = (): void => {
       if (openTimer !== null) {
         globalThis.clearTimeout(openTimer);
         openTimer = null;
       }
-      if (closeTimer === null) {
-        return;
-      }
-
-      globalThis.clearTimeout(closeTimer);
-      closeTimer = null;
+      hold();
     };
 
-    const onOver = (event: PointerEvent): void => {
-      if (event.pointerType !== "mouse") {
+    const onOver = (event: FocusEvent | PointerEvent): void => {
+      if ("pointerType" in event && event.pointerType !== "mouse") {
         return;
       }
       const anchor = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-ref]");
@@ -128,32 +116,57 @@ const useRefHoverListener = (
       openTimer = globalThis.setTimeout(() => {
         const preview = extractDomBlockPreview(refId);
         if (preview !== null) {
-          onCardChange({ ...preview, ...computePosition(anchor), id: refId });
+          onCardChange({ ...preview, anchor, id: refId });
         }
       }, 180);
     };
 
-    const onOut = (event: PointerEvent): void => {
+    const onOut = (event: FocusEvent | PointerEvent): void => {
       if (
-        event.pointerType !== "mouse" ||
+        ("pointerType" in event && event.pointerType !== "mouse") ||
         (event.target as HTMLElement | null)?.closest("[data-ref]") === null
       ) {
         return;
       }
       clearTimers();
-      closeTimer = globalThis.setTimeout(() => {
-        onCardChange(null);
-      }, 140);
+      leave();
     };
 
+    panelElement.addEventListener("focusin", onOver);
+    panelElement.addEventListener("focusout", onOut);
     panelElement.addEventListener("pointerover", onOver);
     panelElement.addEventListener("pointerout", onOut);
     return () => {
       clearTimers();
+      panelElement.removeEventListener("focusin", onOver);
+      panelElement.removeEventListener("focusout", onOut);
       panelElement.removeEventListener("pointerover", onOver);
       panelElement.removeEventListener("pointerout", onOut);
     };
-  }, [onCardChange, panelElement]);
+  }, [hold, leave, onCardChange, panelElement]);
+  return { onPointerEnter: hold, onPointerLeave: leave };
+};
+
+const usePreviewFocus = (card: null | RefCardState, close: (card: null) => void): void => {
+  useEffect(() => {
+    if (card === null) {
+      return;
+    }
+    card.anchor.setAttribute("aria-describedby", "chat-ref-preview");
+    const onEscape = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      event.stopPropagation();
+      close(null);
+    };
+    document.addEventListener("keydown", onEscape, { capture: true });
+    return () => {
+      card.anchor.removeAttribute("aria-describedby");
+      document.removeEventListener("keydown", onEscape, true);
+    };
+  }, [card, close]);
 };
 
 type Props = {
@@ -164,7 +177,17 @@ type Props = {
 /** Exact `.ai-ref-card` hover preview for block links inside the chat panel. */
 export const ChatRefPreview = ({ onJumpToBlock, panelElement }: Props): JSX.Element | null => {
   const [card, setCard] = useState<null | RefCardState>(null);
-  useRefHoverListener(panelElement, setCard);
+  usePreviewFocus(card, setCard);
+  const hover = useRefHoverListener(panelElement, setCard);
+  const [floating, setFloating] = useState<HTMLElement | null>(null);
+  const { floatingStyles, placement } = useFloating({
+    elements: { floating, reference: card?.anchor ?? null },
+    placement: "bottom-start",
+    transform: false,
+    strategy: "fixed",
+    middleware: [offset(8), flip(), shift({ padding: 12 })],
+    whileElementsMounted: autoUpdate,
+  });
 
   if (card === null) {
     return null;
@@ -173,13 +196,17 @@ export const ChatRefPreview = ({ onJumpToBlock, panelElement }: Props): JSX.Elem
   return createPortal(
     <div
       className="ai-ref-card is-on"
+      data-preview-side={placement.split("-", 1)[0]}
+      id="chat-ref-preview"
       onClick={() => {
         onJumpToBlock(card.id);
         setCard(null);
       }}
       onKeyDown={undefined}
+      ref={setFloating}
       role="tooltip"
-      style={{ left: `${card.left}px`, top: `${card.top}px`, width: `${card.width}px` }}
+      style={floatingStyles}
+      {...hover}
     >
       <div className="ai-ref-head" style={{ color: card.tone }}>
         <b>{card.heading}</b>

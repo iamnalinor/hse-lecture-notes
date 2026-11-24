@@ -45,7 +45,7 @@ export const useRefPreview = () => {
   const [intent, setIntent] = useState<Intent | undefined>(undefined);
   const [touch, setTouch] = useState(false);
 
-  const { floatingStyles } = useFloating({
+  const { floatingStyles, placement } = useFloating({
     elements: { floating: card, reference: anchor },
     middleware: [offset(8), flip(), shift({ padding: 12 })],
     open,
@@ -107,6 +107,7 @@ export const useRefPreview = () => {
   };
 
   const cardProps = {
+    "data-preview-side": placement.split("-", 1)[0],
     onPointerEnter: () => {
       schedule(true, 0);
     },

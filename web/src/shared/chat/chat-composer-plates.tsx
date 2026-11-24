@@ -149,25 +149,14 @@ export const BottomCaption = ({ mode, nowMs, rateRemainSec }: CaptionProps): JSX
     );
   }
 
-  const degradedCopy = mode === "composer" ? formatDegradedCaption(degraded, nowMs) : null;
-  if (user !== null && tier !== "guest") {
+  if (tier === "external" && mode !== "down" && user !== null) {
     return (
       <p className="ai-caption ai-fade">
         <InfoIcon />
         <span>
-          {tier === "external" && (
-            <>
-              У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который
-              есть в чате потока.
-              <br />
-            </>
-          )}
-          {degradedCopy !== null && (
-            <>
-              {degradedCopy}
-              <br />
-            </>
-          )}
+          У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который есть в
+          чате потока.
+          <br />
           {`Вы вошли как ${user.name}. `}
           <button
             disabled={isLoginBusy}
@@ -183,6 +172,7 @@ export const BottomCaption = ({ mode, nowMs, rateRemainSec }: CaptionProps): JSX
     );
   }
 
+  const degradedCopy = mode === "composer" ? formatDegradedCaption(degraded, nowMs) : null;
   if (degradedCopy !== null) {
     return (
       <p className="ai-caption ai-fade">

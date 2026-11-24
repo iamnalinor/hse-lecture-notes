@@ -109,8 +109,6 @@ export async function runArchiveBatch(
   // Find inactive threads across all days older than cutoff
   const threadsRes = await db.all<{
     id: string;
-    course: string;
-    doc_id: string;
     title: string;
     browser_id: string | null;
     telegram_id: number | null;
@@ -119,7 +117,7 @@ export async function runArchiveBatch(
   }>(
     db
       .prepare(
-        `SELECT id, course, doc_id, title, browser_id, telegram_id, created_at, updated_at
+        `SELECT id, COALESCE(generated_title, title) AS title, browser_id, telegram_id, created_at, updated_at
          FROM chat_threads
          WHERE updated_at < ?
          ORDER BY updated_at ASC
@@ -148,7 +146,7 @@ export async function runArchiveBatch(
     const ids = threadsRes.results.slice(i, i + 50).map((thread) => thread.id);
     const placeholders = ids.map(() => "?").join(",");
     const result = await db.all<Record<string, unknown> & { thread_id: string }>(
-      db.prepare(`SELECT thread_id, id, seq, role, status, content_tex, quote_json, steps_json,
+      db.prepare(`SELECT thread_id, id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json,
                          error_message, run_id, created_at, updated_at
                   FROM chat_messages WHERE thread_id IN (${placeholders}) ORDER BY thread_id, seq`).bind(...ids),
     );

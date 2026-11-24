@@ -44,7 +44,7 @@ export const RefPreviewCard = ({ cardProps, onGo, refCallback, style, target }: 
 
   return createPortal(
     <div
-      className="z-50 w-[min(430px,calc(100vw-24px))] cursor-pointer overflow-hidden rounded-lg border border-rule bg-card shadow-[0_18px_40px_-12px_rgba(0,0,0,0.25)]"
+      className="z-50 w-[min(430px,calc(100vw-24px))] cursor-pointer rounded-lg border border-rule bg-card shadow-[0_18px_40px_-12px_rgba(0,0,0,0.25)]"
       onClick={onGo}
       onKeyDown={undefined}
       ref={refCallback}

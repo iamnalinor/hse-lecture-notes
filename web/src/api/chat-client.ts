@@ -54,6 +54,7 @@ export type AllowanceResponse = {
 };
 
 export type ThreadResponse = {
+  readonly hasMore?: boolean;
   readonly browserToken?: string;
   readonly requestedThreadMissing: boolean;
   readonly thread: ChatThread | null;
@@ -175,24 +176,28 @@ export const ensureChatAllowance = async (
   });
 };
 
-const buildThreadQuery = (course: string, docId: string, threadId?: null | string): string => {
-  const params = new URLSearchParams({ course, doc: docId });
-  if (threadId !== undefined && threadId !== null && threadId !== "") {
-    params.set("threadId", threadId);
+type HistoryCursor = Pick<ChatThreadSummary, "id" | "updatedAt">;
+const threadUrl = (id?: null | string, before?: HistoryCursor): string => {
+  const query = new URLSearchParams();
+  if (id !== undefined && id !== null) {
+    query.set("threadId", id);
   }
-  return `/v1/thread?${params.toString()}`;
+  if (before !== undefined) {
+    query.set("beforeUpdatedAt", String(before.updatedAt));
+    query.set("beforeId", before.id);
+  }
+  return `/v1/thread?${query}`;
 };
 
 export const fetchChatThread = async (
-  course: string,
-  docId: string,
   threadId?: null | string,
+  before?: HistoryCursor,
 ): Promise<null | ThreadResponse> => {
   const auth = readStoredAuth();
   if (auth.browserToken === null && auth.sessionToken === null) {
     return null;
   }
-  const res = await apiJson(buildThreadQuery(course, docId, threadId), { method: "GET" });
+  const res = await apiJson(threadUrl(threadId, before), { method: "GET" });
   if (auth.sessionToken !== readStoredAuth().sessionToken) {
     return null;
   }

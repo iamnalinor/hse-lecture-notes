@@ -1,4 +1,3 @@
-import chatSuggestionsData from "./chat-suggestions.json";
 import { findCourse } from "./courses.ts";
 
 export type ChatTier = "external" | "guest" | "internal";
@@ -30,6 +29,7 @@ export type ChatUser = {
 };
 
 export type ChatQuote = {
+  readonly messageId?: string;
   readonly blockId?: string;
   readonly label: string;
   readonly sectionId?: string;
@@ -50,6 +50,7 @@ export type ChatStep = {
 export type ChatMessageStatus = "done" | "error" | "incomplete" | "running" | "stopped";
 
 export type ChatMessage = {
+  readonly page: ChatDocContext;
   readonly contentTex: string;
   readonly createdAt: number;
   readonly errorMessage: null | string;
@@ -65,16 +66,16 @@ export type ChatMessage = {
 
 export type ChatThreadSummary = {
   readonly id: string;
+  readonly generatedTitle?: null | string;
   readonly title: string;
   readonly updatedAt: number;
 };
 
 export type ChatThread = {
-  readonly course: string;
   readonly createdAt: number;
-  readonly docId: string;
   readonly id: string;
   readonly messages: readonly ChatMessage[];
+  readonly generatedTitle?: null | string;
   readonly title: string;
   readonly updatedAt: number;
 };
@@ -280,29 +281,4 @@ export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number):
       };
     }
   }
-};
-
-export const DEFAULT_CHAT_SUGGESTIONS: readonly string[] = [
-  "Объясни ключевую идею этого материала простыми словами",
-  "Разбери главное доказательство по шагам",
-  "Приведи наглядный пример и контрпример по теме",
-];
-
-const SUGGESTIONS_MAP: Readonly<Record<string, readonly string[]>> = chatSuggestionsData;
-
-/** Returns pre-generated study prompts for `<course>/<docId>`, falling back to generic defaults. */
-export const getLectureSuggestions = (docContext: ChatDocContext): readonly string[] => {
-  if (docContext.course === "") {
-    return ["В каких курсах разбирают индукцию?", "Где найти примеры работы с указателями на C?"];
-  }
-  if (docContext.docId === "") {
-    return [
-      "Какие темы входят в курс?",
-      "С какой лекции начать?",
-      "Какие материалы помогут подготовиться к контрольной?",
-    ];
-  }
-  const key = `${docContext.course}/${docContext.docId}`;
-  const custom = SUGGESTIONS_MAP[key];
-  return custom !== undefined && custom.length > 0 ? custom : DEFAULT_CHAT_SUGGESTIONS;
 };

@@ -89,7 +89,7 @@ async function readBoundedJson(request: Request, maxBytes = 32_768): Promise<Rec
 }
 
 /**
- * GET /v1/thread?course=...&doc=...&threadId=...&beforeUpdatedAt=...
+ * GET /v1/thread?threadId=...&beforeUpdatedAt=...
  * Authorized by sessionToken (logged-in) or browserToken (guest) — NO Turnstile and NO IP binding!
  * Never selects `agent_items_json`.
  */
@@ -99,16 +99,10 @@ async function handleGetThread(
   request: Request,
   url: URL,
 ): Promise<{ status: number; body: Record<string, unknown>; setCookie?: string }> {
-  const course = url.searchParams.get("course")?.trim() ?? "";
-  const docId = url.searchParams.get("doc")?.trim() ?? "";
   const requestedThreadId = url.searchParams.get("threadId")?.trim() || null;
   const beforeUpdatedAtRaw = url.searchParams.get("beforeUpdatedAt");
   const beforeUpdatedAt =
     beforeUpdatedAtRaw && /^\d+$/.test(beforeUpdatedAtRaw) ? Number(beforeUpdatedAtRaw) : null;
-
-  if (!url.searchParams.has("course") || !url.searchParams.has("doc") || (!course && docId)) {
-    return { status: 400, body: { code: "missing_params", message: "course and doc are required" } };
-  }
 
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
@@ -128,81 +122,36 @@ async function handleGetThread(
   const pageSize = policy.threadsPageSize;
 
   // Query threads list (1 query)
-  const threadsRes = session
-    ? beforeUpdatedAt !== null
-      ? await db.all<{ id: string; title: string; updated_at: number }>(
-          db
-            .prepare(
-              `SELECT id, title, updated_at
-               FROM chat_threads
-               WHERE telegram_id = ? AND course = ? AND doc_id = ? AND updated_at < ?
-               ORDER BY updated_at DESC
-               LIMIT ?`,
-            )
-            .bind(session.telegramId, course, docId, beforeUpdatedAt, pageSize),
-        )
-      : await db.all<{ id: string; title: string; updated_at: number }>(
-          db
-            .prepare(
-              `SELECT id, title, updated_at
-               FROM chat_threads
-               WHERE telegram_id = ? AND course = ? AND doc_id = ?
-               ORDER BY updated_at DESC
-               LIMIT ?`,
-            )
-            .bind(session.telegramId, course, docId, pageSize),
-        )
-    : beforeUpdatedAt !== null
-      ? await db.all<{ id: string; title: string; updated_at: number }>(
-          db
-            .prepare(
-              `SELECT id, title, updated_at
-               FROM chat_threads
-               WHERE browser_id = ? AND telegram_id IS NULL AND course = ? AND doc_id = ? AND updated_at < ?
-               ORDER BY updated_at DESC
-               LIMIT ?`,
-            )
-            .bind(btCheck.status === "ok" ? btCheck.browserId : "", course, docId, beforeUpdatedAt, pageSize),
-        )
-      : await db.all<{ id: string; title: string; updated_at: number }>(
-          db
-            .prepare(
-              `SELECT id, title, updated_at
-               FROM chat_threads
-               WHERE browser_id = ? AND telegram_id IS NULL AND course = ? AND doc_id = ?
-               ORDER BY updated_at DESC
-               LIMIT ?`,
-            )
-            .bind(btCheck.status === "ok" ? btCheck.browserId : "", course, docId, pageSize),
-        );
+  const owner = session ? "telegram_id = ?" : "browser_id = ? AND telegram_id IS NULL";
+  const ownerId = session?.telegramId ?? (btCheck.status === "ok" ? btCheck.browserId : "");
+  const beforeId = url.searchParams.get("beforeId");
+  const cursor = beforeUpdatedAt === null ? "" : beforeId ? "AND (updated_at, id) < (?, ?)" : "AND updated_at < ?";
+  const bounds = beforeUpdatedAt === null ? [] : beforeId ? [beforeUpdatedAt, beforeId] : [beforeUpdatedAt];
+  const threadsRes = await db.all<{ id: string; title: string; generated_title: string | null; updated_at: number }>(
+    db.prepare(`SELECT id, title, generated_title, updated_at FROM chat_threads
+                WHERE ${owner} ${cursor} ORDER BY updated_at DESC, id DESC LIMIT ?`)
+      .bind(ownerId, ...bounds, pageSize + 1),
+  );
 
-  const threads = threadsRes.results.map((t) => ({
+  const threads = threadsRes.results.slice(0, pageSize).map((t) => ({
     id: t.id,
-    title: t.title,
+    title: t.generated_title ?? t.title,
+    generatedTitle: t.generated_title,
     updatedAt: t.updated_at,
   }));
 
-  const targetThreadId = requestedThreadId ?? threads[0]?.id ?? null;
+  const targetThreadId = requestedThreadId ?? (beforeUpdatedAt === null ? threads[0]?.id : null) ?? null;
   let thread: Record<string, unknown> | null = null;
   let requestedThreadMissing = false;
 
   if (targetThreadId) {
     // Verify ownership + fetch last 50 messages (WITHOUT agent_items_json) in 1 batch
     const [thrRes, msgRes] = await db.batch<Record<string, unknown>>([
-      session
-        ? db
-            .prepare(
-              "SELECT id, course, doc_id, title, created_at, updated_at FROM chat_threads WHERE id = ? AND telegram_id = ?",
-            )
-            .bind(targetThreadId, session.telegramId)
-        : db
-            .prepare(
-              "SELECT id, course, doc_id, title, created_at, updated_at FROM chat_threads WHERE id = ? AND browser_id = ? AND telegram_id IS NULL",
-            )
-            .bind(targetThreadId, btCheck.status === "ok" ? btCheck.browserId : ""),
+      db.prepare(`SELECT id, title, generated_title, created_at, updated_at
+                  FROM chat_threads WHERE id = ? AND ${owner}`).bind(targetThreadId, ownerId),
       db
         .prepare(
-          `SELECT id, seq, role, status, content_tex, quote_json, steps_json, error_message, run_id, created_at, updated_at
+          `SELECT id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json, error_message, run_id, created_at, updated_at
            FROM chat_messages
            WHERE thread_id = ?
            ORDER BY seq DESC
@@ -212,15 +161,16 @@ async function handleGetThread(
     ]);
 
     const thrRow = thrRes?.results[0] as
-      | { id: string; course: string; doc_id: string; title: string; created_at: number; updated_at: number }
+      | { id: string; title: string; generated_title: string | null; created_at: number; updated_at: number }
       | undefined;
 
-    if (!thrRow || thrRow.course !== course || thrRow.doc_id !== docId) {
+    if (!thrRow) {
       if (requestedThreadId) requestedThreadMissing = true;
     } else {
       const messages = [...(msgRes?.results ?? [])].reverse().map((m) => ({
         id: m.id,
         seq: m.seq,
+        page: { course: m.course, docId: m.doc_id },
         role: m.role,
         status: m.status,
         contentTex: m.content_tex,
@@ -233,9 +183,8 @@ async function handleGetThread(
       }));
       thread = {
         id: thrRow.id,
-        course: thrRow.course,
-        docId: thrRow.doc_id,
-        title: thrRow.title,
+        title: thrRow.generated_title ?? thrRow.title,
+        generatedTitle: thrRow.generated_title,
         createdAt: thrRow.created_at,
         updatedAt: thrRow.updated_at,
         messages,
@@ -248,6 +197,7 @@ async function handleGetThread(
     status: 200,
     body: {
       threads,
+      hasMore: threadsRes.results.length > pageSize,
       thread,
       requestedThreadMissing,
       ...(btCheck.status === "ok" && btCheck.needsStorageSync

@@ -1,9 +1,11 @@
-import type { JSX } from "react";
+import { type JSX, useMemo } from "react";
 
 import { type ChatMessage, toPlainCopyText } from "#web/domain/chat.ts";
+import { paths } from "#web/domain/paths.ts";
 
 import { AlertIcon, CheckIcon, CopyIcon, RetryIcon } from "./chat-icons.tsx";
-import { ChatMarkdown, InlineTeX } from "./chat-markdown.tsx";
+import { isMaterialLink } from "./chat-markdown-parse.ts";
+import { ChatMarkdown, InlineTeX, MessageMaterialPathContext } from "./chat-markdown.tsx";
 import { ChatQuoteCard } from "./chat-quote-card.tsx";
 import { ChatStepsBlock } from "./chat-steps.tsx";
 import { useCopyFeedback } from "./use-chat-state.ts";
@@ -108,7 +110,7 @@ const AssistantMessageView = ({
         onJumpToBlock={onJumpToBlock}
         steps={message.steps}
       />
-      <div className="ai-body ai-flow">
+      <div className="ai-body ai-flow" data-answer-id={isFinished ? message.id : undefined}>
         {message.status === "error" ? (
           <div className="ai-error">
             <div className="ai-error-row">
@@ -155,9 +157,22 @@ const AssistantMessageView = ({
 };
 
 /** Exact `.ai-msg` user/assistant message view from prototype.html. */
-export const ChatMessageView = (props: Props): JSX.Element =>
-  props.message.role === "user" ? (
-    <UserMessageView message={props.message} onJumpToBlock={props.onJumpToBlock} />
-  ) : (
-    <AssistantMessageView {...props} />
+export const ChatMessageView = (props: Props): JSX.Element => {
+  const page = props.message.page;
+  const path = useMemo(
+    () => (page.docId === "" ? "" : paths.lecture(page.course, page.docId)),
+    [page],
   );
+  const jump = (target: string): void => {
+    props.onJumpToBlock(path === "" || isMaterialLink(target) ? target : `${path}#${target}`);
+  };
+  return (
+    <MessageMaterialPathContext value={path}>
+      {props.message.role === "user" ? (
+        <UserMessageView message={props.message} onJumpToBlock={jump} />
+      ) : (
+        <AssistantMessageView {...props} onJumpToBlock={jump} />
+      )}
+    </MessageMaterialPathContext>
+  );
+};

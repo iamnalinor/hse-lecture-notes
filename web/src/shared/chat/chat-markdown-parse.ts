@@ -1,7 +1,7 @@
 import { hashTarget } from "#web/shared/ui/dom.ts";
 
 export type InlineSpan =
-  | { readonly end: number; readonly kind: "bold"; readonly text: string }
+  | { readonly end: number; readonly kind: "bold" | "italic"; readonly text: string }
   | { readonly end: number; readonly kind: "code"; readonly text: string }
   | { readonly end: number; readonly kind: "ref"; readonly label: string; readonly target: string };
 
@@ -60,15 +60,19 @@ const matchWikiRef = (text: string, pos: number): InlineSpan | null => {
     : { end: close + 2, kind: "ref", label: body.slice(pipe + 1), target: body.slice(0, pipe) };
 };
 
-const matchDelimited = (text: string, pos: number, delim: "**" | "`"): InlineSpan | null => {
+const matchDelimited = (text: string, pos: number, delim: "*" | "**" | "`"): InlineSpan | null => {
   const close = text.indexOf(delim, pos + delim.length);
   if (close <= pos + delim.length) {
     return null;
   }
+  const inner = text.slice(pos + delim.length, close);
+  if (delim === "*" && inner.trim() !== inner) {
+    return null;
+  }
   return {
     end: close + delim.length,
-    kind: delim === "**" ? "bold" : "code",
-    text: text.slice(pos + delim.length, close),
+    kind: ({ "**": "bold", "*": "italic", "`": "code" } as const)[delim],
+    text: inner,
   };
 };
 
@@ -80,13 +84,16 @@ const matchSpanAt = (text: string, pos: number): InlineSpan | null => {
   if (ch === "[") {
     return matchMdRef(text, pos);
   }
-  if (ch === "*" && text[pos + 1] === "*") {
-    return matchDelimited(text, pos, "**");
+  if (ch === "*") {
+    return matchDelimited(text, pos, text[pos + 1] === "*" ? "**" : "*");
   }
-  if (ch === "`") {
-    return matchDelimited(text, pos, "`");
+  if (ch === "_") {
+    const pattern = /(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+)(?<!\s)_(?![\p{L}\p{N}_])/uy;
+    pattern.lastIndex = pos;
+    const inner = pattern.exec(text)?.[1];
+    return inner === undefined ? null : { end: pattern.lastIndex, kind: "italic", text: inner };
   }
-  return null;
+  return ch === "`" ? matchDelimited(text, pos, "`") : null;
 };
 
 const cutPlainTail = (text: string): string => {
@@ -128,15 +135,19 @@ const pushPlainSlice = (
   }
 };
 
+const mathEnd = (text: string, pos: number): number =>
+  text[pos] === "$" ? text.indexOf("$", pos + 1) : -1;
+
 export const scanInlinePieces = (text: string): readonly ParsedPiece[] => {
   const pieces: ParsedPiece[] = [];
   let plainStart = 0;
   let cursor = 0;
 
   while (cursor < text.length) {
-    const matched = matchSpanAt(text, cursor);
+    const end = mathEnd(text, cursor);
+    const matched = end === -1 ? matchSpanAt(text, cursor) : null;
     if (matched === null) {
-      cursor += 1;
+      cursor = Math.max(cursor + 1, end + 1);
       continue;
     }
     pushPlainSlice(pieces, text, [plainStart, cursor]);

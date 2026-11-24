@@ -1,4 +1,7 @@
+import { FIRST_TURN_TITLE_PROMPT } from "./system-prompt";
+import { ThreadTitleStream } from "./thread-title";
 import { CodexAuthError } from "./codex-auth";
+import { ProxyConnectError } from "./socks5-fetch";
 import { CodexUpstreamError } from "./codex-provider";
 import type { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
@@ -26,6 +29,7 @@ export interface AgentLoopParams {
   policy: ServicePolicy;
   runId: string;
   threadId: string;
+  requestTitle?: boolean;
   excludeMessageIds?: readonly string[];
   course: string;
   docId: string;
@@ -42,6 +46,8 @@ export interface AgentLoopParams {
 }
 
 interface HistoryRow {
+  course: string;
+  doc_id: string;
   role: "user" | "assistant";
   status: string;
   content_tex: string;
@@ -50,7 +56,7 @@ interface HistoryRow {
 
 function formatUserTurnContent(text: string, quote: QuotePayload | null): string {
   if (!quote) return text;
-  const header = quote.blockId
+  const header = quote.messageId ? "Цитата из предыдущего ответа ассистента:" : quote.blockId
     ? `Цитата из конспекта (${quote.label}, блок #${quote.blockId}):`
     : `Цитата из конспекта (${quote.label}):`;
   return `${header}\n> ${quote.tex}\n\nВопрос студента:\n${text}`;
@@ -76,9 +82,9 @@ async function loadThreadHistoryInput(
   const rows = await db.all<HistoryRow & { id: string }>(
     db
       .prepare(
-        `SELECT id, role, status, content_tex, quote_json
-         FROM chat_messages
-         WHERE thread_id = ? AND (run_id IS NULL OR run_id != ?) AND status IN ('done', 'stopped', 'incomplete')
+        `SELECT m.id, m.role, m.status, m.course, m.doc_id, m.content_tex, m.quote_json
+         FROM chat_messages m
+         WHERE m.thread_id = ? AND (m.run_id IS NULL OR m.run_id != ?) AND m.status IN ('done', 'stopped', 'incomplete')
          ORDER BY seq DESC
          LIMIT ?`,
       )
@@ -114,7 +120,7 @@ async function loadThreadHistoryInput(
       items.push({
         type: "message",
         role: "user",
-        content: [{ type: "input_text", text: formatUserTurnContent(r.content_tex, quote) }],
+        content: [{ type: "input_text", text: `Страница на момент вопроса: /${[r.course, r.doc_id].filter(Boolean).join("/")}\n` + formatUserTurnContent(r.content_tex, quote) }],
       });
     } else if (r.content_tex.trim()) {
       items.push({
@@ -208,6 +214,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
 
   try {
     let allowTools = true;
+    let titleReceived = false;
 
     for (let round = 1; round <= policy.maxToolRounds; round += 1) {
       if (timeoutAbort.signal.aborted) break;
@@ -223,21 +230,42 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       const remainingChars = Math.max(200, policy.maxResponseChars - accumulatedText.length);
       const roundStartMs = Date.now();
 
+      const titleStream = params.requestTitle && !titleReceived ? new ThreadTitleStream() : null;
+      const emit = (text: string) => {
+        if (!text) return;
+        roundText += text;
+        accumulatedText += text;
+        sendFrame({ type: "delta", text });
+      };
+      let streamed = false;
       const roundRes = await provider.runRound({
         model,
         effort,
-        instructions,
+        instructions: titleStream ? instructions + "\n\n" + FIRST_TURN_TITLE_PROMPT : instructions,
         input: conversationInput,
         tools: toolsForRound,
         maxResponseChars: remainingChars,
         signal: timeoutAbort.signal,
         onDelta: (delta) => {
-          roundText += delta;
-          accumulatedText += delta;
-          sendFrame({ type: "delta", text: delta });
+          streamed = true;
+          emit(titleStream ? titleStream.push(delta) : delta);
         },
       });
 
+      const tail = streamed ? "" : roundRes.text;
+      emit(titleStream ? titleStream.push(tail, true) : tail);
+      if (titleStream?.title) {
+        const title = titleStream.title;
+        try {
+          const saved = await db.run(db.prepare(
+            "UPDATE chat_threads SET generated_title = ? WHERE id = ? AND generated_title IS NULL",
+          ).bind(title, threadId));
+          if (saved.meta.changes === 1) sendFrame({ type: "title", threadId, title });
+        } catch {
+          logEvent("warn", "thread_title_save_failed", { threadId, runId });
+        }
+        titleReceived = true;
+      }
       const roundDurationMs = Date.now() - roundStartMs;
       logEvent(roundRes.completed ? "info" : "warn", "codex_round", {
         runId,
@@ -295,10 +323,6 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       }
 
       if (roundRes.functionCalls.length === 0 || roundRes.truncated || isFinalAllowedRound) {
-        if (!accumulatedText && roundRes.text) {
-          accumulatedText = roundRes.text;
-          sendFrame({ type: "delta", text: roundRes.text });
-        }
         break;
       }
 
@@ -405,6 +429,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     });
   } catch (err) {
     const abortedByUser = isStoppedByUser();
+    const isProxyError = err instanceof ProxyConnectError;
     const isAuthErr = err instanceof CodexAuthError;
     const isUpstreamErr = err instanceof CodexUpstreamError;
 
@@ -432,7 +457,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       ? "user_stopped"
       : timedOut
         ? "run_timeout"
-        : isAuthErr
+        : isProxyError ? "proxy_unavailable" : isAuthErr
           ? err.code
           : isUpstreamErr
             ? err.code
@@ -440,7 +465,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     const rawErrDetail = (err instanceof Error ? err.message : String(err)).trim().slice(0, 400);
     const errorMessage = abortedByUser
       ? null
-      : isAuthErr
+      : isProxyError ? "Не удалось подключиться к модели. Попробуйте ещё раз чуть позже." : isAuthErr
         ? `Ошибка авторизации Codex (${err.code}): ${rawErrDetail} [run: ${runId}]`
         : isUpstreamErr
           ? `Ошибка модели HTTP ${err.status} (${err.code}): ${rawErrDetail} [run: ${runId}]`
@@ -457,7 +482,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       errorCode,
       errorMessage,
       actualCostMicros: cumulativeCostMicros,
-      isCostUncertain: true,
+      isCostUncertain: isProxyError ? isCostUncertain : true,
       estimatedPromptChars,
       streamedOutputChars: accumulatedText.length,
       inputTokens: totalInputTokens,

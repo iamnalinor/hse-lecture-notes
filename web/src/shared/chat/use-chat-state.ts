@@ -12,13 +12,13 @@ import { type TurnstileHooks, warmupChatWidgets } from "#web/api/chat-widgets.ts
 import {
   type ChatBlock,
   type ChatDegraded,
-  type ChatDocContext,
   type ChatMessage,
-  type ChatThreadSummary,
   type ChatTier,
   type ChatUser,
   nextRunPollDelayMs,
 } from "#web/domain/chat.ts";
+
+import { useThreadHistory } from "./use-thread-history.ts";
 
 export const useRootOpenClassSync = (isOpen: boolean): void => {
   const savedScrollYRef = useRef<null | number>(null);
@@ -111,25 +111,18 @@ export const useChatAuthState = () => {
   };
 };
 
-const readThread = async (
-  ctx: ChatDocContext,
-  threadId?: null | string,
-): Promise<null | ThreadResponse> => {
+const readThread = async (threadId?: null | string): Promise<null | ThreadResponse> => {
   try {
-    return await fetchChatThread(ctx.course, ctx.docId, threadId);
+    return await fetchChatThread(threadId);
   } catch {
     return null;
   }
 };
 
-export const useThreadState = (
-  docContext: ChatDocContext,
-  isOpen: boolean,
-  isConfigured: boolean,
-) => {
-  const [threads, setThreads] = useState<readonly ChatThreadSummary[]>([]);
+export const useThreadState = (isOpen: boolean, isConfigured: boolean) => {
+  const history = useThreadHistory();
+  const { replacePage } = history;
   const [activeThreadId, setActiveThreadId] = useState<null | string>(null);
-  const [previousThreadId, setPreviousThreadId] = useState<null | string>(null);
   const [messages, setMessages] = useState<readonly ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isThreadLoading, setIsThreadLoading] = useState(
@@ -143,9 +136,9 @@ export const useThreadState = (
     setIsThreadLoading(false);
   }, []);
   const loadThread = useCallback(
-    async (ctx: ChatDocContext, requestedThreadId?: null | string): Promise<void> => {
+    async (requestedThreadId?: null | string): Promise<void> => {
       const request = ++requestRef.current;
-      const data = await readThread(ctx, requestedThreadId);
+      const data = await readThread(requestedThreadId);
       if (request !== requestRef.current) {
         return;
       }
@@ -156,16 +149,16 @@ export const useThreadState = (
       const items = data.thread?.messages ?? [];
       const last = items.at(-1);
       const run = last?.role === "assistant" && last.status === "running" ? last.runId : null;
-      setThreads(data.threads);
+      replacePage(data);
       setActiveThreadId(data.thread?.id ?? null);
       setMessages(items);
       setIsStreaming(run !== null);
       setPollRunId(run);
     },
-    [],
+    [replacePage],
   );
 
-  useRunStatusPoller({ runId: pollRunId, ctx: docContext, threadId: activeThreadId, loadThread });
+  useRunStatusPoller({ runId: pollRunId, threadId: activeThreadId, loadThread });
 
   const openedRef = useRef(false);
   useEffect(() => {
@@ -175,9 +168,9 @@ export const useThreadState = (
     openedRef.current = true;
     if (readStoredAuth().browserToken !== null) {
       // Defer the first fetch until the panel has committed its loading state.
-      queueMicrotask(() => void loadThread(docContext));
+      queueMicrotask(() => void loadThread());
     }
-  }, [docContext, isConfigured, isOpen, loadThread]);
+  }, [isConfigured, isOpen, loadThread]);
 
   useEffect(() => {
     if (isOpen && isConfigured) {
@@ -191,19 +184,16 @@ export const useThreadState = (
     invalidateLoad,
     isStreaming,
     isThreadLoading,
-    loadThread: (ctx: ChatDocContext, threadId: string) => {
+    loadThread: (threadId: string) => {
       setIsThreadLoading(true);
-      return loadThread(ctx, threadId);
+      return loadThread(threadId);
     },
     messages,
-    previousThreadId,
     setActiveThreadId,
     setIsStreaming,
     setMessages,
-    setPreviousThreadId,
     setPollRunId,
-    setThreads,
-    threads,
+    ...history,
   };
 };
 
@@ -254,12 +244,11 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
 
 type PollTarget = {
   readonly runId: null | string;
-  readonly ctx: ChatDocContext;
   readonly threadId: null | string;
-  readonly loadThread: (ctx: ChatDocContext, threadId: null | string) => Promise<void>;
+  readonly loadThread: (threadId: null | string) => Promise<void>;
 };
 
-const useRunStatusPoller = ({ runId, ctx, threadId, loadThread }: PollTarget): void => {
+const useRunStatusPoller = ({ runId, threadId, loadThread }: PollTarget): void => {
   useEffect(() => {
     if (runId === null) {
       return;
@@ -272,7 +261,7 @@ const useRunStatusPoller = ({ runId, ctx, threadId, loadThread }: PollTarget): v
         try {
           const status = await fetchChatRunStatus(runId);
           if (isActive && status?.status !== "running") {
-            await loadThread(ctx, threadId);
+            await loadThread(threadId);
           }
         } catch {
           // A temporary connection error leaves the saved run eligible for the next poll.
@@ -287,7 +276,7 @@ const useRunStatusPoller = ({ runId, ctx, threadId, loadThread }: PollTarget): v
       isActive = false;
       globalThis.clearTimeout(timer);
     };
-  }, [ctx, loadThread, runId, threadId]);
+  }, [loadThread, runId, threadId]);
 };
 
 export const useCopyFeedback = () => {

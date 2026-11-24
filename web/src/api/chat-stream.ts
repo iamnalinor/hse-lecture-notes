@@ -7,6 +7,7 @@ import type {
 } from "#web/domain/chat.ts";
 
 export type WsStreamCallbacks = {
+  readonly onTitle: (threadId: string, title: string) => void;
   readonly onCloseUnexpected: () => void;
   readonly onDelta: (text: string) => void;
   readonly onDone: (payload: {
@@ -27,6 +28,7 @@ export type WsStreamCallbacks = {
     readonly degraded: ChatDegraded;
     readonly runId: string;
     readonly threadId: string;
+    readonly generatedTitle?: null | string;
     readonly threadTitle: string;
     readonly userMessageId: string;
   }) => void;
@@ -67,6 +69,10 @@ const isTerminalWsFrame = (
   switch (parsed["type"]) {
     case "meta": {
       callbacks.onMeta(parsed as unknown as Parameters<WsStreamCallbacks["onMeta"]>[0]);
+      return false;
+    }
+    case "title": {
+      callbacks.onTitle(parsed["threadId"] as string, parsed["title"] as string);
       return false;
     }
     case "step": {

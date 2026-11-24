@@ -158,3 +158,19 @@ test("admission rechecks thread ownership after a guest signs in", async () => {
     .toMatchObject({ kind: "not_found" });
   expect(shim.sqlite.query("SELECT COUNT(*) AS n FROM chat_messages").get()).toEqual({ n: 2 });
 });
+
+test("continues one owned thread across home, course and document with per-turn context", async () => {
+  const { shim, admit, finish } = fixture();
+  const axes = { tier: "guest" as const, telegramId: null, browserId: "br", ipAddress: "ip", fingerprint: "fp" };
+  let threadId: string | null = null;
+  const pages: [string, string][] = [["", ""], ["algebra", ""], ["algebra", "exam1"]];
+  for (const [course, docId] of pages) {
+    const run = await admit("request-" + course + docId, { axes, threadId, course, docId });
+    if (run.kind !== "admitted") throw new Error(run.kind);
+    threadId = run.threadId;
+    await finish(run.runId);
+  }
+  expect(shim.sqlite.query("SELECT course, doc_id FROM chat_messages WHERE role = 'user' ORDER BY seq").values()).toEqual([...pages]);
+  expect(shim.sqlite.query("SELECT COUNT(*) FROM chat_threads").values()).toEqual([[1]]);
+  expect((await admit("other", { threadId })).kind).toBe("not_found");
+});

@@ -26,8 +26,7 @@ import { cancelActiveTurnstile, type TurnstileHooks } from "#web/api/chat-widget
 
 import {
   applyMetaMessageIds,
-  makeAssistantMsg,
-  makeUserMsg,
+  optimisticMessages,
   patchLastAssistant,
   resetRetryAssistant,
 } from "./chat-stream-helpers.ts";
@@ -40,7 +39,6 @@ export type StreamStateSetters = {
   readonly setDraft: (text: string) => void;
   readonly setIsStreaming: (isStreaming: boolean) => void;
   readonly setMessages: (updater: (prev: readonly ChatMessage[]) => readonly ChatMessage[]) => void;
-  readonly setPreviousThreadId: (id: null | string) => void;
   readonly setQuote: (quote: ChatQuote | null) => void;
   readonly setThreads: (
     updater: (prev: readonly ChatThreadSummary[]) => readonly ChatThreadSummary[],
@@ -68,21 +66,34 @@ type WsCallbackDeps = {
   readonly setters: StreamStateSetters;
 };
 
+const failTurn = (
+  { setters, args }: WsCallbackDeps,
+  runId: null | string,
+  message: string,
+): void => {
+  if (runId === null && args.retryMessage !== undefined) {
+    rollbackOptimisticTurn(setters, args);
+    return;
+  }
+  setters.setIsStreaming(false);
+  setters.setMessages((prev) =>
+    patchLastAssistant(prev, (m) => ({ ...m, status: "error", errorMessage: message })),
+  );
+};
+
 const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
   const { args, clearActive, setters } = deps;
   let runId: null | string = null;
   const fail = (message: string): void => {
-    if (runId === null && args.retryMessage !== undefined) {
-      rollbackOptimisticTurn(setters, args);
-      return;
-    }
-    setters.setIsStreaming(false);
-    setters.setMessages((prev) =>
-      patchLastAssistant(prev, (m) => ({ ...m, status: "error", errorMessage: message })),
-    );
+    failTurn(deps, runId, message);
   };
 
   return {
+    onTitle: (threadId, title) => {
+      setters.setThreads((prev) =>
+        prev.map((t) => (t.id === threadId ? { ...t, title, generatedTitle: title } : t)),
+      );
+    },
     onCloseUnexpected: () => {
       clearActive();
       if (runId === null) {
@@ -135,7 +146,12 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
         }),
       );
       setters.setThreads((prev) => [
-        { id: payload.threadId, title: payload.threadTitle, updatedAt: Date.now() },
+        {
+          id: payload.threadId,
+          title: payload.threadTitle,
+          generatedTitle: payload.generatedTitle ?? null,
+          updatedAt: Date.now(),
+        },
         ...prev.filter((t) => t.id !== payload.threadId),
       ]);
     },
@@ -190,8 +206,8 @@ const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void 
   }
   setters.setDraft("");
   setters.setQuote(null);
-  setters.setPreviousThreadId(null);
-  setters.setMessages((prev) => [...prev, makeUserMsg(args.text, args.quote), makeAssistantMsg()]);
+  const turn = optimisticMessages(args.text, args.quote, args.docContext);
+  setters.setMessages((prev) => [...prev, ...turn]);
 };
 
 const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {

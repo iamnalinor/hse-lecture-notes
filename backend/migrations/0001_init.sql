@@ -69,9 +69,8 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at
 
 CREATE TABLE IF NOT EXISTS chat_threads (
   id TEXT PRIMARY KEY,
-  course TEXT NOT NULL,
-  doc_id TEXT NOT NULL,
   title TEXT NOT NULL,
+  generated_title TEXT,
   browser_id TEXT,
   telegram_id INTEGER,
   created_at INTEGER NOT NULL,
@@ -80,10 +79,10 @@ CREATE TABLE IF NOT EXISTS chat_threads (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_threads_browser
-  ON chat_threads(browser_id, course, doc_id, updated_at DESC)
+  ON chat_threads(browser_id, updated_at DESC, id DESC)
   WHERE browser_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_chat_threads_tg
-  ON chat_threads(telegram_id, course, doc_id, updated_at DESC)
+  ON chat_threads(telegram_id, updated_at DESC, id DESC)
   WHERE telegram_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_chat_threads_inactive
   ON chat_threads(updated_at);
@@ -95,6 +94,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   role TEXT NOT NULL,               -- 'user' | 'assistant'
   status TEXT NOT NULL,             -- 'done' | 'running' | 'stopped' | 'incomplete' | 'error'
   content_tex TEXT NOT NULL,
+  course TEXT NOT NULL,
+  doc_id TEXT NOT NULL,
   quote_json TEXT,
   steps_json TEXT,
   agent_items_json TEXT,

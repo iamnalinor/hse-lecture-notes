@@ -6,11 +6,22 @@ import type { useThreadState } from "./use-chat-state.ts";
 import type { ChatStreamController } from "./use-chat-stream.ts";
 
 export const useComposerDraft = (docKey: string, user: ChatUser | null) => {
-  type Draft = { readonly key: string; readonly text: string; readonly quote: ChatQuote | null };
-  const key = `${docKey}:${user?.id ?? "guest"}`;
-  const [draft, setDraft] = useState<Draft>({ key, text: "", quote: null });
+  type Draft = {
+    readonly docKey: string;
+    readonly key: string;
+    readonly text: string;
+    readonly quote: ChatQuote | null;
+  };
+  const key = String(user?.id ?? "guest");
+  const [draft, setDraft] = useState<Draft>({ key, docKey, text: "", quote: null });
   if (draft.key !== key) {
-    setDraft({ key, text: "", quote: null });
+    setDraft({ key, docKey, text: "", quote: null });
+  } else if (draft.docKey !== docKey) {
+    setDraft({
+      ...draft,
+      docKey,
+      quote: draft.quote?.messageId === undefined ? null : draft.quote,
+    });
   }
   const updateDraft = (changes: Partial<Draft>): void => {
     setDraft((prev) => (prev.key === key ? { ...prev, ...changes } : prev));
@@ -26,7 +37,7 @@ export const useComposerDraft = (docKey: string, user: ChatUser | null) => {
     },
     onLogin: (account: ChatUser | null) => {
       if (user === null && account !== null) {
-        updateDraft({ key: `${docKey}:${account.id}` });
+        updateDraft({ key: String(account.id) });
       }
     },
   };
@@ -58,13 +69,13 @@ export const useChatSendActions = ({ docContext, draft, quote, stream, thr }: Se
       }
       await stream.sendQuestion({
         activeThreadId: thr.activeThreadId,
-        docContext,
+        docContext: userMsg.page,
         quote: userMsg.quote,
         retryMessage: assistant,
         text: userMsg.contentTex,
       });
     },
-    [docContext, stream, thr.activeThreadId, thr.isStreaming, thr.isThreadLoading, thr.messages],
+    [stream, thr.activeThreadId, thr.isStreaming, thr.isThreadLoading, thr.messages],
   );
 
   const send = useCallback(

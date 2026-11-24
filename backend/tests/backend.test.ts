@@ -19,6 +19,8 @@ import {
   normalizeIpAddress,
   type JwksDocument,
 } from "../src/crypto";
+import { ThreadTitleStream } from "../src/thread-title";
+import { ProxyConnectError } from "../src/socks5-fetch";
 import { TrackedD1 } from "../src/db";
 import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
 import {
@@ -31,9 +33,17 @@ import {
   sweepExpiredRuns,
 } from "../src/quotas";
 import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
-import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateQuoteAgainstCourse } from "../src/tools";
+import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateAssistantQuote, validateQuoteAgainstCourse } from "../src/tools";
 import { type Env, type LlmProvider, type ServerWsFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
+
+test("an oversized title split across chunks stays out of the answer", () => {
+  const stream = new ThreadTitleStream();
+  expect(stream.push("Назва")).toBe("");
+  expect(stream.push("ние: " + "а".repeat(100))).toBe("");
+  expect(stream.push("б".repeat(30) + "\nОтвет")).toBe("Ответ");
+  expect(stream.title).toBe("а".repeat(36));
+});
 
 function makeTestEnv(db: D1Database): Env {
   return {
@@ -215,6 +225,29 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(sentBody!.reasoning).toEqual({ effort: bucket === "high" ? "medium" : "low" });
     expect(sentHeaders["ChatGPT-Account-Id"]).toBe("acc_999");
     expect(sentHeaders.originator).toBe("codex_cli_rs");
+  });
+
+  test.each([true, false])("retries a rejected SOCKS tunnel exactly once (recovers=%s)", async (recovers) => {
+    const shim = new SqliteD1Shim();
+    const db = new TrackedD1(shim.asD1());
+    let attempts = 0;
+    const error = new ProxyConnectError(2);
+    const provider = new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
+      getCredentialsImpl: async () => ({ accessToken: "token", refreshToken: "", accountId: "", expiresAt: 0 }),
+      fetchImpl: async () => {
+        attempts++;
+        if (attempts === 1 || !recovers) throw error;
+        return new Response(makeSseStream(['data: {"type":"response.completed","response":{"status":"completed","output":[]}}\n']));
+      },
+    });
+    const result = provider.runRound({
+      ...resolveModelRoute((await loadPolicy(db)).buckets.low),
+      instructions: "", tools: [], input: [], maxResponseChars: 50,
+      signal: new AbortController().signal, onDelta: () => {},
+    });
+    if (recovers) expect((await result).completed).toBe(true);
+    else await expect(result).rejects.toBe(error);
+    expect(attempts).toBe(2);
   });
 
   test("OAuth refresh uses CAS version bump and marks needs_reauth on invalid_grant", async () => {
@@ -869,6 +902,8 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
           (item) => item.type === "function_call_output" && item.call_id === "c_1",
         );
         expect(hasToolOutput).toBe(true);
+        req.onDelta("Назва");
+        req.onDelta("ние: Разбор первой теоремы\n");
         req.onDelta("По [Теореме 1](#thm:1) всё следует сразу.");
         return {
           completed,
@@ -887,6 +922,7 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       env,
       db,
       provider: fakeProvider,
+      requestTitle: adm.requestTitle,
       policy,
       runId: adm.runId,
       threadId: adm.threadId,
@@ -904,6 +940,15 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       sendFrame: (f) => frames.push(f),
     });
 
+    expect(frames).toContainEqual({ type: "title", threadId: adm.threadId, title: "Разбор первой теоремы" });
+    expect(await db.first(db.prepare("SELECT generated_title FROM chat_threads WHERE id = ?").bind(adm.threadId)))
+      .toEqual({ generated_title: "Разбор первой теоремы" });
+    const reply = { messageId: adm.assistantMessageId, tex: "По Теореме 1 всё", label: "Ответ ассистента" };
+    expect(await validateAssistantQuote(db, adm.threadId, reply, "br_loop")).toBe(true);
+    expect(await validateAssistantQuote(db, adm.threadId, reply, "other")).toBe(false);
+    expect(await validateAssistantQuote(db, "other", reply, "br_loop")).toBe(false);
+    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "выдуманная цитата" }, "br_loop")).toBe(false);
+    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, messageId: adm.userMessageId }, "br_loop")).toBe(false);
     expect(roundCalls).toBe(2);
     expect(frames.some((f) => f.type === "step")).toBe(true);
     expect(frames.some((f) => f.type === "done" && f.status === (completed ? "done" : "incomplete"))).toBe(true);
@@ -915,6 +960,10 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       status: completed ? "done" : "incomplete",
       content_tex: "По [Теореме 1](#thm:1) всё следует сразу.",
     });
+
+    await db.run(db.prepare("UPDATE chat_messages SET content_tex = ? WHERE id = ?")
+      .bind("_пример_ **кода**: `a * b * c`", adm.assistantMessageId));
+    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "пример кода: a * b * c" }, "br_loop")).toBe(true);
 
     const snap = await readBudgetSnapshot(db, Date.now());
     expect(snap.globalReserved).toBe(0);
@@ -930,22 +979,22 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     await db.batch([
       db
         .prepare(
-          "INSERT INTO chat_threads (id, course, doc_id, title, browser_id, telegram_id, created_at, updated_at) VALUES ('thr_old', 'discrete', '01', 'Old', 'br1', NULL, ?, ?)",
+          "INSERT INTO chat_threads (id, title, browser_id, telegram_id, created_at, updated_at) VALUES ('thr_old', 'Old', 'br1', NULL, ?, ?)",
         )
         .bind(oldTs, oldTs),
       db
         .prepare(
-          "INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, created_at, updated_at) VALUES ('m1', 'thr_old', 1, 'user', 'done', 'Old Q', ?, ?)",
+          "INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at) VALUES ('m1', 'thr_old', 1, 'user', 'done', 'Old Q', 'discrete', '01', ?, ?)",
         )
         .bind(oldTs, oldTs),
       db
         .prepare(
-          "INSERT INTO chat_threads (id, course, doc_id, title, browser_id, telegram_id, created_at, updated_at) VALUES ('thr_race', 'discrete', '01', 'Race', 'br2', NULL, ?, ?)",
+          "INSERT INTO chat_threads (id, title, browser_id, telegram_id, created_at, updated_at) VALUES ('thr_race', 'Race', 'br2', NULL, ?, ?)",
         )
         .bind(oldTs, oldTs),
       db
         .prepare(
-          "INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, created_at, updated_at) VALUES ('m2', 'thr_race', 1, 'user', 'done', 'Initial Q', ?, ?)",
+          "INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at) VALUES ('m2', 'thr_race', 1, 'user', 'done', 'Initial Q', 'discrete', '01', ?, ?)",
         )
         .bind(oldTs, oldTs),
     ]);
@@ -959,8 +1008,8 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         // Simulate a user sending a new message into thr_race right while archive is being uploaded!
         shim.sqlite.exec(
           `UPDATE chat_threads SET updated_at = ${now} WHERE id = 'thr_race';
-           INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, created_at, updated_at)
-           VALUES ('m2_new', 'thr_race', 2, 'user', 'done', 'Fresh Q', ${now}, ${now});`,
+           INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at)
+           VALUES ('m2_new', 'thr_race', 2, 'user', 'done', 'Fresh Q', 'discrete', '01', ${now}, ${now});`,
         );
         if (objects.has(key)) return false;
         objects.set(key, body);

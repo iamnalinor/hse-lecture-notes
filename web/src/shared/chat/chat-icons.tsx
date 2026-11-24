@@ -124,6 +124,13 @@ export const AlertIcon = ({ className }: IconProps): JSX.Element => (
   </svg>
 );
 
+export const TriangleExclamationPointIcon = ({ className }: IconProps): JSX.Element => (
+  <svg {...STROKE} className={className}>
+    <path d="m10.29 3.86-8.11 14a2 2 0 0 0 1.71 3.01h16.22a2 2 0 0 0 1.71-3.01l-8.11-14a2 2 0 0 0-3.42 0Z" />
+    <path d="M12 9v4m0 4h.01" />
+  </svg>
+);
+
 export const HistoryIcon = ({ className }: IconProps): JSX.Element => (
   <svg {...STROKE} className={className}>
     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />

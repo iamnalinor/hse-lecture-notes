@@ -1,8 +1,13 @@
-import type { ChatMessage, ChatQuote } from "#web/domain/chat.ts";
+import type { ChatDocContext, ChatMessage, ChatQuote } from "#web/domain/chat.ts";
 
-export const makeUserMsg = (text: string, quote: ChatQuote | null): ChatMessage => ({
+export const makeUserMsg = (
+  text: string,
+  quote: ChatQuote | null,
+  page: ChatDocContext,
+): ChatMessage => ({
   contentTex: text,
   createdAt: Date.now(),
+  page,
   errorMessage: null,
   id: `opt_u_${crypto.randomUUID()}`,
   quote,
@@ -13,9 +18,10 @@ export const makeUserMsg = (text: string, quote: ChatQuote | null): ChatMessage 
   steps: [],
 });
 
-export const makeAssistantMsg = (): ChatMessage => ({
+export const makeAssistantMsg = (page: ChatDocContext): ChatMessage => ({
   contentTex: "",
   createdAt: Date.now(),
+  page,
   errorMessage: null,
   id: `opt_a_${crypto.randomUUID()}`,
   quote: null,
@@ -25,6 +31,12 @@ export const makeAssistantMsg = (): ChatMessage => ({
   status: "running",
   steps: [],
 });
+
+export const optimisticMessages = (
+  text: string,
+  quote: ChatQuote | null,
+  page: ChatDocContext,
+): readonly ChatMessage[] => [makeUserMsg(text, quote, page), makeAssistantMsg(page)];
 
 export const patchLastAssistant = (
   prev: readonly ChatMessage[],

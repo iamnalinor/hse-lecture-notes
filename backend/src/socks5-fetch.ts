@@ -105,6 +105,12 @@ function indexOfBytes(haystack: Uint8Array, needle: Uint8Array): number {
   return -1;
 }
 
+export class ProxyConnectError extends Error {
+  constructor(readonly reply: number | null, cause?: unknown) {
+    super(reply === null ? "Proxy connection failed before request" : `SOCKS5 CONNECT failed (rep=${reply})`, { cause });
+  }
+}
+
 async function performSocks5Handshake(
   br: BufferedReader,
   writer: WritableStreamDefaultWriter<Uint8Array>,
@@ -168,9 +174,8 @@ async function performSocks5Handshake(
 
   // 4. Read CONNECT reply
   const replyHead = await br.readExact(4);
-  if (replyHead[0] !== 0x05 || replyHead[1] !== 0x00) {
-    throw new Error(`SOCKS5 CONNECT failed (ver=${replyHead[0]}, rep=${replyHead[1]})`);
-  }
+  if (replyHead[0] !== 0x05) throw new Error("Invalid SOCKS5 CONNECT reply");
+  if (replyHead[1] !== 0x00) throw new ProxyConnectError(replyHead[1]!);
   const atyp = replyHead[3];
   if (atyp === 0x01) {
     await br.readExact(6);
@@ -337,15 +342,15 @@ export async function fetchViaProxy(
   const method = (init.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
   const pathAndQuery = `${targetUrl.pathname || "/"}${targetUrl.search}`;
 
-  const rawSocket = connector
-    ? connector(
-        { hostname: proxyHost, port: proxyPort },
-        { secureTransport: "off", allowHalfOpen: false },
-      )
-    : await defaultConnector(
-        { hostname: proxyHost, port: proxyPort },
-        { secureTransport: "off", allowHalfOpen: false },
-      );
+  let rawSocket: SocketHandle;
+  try {
+    rawSocket = await (connector ?? defaultConnector)(
+      { hostname: proxyHost, port: proxyPort },
+      { secureTransport: "off", allowHalfOpen: false },
+    );
+  } catch (error) {
+    throw new ProxyConnectError(null, error);
+  }
 
   const onAbort = () => {
     void rawSocket.close().catch(() => {});
@@ -361,6 +366,7 @@ export async function fetchViaProxy(
     void rawSocket.close().catch(() => {});
   };
 
+  let requestStarted = false;
   try {
     const rawWriter = rawSocket.writable.getWriter();
     const rawReader = rawSocket.readable.getReader();
@@ -454,6 +460,7 @@ export async function fetchViaProxy(
     headLines.push("", "");
     const headBytes = encoder.encode(headLines.join("\r\n"));
 
+    requestStarted = true;
     await writeAppData(headBytes);
     if (bodyBytes.length > 0) {
       await writeAppData(bodyBytes);
@@ -497,6 +504,9 @@ export async function fetchViaProxy(
     });
   } catch (err) {
     closeActive();
+    if (!requestStarted && !init.signal?.aborted && !(err instanceof ProxyConnectError)) {
+      throw new ProxyConnectError(null, err);
+    }
     throw err;
   }
 }

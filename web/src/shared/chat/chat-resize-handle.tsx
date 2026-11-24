@@ -41,7 +41,11 @@ export const ChatResizeHandle = (): JSX.Element => {
         }
 
         event.preventDefault();
-        const width = event.currentTarget.parentElement?.getBoundingClientRect().width ?? 400;
+        const panel = event.currentTarget.parentElement;
+        if (panel === null) {
+          return;
+        }
+        const width = panel.getBoundingClientRect().width;
         applyWidth(width + (event.key === "ArrowLeft" ? 24 : -24));
         saveWidth();
       }}

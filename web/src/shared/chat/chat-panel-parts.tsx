@@ -1,18 +1,23 @@
-import type { JSX } from "react";
-
+import { type JSX, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router";
 
-import { getLectureSuggestions } from "#web/domain/chat.ts";
+import { getLectureSuggestions } from "#web/domain/chat-suggestion-pools.ts";
+import { pageUrl, routeOf } from "#web/domain/seo.ts";
 
 import { TURNSTILE_HOST_ID, useChat } from "./chat-context.tsx";
 import {
   ArrowRightIcon,
+  CheckIcon,
   CloseIcon,
+  CopyIcon,
   HistoryIcon,
   NewChatIcon,
   SparklesIcon,
   TelegramIcon,
+  TriangleExclamationPointIcon,
 } from "./chat-icons.tsx";
+import { useCopyFeedback } from "./use-chat-state.ts";
 
 export const TurnstileModal = (): JSX.Element => {
   const { cancelTurnstile, turnstileOpen } = useChat();
@@ -51,17 +56,75 @@ type PanelHeaderProps = {
   readonly onToggleHistory: () => void;
 };
 
+const HistoryMenu = ({
+  onToggleHistory,
+}: Pick<PanelHeaderProps, "onToggleHistory">): JSX.Element => {
+  const chat = useChat();
+  return (
+    <div
+      aria-label="История чатов"
+      className="ai-hist-menu ai-fade"
+      onScroll={({ currentTarget }) => {
+        const { scrollHeight, scrollTop, clientHeight } = currentTarget;
+        if (
+          chat.hasMore &&
+          !chat.isLoadingMore &&
+          !chat.moreError &&
+          scrollHeight - scrollTop - clientHeight <= 48
+        ) {
+          void chat.loadMore();
+        }
+      }}
+      role="group"
+    >
+      {chat.threads.map((thread) => (
+        <button
+          className={thread.id === chat.activeThreadId ? "ai-hist-item is-on" : "ai-hist-item"}
+          disabled={chat.isStreaming}
+          key={thread.id}
+          onClick={() => {
+            chat.selectThread(thread.id);
+            onToggleHistory();
+          }}
+          type="button"
+        >
+          <span>{thread.title}</span>
+        </button>
+      ))}
+      {chat.isLoadingMore && (
+        <div className="ai-hist-loading" role="status">
+          <span aria-hidden="true" className="ai-spin" /> Загружаем чаты…
+        </div>
+      )}
+      {chat.moreError && (
+        <button
+          className="ai-hist-item ai-hist-retry"
+          disabled={chat.isLoadingMore}
+          onClick={() => {
+            void chat.loadMore();
+          }}
+          type="button"
+        >
+          <TriangleExclamationPointIcon />
+          Повторить загрузку
+        </button>
+      )}
+    </div>
+  );
+};
+
 export const ChatPanelHeader = ({
   historyOpen,
   onClose,
   onToggleHistory,
 }: PanelHeaderProps): JSX.Element => {
   const chat = useChat();
+  const title = chat.threads.find((t) => t.id === chat.activeThreadId)?.generatedTitle ?? "Чат";
   return (
     <div className="ai-top">
       <div className="ai-title">
         <SparklesIcon />
-        <span>Чат</span>
+        <span title={title}>{title}</span>
       </div>
       {chat.tier === "guest" && (
         <button
@@ -109,31 +172,15 @@ export const ChatPanelHeader = ({
       >
         <CloseIcon />
       </button>
-      {historyOpen && chat.threads.length > 0 && (
-        <div className="ai-hist-menu ai-fade">
-          {chat.threads.map((thread) => (
-            <button
-              className={thread.id === chat.activeThreadId ? "ai-hist-item is-on" : "ai-hist-item"}
-              disabled={chat.isStreaming}
-              key={thread.id}
-              onClick={() => {
-                chat.selectThread(thread.id);
-                onToggleHistory();
-              }}
-              type="button"
-            >
-              <span>{thread.title}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {historyOpen && chat.threads.length > 0 && <HistoryMenu onToggleHistory={onToggleHistory} />}
     </div>
   );
 };
 
 export const ChatEmptyView = (): JSX.Element => {
-  const { docContext, previousThreadId, quote, restorePreviousThread, send } = useChat();
-  const suggestions = getLectureSuggestions(docContext);
+  const { docContext, quote, send } = useChat();
+  const { course, docId } = docContext;
+  const suggestions = useMemo(() => getLectureSuggestions({ course, docId }), [course, docId]);
   let title = "Чат по конспектам";
   if (docContext.docId !== "") {
     title = "Вопрос по материалу";
@@ -143,14 +190,6 @@ export const ChatEmptyView = (): JSX.Element => {
 
   return (
     <div className="ai-empty ai-enter">
-      {previousThreadId !== null && (
-        <div className="ai-undo">
-          Диалог очищен.{" "}
-          <button onClick={restorePreviousThread} type="button">
-            Вернуть
-          </button>
-        </div>
-      )}
       <h2>{title}</h2>
       {docContext.docId !== "" && <p>Выделите фрагмент материала, чтобы задать вопрос о нём.</p>}
       {quote === null && (
@@ -169,6 +208,41 @@ export const ChatEmptyView = (): JSX.Element => {
           ))}
         </div>
       )}
+      <AgentLinkCard />
     </div>
+  );
+};
+
+/** «Отправьте ссылку агенту»: адрес открытой страницы, клик копирует. */
+const AgentLinkCard = (): JSX.Element => {
+  const { pathname } = useLocation();
+  const { copyText, isCopied } = useCopyFeedback();
+  const url = pageUrl(routeOf(pathname));
+
+  return (
+    <section aria-labelledby="ai-agent-title" className="ai-agent">
+      <h3 id="ai-agent-title">Или отправьте ссылку своему агенту</h3>
+      <p>Сайт адаптирован для ИИ: он прочитает эту страницу целиком.</p>
+      <button
+        aria-label={isCopied ? "Ссылка скопирована" : `Копировать ссылку ${url}`}
+        className="ai-agent-link"
+        onClick={() => {
+          void copyText(url);
+        }}
+        title="Копировать ссылку"
+        type="button"
+      >
+        <span className={isCopied ? "ai-copy is-done" : "ai-copy"}>
+          <span className="ai-ico-swap">
+            <CopyIcon />
+            <CheckIcon />
+          </span>
+          <span aria-hidden="true" className="ai-tip">
+            Скопировано
+          </span>
+        </span>
+        <span className="ai-agent-url">{url}</span>
+      </button>
+    </section>
   );
 };

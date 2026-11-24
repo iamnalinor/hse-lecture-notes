@@ -91,6 +91,35 @@ function containsNormalized(haystack: string, needle: string): boolean {
   return false;
 }
 
+export async function validateAssistantQuote(
+  db: TrackedD1,
+  threadId: string | null,
+  quote: QuotePayload,
+  browserId: string,
+  telegramId?: number,
+): Promise<boolean> {
+  if (!threadId || typeof quote.messageId !== "string" || !quote.messageId || quote.blockId || quote.sectionId) return false;
+  const owner = telegramId === undefined ? "t.telegram_id IS NULL AND t.browser_id = ?" : "t.telegram_id = ?";
+  const row = await db.first<{ content_tex: string }>(
+    db.prepare(`SELECT m.content_tex FROM chat_messages m JOIN chat_threads t ON t.id = m.thread_id
+      WHERE m.id = ? AND t.id = ? AND m.role = 'assistant' AND m.status IN ('done','stopped','incomplete')
+      AND ${owner}`).bind(quote.messageId, threadId, telegramId ?? browserId),
+  );
+  if (!row) return false;
+  const normalize = (s: string) => s.replace(/\s+/gu, " ").trim();
+  const needle = normalize(quote.tex);
+  if (needle.length < 2) return false;
+  if (normalize(row.content_tex).includes(needle)) return true;
+  const visible = row.content_tex.split("```").map((part, index) => {
+    if (index % 2) return part.slice(part.indexOf("\n") + 1);
+    const blocks = part.replace(/^ {0,3}#{1,6}[ \t]+|^\s*(?:[-*•]|\d+\.)[ \t]+/gmu, "");
+    return blocks.replace(/\$\$([^$]+)\$\$|(\$[^$]+\$)|`([^`]+)`|\[([^\]]+)\]\((?:#|\/)[^)]*\)|\[\[[^|\]]+\|([^\]]+)\]\]|\*\*([^*]+)\*\*|\*(\S(?:[^*]*?\S)?)\*|(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+)(?<!\s)_(?![\p{L}\p{N}_])/gu,
+      (_match, display, math, code, link, wiki, bold, italic, underscore) =>
+        display !== undefined ? `$${display.trim()}$` : math ?? code ?? link ?? wiki ?? bold ?? italic ?? underscore);
+  }).join(" ");
+  return normalize(visible).includes(needle);
+}
+
 export async function validateQuoteAgainstCourse(
   db: TrackedD1,
   course: string,

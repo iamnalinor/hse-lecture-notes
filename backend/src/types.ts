@@ -75,6 +75,7 @@ export interface ServicePolicy {
 }
 
 export interface QuotePayload {
+  messageId?: string;
   blockId?: string;
   sectionId?: string;
   label: string;
@@ -231,10 +232,12 @@ export type ClientWsFrame =
     };
 
 export type ServerWsFrame =
+  | { type: "title"; threadId: string; title: string }
   | {
       type: "meta";
       threadId: string;
       threadTitle: string;
+      generatedTitle: string | null;
       userMessageId: string;
       assistantMessageId: string;
       runId: string;

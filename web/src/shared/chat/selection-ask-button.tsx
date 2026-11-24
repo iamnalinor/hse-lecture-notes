@@ -33,8 +33,13 @@ const rangeToTeX = (range: Range): string => {
       mathNode.classList.contains("math-display") || mathNode.closest(".katex-display") !== null;
     mathNode.replaceWith(document.createTextNode(isDisplay ? ` $${src}$ ` : `$${src}$`));
   }
-  for (const noise of frag.querySelectorAll('a[href^="#"]:not(.ref), .sr-only, summary')) {
+  for (const noise of frag.querySelectorAll(
+    'a[href^="#"]:not(.ref), .sr-only, summary, .ai-code-head',
+  )) {
     noise.remove();
+  }
+  for (const block of frag.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, .ai-math")) {
+    block.append(" ");
   }
   return frag.textContent.replaceAll(/\s+/g, " ").trim();
 };
@@ -71,22 +76,18 @@ type FloatingPill = {
   readonly top: number;
 };
 
-const getProseSelectionRange = (): null | Range => {
+const getSelectionRange = (): null | Range => {
   const sel = globalThis.window.getSelection();
   if (sel === null || sel.isCollapsed || sel.rangeCount === 0) {
     return null;
   }
   const range = sel.getRangeAt(0);
-  const container = nodeToElement(range.commonAncestorContainer);
-  const prose = container?.closest(".prose-notes") ?? null;
-  if (prose === null) {
-    return null;
-  }
   return range.toString().trim().length >= 2 ? range : null;
 };
 
 const computePillCoords = (
   rects: readonly DOMRect[],
+  isInChat: boolean,
 ): null | { readonly left: number; readonly top: number } => {
   const anchorRect = rects.at(-1);
   if (anchorRect === undefined) {
@@ -96,7 +97,7 @@ const computePillCoords = (
   const isChatOpen = document.documentElement.classList.contains("ai-open");
   const viewportW = globalThis.window.innerWidth;
   const maxRight =
-    (isChatOpen && !isMobile
+    (!isInChat && isChatOpen && !isMobile
       ? (document.querySelector("#ai-panel")?.getBoundingClientRect().left ?? viewportW)
       : viewportW) - 8;
   const left = Math.max(8, Math.min(anchorRect.right - 68, maxRight - 136));
@@ -110,24 +111,45 @@ const computePillCoords = (
   };
 };
 
-const computeSelPill = (): FloatingPill | null => {
-  const range = getProseSelectionRange();
+const selectedSource = (range: Range, canQuoteMaterial: boolean, canQuoteAnswer: boolean) => {
+  const container = nodeToElement(range.commonAncestorContainer);
+  if (container === null) {
+    return null;
+  }
+  const answer = container.closest(".ai-answer");
+  if (answer !== null) {
+    const messageId = answer.closest<HTMLElement>("[data-answer-id]")?.dataset["answerId"];
+    return !canQuoteAnswer || messageId === undefined || container.closest(".ai-code-head") !== null
+      ? null
+      : { messageId, label: "Ответ ассистента" };
+  }
+  return canQuoteMaterial && container.closest(".prose-notes") !== null
+    ? sourceOfRange(range)
+    : null;
+};
+
+const computeSelPill = (
+  canQuoteMaterial: boolean,
+  canQuoteAnswer: boolean,
+): FloatingPill | null => {
+  const range = getSelectionRange();
   if (range === null) {
     return null;
   }
+  const source = selectedSource(range, canQuoteMaterial, canQuoteAnswer);
+  if (source === null) {
+    return null;
+  }
   const rects = [...range.getClientRects()].filter((r) => r.width > 1 && r.height > 1);
-  const coords = computePillCoords(rects);
+  const coords = computePillCoords(rects, "messageId" in source);
   if (coords === null) {
     return null;
   }
   const expanded = expandToMath(range);
   const tex = rangeToTeX(expanded);
-  if (tex.length < 2 || tex.length > 3500) {
-    return null;
-  }
-  const { blockId, label } = sourceOfRange(expanded);
-  const quote: ChatQuote = blockId === undefined ? { label, tex } : { blockId, label, tex };
-  return { ...coords, quote, range: expanded };
+  return tex.length < 2 || tex.length > 3500
+    ? null
+    : { ...coords, quote: { ...source, tex }, range: expanded };
 };
 
 const highlightQuoteRange = (range: null | Range): void => {
@@ -142,12 +164,18 @@ const highlightQuoteRange = (range: null | Range): void => {
   cssApi.highlights.set("ai-quote", new Highlight(range));
 };
 
-/** Exact `.ai-sel-btn` floating button from prototype.html when selecting text in notes. */
-export const SelectionAskButton = (): JSX.Element | null => {
-  const chat = useChat();
-  const [pill, setPill] = useState<FloatingPill | null>(null);
-  const isActive = chat.isConfigured && chat.docContext.docId !== "";
-
+const useSelectionUpdates = (
+  {
+    isActive,
+    canQuoteMaterial,
+    canQuoteAnswer,
+  }: {
+    readonly isActive: boolean;
+    readonly canQuoteMaterial: boolean;
+    readonly canQuoteAnswer: boolean;
+  },
+  setPill: (pill: FloatingPill | null) => void,
+): void => {
   useEffect(() => {
     if (!isActive) {
       return;
@@ -159,31 +187,35 @@ export const SelectionAskButton = (): JSX.Element | null => {
       }
       timer = globalThis.setTimeout(() => {
         if (globalThis.document.activeElement?.classList.contains("ai-sel-btn") !== true) {
-          setPill(computeSelPill());
+          setPill(computeSelPill(canQuoteMaterial, canQuoteAnswer));
         }
       }, 0);
     };
-    const onSelectionChange = (): void => {
-      const sel = globalThis.window.getSelection();
-      if (
-        globalThis.document.activeElement?.classList.contains("ai-sel-btn") !== true &&
-        (sel === null || sel.isCollapsed)
-      ) {
-        setPill(null);
-      }
-    };
+    document.addEventListener("scroll", update, { capture: true });
     document.addEventListener("mouseup", update);
     document.addEventListener("keyup", update);
-    document.addEventListener("selectionchange", onSelectionChange);
+    document.addEventListener("selectionchange", update);
     return () => {
       if (timer !== null) {
         globalThis.clearTimeout(timer);
       }
+      document.removeEventListener("scroll", update, true);
       document.removeEventListener("mouseup", update);
       document.removeEventListener("keyup", update);
-      document.removeEventListener("selectionchange", onSelectionChange);
+      document.removeEventListener("selectionchange", update);
     };
-  }, [isActive]);
+  }, [isActive, canQuoteMaterial, canQuoteAnswer, setPill]);
+};
+
+/** Exact `.ai-sel-btn` floating button from prototype.html when selecting text in notes. */
+export const SelectionAskButton = (): JSX.Element | null => {
+  const chat = useChat();
+  const [pill, setPill] = useState<FloatingPill | null>(null);
+  const canQuoteMaterial = chat.docContext.docId !== "";
+  const canQuoteAnswer = chat.isOpen && !chat.isThreadLoading && chat.activeThreadId !== null;
+  const isActive = chat.isConfigured && (canQuoteMaterial || canQuoteAnswer);
+
+  useSelectionUpdates({ isActive, canQuoteMaterial, canQuoteAnswer }, setPill);
 
   useEffect(() => {
     if (chat.quote === null) {
@@ -191,23 +223,44 @@ export const SelectionAskButton = (): JSX.Element | null => {
     }
   }, [chat.quote]);
 
-  if (!isActive) {
+  const isAllowed = pill?.quote.messageId === undefined ? canQuoteMaterial : canQuoteAnswer;
+  if (!isActive || !isAllowed) {
     return null;
   }
 
   return (
+    <SelectionPill
+      onSelect={(selected) => {
+        highlightQuoteRange(selected.range);
+        chat.openWithQuote(selected.quote);
+        setPill(null);
+        globalThis.window.getSelection()?.removeAllRanges();
+      }}
+      pill={pill}
+    />
+  );
+};
+
+const SelectionPill = ({
+  pill,
+  onSelect,
+}: {
+  readonly pill: FloatingPill | null;
+  readonly onSelect: (selected: FloatingPill) => void;
+}): JSX.Element => {
+  const isReplying = pill?.quote.messageId !== undefined;
+  return (
     <button
-      aria-label="Спросить ИИ о выделенном фрагменте"
+      aria-label={
+        isReplying ? "Ответить на выделенный фрагмент" : "Спросить ИИ о выделенном фрагменте"
+      }
       className={pill === null ? "ai-sel-btn" : "ai-sel-btn is-on"}
       disabled={pill === null}
       onClick={() => {
-        if (pill === null) {
+        if (pill?.range.startContainer.isConnected !== true) {
           return;
         }
-        highlightQuoteRange(pill.range);
-        chat.openWithQuote(pill.quote);
-        setPill(null);
-        globalThis.window.getSelection()?.removeAllRanges();
+        onSelect(pill);
       }}
       onMouseDown={(event) => {
         event.preventDefault();
@@ -216,7 +269,7 @@ export const SelectionAskButton = (): JSX.Element | null => {
       type="button"
     >
       <SparklesIcon />
-      Спросить ИИ
+      {isReplying ? "Ответить" : "Спросить ИИ"}
     </button>
   );
 };

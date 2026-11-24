@@ -188,12 +188,12 @@ stray `text-sm` does nothing instead of adding an eleventh size.
   }
 
   :root {
-    --scroll-thumb: oklch(0.708 0 0 / 0.5);
-    --scroll-thumb-hover: oklch(0.708 0 0 / 0.7);
+    --scroll-thumb: oklch(0.66 0 0 / 0.72);
+    --scroll-thumb-hover: oklch(0.57 0 0 / 0.9);
   }
   :root[data-theme="dark"] {
-    --scroll-thumb: oklch(0.556 0 0 / 0.5);
-    --scroll-thumb-hover: oklch(0.556 0 0 / 0.7);
+    --scroll-thumb: oklch(0.64 0 0 / 0.7);
+    --scroll-thumb-hover: oklch(0.72 0 0 / 0.9);
   }
   ::-webkit-scrollbar {
     width: 8px;
@@ -206,6 +206,7 @@ stray `text-sm` does nothing instead of adding an eleventh size.
   ::-webkit-scrollbar-thumb {
     background: var(--scroll-thumb);
     border-radius: 4px;
+    transition: background-color 160ms ease;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: var(--scroll-thumb-hover);

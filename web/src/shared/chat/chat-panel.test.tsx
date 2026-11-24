@@ -3,22 +3,35 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router";
 import { expect, it, vi } from "vitest";
 
-import { type ChatDocContext, type ChatMessage, parseDocContext } from "#web/domain/chat.ts";
+import {
+  type ChatDocContext,
+  type ChatMessage,
+  type ChatTier,
+  parseDocContext,
+} from "#web/domain/chat.ts";
 
 import { ChatCodeBlock } from "./chat-code-block.tsx";
+import { BottomCaption } from "./chat-composer-plates.tsx";
 import { ChatPanel } from "./chat-panel.tsx";
 import { ChatResizeHandle } from "./chat-resize-handle.tsx";
 import { applyMetaMessageIds, makeAssistantMsg, makeUserMsg } from "./chat-stream-helpers.ts";
 import { ChatToggleButton } from "./chat-toggle-button.tsx";
 import { SelectionAskButton } from "./selection-ask-button.tsx";
 
-const state: { docContext: ChatDocContext; messages: readonly ChatMessage[] } = {
+const state: { docContext: ChatDocContext; messages: readonly ChatMessage[]; tier: ChatTier } = {
   docContext: parseDocContext("/"),
   messages: [],
+  tier: "guest",
 };
 vi.mock("./chat-context.tsx", () => ({
   TURNSTILE_HOST_ID: "turnstile",
-  useChat: () => ({ ...state, isConfigured: true, threads: [] }),
+  useChat: () => ({
+    ...state,
+    isConfigured: true,
+    threads: [],
+    user: { id: 1, name: "Albert" },
+    degraded: { active: false },
+  }),
 }));
 vi.mock("./chat-composer.tsx", () => ({ ChatComposer: () => null }));
 vi.mock("./chat-ref-preview.tsx", () => ({ ChatRefPreview: () => null }));
@@ -26,7 +39,10 @@ vi.mock("./chat-ref-preview.tsx", () => ({ ChatRefPreview: () => null }));
 it("keeps the user bubble mounted when the server assigns message IDs", () => {
   HTMLElement.prototype.scrollTo = vi.fn();
   vi.stubGlobal("matchMedia", () => ({ matches: false }));
-  state.messages = [makeUserMsg("вопрос", null), makeAssistantMsg()];
+  state.messages = [
+    makeUserMsg("вопрос", null, state.docContext),
+    makeAssistantMsg(state.docContext),
+  ];
   const client = new QueryClient();
   const panel = () => (
     <MemoryRouter>
@@ -124,7 +140,13 @@ it("opens the owning lecture for a historical local-only citation", async () => 
   const client = new QueryClient();
   client.setQueryData(["labels"], { discrete: { [anchor]: { weekId: "05_equivalence" } } });
   state.docContext = parseDocContext("/discrete/06_sets");
-  state.messages = [{ ...makeAssistantMsg(), status: "done", contentTex: `[теорема](#${anchor})` }];
+  state.messages = [
+    {
+      ...makeAssistantMsg(parseDocContext("/discrete/05_equivalence")),
+      status: "done",
+      contentTex: `[теорема](#${anchor})`,
+    },
+  ];
   vi.stubGlobal("matchMedia", () => ({ matches: false }));
   try {
     render(
@@ -148,7 +170,7 @@ it.each(["", "/algebra/exam1"])(
     state.docContext = parseDocContext("/algebra/exam1");
     state.messages = [
       {
-        ...makeAssistantMsg(),
+        ...makeAssistantMsg(state.docContext),
         status: "done",
         contentTex: `[об экзамене](${path}#sec:exam1:${encodeURIComponent("об-экзамене")})`,
       },
@@ -178,3 +200,18 @@ it.each(["", "/algebra/exam1"])(
     }
   },
 );
+
+it("shows the account switch caption only for an external account", () => {
+  try {
+    state.tier = "external";
+    const caption = <BottomCaption mode="composer" nowMs={0} rateRemainSec={0} />;
+    const view = render(caption);
+    expect(screen.getByRole("button", { name: "Сменить аккаунт" })).toBeVisible();
+    state.tier = "internal";
+    view.rerender(<BottomCaption mode="composer" nowMs={0} rateRemainSec={0} />);
+    expect(screen.queryByText(/Вы вошли как/u)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Сменить аккаунт" })).toBeNull();
+  } finally {
+    state.tier = "guest";
+  }
+});

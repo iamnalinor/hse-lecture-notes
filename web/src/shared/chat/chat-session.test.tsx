@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { act, renderHook } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, useNavigate } from "react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { ChatMessage } from "#web/domain/chat.ts";
@@ -45,7 +45,7 @@ const mount = () =>
 
 const thread = (id: string, messages: readonly ChatMessage[] = []): ThreadResponse => ({
   requestedThreadMissing: false,
-  thread: { id, title: id, messages, course: "", docId: "", createdAt: 1, updatedAt: 1 },
+  thread: { id, title: id, messages, createdAt: 1, updatedAt: 1 },
   threads: [{ id, title: id, updatedAt: 1 }],
 });
 
@@ -163,8 +163,8 @@ it("recovers from a disconnect before meta and resends a local question as new",
 it("polls a restored running turn through a failed request to completion", async () => {
   vi.useFakeTimers();
   saveBrowserToken("browser");
-  const answer = { ...makeAssistantMsg(), id: "assistant", runId: "run" };
-  const user = makeUserMsg("Q", null);
+  const answer = { ...makeAssistantMsg({ course: "", docId: "" }), id: "assistant", runId: "run" };
+  const user = makeUserMsg("Q", null, { course: "", docId: "" });
   vi.mocked(fetchChatThread)
     .mockResolvedValueOnce(thread("t", [user, answer]))
     .mockResolvedValueOnce(thread("t", [user, { ...answer, status: "done", contentTex: "A" }]));
@@ -219,4 +219,71 @@ it("keeps the guest draft on login and clears it when switching between accounts
     globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_user" }));
   });
   expect(chat.current.draft).toBe("");
+});
+
+it("keeps a streaming conversation across pages and sends the new page on the next turn", async () => {
+  const view = renderHook(() => ({ chat: useChat(), go: useNavigate() }), {
+    wrapper: ({ children }: { readonly children: ReactNode }) => (
+      <MemoryRouter>
+        <ChatProvider>{children}</ChatProvider>
+      </MemoryRouter>
+    ),
+  }).result;
+  await act(() => view.current.chat.send("Первый вопрос"));
+  const call = vi.mocked(openChatMessageStream).mock.calls[0];
+  if (call === undefined) {
+    throw new Error("missing stream");
+  }
+  expect(call[1]).toMatchObject({ course: "", docId: "" });
+  act(() => {
+    call[2].onMeta({
+      assistantMessageId: "a",
+      userMessageId: "u",
+      threadId: "t",
+      threadTitle: "Первый вопрос",
+      runId: "r",
+      degraded: { active: false },
+    });
+    call[2].onTitle("t", "Индукция");
+  });
+  await act(async () => {
+    await view.current.go("/algebra");
+  });
+  expect(view.current.chat.isStreaming).toBe(true);
+  expect(view.current.chat.threads[0]?.generatedTitle).toBe("Индукция");
+  act(() => {
+    call[2].onDone({
+      runId: "r",
+      status: "done",
+      text: "Ответ",
+      steps: [],
+      degraded: { active: false },
+      block: null,
+    });
+  });
+  await act(() => view.current.chat.send("А здесь?"));
+  expect(vi.mocked(openChatMessageStream).mock.calls[1]?.[1]).toMatchObject({
+    threadId: "t",
+    course: "algebra",
+    docId: "",
+  });
+  expect(view.current.chat.messages[0]?.page).toEqual({ course: "", docId: "" });
+});
+
+it("loads the next history page without replacing the open thread", async () => {
+  saveBrowserToken("browser");
+  const first = thread("z");
+  vi.mocked(fetchChatThread)
+    .mockResolvedValueOnce({ ...first, hasMore: true })
+    .mockResolvedValueOnce({ ...thread("a"), thread: null, hasMore: false });
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  await act(() => chat.current.loadMore());
+  expect(fetchChatThread).toHaveBeenLastCalledWith(null, first.threads[0]);
+  expect(chat.current.threads.map((item) => item.id)).toEqual(["z", "a"]);
+  expect(chat.current.activeThreadId).toBe("z");
+  expect(chat.current.hasMore).toBe(false);
 });

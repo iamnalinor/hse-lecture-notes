@@ -1,6 +1,6 @@
 import { getValidCodexCredentials, type CodexCredentialsPayload } from "./codex-auth";
 import type { TrackedD1 } from "./db";
-import { fetchViaProxy } from "./socks5-fetch";
+import { fetchViaProxy, ProxyConnectError } from "./socks5-fetch";
 import type {
   CodexInputItem,
   Env,
@@ -300,7 +300,10 @@ export class CodexResponsesProvider implements LlmProvider {
   async runRound(req: LlmRoundRequest): Promise<LlmRoundResult> {
     let creds = await this.loadCreds(false);
 
+    let retriedProxy = false;
+    let refreshedAuth = false;
     for (let attempt = 0; attempt < 3; attempt += 1) {
+      req.signal.throwIfAborted();
       const localAbort = new AbortController();
       const onParentAbort = () => localAbort.abort(req.signal.reason);
       if (req.signal.aborted) {
@@ -342,13 +345,17 @@ export class CodexResponsesProvider implements LlmProvider {
             signal: localAbort.signal,
           });
         } catch (fetchErr) {
-          if (attempt < 2 && !req.signal.aborted) {
+          if (fetchErr instanceof ProxyConnectError) {
+            if (attempt >= 2 || retriedProxy || req.signal.aborted || (fetchErr.reply !== null && fetchErr.reply > 6)) throw fetchErr;
+            retriedProxy = true;
+            await new Promise(resolve => setTimeout(resolve, 400));
             continue;
           }
           throw fetchErr;
         }
 
-        if (resp.status === 401 && attempt === 0) {
+        if (resp.status === 401 && !refreshedAuth && attempt < 2) {
+          refreshedAuth = true;
           creds = await this.loadCreds(true);
           continue;
         }

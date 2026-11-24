@@ -2,7 +2,7 @@
    Только токены сайта (app.css), шкала кеглей и радиусов сайта. */
 
 :root {
-  --ai-w: clamp(320px, var(--chat-preferred-width, 400px), min(55vw, 720px));
+  --ai-w: clamp(320px, var(--chat-preferred-width, 440px), min(55vw, 720px));
   --ai-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 16px rgb(0 0 0 / 0.08);
   --ai-shadow-lg: 0 2px 6px rgb(0 0 0 / 0.06), 0 16px 48px rgb(0 0 0 / 0.16);
   --ai-quote-hl: color-mix(in srgb, var(--def) 18%, transparent);
@@ -101,16 +101,6 @@
   html.ai-open,
   html.ai-open body {
     overflow: hidden;
-  }
-}
-
-/* ---------- шапка сайта на узких экранах ---------- */
-@media (max-width: 559px) {
-  header nav[aria-label="Курсы"] {
-    display: none;
-  }
-  header > div > div.shrink-0 {
-    margin-left: auto;
   }
 }
 
@@ -280,6 +270,11 @@ html.ai-open .ai-panel {
   gap: 8px;
   min-width: 0;
 }
+.ai-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ai-title svg {
   width: 18px;
   height: 18px;
@@ -359,7 +354,7 @@ html.ai-open .ai-panel {
   border-top-color: var(--def);
 }
 
-/* список прошлых чатов по лекции */
+/* история чатов */
 .ai-hist-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -392,9 +387,32 @@ html.ai-open .ai-panel {
     background-color 120ms ease-out,
     color 120ms ease-out;
 }
+.ai-hist-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .ai-hist-item:hover {
   background: var(--wash);
   color: var(--ink);
+}
+.ai-hist-retry,
+.ai-hist-retry:hover {
+  gap: 6px;
+  color: var(--red-deep);
+  font-weight: 600;
+}
+.ai-hist-retry:hover {
+  background: var(--red-soft);
+}
+.ai-hist-retry svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 .ai-hist-item.is-on {
   background: var(--wash);
@@ -444,25 +462,6 @@ html.ai-open .ai-panel {
   margin: 0 0 20px;
   text-wrap: pretty;
 }
-.ai-undo {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: -4px 0 16px;
-  font-size: 13px;
-  color: var(--faint);
-}
-.ai-undo button {
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--def);
-  cursor: pointer;
-}
-.ai-undo button:hover {
-  text-decoration: underline;
-}
 .ai-sugg {
   display: flex;
   flex-direction: column;
@@ -496,6 +495,65 @@ html.ai-open .ai-panel {
 }
 .ai-sugg button:hover svg {
   transform: translateX(2px);
+}
+
+/* «отправьте ссылку агенту»: под подсказками */
+.ai-agent {
+  margin-top: 56px;
+}
+.ai-empty .ai-agent h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 400;
+  text-wrap: balance;
+}
+.ai-empty .ai-agent p {
+  margin: 0 0 6px;
+}
+.ai-agent-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 32px;
+  margin-left: -4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+.ai-agent-link:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+.ai-agent-link:focus-visible {
+  outline: 2px solid var(--def);
+  outline-offset: 1px;
+}
+.ai-agent-link .ai-copy {
+  flex: none;
+  color: var(--faint);
+}
+.ai-agent-link:hover .ai-copy {
+  color: var(--ink);
+}
+.ai-agent-link .ai-ico-swap svg {
+  width: 16px;
+  height: 16px;
+}
+.ai-agent-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* сообщения */
@@ -1310,12 +1368,24 @@ html.ai-open .ai-panel {
 }
 
 /* предпросмотр ссылки на блок при наведении (как RefPreviewCard на сайте) */
+/* Keep the 8px gap between a citation and its hover card inside the hover target. */
+[data-preview-side]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 9px;
+}
+[data-preview-side="bottom"]::before {
+  bottom: 100%;
+}
+[data-preview-side="top"]::before {
+  top: 100%;
+}
 .ai-ref-card {
   position: fixed;
   z-index: 70;
   width: min(430px, calc(100vw - 24px));
   cursor: pointer;
-  overflow: hidden;
   border-radius: 10px;
   border: 1px solid var(--rule);
   background: var(--card);
@@ -1471,14 +1541,6 @@ html.ai-open .ai-panel {
 
 /* шапка сайта при открытой панели: место под панель забирают название сайта, поиск и подпись кнопки */
 @media (min-width: 721px) and (max-width: 1539px) {
-  html.ai-open header span[class*="lg:not-sr-only"] {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
   html.ai-open .ai-head-btn {
     width: 40px;
     padding: 0;
@@ -1500,12 +1562,13 @@ html.ai-open .ai-panel {
     display: none;
   }
 }
-@media (min-width: 721px) and (max-width: 1220px) {
-  html.ai-open header nav[aria-label="Курсы"] {
-    display: none;
+@container (max-width: 36rem) {
+  html.ai-open header > div {
+    gap: 0.5rem;
+    padding-inline: 1rem;
   }
-  html.ai-open header > div > div.shrink-0 {
-    margin-left: auto;
+  html.ai-open header label:has(input[type="search"]) {
+    width: clamp(4rem, calc(100cqw - 19rem), 12rem);
   }
 }
 

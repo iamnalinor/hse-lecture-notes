@@ -46,7 +46,7 @@ describe("StudyPlan", () => {
   it("centers the legend and the caption", () => {
     renderWithApp(<StudyPlan curriculum={SAMPLE} today="2027-01-05" />, "/");
     expect(screen.getByText(/меньше часов/u).closest("div")).toHaveClass("justify-center");
-    expect(screen.getByText(/По рабочему учебному плану/u)).toHaveClass("text-center");
+    expect(screen.getByText(/^Кредиты за год:/u)).toHaveClass("text-center");
   });
 
   it("joins neighbouring modules into one bar and keeps a gap as two", () => {

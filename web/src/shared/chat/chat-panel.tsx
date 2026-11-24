@@ -131,9 +131,9 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
       const anchor = blockId.startsWith(documentPrefix)
         ? blockId.slice(documentPrefix.length)
         : blockId;
-      const target = findMaterialTarget(anchor, docId);
+      const target = isMaterialLink(anchor) ? null : findMaterialTarget(anchor, docId);
       if (target === null) {
-        void openMissing(blockId);
+        void openMissing(anchor);
         return;
       }
       if (isMobileViewport()) {
