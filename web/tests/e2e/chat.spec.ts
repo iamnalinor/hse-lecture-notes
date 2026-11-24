@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 import { mockChat, suggestion } from "./support/chat.ts";
+import { mockSiteData } from "./support/site-data.ts";
+
+test.beforeEach(async ({ page }) => {
+  await mockSiteData(page);
+});
 
 const openChat = async (page: Parameters<typeof mockChat>[0]) => {
   await page.goto("/");

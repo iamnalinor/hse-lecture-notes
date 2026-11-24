@@ -19,7 +19,7 @@ bun run build        # dist/ (+ 404.html и копии оболочки по с�
 
 `tests/` повторяет дерево `src/`: unit- и интеграционные тесты лежат отдельно от исходников, общие фикстуры — в `tests/support/`. `tests/e2e/` запускается отдельной командой `bun run test:e2e`; перед первым запуском — `bunx playwright install chromium`. В CI браузерный набор выполняется отдельной задачей. Сбой сохраняет HTML-отчёт и trace в GitHub Actions artifacts; локальные `playwright-report/` и `test-results/` не коммитятся.
 
-Браузерные проверки проходят настоящий UI в Chromium и HTTP/WebSocket-контракт с управляемыми заглушками внешних сервисов. Они не доказывают работу production Turnstile/Telegram/OpenAI; для OpenAI есть opt-in live-тесты backend, а ручные production-сценарии — в `docs/chat-production-checks.md`.
+Браузерные проверки проходят настоящий UI в Chromium и HTTP/WebSocket-контракт с управляемыми заглушками внешних сервисов. Каталог, индекс, макросы и учебный план приходят из явных HTTP-фикстур: локальные сгенерированные данные не используются, предварительная сборка конспектов не нужна. Они не доказывают работу production Turnstile/Telegram/OpenAI; для OpenAI есть opt-in live-тесты backend, а ручные production-сценарии — в `docs/chat-production-checks.md`.
 
 Production-сборка получает `VITE_CHAT_API_URL`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TELEGRAM_CLIENT_ID` из GitHub Actions repository variables. Workflow не содержит запасных значений; `scripts/validate-chat-config.ts` проверяет наличие настроек. Локально значения задаются окружением или игнорируемым env-файлом.
 
