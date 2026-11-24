@@ -392,7 +392,11 @@ $$u_1 \vec p_1 + v_1 \vec q_1 - u_2 \vec p_2 - v_2 \vec q_2 = \vec r_2 - \vec r_
 :::
 
 ::: {.problem #prob:lec14:general-to-param}
-Найди параметрические и канонические уравнения прямой $\begin{cases} 2x - y + z = 1, \\ x + y - z = 2. \end{cases}$
+Найди параметрические и канонические уравнения прямой
+$$\begin{cases}
+2x - y + z = 1, \\
+x + y - z = 2.
+\end{cases}$$
 :::
 
 ::: solution
