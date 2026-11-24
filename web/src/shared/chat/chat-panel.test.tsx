@@ -64,6 +64,27 @@ it("keeps the user bubble mounted when the server assigns message IDs", () => {
   vi.unstubAllGlobals();
 });
 
+it("shows regeneration only for the latest answer while keeping both copy buttons", () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  state.messages = ["Первый", "Второй"].flatMap((text) => [
+    makeUserMsg(text, null, state.docContext),
+    { ...makeAssistantMsg(state.docContext), status: "done" as const, contentTex: text },
+  ]);
+  try {
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <ChatPanel />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByRole("button", { name: "Скопировать ответ" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Ответить заново" })).toBeEnabled();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 it("shows and copies the agent link without a trailing slash", () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal("navigator", { clipboard: { writeText } });

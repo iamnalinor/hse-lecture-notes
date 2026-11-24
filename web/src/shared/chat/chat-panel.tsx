@@ -149,6 +149,11 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
 };
 
 /** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
+const getRetryableMessage = (chat: ReturnType<typeof useChat>) =>
+  !chat.isStreaming && !chat.isThreadLoading && chat.messages.at(-2)?.role === "user"
+    ? chat.messages.at(-1)
+    : undefined;
+
 export const ChatPanel = (): JSX.Element | null => {
   const chat = useChat();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -178,6 +183,7 @@ export const ChatPanel = (): JSX.Element | null => {
   });
   useAutoScroll(scrollerRef, chat.messages);
 
+  const retryableMessage = getRetryableMessage(chat);
   if (!chat.isConfigured) {
     return null;
   }
@@ -199,9 +205,7 @@ export const ChatPanel = (): JSX.Element | null => {
               ? !chat.isThreadLoading && <ChatEmptyView />
               : chat.messages.map((message) => (
                   <ChatMessageView
-                    canRetry={
-                      !chat.isStreaming && !chat.isThreadLoading && message === chat.messages.at(-1)
-                    }
+                    canRetry={message === retryableMessage}
                     key={message.renderKey ?? message.id}
                     message={message}
                     onJumpToBlock={jumpToBlock}

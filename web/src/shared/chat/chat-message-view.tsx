@@ -41,16 +41,17 @@ const AssistantFootActions = ({ contentTex, canRetry, onRetry }: FootActionsProp
             Скопировано
           </span>
         </span>
-        <button
-          aria-label="Ответить заново"
-          className="ai-icon-btn"
-          disabled={!canRetry}
-          onClick={onRetry}
-          title="Ответить заново"
-          type="button"
-        >
-          <RetryIcon />
-        </button>
+        {canRetry && (
+          <button
+            aria-label="Ответить заново"
+            className="ai-icon-btn"
+            onClick={onRetry}
+            title="Ответить заново"
+            type="button"
+          >
+            <RetryIcon />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -90,6 +91,30 @@ const UserMessageView = ({
   );
 };
 
+const MessageError = ({
+  message,
+  canRetry,
+  onRetry,
+}: Pick<Props, "canRetry" | "message"> & { onRetry: () => void }): JSX.Element => (
+  <div className="ai-error">
+    <div className="ai-error-row">
+      <AlertIcon />
+      <div>
+        Не удалось получить ответ
+        <div className="ai-error-detail">
+          {message.errorMessage ?? "Сервер не ответил вовремя. Попробуйте ещё раз."}
+        </div>
+      </div>
+    </div>
+    {canRetry && (
+      <button className="ai-btn ai-btn-2" onClick={onRetry} type="button">
+        <RetryIcon />
+        Повторить
+      </button>
+    )}
+  </div>
+);
+
 const AssistantMessageView = ({
   canRetry,
   message,
@@ -112,26 +137,7 @@ const AssistantMessageView = ({
       />
       <div className="ai-body ai-flow" data-answer-id={isFinished ? message.id : undefined}>
         {message.status === "error" ? (
-          <div className="ai-error">
-            <div className="ai-error-row">
-              <AlertIcon />
-              <div>
-                Не удалось получить ответ
-                <div className="ai-error-detail">
-                  {message.errorMessage ?? "Сервер не ответил вовремя. Попробуйте ещё раз."}
-                </div>
-              </div>
-            </div>
-            <button
-              className="ai-btn ai-btn-2"
-              disabled={!canRetry}
-              onClick={retrySelf}
-              type="button"
-            >
-              <RetryIcon />
-              Повторить
-            </button>
-          </div>
+          <MessageError canRetry={canRetry} message={message} onRetry={retrySelf} />
         ) : (
           message.contentTex !== "" && (
             <>
