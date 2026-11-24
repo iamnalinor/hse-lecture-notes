@@ -149,7 +149,7 @@ export interface CodexFunctionTool {
 export type CodexInputItem =
   | {
       type: "message";
-      role: "user" | "assistant";
+      role: "developer" | "user" | "assistant";
       content: Array<{ type: "input_text" | "output_text"; text: string }>;
     }
   | {
@@ -255,6 +255,7 @@ export type ServerWsFrame =
     }
   | {
       type: "done";
+      replayed?: boolean;
       runId: string;
       status: RunStatus;
       text: string;

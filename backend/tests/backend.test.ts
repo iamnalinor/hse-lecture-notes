@@ -20,7 +20,7 @@ import {
   type JwksDocument,
 } from "../src/crypto";
 import { ThreadTitleStream } from "../src/thread-title";
-import { ProxyConnectError } from "../src/socks5-fetch";
+import { ProxyConnectError, ResponseEofError } from "../src/socks5-fetch";
 import { TrackedD1 } from "../src/db";
 import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
 import {
@@ -42,7 +42,14 @@ test("an oversized title split across chunks stays out of the answer", () => {
   expect(stream.push("Назва")).toBe("");
   expect(stream.push("ние: " + "а".repeat(100))).toBe("");
   expect(stream.push("б".repeat(30) + "\nОтвет")).toBe("Ответ");
-  expect(stream.title).toBe("а".repeat(36));
+  expect(stream.title).toBe("а".repeat(47) + "…");
+});
+
+test("preserves a descriptive chat title", () => {
+  const stream = new ThreadTitleStream();
+  const title = "Начало изучения дискретной математики";
+  expect(stream.push(`Название: ${title}\nОтвет`)).toBe("Ответ");
+  expect(stream.title).toBe(title);
 });
 
 function makeTestEnv(db: D1Database): Env {
@@ -227,11 +234,11 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(sentHeaders.originator).toBe("codex_cli_rs");
   });
 
-  test.each([true, false])("retries a rejected SOCKS tunnel exactly once (recovers=%s)", async (recovers) => {
+  test.each([[5, true, 2], [5, false, 2], [2, false, 1], ["eof", false, 1]] as const)("bounds proxy retries (reply=%s, recovers=%s)", async (reply, recovers, expectedAttempts) => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     let attempts = 0;
-    const error = new ProxyConnectError(2);
+    const error = reply === "eof" ? new ResponseEofError("headers") : new ProxyConnectError(reply);
     const provider = new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
       getCredentialsImpl: async () => ({ accessToken: "token", refreshToken: "", accountId: "", expiresAt: 0 }),
       fetchImpl: async () => {
@@ -247,7 +254,7 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     });
     if (recovers) expect((await result).completed).toBe(true);
     else await expect(result).rejects.toBe(error);
-    expect(attempts).toBe(2);
+    expect(attempts).toBe(expectedAttempts);
   });
 
   test("OAuth refresh uses CAS version bump and marks needs_reauth on invalid_grant", async () => {
@@ -881,6 +888,11 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     let roundCalls = 0;
     const fakeProvider: LlmProvider = {
       async runRound(req) {
+        const clock = req.input[0];
+        if (clock?.type !== "message") throw new Error("missing server clock");
+        expect(clock.role).toBe("developer");
+        expect(clock.content[0]?.text).toMatch(/Москва.*\d{2}\.\d{2}\.\d{4}.*\d{2}:\d{2}/u);
+        expect(req.input[1]).toMatchObject({ role: "user" });
         expect(req.model).toBe("gpt-6.1-terra");
         expect(req.effort).toBe("high");
         roundCalls += 1;

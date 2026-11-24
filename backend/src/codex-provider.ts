@@ -346,9 +346,10 @@ export class CodexResponsesProvider implements LlmProvider {
           });
         } catch (fetchErr) {
           if (fetchErr instanceof ProxyConnectError) {
-            if (attempt >= 2 || retriedProxy || req.signal.aborted || (fetchErr.reply !== null && fetchErr.reply > 6)) throw fetchErr;
+            const temporary = fetchErr.reply === null || [1, 3, 4, 5, 6].includes(fetchErr.reply);
+            if (!temporary || attempt >= 2 || retriedProxy || req.signal.aborted) throw fetchErr;
             retriedProxy = true;
-            await new Promise(resolve => setTimeout(resolve, 400));
+            await new Promise(resolve => setTimeout(resolve, 400 + Math.random() * 200));
             continue;
           }
           throw fetchErr;

@@ -1,7 +1,7 @@
 import { FIRST_TURN_TITLE_PROMPT } from "./system-prompt";
 import { ThreadTitleStream } from "./thread-title";
 import { CodexAuthError } from "./codex-auth";
-import { ProxyConnectError } from "./socks5-fetch";
+import { ProxyConnectError, ResponseEofError } from "./socks5-fetch";
 import { CodexUpstreamError } from "./codex-provider";
 import type { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
@@ -134,6 +134,29 @@ async function loadThreadHistoryInput(
   return items;
 }
 
+function describeRunError(err: unknown, code: string): string {
+  if (err instanceof ProxyConnectError) {
+    if (err.reply === null) return "Не удалось установить соединение через прокси.";
+    if (err.reply === 2) return "Правила прокси запрещают подключение к модели (SOCKS5 REP=2).";
+    return `Прокси отклонил подключение к модели (SOCKS5 REP=${err.reply}).`;
+  }
+  if (err instanceof ResponseEofError) {
+    return err.stage === "headers"
+      ? "Соединение с моделью оборвалось до получения заголовков ответа (EOF)."
+      : "Соединение с моделью оборвалось во время получения ответа (EOF).";
+  }
+  const detail = (err instanceof Error ? err.message : String(err)).trim().slice(0, 400);
+  if (err instanceof CodexAuthError) return `Ошибка авторизации Codex (${code}): ${detail}`;
+  if (err instanceof CodexUpstreamError) return `Ошибка модели HTTP ${err.status} (${code}): ${detail}`;
+  return `Ошибка сервера (${code}): ${detail}`;
+}
+
+const moscowClock = new Intl.DateTimeFormat("ru-RU", {
+  timeZone: "Europe/Moscow",
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
 export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
   const {
     env,
@@ -186,7 +209,15 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     role: "user",
     content: [{ type: "input_text", text: formatUserTurnContent(questionText, quote) }],
   };
-  const conversationInput: CodexInputItem[] = [...historyItems, userTurnItem];
+  const conversationInput: CodexInputItem[] = [
+    ...historyItems,
+    {
+      type: "message",
+      role: "developer",
+      content: [{ type: "input_text", text: `Дата и время вопроса (МСК): ${moscowClock.format(new Date())}.` }],
+    },
+    userTurnItem,
+  ];
 
   const toolRunner = new AgentToolRunner({
     env,
@@ -433,6 +464,15 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
     const isAuthErr = err instanceof CodexAuthError;
     const isUpstreamErr = err instanceof CodexUpstreamError;
 
+    const errorCode = abortedByUser
+      ? "user_stopped"
+      : timedOut
+        ? "run_timeout"
+        : isProxyError ? "proxy_unavailable"
+        : err instanceof ResponseEofError ? "upstream_eof"
+        : isAuthErr || isUpstreamErr ? err.code
+        : "internal_error";
+
     logEvent(abortedByUser ? "info" : "error", "agent_run_exception", {
       runId,
       threadId,
@@ -443,7 +483,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       timedOut,
       roundsCompleted,
       totalToolCalls,
-      errCode: isAuthErr || isUpstreamErr ? err.code : "internal_error",
+      errCode: errorCode,
       upstreamStatus: isUpstreamErr ? err.status : undefined,
       errMessage: err instanceof Error ? err.message.slice(0, 500) : String(err),
     });
@@ -453,23 +493,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
       : timedOut
         ? "incomplete"
         : "error";
-    const errorCode = abortedByUser
-      ? "user_stopped"
-      : timedOut
-        ? "run_timeout"
-        : isProxyError ? "proxy_unavailable" : isAuthErr
-          ? err.code
-          : isUpstreamErr
-            ? err.code
-            : "internal_error";
-    const rawErrDetail = (err instanceof Error ? err.message : String(err)).trim().slice(0, 400);
-    const errorMessage = abortedByUser
-      ? null
-      : isProxyError ? "Не удалось подключиться к модели. Попробуйте ещё раз чуть позже." : isAuthErr
-        ? `Ошибка авторизации Codex (${err.code}): ${rawErrDetail} [run: ${runId}]`
-        : isUpstreamErr
-          ? `Ошибка модели HTTP ${err.status} (${err.code}): ${rawErrDetail} [run: ${runId}]`
-          : `Ошибка сервера (${errorCode}): ${rawErrDetail} [run: ${runId}]`;
+    const errorMessage = abortedByUser ? null : `${describeRunError(err, errorCode)} [run: ${runId}]`;
 
     await finalizeRunAtomic(db, {
       runId,

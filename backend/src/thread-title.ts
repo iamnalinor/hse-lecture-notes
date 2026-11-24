@@ -1,4 +1,4 @@
-export const MAX_THREAD_TITLE_LENGTH = 36;
+export const MAX_THREAD_TITLE_LENGTH = 48;
 
 export function shortenThreadTitle(text: string): string {
   const characters = Array.from(text);
@@ -28,7 +28,7 @@ export class ThreadTitleStream {
     }
     this.reading = false;
     if (!line.startsWith(prefix)) return this.pending + delta;
-    this.title = Array.from(line.slice(prefix.length).trim()).slice(0, MAX_THREAD_TITLE_LENGTH).join("").trimEnd() || null;
+    this.title = shortenThreadTitle(line.slice(prefix.length).trim()) || null;
     return newline < 0 ? "" : delta.slice(newline + 1);
   }
 }

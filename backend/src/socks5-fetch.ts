@@ -64,7 +64,7 @@ class BufferedReader {
     return out;
   }
 
-  async readUntil(delimiter: Uint8Array, maxBytes = 65_536): Promise<Uint8Array> {
+  async readUntil(delimiter: Uint8Array, maxBytes = 65_536, stage: "headers" | "body" = "headers"): Promise<Uint8Array> {
     while (true) {
       const idx = indexOfBytes(this.buf, delimiter);
       if (idx !== -1) {
@@ -77,7 +77,7 @@ class BufferedReader {
       }
       const chunk = await this.nextChunkFn();
       if (chunk === null) {
-        throw new Error("Unexpected EOF before HTTP response headers completed");
+        throw new ResponseEofError(stage);
       }
       if (chunk.length > 0) {
         this.append(chunk);
@@ -103,6 +103,12 @@ function indexOfBytes(haystack: Uint8Array, needle: Uint8Array): number {
     return i;
   }
   return -1;
+}
+
+export class ResponseEofError extends Error {
+  constructor(readonly stage: "headers" | "body") {
+    super(`Unexpected EOF while reading HTTP response ${stage}`);
+  }
 }
 
 export class ProxyConnectError extends Error {
@@ -224,7 +230,7 @@ function createChunkedBodyStream(
     async pull(controller) {
       try {
         while (true) {
-          const sizeLineBytes = await br.readUntil(CRLF, 1024);
+          const sizeLineBytes = await br.readUntil(CRLF, 1024, "body");
           const sizeLine = decoder.decode(sizeLineBytes).split(";")[0]!.trim();
           if (!sizeLine) continue;
           const chunkSize = parseInt(sizeLine, 16);

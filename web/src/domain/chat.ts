@@ -57,6 +57,7 @@ export type ChatMessage = {
   readonly id: string;
   readonly quote: ChatQuote | null;
   readonly renderKey?: string;
+  readonly pendingRequestId?: null | string;
   readonly role: "assistant" | "user";
   readonly runId: null | string;
   readonly seq: number;

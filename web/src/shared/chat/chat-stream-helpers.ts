@@ -59,7 +59,13 @@ export const applyMetaMessageIds = (
   }
   return prev.map((msg, idx) => {
     if (idx === aIdx) {
-      return { ...msg, id: ids.assistantId, renderKey: msg.renderKey ?? msg.id, runId: ids.runId };
+      return {
+        ...msg,
+        pendingRequestId: null,
+        id: ids.assistantId,
+        renderKey: msg.renderKey ?? msg.id,
+        runId: ids.runId,
+      };
     }
     if (idx === aIdx - 1 && msg.role === "user") {
       return { ...msg, id: ids.userId, renderKey: msg.renderKey ?? msg.id, runId: ids.runId };

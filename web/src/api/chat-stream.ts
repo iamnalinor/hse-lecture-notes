@@ -11,6 +11,7 @@ export type WsStreamCallbacks = {
   readonly onCloseUnexpected: () => void;
   readonly onDelta: (text: string) => void;
   readonly onDone: (payload: {
+    readonly replayed?: boolean;
     readonly block: ChatBlock | null;
     readonly degraded: ChatDegraded;
     readonly runId: string;

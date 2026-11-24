@@ -134,6 +134,8 @@ it("keeps deltas in their thread and restores a refused retry", async () => {
   await act(() => chat.current.retryMessage("a"));
   const retry = vi.mocked(openChatMessageStream).mock.calls.at(-1);
   expect(retry?.[1].retryAssistantMessageId).toBe("a");
+  const first = vi.mocked(openChatMessageStream).mock.calls[0];
+  expect(retry?.[1].clientRequestId).not.toBe(first?.[1].clientRequestId);
   act(() =>
     retry?.[2].onError({
       code: "blocked",
@@ -144,7 +146,7 @@ it("keeps deltas in their thread and restores a refused retry", async () => {
   expect(chat.current.messages).toEqual(saved);
 });
 
-it("recovers from a disconnect before meta and resends a local question as new", async () => {
+it("reuses the same request ID after a disconnect before meta", async () => {
   const chat = mount();
   await act(() => chat.current.send("Q"));
   act(() => vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onCloseUnexpected());
@@ -157,6 +159,8 @@ it("recovers from a disconnect before meta and resends a local question as new",
   expect(
     vi.mocked(openChatMessageStream).mock.calls.at(-1)?.[1].retryAssistantMessageId,
   ).toBeNull();
+  const sends = vi.mocked(openChatMessageStream).mock.calls;
+  expect(sends[1]?.[1].clientRequestId).toBe(sends[0]?.[1].clientRequestId);
   expect(chat.current.messages).toHaveLength(2);
 });
 

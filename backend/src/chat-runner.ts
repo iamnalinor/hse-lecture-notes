@@ -367,6 +367,7 @@ export class ChatRunner extends DurableObject<Env> {
         });
         safeSend({
           type: "done",
+          replayed: true,
           runId: admit.runId,
           status: admit.status,
           text: "",

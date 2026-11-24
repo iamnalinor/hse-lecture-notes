@@ -1,22 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import type {
-  ChatBlock,
-  ChatDegraded,
   ChatDocContext,
   ChatMessage,
   ChatQuote,
   ChatStep,
   ChatThreadSummary,
-  ChatTier,
-  ChatUser,
 } from "#web/domain/chat.ts";
 
-import {
-  type AllowanceResponse,
-  ensureChatAllowance,
-  getChatEnvConfig,
-} from "#web/api/chat-client.ts";
+import { type AllowanceResponse, getChatEnvConfig } from "#web/api/chat-client.ts";
 import {
   type ActiveWsStream,
   openChatMessageStream,
@@ -24,6 +16,7 @@ import {
 } from "#web/api/chat-stream.ts";
 import { cancelActiveTurnstile, type TurnstileHooks } from "#web/api/chat-widgets.ts";
 
+import { type AllowanceSetters, fetchAllowanceOutcome } from "./chat-allowance.ts";
 import {
   applyMetaMessageIds,
   optimisticMessages,
@@ -31,11 +24,9 @@ import {
   resetRetryAssistant,
 } from "./chat-stream-helpers.ts";
 
-export type StreamStateSetters = {
+export type StreamStateSetters = AllowanceSetters & {
   readonly setPollRunId: (id: null | string) => void;
   readonly setActiveThreadId: (id: null | string) => void;
-  readonly setBlock: (block: ChatBlock | null) => void;
-  readonly setDegraded: (degraded: ChatDegraded) => void;
   readonly setDraft: (text: string) => void;
   readonly setIsStreaming: (isStreaming: boolean) => void;
   readonly setMessages: (updater: (prev: readonly ChatMessage[]) => readonly ChatMessage[]) => void;
@@ -43,8 +34,6 @@ export type StreamStateSetters = {
   readonly setThreads: (
     updater: (prev: readonly ChatThreadSummary[]) => readonly ChatThreadSummary[],
   ) => void;
-  readonly setTier: (tier: ChatTier) => void;
-  readonly setUser: (user: ChatUser | null) => void;
 };
 
 export type SendArgs = {
@@ -61,6 +50,7 @@ export type ChatStreamController = {
 };
 
 type WsCallbackDeps = {
+  readonly clientRequestId: string;
   readonly args: SendArgs;
   readonly clearActive: () => void;
   readonly setters: StreamStateSetters;
@@ -81,12 +71,21 @@ const failTurn = (
   );
 };
 
+const markUnconfirmed = ({ setters, args, clientRequestId }: WsCallbackDeps): void => {
+  setters.setIsStreaming(false);
+  setters.setMessages((prev) =>
+    patchLastAssistant(prev, (m) => ({
+      ...(args.retryMessage ?? m),
+      status: "error",
+      pendingRequestId: clientRequestId,
+      errorMessage: "Соединение прервано до подтверждения. Можно повторить запрос.",
+    })),
+  );
+};
+
 const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
   const { args, clearActive, setters } = deps;
   let runId: null | string = null;
-  const fail = (message: string): void => {
-    failTurn(deps, runId, message);
-  };
 
   return {
     onTitle: (threadId, title) => {
@@ -97,7 +96,7 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     onCloseUnexpected: () => {
       clearActive();
       if (runId === null) {
-        fail("Соединение прервано. Попробуйте ещё раз.");
+        markUnconfirmed(deps);
       } else {
         setters.setPollRunId(runId);
       }
@@ -109,8 +108,12 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     },
     onDone: (payload) => {
       clearActive();
-      setters.setIsStreaming(false);
+      setters.setIsStreaming(payload.replayed === true);
       setters.setDegraded(payload.degraded);
+      if (payload.replayed === true) {
+        setters.setPollRunId(payload.runId);
+        return;
+      }
       if (payload.block !== null) {
         setters.setBlock(payload.block);
       }
@@ -132,7 +135,7 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
           return;
         }
       }
-      fail(payload.message);
+      failTurn(deps, runId, payload.message);
     },
     onMeta: (payload) => {
       runId = payload.runId;
@@ -159,39 +162,6 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
       setters.setMessages((prev) => patchLastAssistant(prev, (m) => ({ ...m, steps })));
     },
   };
-};
-
-type AllowanceOutcome =
-  | { readonly allowance: AllowanceResponse; readonly kind: "ok" }
-  | { readonly kind: "blocked" }
-  | { readonly kind: "cancelled" }
-  | { readonly kind: "error"; readonly message: string };
-
-const fetchAllowanceOutcome = async (
-  turnstileHooks: TurnstileHooks,
-  setters: StreamStateSetters,
-  isCurrent: () => boolean,
-): Promise<AllowanceOutcome> => {
-  try {
-    const allowance = await ensureChatAllowance(turnstileHooks);
-    if (!isCurrent()) {
-      return { kind: "cancelled" };
-    }
-    setters.setTier(allowance.tier);
-    setters.setUser(allowance.user);
-    setters.setDegraded(allowance.degraded);
-    if (allowance.block !== null) {
-      setters.setBlock(allowance.block);
-      return { kind: "blocked" };
-    }
-    return { allowance, kind: "ok" };
-  } catch (error) {
-    if (error instanceof Error && error.message === "Turnstile cancelled") {
-      return { kind: "cancelled" };
-    }
-    const detail = error instanceof Error ? error.message : String(error);
-    return { kind: "error", message: `Ошибка доступа (/v1/allowance): ${detail}` };
-  }
 };
 
 const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
@@ -223,7 +193,7 @@ const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): vo
 };
 
 const connectStream = (
-  args: SendArgs,
+  args: SendArgs & { readonly clientRequestId: string },
   allowance: AllowanceResponse,
   callbacks: WsStreamCallbacks,
 ): ActiveWsStream | null => {
@@ -233,7 +203,7 @@ const connectStream = (
       {
         allowanceToken: allowance.allowanceToken,
         browserToken: allowance.browserToken,
-        clientRequestId: crypto.randomUUID(),
+        clientRequestId: args.clientRequestId,
         course: args.docContext.course,
         docId: args.docContext.docId,
         quote: args.quote,
@@ -285,11 +255,11 @@ export const useChatStream = (
   }, []);
 
   const startTurn = useCallback(
-    (args: SendArgs) => {
+    (args: SendArgs, clientRequestId: string) => {
       sendingRef.current = true;
       abortedPreWsRef.current = false;
       startOptimisticTurn(setters, args);
-      return buildWsCallbacks({ args, clearActive, setters });
+      return buildWsCallbacks({ args, clearActive, clientRequestId, setters });
     },
     [clearActive, setters],
   );
@@ -298,7 +268,8 @@ export const useChatStream = (
       if (sendingRef.current) {
         return;
       }
-      const callbacks = startTurn(args);
+      const clientRequestId = args.retryMessage?.pendingRequestId ?? crypto.randomUUID();
+      const callbacks = startTurn(args, clientRequestId);
       const outcome = await fetchAllowanceOutcome(turnstileHooks, setters, isCurrent);
       if (!mountedRef.current) {
         return;
@@ -312,7 +283,7 @@ export const useChatStream = (
         rollbackOptimisticTurn(setters, args);
         return;
       }
-      streamRef.current = connectStream(args, outcome.allowance, callbacks);
+      streamRef.current = connectStream({ ...args, clientRequestId }, outcome.allowance, callbacks);
     },
     [clearActive, isCurrent, setters, startTurn, turnstileHooks],
   );
