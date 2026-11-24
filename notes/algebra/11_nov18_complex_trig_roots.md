@@ -409,7 +409,7 @@ $$f(z) = a_n z^n + a_{n-1} z^{n-1} + \dots + a_1 z + a_0, \qquad a_0, \dots, a_n
 # Практика
 
 ::: {.problem #prob:lec11:arithmetic}
-Найдите $\operatorname{Re} z$, $\operatorname{Im} z$ и $\bar z$ для $z = \dfrac{(1 + 2i)(3 - i)}{1 - i}$.
+Найди $\operatorname{Re} z$, $\operatorname{Im} z$ и $\bar z$ для $z = \dfrac{(1 + 2i)(3 - i)}{1 - i}$.
 :::
 
 ::: solution
@@ -421,7 +421,7 @@ $$z = \frac{(5 + 5i)(1 + i)}{(1 - i)(1 + i)} = \frac{5 + 5i + 5i + 5i^2}{1 + 1} 
 :::
 
 ::: {.problem #prob:lec11:conj-equation}
-Решите уравнение $(1 + i) z + 2 \bar z = 5 + i$.
+Реши уравнение $(1 + i) z + 2 \bar z = 5 + i$.
 :::
 
 ::: solution
@@ -433,7 +433,7 @@ $$\begin{cases} 3x - y = 5, \\ x - y = 1. \end{cases}$$
 :::
 
 ::: {.problem #prob:lec11:trig-form}
-Запишите в тригонометрической и показательной форме числа $z_1 = -\sqrt3 + i$, $z_2 = -2 - 2i$, $z_3 = -4i$, $z_4 = -3\left(\cos \frac{\pi}{5} - i \sin \frac{\pi}{5}\right)$.
+Запиши в тригонометрической и показательной форме числа $z_1 = -\sqrt3 + i$, $z_2 = -2 - 2i$, $z_3 = -4i$, $z_4 = -3\left(\cos \frac{\pi}{5} - i \sin \frac{\pi}{5}\right)$.
 :::
 
 ::: solution
@@ -445,7 +445,7 @@ $z_4$: *ключ:* запись не тригонометрическая (за�
 :::
 
 ::: {.problem #prob:lec11:power}
-Вычислите $\dfrac{(1 - i)^{10}}{(\sqrt3 + i)^6}$.
+Вычисли $\dfrac{(1 - i)^{10}}{(\sqrt3 + i)^6}$.
 :::
 
 ::: solution
@@ -455,7 +455,7 @@ $z_4$: *ключ:* запись не тригонометрическая (за�
 :::
 
 ::: {.problem #prob:lec11:fourth-roots}
-Найдите все корни уравнения $z^4 = -8 + 8\sqrt3 \, i$ и опишите их расположение на комплексной плоскости.
+Найди все корни уравнения $z^4 = -8 + 8\sqrt3 \, i$ и опиши их расположение на комплексной плоскости.
 :::
 
 ::: solution
@@ -465,7 +465,7 @@ $|w| = \sqrt{64 + 192} = 16$, $\cos \psi = -\frac{8}{16} = -\frac12$, $\sin \psi
 :::
 
 ::: {.problem #prob:lec11:roots-arg}
-Найдите корни уравнения $z^4 + \dfrac{2i}{1 - i\sqrt3} = 0$, для которых $0 < \arg z < \frac{\pi}{2}$. Изобразите на комплексной плоскости число $w = -\dfrac{2i}{1 - i\sqrt3}$ и все корни $\sqrt[4]{w}$.
+Найди корни уравнения $z^4 + \dfrac{2i}{1 - i\sqrt3} = 0$, для которых $0 < \arg z < \frac{\pi}{2}$. Изобрази на комплексной плоскости число $w = -\dfrac{2i}{1 - i\sqrt3}$ и все корни $\sqrt[4]{w}$.
 :::
 
 ::: solution
@@ -495,7 +495,7 @@ $|w| = \sqrt{64 + 192} = 16$, $\cos \psi = -\frac{8}{16} = -\frac12$, $\sin \psi
 ```
 
 ::: {.problem #prob:lec11:roots-quotient}
-Найдите то значение $u$ корня $\sqrt[3]{(1 + i\sqrt3)^2}$, для которого число $\dfrac{u}{1 - i}$ имеет аргумент $-\frac{31\pi}{36}$, и модуль числа $\dfrac{u}{1 - i}$.
+Найди то значение $u$ корня $\sqrt[3]{(1 + i\sqrt3)^2}$, для которого число $\dfrac{u}{1 - i}$ имеет аргумент $-\frac{31\pi}{36}$, и модуль числа $\dfrac{u}{1 - i}$.
 :::
 
 ::: solution
@@ -505,7 +505,7 @@ $1 + i\sqrt3 = 2\left(\cos \frac{\pi}{3} + i \sin \frac{\pi}{3}\right)$, по ф
 :::
 
 ::: {.problem #prob:lec11:linear-system}
-Решите систему уравнений
+Реши систему уравнений
 $$\begin{cases} (1 + i) z_1 + i z_2 = 1 + 2i, \\ 2 z_1 + (1 - i) z_2 = 5 - 3i. \end{cases}$$
 :::
 
@@ -522,7 +522,7 @@ $$\Delta_1 = \begin{vmatrix} 1 + 2i & i \\ 5 - 3i & 1 - i \end{vmatrix} = (3 + i
 :::
 
 ::: {.problem #prob:lec11:quadratic}
-Решите уравнение $z^2 - (3 - i) z + 4 = 0$.
+Реши уравнение $z^2 - (3 - i) z + 4 = 0$.
 :::
 
 ::: solution
@@ -532,7 +532,7 @@ $$\Delta_1 = \begin{vmatrix} 1 + 2i & i \\ 5 - 3i & 1 - i \end{vmatrix} = (3 + i
 :::
 
 ::: {.problem #prob:lec11:sin-cube}
-Выразите $\sin^3 \varphi$ через $\sin \varphi$ и $\sin 3\varphi$.
+Вырази $\sin^3 \varphi$ через $\sin \varphi$ и $\sin 3\varphi$.
 :::
 
 ::: solution

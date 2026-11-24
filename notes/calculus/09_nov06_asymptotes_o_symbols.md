@@ -648,7 +648,7 @@ $$f(x) + x = \frac{2x}{\sqrt{x^2 + 2x} - x} = \frac{2x}{-x\left(\sqrt{1 + 2/x} +
 :::
 
 ::: {.problem #prob:lec09:o-substitution}
-Пусть $f(y) = 1 + 2y - y^2 + o(y^2)$ при $y \to 0$. (a) Найдите $\lim\limits_{y \to 0} \dfrac{f(y) - 1}{y}$. (b) Представьте $f(3x + x^2)$ в виде $P(x) + o(x^2)$ при $x \to 0$, где $P$ — многочлен степени не выше $2$.
+Пусть $f(y) = 1 + 2y - y^2 + o(y^2)$ при $y \to 0$. (a) Найди $\lim\limits_{y \to 0} \dfrac{f(y) - 1}{y}$. (b) Представь $f(3x + x^2)$ в виде $P(x) + o(x^2)$ при $x \to 0$, где $P$ — многочлен степени не выше $2$.
 :::
 
 ::: solution
@@ -665,7 +665,7 @@ $$f(u) = 1 + 2(3x + x^2) - (3x + x^2)^2 + o(u^2).$$
 - \(a) Верно ли при $x \to 2$, что $o(x^4) = o(x^2)$? А $o(x^2) = o(x^4)$?
 - \(b) Верно ли при $x \to x_0$, что $O(g) \cdot O(g) = O(g)$ (где $g(x) \ne 0$ около $x_0$)?
 - \(c) Пусть $f(x) = O(g(x))$ при $x \to x_0$. Верно ли, что $2^{f(x)} = O\bigl(2^{g(x)}\bigr)$ при $x \to x_0$?
-- \(d) Пусть $g(y) = 1 - y + 2y^2 + o(y^2)$ при $y \to 0$. Представьте $g\bigl(2x - x^2 + o(x^2)\bigr)$ в виде $P(x) + o(x^2)$ при $x \to 0$, где $P$ — многочлен степени не выше $2$.
+- \(d) Пусть $g(y) = 1 - y + 2y^2 + o(y^2)$ при $y \to 0$. Представь $g\bigl(2x - x^2 + o(x^2)\bigr)$ в виде $P(x) + o(x^2)$ при $x \to 0$, где $P$ — многочлен степени не выше $2$.
 :::
 
 ::: solution
@@ -691,7 +691,7 @@ $$g(u) = 1 - \bigl(2x - x^2 + o(x^2)\bigr) + 2\bigl(4x^2 + o(x^2)\bigr) + o(x^2)
 ## Эквивалентности
 
 ::: {.problem #prob:lec09:limits}
-Найдите пределы:
+Найди пределы:
 $$\text{(a) } \lim_{x \to 0} \frac{\sin 2x - \operatorname{tg} 2x}{x(1 - \cos 3x)}; \qquad \text{(b) } \lim_{x \to 0} \frac{\sqrt[3]{1 + x \operatorname{tg} 2x} - 1}{\sin^2 x};$$
 $$\text{(c) } \lim_{x \to \infty} x^2\left(1 - \cos\frac2x\right); \qquad \text{(d) } \lim_{x \to 2} \frac{\sqrt{x + 2} - 2}{x^2 - 4}; \qquad \text{(e) } \lim_{x \to 0} \frac{e^{\sin 2x} - 1}{\ln(1 + 3x)}.$$
 :::
@@ -711,7 +711,7 @@ $$\text{(c) } \lim_{x \to \infty} x^2\left(1 - \cos\frac2x\right); \qquad \text{
 :::
 
 ::: {.problem #prob:lec09:main-part}
-Найдите главную часть: (a) $\sqrt{1 + 2x^2} - \cos x$ при $x \to 0$; (b) $\sqrt{x^2 + 1} - x$ при $x \to +\infty$; (c) $3x - x^4$ при $x \to 0$ и при $x \to \infty$.
+Найди главную часть: (a) $\sqrt{1 + 2x^2} - \cos x$ при $x \to 0$; (b) $\sqrt{x^2 + 1} - x$ при $x \to +\infty$; (c) $3x - x^4$ при $x \to 0$ и при $x \to \infty$.
 :::
 
 ::: solution
@@ -725,7 +725,7 @@ $$\text{(c) } \lim_{x \to \infty} x^2\left(1 - \cos\frac2x\right); \qquad \text{
 :::
 
 ::: {.problem #prob:lec09:equiv-shift-and-log}
-Найдите пределы:
+Найди пределы:
 
 - \(a) $\lim\limits_{x \to 1} \dfrac{\bigl(1 - \cos(x - 1)\bigr)^{2/3}}{\ln x \cdot \sqrt[3]{3^x - 3}}$;
 - \(b) $\lim\limits_{x \to 0} \dfrac{\ln(1 + 2x + x^2) + \ln(1 - 2x + x^2)}{x^2}$.
@@ -747,7 +747,7 @@ $$\ln(1 + 2x + x^2) + \ln(1 - 2x + x^2) = \ln\bigl((1 + x^2)^2 - 4x^2\bigr) = \l
 :::
 
 ::: {.problem #prob:lec09:o-sums-limits}
-Используя разложения с $o$-символикой, найдите пределы:
+Используя разложения с $o$-символикой, найди пределы:
 
 - \(a) $\lim\limits_{x \to 0} \dfrac{\sqrt[3]{1 + 6x} - \sqrt[4]{1 + 4\sin x}}{\sqrt{1 + 6x} - \sqrt[3]{1 + 3\sin x}}$;
 - \(b) $\lim\limits_{x \to 0} \dfrac{\ln(1 + 2x + x^2) + 3\sin x - x^3}{\operatorname{tg} 2x + \sin^2 x + (e^x - 1)^5}$;
@@ -772,7 +772,7 @@ $$\ln(1 + 2x + x^2) + \ln(1 - 2x + x^2) = \ln\bigl((1 + x^2)^2 - 4x^2\bigr) = \l
 :::
 
 ::: {.problem #prob:lec09:one-inf-o}
-Найдите пределы (неопределённость $1^\infty$):
+Найди пределы (неопределённость $1^\infty$):
 
 - \(a) $\lim\limits_{x \to 0} \bigl(1 + \operatorname{tg}^2 2x\bigr)^{\frac{1}{\ln\cos x}}$;
 - \(b) $\lim\limits_{x \to 1} \bigl(x^3 + \sin^2 \pi x\bigr)^{\frac{1}{\ln x}}$.
@@ -798,7 +798,7 @@ $$\ln(1 + 2x + x^2) + \ln(1 - 2x + x^2) = \ln\bigl((1 + x^2)^2 - 4x^2\bigr) = \l
 ## Односторонние пределы и точки разрыва
 
 ::: {.problem #prob:lec09:one-sided}
-Найдите односторонние пределы и выясните, есть ли предел: (a) $\dfrac{|x - 1|}{x^2 - 1}$ при $x \to 1$; (b) $\dfrac{\sqrt{1 - \cos 2x}}{x}$ при $x \to 0$.
+Найди односторонние пределы и выясни, есть ли предел: (a) $\dfrac{|x - 1|}{x^2 - 1}$ при $x \to 1$; (b) $\dfrac{\sqrt{1 - \cos 2x}}{x}$ при $x \to 0$.
 :::
 
 ::: solution
@@ -811,7 +811,7 @@ $$\ln(1 + 2x + x^2) + \ln(1 - 2x + x^2) = \ln\bigl((1 + x^2)^2 - 4x^2\bigr) = \l
 
 
 ::: {.problem #prob:lec09:discontinuities}
-Найдите точки разрыва, определите их род и, где можно, доопределите функцию по непрерывности: (a) $\dfrac{x^2 + x}{\sin \pi x}$; (b) $\dfrac{1}{1 + 2^{1/x}}$; (c) $e^{1/x}$.
+Найди точки разрыва, определи их род и, где можно, доопредели функцию по непрерывности: (a) $\dfrac{x^2 + x}{\sin \pi x}$; (b) $\dfrac{1}{1 + 2^{1/x}}$; (c) $e^{1/x}$.
 :::
 
 ::: solution
@@ -827,7 +827,7 @@ $$\ln(1 + 2x + x^2) + \ln(1 - 2x + x^2) = \ln\bigl((1 + x^2)^2 - 4x^2\bigr) = \l
 ## Асимптоты
 
 ::: {.problem #prob:lec09:asymptotes}
-Найдите область определения и все асимптоты графика:
+Найди область определения и все асимптоты графика:
 $$\text{(a) } f(x) = \frac{x^3 + 2}{x^2 - 4}; \qquad \text{(b) } f(x) = x\sqrt{\frac{x + 1}{x - 3}}; \qquad \text{(c) } f(x) = \frac{2x^2 + \sin x}{x}.$$
 :::
 

@@ -146,7 +146,11 @@ export const useThreadState = (isOpen: boolean, isConfigured: boolean, pageKey: 
     [replacePage, setActiveThreadId, setMessages, setIsStreaming, setPollRunId, setIsThreadLoading],
   );
 
-  useRunStatusPoller({ runId: pollRunId, threadId: activeThreadId, loadThread });
+  useRunStatusPoller({
+    runId: isThreadLoading ? null : pollRunId,
+    threadId: activeThreadId,
+    loadThread,
+  });
 
   usePageRestore({
     currentKey,

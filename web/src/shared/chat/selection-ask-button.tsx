@@ -4,6 +4,8 @@ import type { ChatQuote } from "#web/domain/chat.ts";
 
 import { useChat } from "./chat-context.tsx";
 import { SparklesIcon } from "./chat-icons.tsx";
+import { watchSelectionEnd } from "./selection-events.ts";
+import { selectParagraphOnTripleClick } from "./selection-paragraph.ts";
 
 const nodeToElement = (node: Node): Element | null =>
   node instanceof Element ? node : node.parentElement;
@@ -180,30 +182,16 @@ const useSelectionUpdates = (
     if (!isActive) {
       return;
     }
-    let timer: null | ReturnType<typeof globalThis.setTimeout> = null;
-    const update = (): void => {
-      if (timer !== null) {
-        globalThis.clearTimeout(timer);
-      }
-      timer = globalThis.setTimeout(() => {
+    return watchSelectionEnd(
+      () => {
         if (globalThis.document.activeElement?.classList.contains("ai-sel-btn") !== true) {
           setPill(computeSelPill(canQuoteMaterial, canQuoteAnswer));
         }
-      }, 0);
-    };
-    document.addEventListener("scroll", update, { capture: true });
-    document.addEventListener("mouseup", update);
-    document.addEventListener("keyup", update);
-    document.addEventListener("selectionchange", update);
-    return () => {
-      if (timer !== null) {
-        globalThis.clearTimeout(timer);
-      }
-      document.removeEventListener("scroll", update, true);
-      document.removeEventListener("mouseup", update);
-      document.removeEventListener("keyup", update);
-      document.removeEventListener("selectionchange", update);
-    };
+      },
+      () => {
+        setPill(null);
+      },
+    );
   }, [isActive, canQuoteMaterial, canQuoteAnswer, setPill]);
 };
 
@@ -216,6 +204,13 @@ export const SelectionAskButton = (): JSX.Element | null => {
   const isActive = chat.isConfigured && (canQuoteMaterial || canQuoteAnswer);
 
   useSelectionUpdates({ isActive, canQuoteMaterial, canQuoteAnswer }, setPill);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", selectParagraphOnTripleClick, { capture: true });
+    return () => {
+      document.removeEventListener("mousedown", selectParagraphOnTripleClick, true);
+    };
+  }, []);
 
   useEffect(() => {
     if (chat.quote === null) {
@@ -268,7 +263,7 @@ const SelectionPill = ({
       style={pill === null ? undefined : { left: `${pill.left}px`, top: `${pill.top}px` }}
       type="button"
     >
-      <SparklesIcon />
+      {!isReplying && <SparklesIcon />}
       {isReplying ? "Ответить" : "Спросить ИИ"}
     </button>
   );

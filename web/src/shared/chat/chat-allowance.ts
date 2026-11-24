@@ -10,7 +10,7 @@ export type AllowanceSetters = {
   readonly setUser: (user: ChatUser | null) => void;
 };
 
-type AllowanceOutcome =
+export type AllowanceOutcome =
   | { readonly allowance: ChatAccess; readonly kind: "ok" }
   | { readonly kind: "blocked" }
   | { readonly kind: "cancelled" }

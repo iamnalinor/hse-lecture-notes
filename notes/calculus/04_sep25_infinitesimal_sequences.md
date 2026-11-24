@@ -447,7 +447,7 @@ $$\sqrt[n]{a_1^n + \dots + a_k^n} \to M.$$ {#eq:lec04:max-root}
 ## Бесконечно малые, бесконечно большие, отделимые
 
 ::: {.problem #prob:lec04:examples}
-Приведите примеры:
+Приведи примеры:
 
 (a) $x_n \to +\infty$, $y_n \to +\infty$, $x_n - y_n \to -3$; (b) $x_n \to +\infty$, $y_n \to +\infty$, разность $x_n - y_n$ ограничена, но предела не имеет; (c) $x_n \to \infty$, $y_n \to \infty$, $\frac{x_n}{y_n} \to -2$; (d) $x_n \to \infty$, $y_n \to \infty$, $\frac{x_n}{y_n}$ не имеет предела; (e) неограниченной последовательности, которая не отделима от нуля и не бесконечно большая.
 :::
@@ -469,9 +469,9 @@ $$\sqrt[n]{a_1^n + \dots + a_k^n} \to M.$$ {#eq:lec04:max-root}
 :::
 
 ::: {.problem #prob:lec04:large-plus-bounded}
-(a) Пусть $x_n \to -\infty$, а $(y_n)$ ограничена сверху. Докажите, что $x_n + y_n \to -\infty$.
+(a) Пусть $x_n \to -\infty$, а $(y_n)$ ограничена сверху. Докажи, что $x_n + y_n \to -\infty$.
 
-(b) Пусть $x_n \to \infty$ (без знака). Каким условием на $(y_n)$ — ограниченностью сверху или ограниченностью с обеих сторон — гарантируется, что $x_n + y_n \to \infty$? Докажите достаточность и приведите контрпример для другого условия.
+(b) Пусть $x_n \to \infty$ (без знака). Каким условием на $(y_n)$ — ограниченностью сверху или ограниченностью с обеих сторон — гарантируется, что $x_n + y_n \to \infty$? Докажи достаточность и приведи контрпример для другого условия.
 :::
 
 ::: solution
@@ -485,7 +485,7 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 :::
 
 ::: {.problem #prob:lec04:products}
-Пусть $(x_n)$ бесконечно большая. Обязана ли $(x_n y_n)$ быть бесконечно большой, если (a) $(y_n)$ отделима от нуля; (b) $(y_n)$ бесконечно большая; (c) $(y_n)$ ограничена и все её члены ненулевые? Пусть теперь $x_n \to -\infty$. Докажите или опровергните: (d) если $y_n \ge c > 0$ при $n > N$, то $x_n y_n \to -\infty$; (e) если $y_n > 0$ при всех $n$, то $x_n y_n \to -\infty$.
+Пусть $(x_n)$ бесконечно большая. Обязана ли $(x_n y_n)$ быть бесконечно большой, если (a) $(y_n)$ отделима от нуля; (b) $(y_n)$ бесконечно большая; (c) $(y_n)$ ограничена и все её члены ненулевые? Пусть теперь $x_n \to -\infty$. Докажи или опровергни: (d) если $y_n \ge c > 0$ при $n > N$, то $x_n y_n \to -\infty$; (e) если $y_n > 0$ при всех $n$, то $x_n y_n \to -\infty$.
 :::
 
 ::: solution
@@ -513,7 +513,7 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 :::
 
 ::: {.problem #prob:lec04:partial-sums}
-Пусть $S_n = x_1 + \dots + x_n$. (a) Докажите, что если $x_n \to +\infty$, то $S_n \to +\infty$. (b) Докажите, что $\max(|S_{n-1}|, |S_n|) \ge \frac{|x_n|}{2}$ при $n \ge 2$, и выведите отсюда, что для бесконечно большой $(x_n)$ модули $|S_n|$ принимают сколь угодно большие значения. (c) Обязана ли при этом $(S_n)$ быть бесконечно большой?
+Пусть $S_n = x_1 + \dots + x_n$. (a) Докажи, что если $x_n \to +\infty$, то $S_n \to +\infty$. (b) Докажи, что $\max(|S_{n-1}|, |S_n|) \ge \frac{|x_n|}{2}$ при $n \ge 2$, и выведи отсюда, что для бесконечно большой $(x_n)$ модули $|S_n|$ принимают сколь угодно большие значения. (c) Обязана ли при этом $(S_n)$ быть бесконечно большой?
 :::
 
 ::: solution
@@ -531,9 +531,9 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 ::: {.problem #prob:lec04:ratio}
 Пусть $x_n > 0$ при всех $n$.
 
-*Часть 1.* Докажите: если $\frac{x_{n+1}}{x_n} \le q < 1$ при $n \ge N$, то $x_n \to 0$; если $\frac{x_{n+1}}{x_n} \ge Q > 1$ при $n \ge N$, то $x_n \to +\infty$.
+*Часть 1.* Докажи: если $\frac{x_{n+1}}{x_n} \le q < 1$ при $n \ge N$, то $x_n \to 0$; если $\frac{x_{n+1}}{x_n} \ge Q > 1$ при $n \ge N$, то $x_n \to +\infty$.
 
-*Часть 2.* Найдите пределы: (a) $\dfrac{n^3 \cdot 5^n}{n!}$; (b) $\dfrac{(n!)^2}{(2n)!}$; (c) $\dfrac{C_{2n}^n}{5^n}$; (d) $\dfrac{C_{2n}^n}{3^n}$.
+*Часть 2.* Найди пределы: (a) $\dfrac{n^3 \cdot 5^n}{n!}$; (b) $\dfrac{(n!)^2}{(2n)!}$; (c) $\dfrac{C_{2n}^n}{5^n}$; (d) $\dfrac{C_{2n}^n}{3^n}$.
 :::
 
 ::: solution
@@ -555,7 +555,7 @@ $$|x_n + y_n| \ge |x_n| - |y_n| > (M + C) - C = M.$$
 ## Подсчёт пределов
 
 ::: {.problem #prob:lec04:fastest}
-Вычислите, разделив на самое быстрое слагаемое:
+Вычисли, разделив на самое быстрое слагаемое:
 
 $$\text{(a) } \lim \frac{(n^2 + 2n + 3)^3 - (n^2 + 2n - 3)^3}{(n^2 + 4n + 5)^3 - (n^2 + 4n - 5)^3}; \qquad \text{(b) } \lim \frac{(n + 3)^{50} - n^{50} - 150 n^{49}}{n^{48} + 7n};$$
 $$\text{(c) } \lim \frac{n^2 \cdot 3^n + 5^n}{n + 5^{n+1}}; \qquad \text{(d) } \lim \frac{9^n + n \cdot (n + 1)!}{(n + 2)! + n^5}.$$
@@ -575,7 +575,7 @@ $$\frac{18\left(\frac{A}{n^2}\right)^2 + \frac{54}{n^4}}{30\left(\frac{B}{n^2}\r
 :::
 
 ::: {.problem #prob:lec04:kr5}
-Вычислите:
+Вычисли:
 $$\text{(a) } \lim\left(\dfrac{2n^2 - n + 3}{n + 4} - \dfrac{6n^2 + 1}{3n - 2}\right); \qquad \text{(b) } \lim\left(\sqrt{4n + \sqrt{n + \sqrt n}} - 2\sqrt n\right).$$
 :::
 
@@ -594,7 +594,7 @@ $$\frac{\sqrt{1 + \frac{1}{\sqrt n}}}{2\sqrt{1 + \frac{x_n}{4}} + 2}, \qquad x_n
 :::
 
 ::: {.problem #prob:lec04:conjugate}
-Вычислите, домножив на сопряжённое:
+Вычисли, домножив на сопряжённое:
 $$\text{(a) } \lim\left(\sqrt{(n + 4)(n + 1)} - \sqrt{n(n + 2)}\right); \qquad \text{(b) } \lim\left(\sqrt[3]{n^3 - 3n^2 + 4} - n\right);$$
 $$\text{(c) } \lim \frac{\sqrt{n^2 + 3n} - n}{\sqrt[3]{n^3 + 6n^2} - n}.$$
 :::
@@ -613,7 +613,7 @@ $$\sqrt[3]{n^3 + 6n^2} - n = \frac{n^3 v_n^3 - n^3}{n^2 v_n^2 + n^2 v_n + n^2} =
 :::
 
 ::: {.problem #prob:lec04:roots}
-Найдите пределы:
+Найди пределы:
 $$\text{(a) } \frac{\sqrt[n]{n^5} + \sqrt[n]{3}}{2\sqrt[n]{n} + \sqrt[n]{n^2}}; \qquad \text{(b) } \left(\frac{n^2 + 4}{3n^2 - 1}\right)^{n^2}; \qquad \text{(c) } \sqrt[n]{\frac{3n^3 + 2}{n^2 + 4}};$$
 $$\text{(d) } \sqrt[n]{3^n + n^4 + \cos n}; \qquad \text{(e) } \sqrt[n]{\frac{2^n + 7^n + 5}{4^n + n}}.$$
 :::
@@ -637,7 +637,7 @@ $$\frac12 \left(\frac74\right)^n \le \frac{2^n + 7^n + 5}{4^n + n} \le 3\left(\f
 :::
 
 ::: {.problem #prob:lec04:nth-root-zero}
-Найдите предел $\lim\limits_{n \to \infty} \dfrac{\sqrt[n]{9} - 1}{\sqrt[n]{27} - 1}$.
+Найди предел $\lim\limits_{n \to \infty} \dfrac{\sqrt[n]{9} - 1}{\sqrt[n]{27} - 1}$.
 :::
 
 ::: solution
@@ -648,7 +648,7 @@ $$\frac{\sqrt[n]{9} - 1}{\sqrt[n]{27} - 1} = \frac{t_n^2 - 1}{t_n^3 - 1} = \frac
 :::
 
 ::: {.problem #prob:lec04:sum-n}
-Найдите $\lim S_n$ и $\lim T_n$, где
+Найди $\lim S_n$ и $\lim T_n$, где
 $$\text{(a) } S_n = \frac{1}{\sqrt{n^2 + 1}} + \frac{1}{\sqrt{n^2 + 2}} + \dots + \frac{1}{\sqrt{n^2 + 3n}};$$
 $$\text{(b) } T_n = \frac{1}{n^2 + 1} + \frac{2}{n^2 + 2} + \dots + \frac{n}{n^2 + n}.$$
 :::

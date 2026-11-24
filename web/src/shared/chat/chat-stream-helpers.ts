@@ -1,5 +1,7 @@
 import type { ChatDocContext, ChatMessage, ChatQuote } from "#web/domain/chat.ts";
 
+import type { SendArgs, StreamStateSetters } from "./chat-stream-types.ts";
+
 export const makeUserMsg = (
   text: string,
   quote: ChatQuote | null,
@@ -91,4 +93,40 @@ export const resetRetryAssistant = (
     steps: [],
   };
   return [...prev.slice(0, -1), reset];
+};
+
+export const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
+  setters.setUnsent(null);
+  setters.setBlock(null);
+  setters.setIsStreaming(true);
+  const retryId = args.retryMessage?.id;
+  if (retryId !== undefined) {
+    setters.setMessages((prev) => {
+      return resetRetryAssistant(prev, retryId);
+    });
+    return;
+  }
+  setters.setDraft("");
+  setters.setQuote(null);
+  const turn = optimisticMessages(args.text, args.quote, args.docContext);
+  setters.setMessages((prev) => [...prev, ...turn]);
+};
+
+export const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
+  setters.setIsStreaming(false);
+  const original = args.retryMessage;
+  if (original !== undefined) {
+    setters.setMessages((prev) => prev.map((m) => (m.id === original.id ? original : m)));
+    return;
+  }
+  setters.setMessages((prev) => prev.slice(0, -2));
+  setters.setDraft(args.text);
+  setters.setQuote(args.quote);
+};
+
+export const rejectOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
+  rollbackOptimisticTurn(setters, args);
+  if (args.retryMessage === undefined) {
+    setters.setUnsent({ ...makeUserMsg(args.text, args.quote, args.docContext), status: "error" });
+  }
 };

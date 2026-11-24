@@ -345,7 +345,7 @@ $$\sum_{s=1}^{n} a_{is} \Bigl( \sum_{r=1}^{k} b_{sr} c_{rj} \Bigr) = \sum_{s=1}^
 :::
 
 ::: {.problem #prob:lec01:linear}
-Даны $A = \begin{pmatrix} 1 & -2 & 0 \\ 3 & 1 & 4 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 0 & -1 \\ 2 & 1 & 2 \end{pmatrix}$. Найдите $2A - 3B$ и матрицу $X$ такую, что $2X + B = A$.
+Даны $A = \begin{pmatrix} 1 & -2 & 0 \\ 3 & 1 & 4 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 0 & -1 \\ 2 & 1 & 2 \end{pmatrix}$. Найди $2A - 3B$ и матрицу $X$ такую, что $2X + B = A$.
 :::
 
 ::: solution
@@ -357,7 +357,7 @@ $2A = \begin{pmatrix} 2 & -4 & 0 \\ 6 & 2 & 8 \end{pmatrix}$, $3B = \begin{pmatr
 :::
 
 ::: {.problem #prob:lec01:two-products}
-Даны $A = \begin{pmatrix} 1 & 0 & 2 \\ -1 & 3 & 1 \end{pmatrix}$ и $B = \begin{pmatrix} 3 & 1 \\ 2 & 1 \\ 1 & 0 \end{pmatrix}$. Найдите $AB$ и $BA$.
+Даны $A = \begin{pmatrix} 1 & 0 & 2 \\ -1 & 3 & 1 \end{pmatrix}$ и $B = \begin{pmatrix} 3 & 1 \\ 2 & 1 \\ 1 & 0 \end{pmatrix}$. Найди $AB$ и $BA$.
 :::
 
 ::: solution
@@ -371,7 +371,7 @@ $AB$: $1 \cdot 3 + 0 \cdot 2 + 2 \cdot 1 = 5$, $1 \cdot 1 + 0 \cdot 1 + 2 \cdot 
 :::
 
 ::: {.problem #prob:lec01:one-element}
-Пусть $A = \begin{pmatrix} 1 & 2 & 0 & -1 \\ 3 & -1 & 2 & 1 \\ 0 & 4 & 5 & 2 \end{pmatrix}$, $B = \begin{pmatrix} 2 & 0 & 1 \\ 1 & 1 & -2 \\ 0 & 3 & 1 \\ 5 & 1 & 4 \end{pmatrix}$. Найдите элемент $[AB]_{23}$, не вычисляя всё произведение.
+Пусть $A = \begin{pmatrix} 1 & 2 & 0 & -1 \\ 3 & -1 & 2 & 1 \\ 0 & 4 & 5 & 2 \end{pmatrix}$, $B = \begin{pmatrix} 2 & 0 & 1 \\ 1 & 1 & -2 \\ 0 & 3 & 1 \\ 5 & 1 & 4 \end{pmatrix}$. Найди элемент $[AB]_{23}$, не вычисляя всё произведение.
 :::
 
 ::: solution
@@ -381,7 +381,7 @@ $AB$: $1 \cdot 3 + 0 \cdot 2 + 2 \cdot 1 = 5$, $1 \cdot 1 + 0 \cdot 1 + 2 \cdot 
 :::
 
 ::: {.problem #prob:lec01:kronecker}
-Упростите суммы $\sum_{r=1}^{n} \delta_{ir} \delta_{rj}$ и $\sum_{r=1}^{n} a_{ir} \delta_{rj}$ (здесь $1 \le i, j \le n$). Что это означает для матриц?
+Упрости суммы $\sum_{r=1}^{n} \delta_{ir} \delta_{rj}$ и $\sum_{r=1}^{n} a_{ir} \delta_{rj}$ (здесь $1 \le i, j \le n$). Что это означает для матриц?
 :::
 
 ::: solution
@@ -391,7 +391,7 @@ $AB$: $1 \cdot 3 + 0 \cdot 2 + 2 \cdot 1 = 5$, $1 \cdot 1 + 0 \cdot 1 + 2 \cdot 
 :::
 
 ::: {.problem #prob:lec01:scalar-product}
-Докажите, что для $A \in M_{m \times n}(\R)$, $B \in M_{n \times k}(\R)$ и $\lambda \in \R$ выполнено $(\lambda A) B = \lambda (AB) = A (\lambda B)$.
+Докажи, что для $A \in M_{m \times n}(\R)$, $B \in M_{n \times k}(\R)$ и $\lambda \in \R$ выполнено $(\lambda A) B = \lambda (AB) = A (\lambda B)$.
 :::
 
 ::: solution
@@ -401,7 +401,7 @@ $$[(\lambda A) B]_{ij} = \sum_{r=1}^{n} (\lambda a_{ir}) b_{rj} = \lambda \sum_{
 :::
 
 ::: {.problem #prob:lec01:order}
-Даны $A = \begin{pmatrix} 1 \\ 2 \\ 3 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 1 & 1 \end{pmatrix}$, $C = \begin{pmatrix} 2 \\ 0 \\ -1 \end{pmatrix}$. Найдите $ABC$ двумя способами и сравните число умножений.
+Даны $A = \begin{pmatrix} 1 \\ 2 \\ 3 \end{pmatrix}$, $B = \begin{pmatrix} 1 & 1 & 1 \end{pmatrix}$, $C = \begin{pmatrix} 2 \\ 0 \\ -1 \end{pmatrix}$. Найди $ABC$ двумя способами и сравни число умножений.
 :::
 
 ::: solution

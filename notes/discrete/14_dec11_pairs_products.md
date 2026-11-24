@@ -238,7 +238,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec14:product-union}
-Докажите, что $(A \cup B) \times C = (A \times C) \cup (B \times C)$.
+Докажи, что $(A \cup B) \times C = (A \times C) \cup (B \times C)$.
 :::
 
 ::: solution
@@ -260,7 +260,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec14:commute}
-Докажите, что $A \times B = B \times A$ тогда и только тогда, когда $A = B$, или $A = \varnothing$, или $B = \varnothing$.
+Докажи, что $A \times B = B \times A$ тогда и только тогда, когда $A = B$, или $A = \varnothing$, или $B = \varnothing$.
 :::
 
 ::: solution
@@ -270,7 +270,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec14:minus}
-Докажите, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найдите $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и опишите его как фигуру на плоскости.
+Докажи, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найди $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и опиши его как фигуру на плоскости.
 :::
 
 ::: solution
@@ -284,7 +284,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec14:union-union}
-Докажите, что $\bigcup\bigcup (A \times B) \subseteq A \cup B$ для любых $A$, $B$. Когда включение обращается в равенство?
+Докажи, что $\bigcup\bigcup (A \times B) \subseteq A \cup B$ для любых $A$, $B$. Когда включение обращается в равенство?
 :::
 
 ::: solution

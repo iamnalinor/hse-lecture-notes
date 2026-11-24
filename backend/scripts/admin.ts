@@ -8,6 +8,7 @@
  *   bun run scripts/admin.ts set-codex-token [--remote] [--refresh-token <tok>] [--account-id <id>]
  *   bun run scripts/admin.ts set-policy <path-to-policy.json> [--remote]
  *   bun run scripts/admin.ts sync-telegram-accounts <path-to-ids.txt> [--remote]
+ *   bun run scripts/admin.ts set-tier <telegram-id> <default|student|extended> [--remote]
  *   bun run scripts/admin.ts status [--remote]
  */
 
@@ -15,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { encryptJsonAesGcm } from "../src/crypto";
 import type { CodexCredentialsPayload } from "../src/codex-auth";
+import { assignmentSql, parseTelegramIds, rosterSql } from "./admin-tiers";
 import initialPolicy from "../policy.json";
 import type { ServicePolicy } from "../src/types";
 
@@ -79,9 +81,11 @@ async function main(): Promise<void> {
   set-policy <policy.json> [--remote]
     Merges and writes service_config['policy'].
   sync-telegram-accounts <ids.txt> [--remote]
-    Replaces internal_telegram_accounts from a newline/comma-separated list of numeric Telegram IDs.
+    Syncs student roster assignments; preserves manual assignments.
+  set-tier <telegram-id> <default|student|extended> [--note <note>] [--remote]
+    Assigns a tier; default removes the override.
   status [--remote]
-    Shows codex_credentials status, policy, and internal account count.`);
+    Shows credential status, policy timestamps, and assigned tier counts.`);
     return;
   }
 
@@ -146,32 +150,22 @@ ON CONFLICT(key) DO UPDATE SET value_json = json_patch(service_config.value_json
       console.error("Usage: sync-telegram-accounts <ids.txt> [--remote]");
       process.exit(1);
     }
-    const content = readFileSync(file, "utf8");
-    const ids = Array.from(
-      new Set(
-        content
-          .split(/[\s,;]+/)
-          .map((s) => s.trim())
-          .filter((s) => /^\d+$/.test(s))
-          .map((s) => Number(s)),
-      ),
-    );
-    if (ids.length === 0) {
-      console.error("No valid numeric Telegram IDs found in", file);
-      process.exit(1);
-    }
-    const values = ids.map((id) => `(${id}, 'roster', ${now})`).join(",\n  ");
-    const sql = `DELETE FROM internal_telegram_accounts;
-INSERT INTO internal_telegram_accounts (telegram_id, note, added_at) VALUES
-  ${values};`;
-    runD1Sql(sql, remote);
-    console.log(`Synced ${ids.length} internal Telegram accounts.`);
+    const ids = parseTelegramIds(readFileSync(file, "utf8"));
+    runD1Sql(rosterSql(ids, now), remote);
+    console.log(`Synced ${ids.length} student roster entries; manual tiers preserved.`);
+    return;
+  }
+
+  if (cmd === "set-tier") {
+    if (!args[1] || !args[2]) throw new Error("Usage: set-tier <telegram-id> <default|student|extended> [--note <note>] [--remote]");
+    runD1Sql(assignmentSql(args[1], args[2], now, getFlag(args, "--note")), remote);
+    console.log("Account tier updated.");
     return;
   }
 
   if (cmd === "status") {
     const sql = `SELECT id, version, status, lease_until, updated_at FROM codex_credentials;
-SELECT COUNT(*) AS internal_accounts FROM internal_telegram_accounts;
+SELECT tier, COUNT(*) AS accounts FROM telegram_account_tiers GROUP BY tier;
 SELECT global_reserved_micros, guest_reserved_micros FROM budget_reserves WHERE id = 1;
 SELECT key, updated_at FROM service_config;`;
     runD1Sql(sql, remote);

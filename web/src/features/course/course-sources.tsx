@@ -4,7 +4,7 @@ import { type Source, SOURCES } from "#web/domain/sources.ts";
 
 /** An underlined text link on the course page: the lecturer, the sources. */
 export const TEXT_LINK =
-  "font-semibold text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink";
+  "font-semibold text-ink underline decoration-ink/30 underline-offset-2 [text-decoration-skip-ink:none] hover:decoration-ink";
 
 /** What the notes of the course were written from: one block for the whole course, not per note. */
 export const CourseSources = ({ course }: { readonly course: CourseId }) => (

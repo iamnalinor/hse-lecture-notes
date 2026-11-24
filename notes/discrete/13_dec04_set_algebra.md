@@ -204,7 +204,7 @@ $$x \in \overline{A \cap B} \iff \neg(x \in A \wedge x \in B) \iff x \notin A \v
 Доказательство теоремы [-@thm:lec13:identities] даёт и общий способ проверять любое тождество, составленное из $\cup$, $\cap$, $\setminus$ и дополнения: элемент $x \in U$ может лежать или не лежать в каждом из множеств $A$, $B$, $C$ — всего $2^3 = 8$ вариантов. На диаграмме Эйлера трёх множеств это восемь областей (рис. [-@fig:lec13:regions], слева). Тождество верно тогда и только тогда, когда обе части дают одинаковый результат во всех восьми строках таблицы — это та же таблица истинности из лекции 1. Строка, в которой части различаются, сразу даёт контрпример: достаточно положить $U = \{x\}$ и включить $x$ в те множества, где в строке стоит $1$.
 
 ::: {.example #ex:lec13:identity}
-Докажите, что $A \setminus (B \setminus C) = (A \setminus B) \cup (A \cap C)$, двумя способами: цепочкой тождеств и таблицей принадлежности.
+Докажи, что $A \setminus (B \setminus C) = (A \setminus B) \cup (A \cap C)$, двумя способами: цепочкой тождеств и таблицей принадлежности.
 
 *Решение цепочкой.* В качестве универсума возьмём $U = A \cup B \cup C$ (при доказательстве тождеств дополнение часто используют без пояснений, подразумевая такой универсум). По $A \setminus B = A \cap \bar B$ и теореме [-@thm:lec13:identities]:
 $$A \setminus (B \setminus C) = A \cap \overline{B \cap \bar C} = A \cap (\bar B \cup \bar{\bar C}) = A \cap (\bar B \cup C) = (A \cap \bar B) \cup (A \cap C) = (A \setminus B) \cup (A \cap C).$$
@@ -318,7 +318,7 @@ $A \mathbin{\triangle} B$ — элементы, лежащие ровно в о�
 :::
 
 ::: {.problem #prob:lec13:identities}
-Докажите или опровергните: a) $(A \setminus B) \setminus C = A \setminus (B \cup C)$; b) $A \setminus (B \setminus C) = (A \setminus B) \setminus C$.
+Докажи или опровергни: a) $(A \setminus B) \setminus C = A \setminus (B \cup C)$; b) $A \setminus (B \setminus C) = (A \setminus B) \setminus C$.
 :::
 
 ::: solution
@@ -328,7 +328,7 @@ b) *Ключ:* по таблице принадлежности (пример [-
 :::
 
 ::: {.problem #prob:lec13:union-power}
-Докажите, что $\bigcup \mathcal{P}(A) = A$ и $A \subseteq \mathcal{P}(\bigcup A)$. Верно ли, что $\mathcal{P}(\bigcup A) = A$ для любого $A$?
+Докажи, что $\bigcup \mathcal{P}(A) = A$ и $A \subseteq \mathcal{P}(\bigcup A)$. Верно ли, что $\mathcal{P}(\bigcup A) = A$ для любого $A$?
 :::
 
 ::: solution
@@ -342,7 +342,7 @@ $A \subseteq \mathcal{P}(\bigcup A)$: пусть $\alpha \in A$. Каждый э
 :::
 
 ::: {.problem #prob:lec13:infinite}
-Найдите $\bigcup_{n \in \N_+} [\frac1n, 2]$ и $\bigcap_{n \in \N_+} I_n$, где $I_n = \{x \in \R \mid 0 < x < \frac1n\}$.
+Найди $\bigcup_{n \in \N_+} [\frac1n, 2]$ и $\bigcap_{n \in \N_+} I_n$, где $I_n = \{x \in \R \mid 0 < x < \frac1n\}$.
 :::
 
 ::: solution
@@ -354,7 +354,7 @@ $A \subseteq \mathcal{P}(\bigcup A)$: пусть $\alpha \in A$. Каждый э
 :::
 
 ::: {.problem #prob:lec13:disjoint-diff}
-Докажите, что $A \setminus B = A$ тогда и только тогда, когда $A$ и $B$ не пересекаются, двумя способами: через произвольный элемент и через тождества.
+Докажи, что $A \setminus B = A$ тогда и только тогда, когда $A$ и $B$ не пересекаются, двумя способами: через произвольный элемент и через тождества.
 :::
 
 ::: solution

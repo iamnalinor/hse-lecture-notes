@@ -47,7 +47,6 @@ const HistoryMenu = ({
       {chat.threads.map((thread) => (
         <button
           className={thread.id === chat.activeThreadId ? "ai-hist-item is-on" : "ai-hist-item"}
-          disabled={chat.isStreaming}
           key={thread.id}
           onClick={() => {
             chat.selectThread(thread.id);
@@ -66,7 +65,6 @@ const HistoryMenu = ({
       {chat.moreError && (
         <button
           className="ai-hist-item ai-hist-retry"
-          disabled={chat.isLoadingMore}
           onClick={() => {
             void chat.loadMore();
           }}
@@ -93,7 +91,7 @@ export const ChatPanelHeader = ({
         <SparklesIcon />
         <span title={title}>{title}</span>
       </div>
-      {chat.tier === "guest" && (
+      {chat.user === null && (
         <button
           className="ai-text-btn"
           disabled={chat.isLoginBusy}
@@ -109,9 +107,13 @@ export const ChatPanelHeader = ({
       <button
         aria-label="Новый чат"
         className="ai-icon-btn"
-        disabled={chat.isStreaming}
         hidden={chat.messages.length === 0}
-        onClick={chat.newChat}
+        onClick={() => {
+          chat.newChat();
+          if (historyOpen) {
+            onToggleHistory();
+          }
+        }}
         title="Новый чат"
         type="button"
       >
@@ -122,7 +124,6 @@ export const ChatPanelHeader = ({
           aria-expanded={historyOpen}
           aria-label="История чатов"
           className="ai-icon-btn"
-          disabled={chat.isStreaming}
           onClick={onToggleHistory}
           title="История чатов"
           type="button"

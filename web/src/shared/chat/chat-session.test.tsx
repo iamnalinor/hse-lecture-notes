@@ -14,7 +14,7 @@ import {
   type ThreadResponse,
 } from "#web/api/chat-client.ts";
 import { saveBrowserToken, saveDegraded, saveSessionAuth } from "#web/api/chat-storage.ts";
-import { openChatMessageStream } from "#web/api/chat-stream.ts";
+import { type ActiveWsStream, openChatMessageStream } from "#web/api/chat-stream.ts";
 
 import { ChatProvider, useChat } from "./chat-context.tsx";
 import { makeAssistantMsg, makeUserMsg } from "./chat-stream-helpers.ts";
@@ -59,6 +59,113 @@ const allowance = {
   user: null,
 } as const;
 
+it("detaches an active response for a new chat and ignores its late events", async () => {
+  const chat = mount();
+  await act(() => chat.current.send("first"));
+  const first = vi.mocked(openChatMessageStream).mock.calls[0]?.[2];
+  const connection = vi.mocked(openChatMessageStream).mock.results[0]?.value as
+    | ActiveWsStream
+    | undefined;
+  act(() =>
+    first?.onMeta({
+      assistantMessageId: "a",
+      userMessageId: "u",
+      runId: "r",
+      threadId: "t",
+      threadTitle: "first",
+      degraded: { active: false },
+    }),
+  );
+  act(() => {
+    chat.current.newChat();
+  });
+  expect(connection?.disconnect).toHaveBeenCalledOnce();
+  expect(connection?.stop).not.toHaveBeenCalled();
+  expect(chat.current.activeThreadId).toBeNull();
+  expect(chat.current.isStreaming).toBe(false);
+  expect(chat.current.messages).toHaveLength(0);
+  await act(() => chat.current.send("second"));
+  act(() => {
+    first?.onDelta("old answer");
+    first?.onDone({
+      runId: "r",
+      text: "old answer",
+      status: "done",
+      steps: [],
+      block: null,
+      degraded: { active: false },
+    });
+  });
+  expect(chat.current.messages.at(-1)?.contentTex).toBe("");
+  expect(chat.current.isStreaming).toBe(true);
+  expect(vi.mocked(openChatMessageStream).mock.calls[1]?.[1]).toMatchObject({
+    threadId: null,
+    text: "second",
+  });
+});
+
+it("can select history during a restored background response without its poll replacing the selection", async () => {
+  vi.useFakeTimers();
+  saveBrowserToken("browser");
+  localStorage.setItem("hse_chat_thread:guest:/", "running");
+  const answer = { ...makeAssistantMsg({ course: "", docId: "" }), id: "a", runId: "r" };
+  const status = Promise.withResolvers<Awaited<ReturnType<typeof fetchChatRunStatus>>>();
+  vi.mocked(fetchChatRunStatus).mockReturnValueOnce(status.promise);
+  vi.mocked(fetchChatThread)
+    .mockResolvedValueOnce(thread("running", [answer]))
+    .mockResolvedValueOnce(thread("other"));
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  expect(chat.current.isStreaming).toBe(true);
+  await act(() => vi.advanceTimersByTimeAsync(1500));
+  await act(async () => {
+    chat.current.selectThread("other");
+    await Promise.resolve();
+  });
+  expect(chat.current.activeThreadId).toBe("other");
+  expect(chat.current.isStreaming).toBe(false);
+  await act(async () => {
+    status.resolve({
+      runId: "r",
+      threadId: "running",
+      assistantMessageId: "a",
+      status: "done",
+      expiresAt: 1000,
+    });
+    await Promise.resolve();
+  });
+  expect(chat.current.activeThreadId).toBe("other");
+  expect(fetchChatThread).toHaveBeenCalledTimes(2);
+});
+
+it("does not let a detached allowance request overwrite the next chat or its checking status", async () => {
+  const pending = Promise.withResolvers<typeof allowance>();
+  vi.mocked(ensureChatAllowance).mockImplementationOnce((_hooks, options) => {
+    options?.onChecking?.();
+    return pending.promise;
+  });
+  const chat = mount();
+  let sending: Promise<void> | undefined;
+  act(() => {
+    sending = chat.current.send("first");
+  });
+  act(() => {
+    chat.current.newChat();
+  });
+  expect(chat.current.isCheckingBrowser).toBe(false);
+  await act(() => chat.current.send("second"));
+  await act(async () => {
+    pending.resolve(allowance);
+    await sending;
+  });
+  expect(chat.current.messages[0]?.contentTex).toBe("second");
+  expect(chat.current.isStreaming).toBe(true);
+  expect(openChatMessageStream).toHaveBeenCalledOnce();
+});
+
 beforeEach(() => {
   vi.resetAllMocks();
   localStorage.clear();
@@ -73,7 +180,7 @@ afterEach(() => {
 
 it("discards another account's late history after a storage event", async () => {
   saveBrowserToken("browser");
-  saveSessionAuth("account1", "internal", { id: 1, name: "one" });
+  saveSessionAuth("account1", "student", { id: 1, name: "one" });
   const pending = Promise.withResolvers<ThreadResponse>();
   vi.mocked(fetchChatThread)
     .mockReturnValueOnce(pending.promise)
@@ -84,7 +191,7 @@ it("discards another account's late history after a storage event", async () => 
     await Promise.resolve();
   });
   await act(async () => {
-    saveSessionAuth("account2", "internal", { id: 2, name: "two" });
+    saveSessionAuth("account2", "student", { id: 2, name: "two" });
     globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_user" }));
     await Promise.resolve();
   });
@@ -96,7 +203,7 @@ it("discards another account's late history after a storage event", async () => 
   expect(chat.current.threads.map((t) => t.id)).toEqual(["two"]);
 });
 
-it("keeps deltas in their thread and restores a refused retry", async () => {
+it("restores a refused retry without losing the saved answer", async () => {
   const chat = mount();
   await act(() => chat.current.send("Q"));
   const callbacks = vi.mocked(openChatMessageStream).mock.calls[0]?.[2];
@@ -114,8 +221,6 @@ it("keeps deltas in their thread and restores a refused retry", async () => {
     });
   });
   act(() => {
-    chat.current.selectThread("other");
-    chat.current.newChat();
     callbacks.onDelta("answer");
   });
   expect(chat.current.activeThreadId).toBe("t");
@@ -227,10 +332,52 @@ it("restores the draft and unlocks a quota block at its deadline", async () => {
   expect(chat.current.draft).toBe("draft");
 });
 
+it.each(["allowance", "websocket"])(
+  "keeps an unsent question visible after a %s quota refusal and Telegram login",
+  async (stage) => {
+    const blocked = { code: "auth_required" } as const;
+    if (stage === "allowance") {
+      vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, block: blocked });
+    }
+    const chat = mount();
+    await act(() => chat.current.send("Мой вопрос"));
+    if (stage === "websocket") {
+      act(() =>
+        vi
+          .mocked(openChatMessageStream)
+          .mock.calls[0]?.[2].onError({ code: "auth_required", message: "limit", block: blocked }),
+      );
+    }
+    expect(chat.current.messages).toHaveLength(1);
+    expect(chat.current.messages[0]).toMatchObject({
+      role: "user",
+      contentTex: "Мой вопрос",
+      status: "error",
+    });
+    expect(chat.current.isStreaming).toBe(false);
+    expect(chat.current.draft).toBe("Мой вопрос");
+    vi.mocked(loginViaTelegram).mockResolvedValueOnce({
+      ...allowance,
+      tier: "student",
+      user: { id: 1, name: "one" },
+    });
+    await act(() => chat.current.login());
+    expect(chat.current.messages[0]?.contentTex).toBe("Мой вопрос");
+    expect(chat.current.draft).toBe("Мой вопрос");
+    vi.mocked(ensureChatAllowance).mockResolvedValueOnce({
+      ...allowance,
+      tier: "student",
+      user: { id: 1, name: "one" },
+    });
+    await act(() => chat.current.send());
+    expect(chat.current.messages.filter((m) => m.role === "user")).toHaveLength(1);
+  },
+);
+
 it("keeps the guest draft on login and clears it when switching between accounts", async () => {
   vi.mocked(loginViaTelegram).mockResolvedValueOnce({
     ...allowance,
-    tier: "internal",
+    tier: "student",
     user: { id: 1, name: "one" },
   });
   const chat = mount();
@@ -245,7 +392,7 @@ it("keeps the guest draft on login and clears it when switching between accounts
   expect(host?.firstChild).toBe(iframe);
   expect(chat.current.draft).toBe("my question");
   act(() => {
-    saveSessionAuth("other", "internal", { id: 2, name: "two" });
+    saveSessionAuth("other", "student", { id: 2, name: "two" });
     globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_user" }));
   });
   expect(chat.current.draft).toBe("");
@@ -510,12 +657,12 @@ it("clears browser verification and restores the draft when a pre-stream request
 
 it("shows the already known degraded quota immediately and keeps it scoped to the account", () => {
   const degraded = { active: true, restoresAt: Date.now() + 120_000 };
-  saveSessionAuth("one", "internal", { id: 1, name: "one" });
+  saveSessionAuth("one", "student", { id: 1, name: "one" });
   saveDegraded(degraded);
   const first = mount();
   expect(first.current.degraded).toEqual(degraded);
   expect(ensureChatAllowance).not.toHaveBeenCalled();
-  saveSessionAuth("two", "internal", { id: 2, name: "two" });
+  saveSessionAuth("two", "student", { id: 2, name: "two" });
   const second = mount();
   expect(second.current.degraded).toEqual({ active: false });
 });

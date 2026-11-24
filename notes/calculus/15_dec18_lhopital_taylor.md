@@ -289,7 +289,7 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 ## Правило Лопиталя
 
 ::: {.problem #prob:lec15:lhopital}
-Найдите пределы: (a) $\lim\limits_{x \to 0} \dfrac{e^x - e^{-x} - 2x}{x - \sin x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{x^3}{e^{2x}}$; (c) $\lim\limits_{x \to +0} x^{\sin x}$; (d) $\lim\limits_{x \to 1} \left(\dfrac{1}{\ln x} - \dfrac{1}{x - 1}\right)$; (e) $\lim\limits_{x \to \pi/2} \dfrac{\operatorname{tg} x}{\operatorname{tg} 3x}$.
+Найди пределы: (a) $\lim\limits_{x \to 0} \dfrac{e^x - e^{-x} - 2x}{x - \sin x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{x^3}{e^{2x}}$; (c) $\lim\limits_{x \to +0} x^{\sin x}$; (d) $\lim\limits_{x \to 1} \left(\dfrac{1}{\ln x} - \dfrac{1}{x - 1}\right)$; (e) $\lim\limits_{x \to \pi/2} \dfrac{\operatorname{tg} x}{\operatorname{tg} 3x}$.
 :::
 
 ::: solution
@@ -321,7 +321,7 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 ## Формула Тейлора
 
 ::: {.problem #prob:lec15:expansions}
-Представьте формулой Маклорена с $o(x^n)$: (a) $(x + 2)e^{-x}$; (b) $\ln(2 + x - x^2)$. Представьте формулой Маклорена с $o(x^3)$: (c) $\sqrt{1 + \sin x}$. Представьте формулой Тейлора в точке $x_0 = 2$ с $o((x - 2)^n)$: (d) $\dfrac{1}{x}$.
+Представь формулой Маклорена с $o(x^n)$: (a) $(x + 2)e^{-x}$; (b) $\ln(2 + x - x^2)$. Представь формулой Маклорена с $o(x^3)$: (c) $\sqrt{1 + \sin x}$. Представь формулой Тейлора в точке $x_0 = 2$ с $o((x - 2)^n)$: (d) $\dfrac{1}{x}$.
 :::
 
 ::: solution
@@ -337,7 +337,7 @@ $$\operatorname{tg} x = \left(x - \frac{x^3}{6} + o(x^4)\right)\left(1 + \frac{x
 :::
 
 ::: {.problem #prob:lec15:derivatives}
-\(a) Найдите $f^{(5)}(0)$ и $f^{(6)}(0)$ для $f(x) = x^2 \sin x$. (b) Найдите $f^{(8)}(0)$ для $f(x) = \dfrac{1}{1 + x^2}$. (c) Найдите $A$ и $B$, при которых $e^x - \dfrac{1 + Ax}{1 + Bx} = o(x^2)$ при $x \to 0$, и главную часть этой разности.
+\(a) Найди $f^{(5)}(0)$ и $f^{(6)}(0)$ для $f(x) = x^2 \sin x$. (b) Найди $f^{(8)}(0)$ для $f(x) = \dfrac{1}{1 + x^2}$. (c) Найди $A$ и $B$, при которых $e^x - \dfrac{1 + Ax}{1 + Bx} = o(x^2)$ при $x \to 0$, и главную часть этой разности.
 :::
 
 ::: solution
@@ -355,7 +355,7 @@ $$\frac{1 + Ax}{1 + Bx} = 1 + (A - B)x + B(B - A)x^2 + B^2(A - B)x^3 + o(x^3).$$
 ## Пределы через разложения
 
 ::: {.problem #prob:lec15:limits}
-Найдите пределы: (a) $\lim\limits_{x \to 0} \dfrac{\cos x - e^{-x^2/2}}{x^4}$; (b) $\lim\limits_{x \to 0} \dfrac{\sin x - x\cos x}{x \ln(1 + x^2)}$; (c) $\lim\limits_{x \to 0} \left(\dfrac{1}{x^2} - \dfrac{1}{\sin^2 x}\right)$; (d) $\lim\limits_{x \to 0} \left(\dfrac{(1 + x)^{1/x}}{e}\right)^{1/x}$.
+Найди пределы: (a) $\lim\limits_{x \to 0} \dfrac{\cos x - e^{-x^2/2}}{x^4}$; (b) $\lim\limits_{x \to 0} \dfrac{\sin x - x\cos x}{x \ln(1 + x^2)}$; (c) $\lim\limits_{x \to 0} \left(\dfrac{1}{x^2} - \dfrac{1}{\sin^2 x}\right)$; (d) $\lim\limits_{x \to 0} \left(\dfrac{(1 + x)^{1/x}}{e}\right)^{1/x}$.
 :::
 
 ::: solution

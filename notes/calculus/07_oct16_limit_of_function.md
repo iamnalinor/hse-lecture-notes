@@ -396,7 +396,7 @@ $$-|x| \le x \sin\frac1x \le |x|.$$
 ## Предел по определению
 
 ::: {.problem #prob:lec07:x2-25}
-Докажите по Коши и по Гейне, что $\lim\limits_{x \to 5} x^2 = 25$.
+Докажи по Коши и по Гейне, что $\lim\limits_{x \to 5} x^2 = 25$.
 :::
 
 ::: solution
@@ -406,7 +406,7 @@ $$-|x| \le x \sin\frac1x \le |x|.$$
 :::
 
 ::: {.problem #prob:lec07:rational}
-Докажите по Коши, что $\lim\limits_{x \to 2} \dfrac{2x^2 - x + 1}{x + 1} = \dfrac73$.
+Докажи по Коши, что $\lim\limits_{x \to 2} \dfrac{2x^2 - x + 1}{x + 1} = \dfrac73$.
 :::
 
 ::: solution
@@ -418,7 +418,7 @@ $$\left|f(x) - \frac73\right| < \frac{2 \cdot 10}{3 \cdot 2}|x - 2| = \frac{10}{
 :::
 
 ::: {.problem #prob:lec07:rational2}
-Докажите по Коши, что $\lim\limits_{x \to 1} \dfrac{x^2 - 3x}{x + 1} = -1$.
+Докажи по Коши, что $\lim\limits_{x \to 1} \dfrac{x^2 - 3x}{x + 1} = -1$.
 :::
 
 ::: solution
@@ -426,7 +426,7 @@ $\frac{x^2 - 3x}{x + 1} + 1 = \frac{x^2 - 2x + 1}{x + 1} = \frac{(x - 1)^2}{x + 
 :::
 
 ::: {.problem #prob:lec07:sqrt-def}
-Докажите по Коши и по Гейне, что $\lim\limits_{x \to 9} \sqrt{x} = 3$.
+Докажи по Коши и по Гейне, что $\lim\limits_{x \to 9} \sqrt{x} = 3$.
 :::
 
 ::: solution
@@ -442,7 +442,7 @@ $$0 \le \left|\sqrt{x_n} - 3\right| = \frac{|x_n - 9|}{\sqrt{x_n} + 3} \le \frac
 ## Арифметика, неравенства, сложная функция
 
 ::: {.problem #prob:lec07:cancel}
-Найдите $\lim\limits_{x \to 2} \dfrac{x^3 - 8}{x^2 - 4}$.
+Найди $\lim\limits_{x \to 2} \dfrac{x^3 - 8}{x^2 - 4}$.
 :::
 
 ::: solution
@@ -454,7 +454,7 @@ $$\frac{x^3 - 8}{x^2 - 4} = \frac{(x - 2)(x^2 + 2x + 4)}{(x - 2)(x + 2)} = \frac
 :::
 
 ::: {.problem #prob:lec07:floor-squeeze}
-Найдите $\lim\limits_{x \to 0} x \left[\dfrac1x\right]$.
+Найди $\lim\limits_{x \to 0} x \left[\dfrac1x\right]$.
 :::
 
 ::: solution
@@ -466,7 +466,7 @@ $$1 - |x| \le x\left[\frac1x\right] \le 1 + |x|.$$
 :::
 
 ::: {.problem #prob:lec07:composite}
-Пусть $f(x) = x \sin\frac1x$ при $x \ne 0$ и $g(y) = |\operatorname{sign} y|$. Найдите $\lim\limits_{x \to 0} f(x)$, $\lim\limits_{y \to 0} g(y)$ и выясните, есть ли $\lim\limits_{x \to 0} g(f(x))$.
+Пусть $f(x) = x \sin\frac1x$ при $x \ne 0$ и $g(y) = |\operatorname{sign} y|$. Найди $\lim\limits_{x \to 0} f(x)$, $\lim\limits_{y \to 0} g(y)$ и выясни, есть ли $\lim\limits_{x \to 0} g(f(x))$.
 :::
 
 ::: solution

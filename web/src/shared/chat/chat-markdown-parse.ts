@@ -1,5 +1,7 @@
 import { hashTarget } from "#web/shared/ui/dom.ts";
 
+import { normalizeChatMath } from "./chat-math.ts";
+
 export type InlineSpan =
   | { readonly end: number; readonly kind: "bold" | "italic"; readonly text: string }
   | { readonly end: number; readonly kind: "code"; readonly text: string }
@@ -113,7 +115,8 @@ const cutPlainTail = (text: string): string => {
 };
 
 /** Cuts incomplete trailing `$`, `$$`, `**`, or `[[` while streaming outside fenced code blocks. */
-export const safeStreamCut = (text: string): string => {
+export const safeStreamCut = (source: string): string => {
+  const text = normalizeChatMath(source);
   if ((text.split("```").length - 1) % 2 === 1) {
     return text;
   }
@@ -158,55 +161,83 @@ export const scanInlinePieces = (text: string): readonly ParsedPiece[] => {
   return pieces;
 };
 
-const parseParagraph = (para: string): BlockSegment | null => {
-  const lines = para
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
-  if (lines.length === 0) {
-    return null;
+type TextBuffer = {
+  readonly kind: "ordered" | "paragraph" | "unordered";
+  readonly items: readonly string[];
+};
+const emptyTextBuffer = (): TextBuffer => ({ kind: "paragraph", items: [] });
+const flushTextBlock = (buffer: TextBuffer, blocks: BlockSegment[]): void => {
+  if (buffer.items.length > 0) {
+    blocks.push(
+      buffer.kind === "paragraph"
+        ? { kind: "paragraph", value: buffer.items.join(" ") }
+        : { kind: "list", ordered: buffer.kind === "ordered", items: buffer.items },
+    );
   }
-  if (lines.every((line) => /^[-*•]\s+/.test(line))) {
+};
+const consumeTextLine = (buffer: TextBuffer, line: string, blocks: BlockSegment[]): TextBuffer => {
+  const marker = /^(?:(\d+)\.|[-*•])[ \t]+(\S.*)$/u.exec(line.trimStart());
+  if (marker !== null) {
+    const kind = marker[1] === undefined ? "unordered" : "ordered";
+    if (buffer.kind !== kind) {
+      flushTextBlock(buffer, blocks);
+      return { kind, items: [marker[2] ?? ""] };
+    }
+    return { kind, items: [...buffer.items, marker[2] ?? ""] };
+  }
+  if (line.trim() === "") {
+    if (buffer.kind === "paragraph") {
+      flushTextBlock(buffer, blocks);
+      return emptyTextBuffer();
+    }
+    return buffer;
+  }
+  return consumeNonListLine(buffer, line, blocks);
+};
+const consumeNonListLine = (
+  buffer: TextBuffer,
+  line: string,
+  blocks: BlockSegment[],
+): TextBuffer => {
+  if (buffer.kind === "paragraph") {
+    return { ...buffer, items: [...buffer.items, line.trim()] };
+  }
+  if (/^\s/u.test(line) && buffer.items.length > 0) {
     return {
-      items: lines.map((line) => line.replace(/^[-*•]\s+/, "")),
-      kind: "list",
-      ordered: false,
+      ...buffer,
+      items: [...buffer.items.slice(0, -1), `${buffer.items.at(-1) ?? ""} ${line.trim()}`],
     };
   }
-  if (lines.every((line) => /^\d+\.\s+/.test(line))) {
-    return {
-      items: lines.map((line) => line.replace(/^\d+\.\s+/, "")),
-      kind: "list",
-      ordered: true,
-    };
+  flushTextBlock(buffer, blocks);
+  return { kind: "paragraph", items: [line.trim()] };
+};
+const appendTextBlocks = (lines: readonly string[], blocks: BlockSegment[]): void => {
+  let buffer = emptyTextBuffer();
+  for (const line of lines) {
+    buffer = consumeTextLine(buffer, line, blocks);
   }
-  return { kind: "paragraph", value: lines.join(" ") };
+  flushTextBlock(buffer, blocks);
 };
 
 const appendParagraphs = (trimmed: string, blocks: BlockSegment[]): void => {
   const lines: string[] = [];
   const flush = (): void => {
-    const segment = parseParagraph(lines.join("\n"));
-    if (segment !== null) {
-      blocks.push(segment);
-    }
+    appendTextBlocks(lines, blocks);
     lines.length = 0;
   };
 
   for (const line of trimmed.split("\n")) {
     const match = /^ {0,3}(#{1,6})(?=[ \t]|$)/u.exec(line);
     const tag = headingTags[(match?.[1]?.length ?? 0) - 1];
-    if (match !== null && tag !== undefined) {
+    if (match === null || tag === undefined) {
+      lines.push(line);
+    } else {
       flush();
       blocks.push({
         kind: "heading",
         tag,
         value: line.slice(match[0].length).trimEnd().replace(/\s#+$/u, "").trim(),
       });
-    } else if (line.trim() === "") {
-      flush();
-    } else {
-      lines.push(line);
     }
   }
   flush();
@@ -228,7 +259,7 @@ const appendProseSegment = (source: string, blocks: BlockSegment[]): void => {
 
 export const parseChatBlocks = (source: string): readonly BlockSegment[] => {
   const blocks: BlockSegment[] = [];
-  for (const [idx, raw] of source.split("```").entries()) {
+  for (const [idx, raw] of normalizeChatMath(source).split("```").entries()) {
     if (idx % 2 === 0) {
       appendProseSegment(raw, blocks);
       continue;

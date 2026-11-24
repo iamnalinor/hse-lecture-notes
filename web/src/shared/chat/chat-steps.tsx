@@ -2,6 +2,8 @@ import { type JSX, useState } from "react";
 
 import type { ChatStep } from "#web/domain/chat.ts";
 
+import { TexText } from "#web/shared/reader/tex-text.tsx";
+
 import { ChevronIcon, ReadStepIcon, SearchStepIcon } from "./chat-icons.tsx";
 import { isMaterialLink } from "./chat-markdown-parse.ts";
 
@@ -40,14 +42,20 @@ const StepLabel = ({ step }: { readonly step: ChatStep }): JSX.Element => {
     return (
       <span className="ai-step-label">
         {prefix}
-        <span className="ai-step-query">{step.q}</span>
+        <span className="ai-step-query">
+          <TexText text={step.q ?? ""} />
+        </span>
       </span>
     );
   }
   return step.kind === "read" ? (
-    <span className="ai-step-label">{formatReadLabel(step)}</span>
+    <span className="ai-step-label">
+      <TexText text={formatReadLabel(step)} />
+    </span>
   ) : (
-    <span className="ai-step-label">{step.note ?? step.target ?? "Анализирую конспект"}</span>
+    <span className="ai-step-label">
+      <TexText text={step.note ?? step.target ?? "Анализирую конспект"} />
+    </span>
   );
 };
 
@@ -66,7 +74,7 @@ const ResultLink = ({
   readonly onJumpToBlock: (id: string) => void;
 }): JSX.Element => {
   if (href === undefined || !isMaterialLink(href)) {
-    return <>{label}</>;
+    return <TexText text={label} />;
   }
   return (
     <a
@@ -80,7 +88,7 @@ const ResultLink = ({
         onJumpToBlock(href);
       }}
     >
-      {label}
+      <TexText text={label} />
     </a>
   );
 };

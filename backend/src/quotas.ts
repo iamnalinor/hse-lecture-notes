@@ -32,6 +32,10 @@ export async function loadPolicy(db: TrackedD1): Promise<ServicePolicy> {
   return JSON.parse(row.value_json) as ServicePolicy;
 }
 
+function highQuotaLimit(policy: ServicePolicy, tier: Tier): number {
+  return tier === "student" || tier === "extended" ? policy.buckets.high.limits[tier] : 0;
+}
+
 export interface BudgetSnapshot {
   globalActual7d: number;
   guestActual24h: number;
@@ -295,7 +299,7 @@ export async function evaluateQuotasAndBudgets(
         .bind(axes.browserId, dayCutoff),
     );
 
-    if (axes.tier === "internal") {
+    if (axes.tier === "student" || axes.tier === "extended") {
       add(
         "high_tg",
         db
@@ -363,22 +367,22 @@ export async function evaluateQuotasAndBudgets(
         nextAvailableAt: low.oldest ? low.oldest + DAY_MS : nowMs + DAY_MS,
       };
     }
-  } else if (axes.tier === "external") {
+  } else if (axes.tier === "default") {
     const low = maxAxis(["low_tg", "low_br"]);
-    if (low.count >= policy.buckets.low.limits.external) {
+    if (low.count >= policy.buckets.low.limits.default) {
       quotaBlock = {
         code: "tier_quota_exceeded",
         nextAvailableAt: low.oldest ? low.oldest + DAY_MS : nowMs + DAY_MS,
       };
     }
   } else {
-    // Internal users have independent high and low quotas
+    // Assigned account tiers have independent high and low quotas
     const high = maxAxis(["high_tg", "high_br"]);
     const low = maxAxis(["low_tg", "low_br"]);
-    if (high.count < policy.buckets.high.limits.internal) {
+    if (high.count < highQuotaLimit(policy, axes.tier)) {
       bucket = "high";
       degraded = { active: false };
-    } else if (low.count < policy.buckets.low.limits.internal) {
+    } else if (low.count < policy.buckets.low.limits[axes.tier]) {
       bucket = "low";
       degraded = {
         active: true,
@@ -770,7 +774,7 @@ function identityQuotaGuard(policy: ServicePolicy, axes: IdentityAxes, bucket: Q
   } else {
     identifiers.push(["telegram_id", axes.telegramId!]);
   }
-  const dailyLimit = bucket === "high" ? policy.buckets.high.limits.internal
+  const dailyLimit = bucket === "high" ? highQuotaLimit(policy, axes.tier)
     : policy.buckets.low.limits[guest ? "guest" : axes.tier];
   const clauses: string[] = [];
   const bindings: (number | string)[] = [];

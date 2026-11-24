@@ -414,7 +414,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     // Seed internal student roster
     await db.run(
       db
-        .prepare("INSERT INTO internal_telegram_accounts (telegram_id, note, added_at) VALUES (777123, 'student', ?)")
+        .prepare("INSERT INTO telegram_account_tiers (telegram_id, tier, note, added_at) VALUES (777123, 'student', 'student', ?)")
         .bind(now),
     );
 
@@ -484,7 +484,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
       { nowMs: now + 2000, jwksOverride: jwks },
     );
     expect(loginRes.status).toBe(200);
-    expect(loginRes.body.tier).toBe("internal");
+    expect(loginRes.body.tier).toBe("student");
     const sessionToken = String(loginRes.body.sessionToken);
 
     // Replaying the same telegramIdToken MUST fail (nonce already consumed)
@@ -503,7 +503,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     const deviceBAdmit = await admitRunAtomic(db, policy, {
       env,
       axes: {
-        tier: "internal",
+        tier: "student",
         telegramId: 777123,
         browserId: secondBrowser.browserId,
         ipAddress: "10.0.0.2",
@@ -526,7 +526,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     // Retrying the original guest `clientRequestId: "req-1"` AFTER login MUST stay idempotent!
     const retryAfterLogin = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "internal", telegramId: 777123, browserId, ipAddress: "10.0.0.1", fingerprint: "fp_1" },
+      axes: { tier: "student", telegramId: 777123, browserId, ipAddress: "10.0.0.1", fingerprint: "fp_1" },
       clientRequestId: "req-1",
       payloadHash: "hash-1",
       threadId: null,
@@ -685,13 +685,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     expect(snap.globalActual7d).toBeGreaterThanOrEqual(1_000);
   });
 
-  test("internal high (20) and low (80) buckets degrade cleanly and EXPLAIN uses created_at in rate limit", async () => {
+  test("student high and low buckets degrade cleanly and EXPLAIN uses created_at in rate limit", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const now = 1_700_000_000_000;
     const policy = await loadPolicy(db);
-    policy.buckets.high.limits.internal = 2;
-    policy.buckets.low.limits.internal = 3;
+    policy.buckets.high.limits.student = 2;
+    policy.buckets.low.limits.student = 3;
 
     // Insert 2 completed high runs
     for (let i = 0; i < 2; i += 1) {
@@ -699,7 +699,7 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
         db
           .prepare(
             `INSERT INTO usage_runs (id, owner_key, client_request_id, payload_hash, thread_id, user_message_id, assistant_message_id, created_at, updated_at, expires_at, status, tier, quota_bucket, model, reasoning_effort, telegram_id, browser_id, ip_address, fingerprint)
-             VALUES (?, 'tg:42', ?, 'h', 't', 'u', 'a', ?, ?, ?, 'done', 'internal', 'high', 'gpt-6.1-terra', 'medium', 42, 'br_42', '1.1.1.1', '')`,
+             VALUES (?, 'tg:42', ?, 'h', 't', 'u', 'a', ?, ?, ?, 'done', 'student', 'high', 'gpt-6.1-terra', 'medium', 42, 'br_42', '1.1.1.1', '')`,
           )
           .bind(`run_h_${i}`, `cid_h_${i}`, now - 100_000 + i * 1000, now, now),
       );
@@ -708,7 +708,7 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     const evalDegraded = await evaluateQuotasAndBudgets(
       db,
       policy,
-      { tier: "internal", telegramId: 42, browserId: "br_42", ipAddress: "1.1.1.1", fingerprint: "" },
+      { tier: "student", telegramId: 42, browserId: "br_42", ipAddress: "1.1.1.1", fingerprint: "" },
       now,
     );
     expect(evalDegraded.allowed).toBe(true);

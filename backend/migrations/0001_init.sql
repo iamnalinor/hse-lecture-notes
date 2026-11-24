@@ -36,10 +36,12 @@ CREATE TABLE IF NOT EXISTS codex_credentials (
   updated_at INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS internal_telegram_accounts (
+CREATE TABLE IF NOT EXISTS telegram_account_tiers (
   telegram_id INTEGER PRIMARY KEY,
+  tier TEXT NOT NULL CHECK (tier IN ('student', 'extended')),
   note TEXT,
-  added_at INTEGER NOT NULL
+  added_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS auth_nonces (
@@ -122,7 +124,7 @@ CREATE TABLE IF NOT EXISTS usage_runs (
   expires_at INTEGER NOT NULL,
   finished_at INTEGER,
   status TEXT NOT NULL,             -- 'running' | 'done' | 'stopped' | 'incomplete' | 'error'
-  tier TEXT NOT NULL,               -- 'guest' | 'external' | 'internal'
+  tier TEXT NOT NULL,               -- 'guest' | 'default' | 'student' | 'extended'
   quota_bucket TEXT NOT NULL,       -- 'high' | 'low'
   model TEXT NOT NULL,
   reasoning_effort TEXT NOT NULL CHECK (length(trim(reasoning_effort)) > 0),

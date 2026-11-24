@@ -252,7 +252,7 @@ $$I_n = \frac{x}{(x^2 + 1)^n} + 2n\int \frac{x^2\,dx}{(x^2 + 1)^{n+1}}.$$
 ## Внесение под знак дифференциала
 
 ::: {.problem #prob:lec17:differential}
-Найдите интегралы: (a) $\int \dfrac{x\,dx}{\sqrt{1 - x^4}}$; (b) $\int \dfrac{\cos x\,dx}{1 + \sin^2 x}$; (c) $\int \dfrac{dx}{x\ln^2 x}$; (d) $\int \cos^3 x\,dx$; (e) $\int \dfrac{e^{2x}\,dx}{1 + e^{4x}}$; (f) $\int \operatorname{ctg} x\,dx$.
+Найди интегралы: (a) $\int \dfrac{x\,dx}{\sqrt{1 - x^4}}$; (b) $\int \dfrac{\cos x\,dx}{1 + \sin^2 x}$; (c) $\int \dfrac{dx}{x\ln^2 x}$; (d) $\int \cos^3 x\,dx$; (e) $\int \dfrac{e^{2x}\,dx}{1 + e^{4x}}$; (f) $\int \operatorname{ctg} x\,dx$.
 :::
 
 ::: solution
@@ -274,7 +274,7 @@ $$I_n = \frac{x}{(x^2 + 1)^n} + 2n\int \frac{x^2\,dx}{(x^2 + 1)^{n+1}}.$$
 ## Замена переменной
 
 ::: {.problem #prob:lec17:change}
-Найдите интегралы: (a) $\int \sqrt{e^x - 1}\,dx$; (b) $\int x\sqrt{x - 1}\,dx$; (c) $\int \dfrac{dx}{x^2\sqrt{1 + x^2}}$.
+Найди интегралы: (a) $\int \sqrt{e^x - 1}\,dx$; (b) $\int x\sqrt{x - 1}\,dx$; (c) $\int \dfrac{dx}{x^2\sqrt{1 + x^2}}$.
 :::
 
 ::: solution
@@ -294,7 +294,7 @@ $$\int \frac{dt/\cos^2 t}{\operatorname{tg}^2 t / \cos t} = \int \frac{\cos t\,d
 ## По частям
 
 ::: {.problem #prob:lec17:parts}
-Найдите интегралы: (a) $\int x^2 e^{-x}\,dx$; (b) $\int x\operatorname{arctg} x\,dx$; (c) $\int \arcsin x\,dx$; (d) $\int e^{2x}\sin 3x\,dx$.
+Найди интегралы: (a) $\int x^2 e^{-x}\,dx$; (b) $\int x\operatorname{arctg} x\,dx$; (c) $\int \arcsin x\,dx$; (d) $\int e^{2x}\sin 3x\,dx$.
 :::
 
 ::: solution
@@ -312,7 +312,7 @@ $$\int \frac{dt/\cos^2 t}{\operatorname{tg}^2 t / \cos t} = \int \frac{\cos t\,d
 ## Дроби с квадратным трёхчленом
 
 ::: {.problem #prob:lec17:quadratic}
-Найдите интегралы: (a) $\int \dfrac{dx}{x^2 - 6x + 13}$; (b) $\int \dfrac{x - 1}{x^2 + 4x + 3}\,dx$; (c) $\int \dfrac{dx}{\sqrt{x^2 + 2x + 5}}$.
+Найди интегралы: (a) $\int \dfrac{dx}{x^2 - 6x + 13}$; (b) $\int \dfrac{x - 1}{x^2 + 4x + 3}\,dx$; (c) $\int \dfrac{dx}{\sqrt{x^2 + 2x + 5}}$.
 :::
 
 ::: solution
@@ -329,10 +329,10 @@ $$\frac12\ln|x^2 + 4x + 3| - 3 \cdot \frac12\ln\left|\frac{x + 1}{x + 3}\right| 
 
 ## Кусочно заданные функции
 
-Приём для задач «найдите все первообразные функции на $\R$» — тот же, что в задаче [-@prob:lec16:conditions] (b) для $|x|$: первообразная на каждом куске, постоянные — из непрерывности склейки, остаётся одна общая $C$. В точках склейки производная существует, если сама функция там непрерывна (следствие [-@cor:lec13:derivative-limit]); если у функции скачок, первообразной на $\R$ нет вовсе (утверждение [-@prop:lec16:no-jump]).
+Приём для задач «найди все первообразные функции на $\R$» — тот же, что в задаче [-@prob:lec16:conditions] (b) для $|x|$: первообразная на каждом куске, постоянные — из непрерывности склейки, остаётся одна общая $C$. В точках склейки производная существует, если сама функция там непрерывна (следствие [-@cor:lec13:derivative-limit]); если у функции скачок, первообразной на $\R$ нет вовсе (утверждение [-@prop:lec16:no-jump]).
 
 ::: {.problem #prob:lec17:piecewise}
-Найдите все первообразные функции $f(x) = \max(1, x^2)$ на $\R$.
+Найди все первообразные функции $f(x) = \max(1, x^2)$ на $\R$.
 :::
 
 ::: solution

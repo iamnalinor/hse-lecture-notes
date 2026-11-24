@@ -404,7 +404,7 @@ $$b_1 = b_1 * e = b_1 * (a * b_2) = (b_1 * a) * b_2 = e * b_2 = b_2.$$
 :::
 
 ::: {.problem #prob:lec15:composition}
-Пусть $f, g\colon \R \to \R$, $f(x) = x^2$, $g(x) = x - 3$. Найдите $f \circ g$ и $g \circ f$. Для подстановок $\sigma = (1\,2\,3)$, $\tau = (1\,2)$ из $S_3$ найдите $\sigma\tau$ и $\sigma \circ \tau$.
+Пусть $f, g\colon \R \to \R$, $f(x) = x^2$, $g(x) = x - 3$. Найди $f \circ g$ и $g \circ f$. Для подстановок $\sigma = (1\,2\,3)$, $\tau = (1\,2)$ из $S_3$ найди $\sigma\tau$ и $\sigma \circ \tau$.
 :::
 
 ::: solution
@@ -416,7 +416,7 @@ $(f \circ g)(x) = f(g(x)) = f(x - 3) = (x - 3)^2$; $(g \circ f)(x) = g(x^2) = x^
 :::
 
 ::: {.problem #prob:lec15:equivalence}
-Является ли отношением эквивалентности: (а) на $\R$: $x \sim y \Leftrightarrow x - y \in \Z$; (б) на $\R$: $x \sim y \Leftrightarrow |x - y| < 2$; (в) на $M_{2 \times 3}(\R)$: $A \sim B \Leftrightarrow \operatorname{Rg} A = \operatorname{Rg} B$? Для отношений эквивалентности опишите классы.
+Является ли отношением эквивалентности: (а) на $\R$: $x \sim y \Leftrightarrow x - y \in \Z$; (б) на $\R$: $x \sim y \Leftrightarrow |x - y| < 2$; (в) на $M_{2 \times 3}(\R)$: $A \sim B \Leftrightarrow \operatorname{Rg} A = \operatorname{Rg} B$? Для отношений эквивалентности опиши классы.
 :::
 
 ::: solution
@@ -430,7 +430,7 @@ $(f \circ g)(x) = f(g(x)) = f(x - 3) = (x - 3)^2$; $(g \circ f)(x) = g(x^2) = x^
 :::
 
 ::: {.problem #prob:lec15:fractions}
-На множестве пар $X = \{(a, b) \mid a \in \Z, \ b \in \Z, \ b \ne 0\}$ положим $(a, b) \sim (c, d) \Leftrightarrow ad = bc$. Докажите, что это отношение эквивалентности, и опишите фактормножество. Что сломается, если разрешить $b = 0$?
+На множестве пар $X = \{(a, b) \mid a \in \Z, \ b \in \Z, \ b \ne 0\}$ положим $(a, b) \sim (c, d) \Leftrightarrow ad = bc$. Докажи, что это отношение эквивалентности, и опиши фактормножество. Что сломается, если разрешить $b = 0$?
 :::
 
 ::: solution
@@ -452,19 +452,19 @@ $$(a * b) * c = (1 + a)(1 + b)(1 + c) - 1 = a * (b * c),$$
 :::
 
 ::: {.problem #prob:lec15:one-sided}
-Пусть $S$ — множество матриц вида $\begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix}$, $x, y \in \R$, с умножением матриц. Докажите, что $S$ — полугруппа, найдите все левые и правые нейтральные элементы. Является ли $S$ моноидом?
+Пусть $S$ — множество матриц вида $\begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix}$, $x, y \in \R$, с умножением матриц. Докажи, что $S$ — полугруппа, найди все левые и правые нейтральные элементы. Является ли $S$ моноидом?
 :::
 
 ::: solution
 $\begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix} \begin{pmatrix} a & 0 \\ b & 0 \end{pmatrix} = \begin{pmatrix} xa & 0 \\ ya & 0 \end{pmatrix} \in S$ — операция корректно задана; ассоциативность — от умножения матриц (теорема [-@thm:lec01:assoc]).
 
-*Ключ:* условие «нейтральный для всех элементов» — тождество по $x, y$ (или $a, b$), сравниваем коэффициенты. Правый нейтральный $R = \begin{pmatrix} r & 0 \\ s & 0 \end{pmatrix}$: $\begin{pmatrix} xr & 0 \\ yr & 0 \end{pmatrix} = \begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix}$ при всех $x, y$ $\Leftrightarrow r = 1$, $s$ любое. Левый нейтральный $L = \begin{pmatrix} l & 0 \\ m & 0 \end{pmatrix}$: $LB = \begin{pmatrix} la & 0 \\ ma & 0 \end{pmatrix}$ должно равняться $\begin{pmatrix} a & 0 \\ b & 0 \end{pmatrix}$ при всех $a, b$; при $a = 0$, $b = 1$ получаем $0 = 1$ — противоречие. Нейтральный элемент был бы и левым, и правым, поэтому его нет, и $S$ не моноид. Обратите внимание: $E \notin S$.
+*Ключ:* условие «нейтральный для всех элементов» — тождество по $x, y$ (или $a, b$), сравниваем коэффициенты. Правый нейтральный $R = \begin{pmatrix} r & 0 \\ s & 0 \end{pmatrix}$: $\begin{pmatrix} xr & 0 \\ yr & 0 \end{pmatrix} = \begin{pmatrix} x & 0 \\ y & 0 \end{pmatrix}$ при всех $x, y$ $\Leftrightarrow r = 1$, $s$ любое. Левый нейтральный $L = \begin{pmatrix} l & 0 \\ m & 0 \end{pmatrix}$: $LB = \begin{pmatrix} la & 0 \\ ma & 0 \end{pmatrix}$ должно равняться $\begin{pmatrix} a & 0 \\ b & 0 \end{pmatrix}$ при всех $a, b$; при $a = 0$, $b = 1$ получаем $0 = 1$ — противоречие. Нейтральный элемент был бы и левым, и правым, поэтому его нет, и $S$ не моноид. Обрати внимание: $E \notin S$.
 
 *Ответ:* Правые нейтральные — все матрицы $\begin{pmatrix} 1 & 0 \\ s & 0 \end{pmatrix}$, $s \in \R$; левых нейтральных нет; не моноид.
 :::
 
 ::: {.problem #prob:lec15:residues}
-Составьте таблицу умножения в $\Z_5 \setminus \{\bar 0\}$ и выясните, является ли это множество группой по умножению. Тот же вопрос для $\Z_6 \setminus \{\bar 0\}$.
+Составь таблицу умножения в $\Z_5 \setminus \{\bar 0\}$ и выясни, является ли это множество группой по умножению. Тот же вопрос для $\Z_6 \setminus \{\bar 0\}$.
 :::
 
 ::: solution

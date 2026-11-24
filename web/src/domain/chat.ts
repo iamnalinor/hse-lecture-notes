@@ -1,6 +1,6 @@
 import { findCourse } from "./courses.ts";
 
-export type ChatTier = "external" | "guest" | "internal";
+export type ChatTier = "default" | "extended" | "guest" | "student";
 
 export type ChatBlockCode =
   | "auth_required"
@@ -226,10 +226,10 @@ const quotaPlate = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateC
   const wait = waitCopy(block, nowMs);
   return {
     body:
-      tier === "external"
+      tier === "default"
         ? `${wait} У студентов 1 курса ПИ лимиты выше — войдите с аккаунта из чата потока.`
         : wait,
-    showLogin: tier === "external",
+    showLogin: tier === "default",
     title: "Дневной лимит сообщений исчерпан",
   };
 };

@@ -172,7 +172,7 @@ it("does not save a late response from a different session", async () => {
   await vi.waitFor(() => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
-  saveSessionAuth("new-session", "internal", { id: 1, name: "User" });
+  saveSessionAuth("new-session", "student", { id: 1, name: "User" });
   const rejected = captureRejection(pending);
   result.resolve(Response.json(response()));
   expect((await rejected).message).toContain("session changed");
@@ -200,7 +200,7 @@ it("gets separate single-use tokens before and after Telegram login and sends th
         Response.json({
           browserToken: "browser",
           sessionToken: "session",
-          tier: "internal",
+          tier: "student",
           user: { id: 1, name: "User" },
         }),
       );
@@ -209,13 +209,13 @@ it("gets separate single-use tokens before and after Telegram login and sends th
     return Promise.resolve(
       Response.json({
         ...response(),
-        tier: isLoggedIn ? "internal" : "guest",
+        tier: isLoggedIn ? "student" : "guest",
         user: isLoggedIn ? { id: 1, name: "User" } : null,
       }),
     );
   });
   await expect(loginViaTelegram(hooks)).resolves.toMatchObject({
-    tier: "internal",
+    tier: "student",
     user: { id: 1 },
   });
   const posts = fetchMock.mock.calls.filter(

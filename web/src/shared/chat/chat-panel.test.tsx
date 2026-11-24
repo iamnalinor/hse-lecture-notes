@@ -12,6 +12,7 @@ import {
 
 import { ChatCodeBlock } from "./chat-code-block.tsx";
 import { BottomCaption } from "./chat-composer-plates.tsx";
+import { ChatPanelHeader } from "./chat-panel-parts.tsx";
 import { ChatPanel } from "./chat-panel.tsx";
 import { ChatResizeHandle } from "./chat-resize-handle.tsx";
 import { applyMetaMessageIds, makeAssistantMsg, makeUserMsg } from "./chat-stream-helpers.ts";
@@ -252,11 +253,11 @@ it.each(["", "/algebra/exam1"])(
 
 it("shows the account switch caption only for an external account", () => {
   try {
-    state.tier = "external";
+    state.tier = "default";
     const caption = <BottomCaption mode="composer" nowMs={0} rateRemainSec={0} />;
     const view = render(caption);
     expect(screen.getByRole("button", { name: "Сменить аккаунт" })).toBeVisible();
-    state.tier = "internal";
+    state.tier = "student";
     view.rerender(<BottomCaption mode="composer" nowMs={0} rateRemainSec={0} />);
     expect(screen.queryByText(/Вы вошли как/u)).toBeNull();
     expect(screen.queryByRole("button", { name: "Сменить аккаунт" })).toBeNull();
@@ -352,4 +353,10 @@ it("keeps the Turnstile host and iframe mounted while toggling modal visibility"
   view.rerender(<TurnstileModal cancelTurnstile={cancel} turnstileOpen={false} />);
   expect(host?.firstChild).toBe(iframe);
   expect(host?.closest(".ai-modal")).toHaveAttribute("aria-hidden", "true");
+});
+
+it("keeps a restored account signed in even if its cached tier is unknown", () => {
+  state.tier = "guest";
+  render(<ChatPanelHeader historyOpen={false} onClose={vi.fn()} onToggleHistory={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: "Войти" })).not.toBeInTheDocument();
 });

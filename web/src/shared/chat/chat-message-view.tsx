@@ -89,6 +89,11 @@ const UserMessageView = ({
       <div className="ai-bubble">
         <InlineTeX text={message.contentTex} />
       </div>
+      {message.status === "error" && (
+        <div className="ai-unsent" role="status">
+          Не отправлено
+        </div>
+      )}
     </div>
   );
 };

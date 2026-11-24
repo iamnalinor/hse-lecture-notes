@@ -4,11 +4,13 @@ import { expect, it, vi } from "vitest";
 import { ChatPanelHeader } from "./chat-panel-parts.tsx";
 
 const history = {
+  isStreaming: false,
+  newChat: vi.fn(),
   hasMore: true,
   isLoadingMore: false,
   loadMore: vi.fn(),
   moreError: false,
-  messages: [],
+  messages: [{ id: "answer" }],
   threads: [{ id: "1", title: "Матрицы" }],
 };
 vi.mock("./chat-context.tsx", () => ({ useChat: () => history }));
@@ -33,4 +35,17 @@ it("loads older chats near the bottom and offers a manual retry on failure", () 
   expect(history.loadMore).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "Повторить загрузку" }));
   expect(history.loadMore).toHaveBeenCalledTimes(2);
+});
+
+it("keeps navigation available during a response and closes history for a new chat", () => {
+  history.isStreaming = true;
+  const onToggleHistory = vi.fn();
+  render(<ChatPanelHeader historyOpen onClose={vi.fn()} onToggleHistory={onToggleHistory} />);
+  expect(screen.getByRole("button", { name: "История чатов" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Матрицы" })).toBeEnabled();
+  const newChat = screen.getByRole("button", { name: "Новый чат" });
+  expect(newChat).toBeEnabled();
+  fireEvent.click(newChat);
+  expect(history.newChat).toHaveBeenCalledOnce();
+  expect(onToggleHistory).toHaveBeenCalledOnce();
 });

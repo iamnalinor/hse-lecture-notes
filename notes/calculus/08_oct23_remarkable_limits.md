@@ -515,7 +515,7 @@ $$\frac{\operatorname{tg} x - \sin x}{x^3} = \frac{\sin x\,(1 - \cos x)}{x^3 \co
 ## Корни и сопряжённое
 
 ::: {.problem #prob:lec08:roots}
-Найдите пределы:
+Найди пределы:
 $$\text{(a) } \lim_{x \to 0} \frac{\sqrt[3]{x + 8} - 2}{\sqrt{1 + 2x} - 1}; \qquad \text{(b) } \lim_{x \to 5} \frac{\sqrt{6 - x} - 1}{3 - \sqrt{4 + x}}.$$
 :::
 
@@ -530,7 +530,7 @@ $$\text{(a) } \lim_{x \to 0} \frac{\sqrt[3]{x + 8} - 2}{\sqrt{1 + 2x} - 1}; \qqu
 ## Тригонометрические пределы
 
 ::: {.problem #prob:lec08:trig}
-Найдите (a) $\lim\limits_{x \to 0} \dfrac{\sin x}{\sin 6x - \sin 7x}$; (b) $\lim\limits_{x \to 0} \dfrac{\operatorname{tg} 4x}{\sin x}$; (c) $\lim\limits_{x \to 0} \dfrac{\cos 3x^3 - 1}{\sin^6 2x}$.
+Найди (a) $\lim\limits_{x \to 0} \dfrac{\sin x}{\sin 6x - \sin 7x}$; (b) $\lim\limits_{x \to 0} \dfrac{\operatorname{tg} 4x}{\sin x}$; (c) $\lim\limits_{x \to 0} \dfrac{\cos 3x^3 - 1}{\sin^6 2x}$.
 :::
 
 ::: solution
@@ -546,7 +546,7 @@ $$\frac{\cos 3x^3 - 1}{\sin^6 2x} = -\frac{1 - \cos 3x^3}{(3x^3)^2} \cdot \frac{
 :::
 
 ::: {.problem #prob:lec08:trig-shift}
-Найдите пределы:
+Найди пределы:
 
 - \(a) $\lim\limits_{x \to a} \dfrac{\cos x - \cos a}{x - a}$;
 - \(b) $\lim\limits_{x \to \pi/3} \dfrac{\sin\left(x - \frac\pi3\right)}{1 - 2\cos x}$.
@@ -571,7 +571,7 @@ $$\frac{\sin t}{4\sin\left(\frac\pi3 + \frac t2\right)\sin\frac t2} = \frac{\sin
 ## Пределы на бесконечности и бесконечные пределы
 
 ::: {.problem #prob:lec08:definition}
-Докажите по определению: (a) $\lim\limits_{x \to -\infty} \dfrac{2x + 1}{x - 3} = 2$ — укажите $C(\varepsilon)$; (b) $\lim\limits_{x \to 2} \dfrac{1}{(x - 2)^2} = +\infty$ — укажите $\delta(M)$.
+Докажи по определению: (a) $\lim\limits_{x \to -\infty} \dfrac{2x + 1}{x - 3} = 2$ — укажи $C(\varepsilon)$; (b) $\lim\limits_{x \to 2} \dfrac{1}{(x - 2)^2} = +\infty$ — укажи $\delta(M)$.
 :::
 
 ::: solution
@@ -583,7 +583,7 @@ $$\frac{\sin t}{4\sin\left(\frac\pi3 + \frac t2\right)\sin\frac t2} = \frac{\sin
 :::
 
 ::: {.problem #prob:lec08:infinity}
-Найдите (a) $\lim\limits_{x \to \infty} \dfrac{2x^2 + 1}{x^2 - 3x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{x + \sin x}{x}$.
+Найди (a) $\lim\limits_{x \to \infty} \dfrac{2x^2 + 1}{x^2 - 3x}$; (b) $\lim\limits_{x \to +\infty} \dfrac{x + \sin x}{x}$.
 :::
 
 ::: solution
@@ -597,7 +597,7 @@ $$\frac{\sin t}{4\sin\left(\frac\pi3 + \frac t2\right)\sin\frac t2} = \frac{\sin
 ## Сложная функция
 
 ::: {.problem #prob:lec08:composite}
-Найдите (a) $\lim\limits_{x \to 0} \cos\left(x \sin\dfrac1x\right)$; (b) $\lim\limits_{x \to 0} \dfrac{\sin(x^2)}{x^2}$. Какое условие теоремы о пределе сложной функции работает в каждом случае?
+Найди (a) $\lim\limits_{x \to 0} \cos\left(x \sin\dfrac1x\right)$; (b) $\lim\limits_{x \to 0} \dfrac{\sin(x^2)}{x^2}$. Какое условие теоремы о пределе сложной функции работает в каждом случае?
 :::
 
 ::: solution
@@ -611,7 +611,7 @@ $$\frac{\sin t}{4\sin\left(\frac\pi3 + \frac t2\right)\sin\frac t2} = \frac{\sin
 ## Второй замечательный предел и классические пределы
 
 ::: {.problem #prob:lec08:e-limits}
-Найдите (a) $\lim\limits_{x \to \infty} \left(1 - \dfrac3x\right)^{x/2}$; (b) $\lim\limits_{x \to 0} (1 + 2x)^{1/\sin x}$; (c) $\lim\limits_{x \to 0} (\cos x)^{1/x^2}$.
+Найди (a) $\lim\limits_{x \to \infty} \left(1 - \dfrac3x\right)^{x/2}$; (b) $\lim\limits_{x \to 0} (1 + 2x)^{1/\sin x}$; (c) $\lim\limits_{x \to 0} (\cos x)^{1/x^2}$.
 :::
 
 ::: solution
@@ -629,7 +629,7 @@ $$v = \frac{\ln(1 + u)}{u} \cdot \frac{\cos x - 1}{x^2} \to 1 \cdot \left(-\frac
 :::
 
 ::: {.problem #prob:lec08:classic}
-Найдите (a) $\lim\limits_{x \to 0} \dfrac{e^{3x} - 1}{\ln(1 + 5x)}$; (b) $\lim\limits_{x \to 0} \dfrac{\sqrt[4]{1 + 2x} - 1}{e^x - 1}$; (c) $\lim\limits_{x \to 0} \dfrac{a^x - 1}{x}$, где $a > 0$; (d) $\lim\limits_{x \to 0} \dfrac{e^{x^2} - \cos x}{x^2}$.
+Найди (a) $\lim\limits_{x \to 0} \dfrac{e^{3x} - 1}{\ln(1 + 5x)}$; (b) $\lim\limits_{x \to 0} \dfrac{\sqrt[4]{1 + 2x} - 1}{e^x - 1}$; (c) $\lim\limits_{x \to 0} \dfrac{a^x - 1}{x}$, где $a > 0$; (d) $\lim\limits_{x \to 0} \dfrac{e^{x^2} - \cos x}{x^2}$.
 :::
 
 ::: solution

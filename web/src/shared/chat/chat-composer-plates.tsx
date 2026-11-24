@@ -81,7 +81,7 @@ export const BottomPlate = ({
       <div className="ai-plate ai-fade" role="status">
         {plateQuote}
         <b>Гостевые ответы закончились</b>
-        <p>{`Войдите, чтобы продолжить.${keepNote}`}</p>
+        <p>Войди через Telegram, чтобы продолжить.</p>
         <div className="ai-plate-actions">
           <button
             className="ai-btn"
@@ -103,7 +103,6 @@ export const BottomPlate = ({
               </>
             )}
           </button>
-          <RetryButton />
         </div>
       </div>
     );
@@ -123,7 +122,6 @@ export const BottomPlate = ({
           </>
         )}
       </p>
-      <RetryButton />
     </div>
   );
 };
@@ -149,7 +147,7 @@ export const BottomCaption = ({ mode, nowMs, rateRemainSec }: CaptionProps): JSX
     );
   }
 
-  if (tier === "external" && mode !== "down" && user !== null) {
+  if (tier === "default" && mode !== "down" && user !== null) {
     return (
       <p className="ai-caption ai-fade">
         <InfoIcon />

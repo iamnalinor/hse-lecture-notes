@@ -10,7 +10,7 @@ Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
 ## Model configuration
 
-The service policy lives in D1 under `service_config.policy`. In `policy.json`, each bucket groups its model, reasoning effort, pricing version and per-tier limits. `init-db` seeds the policy once. Use `set-policy` with a full policy or a partial JSON object to update it. New runs use the current policy and keep their model, effort and pricing version through completion. Versioned tariffs live in `src/pricing.ts`. Deploy a new tariff version before selecting it in the policy.
+The service policy lives in D1 under `service_config.policy`. `policy.json` contains illustrative bootstrap defaults for each bucket’s model, reasoning effort, pricing version and per-tier limits. Production limits belong only in D1; keep private policy files and user assignments outside the checkout. `init-db` seeds the policy once. Use `set-policy` with a full policy or a partial JSON object to update it. New runs use the current policy and keep their model, effort and pricing version through completion. Versioned tariffs live in `src/pricing.ts`. Deploy a new tariff version before selecting it in the policy.
 
 ## Setup & Deployment
 
@@ -43,11 +43,19 @@ CODEX_CREDENTIALS_ENCRYPTION_KEY=... CODEX_INITIAL_REFRESH_TOKEN=... \
   bun run admin set-codex-token --remote
 
 # Update service policy JSON
-bun run admin set-policy ./policy.json --remote
+bun run admin set-policy /private/path/policy.json --remote
 
 # Sync HSE PI student Telegram IDs
-bun run admin sync-telegram-accounts ./student_ids.txt --remote
+bun run admin sync-telegram-accounts /private/path/student_ids.txt --remote
+
+# Manually assign a tier (default removes the assignment)
+bun run admin set-tier <telegram-id> extended --remote
+bun run admin set-tier <telegram-id> default --remote
 
 # Inspect live status
 bun run admin status --remote
 ```
+
+Authenticated accounts without a row in `telegram_account_tiers` use `default` (low bucket only). Assigned `student` and `extended` accounts have separate high and low limits over a rolling 24-hour window: high is used first, then low. Unauthenticated visitors remain `guest`. Limits are read from the database policy, independently for each tier. Tier changes apply to existing sessions and allowance tokens on their next request.
+
+Roster sync replaces only student assignments created by roster sync. It preserves manually assigned tiers, including `extended`. Use `set-tier` to change or remove a manual assignment. Telegram IDs and private policy values must never be committed.

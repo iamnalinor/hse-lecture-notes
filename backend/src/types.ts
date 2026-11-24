@@ -2,7 +2,9 @@ import type { ChatRunner } from "./chat-runner";
 
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
-export type Tier = "guest" | "external" | "internal";
+export type AccountTier = "default" | "student" | "extended";
+export type AssignedTier = Exclude<AccountTier, "default">;
+export type Tier = "guest" | AccountTier;
 export type QuotaBucket = "high" | "low";
 export type ModelId = string;
 export type RunStatus = "running" | "done" | "stopped" | "incomplete" | "error";
@@ -69,7 +71,7 @@ export interface ServicePolicy {
     reserveLowMicros: number;
   };
   buckets: {
-    high: BucketModel & { limits: { internal: number } };
+    high: BucketModel & { limits: Record<AssignedTier, number> };
     low: BucketModel & { limits: Record<Tier, number> };
   };
 }

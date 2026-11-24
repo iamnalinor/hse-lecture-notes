@@ -9,12 +9,14 @@ import {
   type JwksDocument,
 } from "./crypto";
 import type { TrackedD1 } from "./db";
+import { accountTierFromValue, loadAccountTier } from "./account-tiers";
 import { evaluateQuotasAndBudgets, loadPolicy } from "./quotas";
 import type {
   AllowanceJwtPayload,
   Env,
   SessionJwtPayload,
   Tier,
+  AccountTier,
 } from "./types";
 
 const NONCE_TTL_MS = 5 * 60_000;
@@ -40,7 +42,7 @@ export interface VerifiedSession {
   sessionId: string;
   telegramId: number;
   telegramName: string;
-  tier: "internal" | "external";
+  tier: AccountTier;
 }
 
 export async function verifyActiveSession(
@@ -58,14 +60,14 @@ export async function verifyActiveSession(
     return null;
   }
 
-  const [sessRes, internalRes] = await db.batch<Record<string, unknown>>([
+  const [sessRes, tierRes] = await db.batch<Record<string, unknown>>([
     db
       .prepare(
         "SELECT id, telegram_id, telegram_name, expires_at, revoked_at FROM user_sessions WHERE id = ?",
       )
       .bind(payload.sid),
     db
-      .prepare("SELECT telegram_id FROM internal_telegram_accounts WHERE telegram_id = ?")
+      .prepare("SELECT tier FROM telegram_account_tiers WHERE telegram_id = ?")
       .bind(payload.tgId),
   ]);
 
@@ -76,12 +78,11 @@ export async function verifyActiveSession(
     return null;
   }
 
-  const isInternal = Boolean(internalRes?.results[0]);
   return {
     sessionId: row.id,
     telegramId: row.telegram_id,
     telegramName: row.telegram_name,
-    tier: isInternal ? "internal" : "external",
+    tier: accountTierFromValue(tierRes?.results[0]?.tier),
   };
 }
 
@@ -103,14 +104,15 @@ export async function verifyAllowanceToken(
 
   // If this allowance was minted for a logged-in session, verify that the session hasn't been revoked
   if (payload.sid) {
-    const sess = await db.first<{ revoked_at: number | null; expires_at: number }>(
+    const sess = await db.first<{ revoked_at: number | null; expires_at: number; telegram_id: number; assigned_tier: string | null }>(
       db
-        .prepare("SELECT revoked_at, expires_at FROM user_sessions WHERE id = ?")
+        .prepare("SELECT s.revoked_at, s.expires_at, s.telegram_id, t.tier AS assigned_tier FROM user_sessions s LEFT JOIN telegram_account_tiers t ON t.telegram_id = s.telegram_id WHERE s.id = ?")
         .bind(payload.sid),
     );
-    if (!sess || sess.revoked_at !== null || sess.expires_at <= nowMs) {
+    if (!sess || sess.revoked_at !== null || sess.expires_at <= nowMs || sess.telegram_id !== payload.tgId) {
       return null;
     }
+    return { ...payload, tier: accountTierFromValue(sess.assigned_tier) };
   }
 
   return payload;
@@ -342,12 +344,7 @@ export async function handleTelegramLogin(
   }
 
   const policy = await loadPolicy(db);
-  const internalRow = await db.first<{ telegram_id: number }>(
-    db
-      .prepare("SELECT telegram_id FROM internal_telegram_accounts WHERE telegram_id = ?")
-      .bind(verified.telegramId),
-  );
-  const tier: Tier = internalRow ? "internal" : "external";
+  const tier = await loadAccountTier(db, verified.telegramId);
 
   const sessionId = `sess_${randomToken(18)}`;
   const expiresAt = nowMs + policy.sessionTtlMs;

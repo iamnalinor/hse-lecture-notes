@@ -24,6 +24,8 @@ import {
   parseDocContext,
 } from "#web/domain/chat.ts";
 
+import type { StreamStateSetters } from "./chat-stream-types.ts";
+
 import { TurnstileModal } from "./turnstile-modal.tsx";
 import { useChatSendActions, useComposerDraft } from "./use-chat-send-actions.ts";
 import {
@@ -31,7 +33,7 @@ import {
   useRootOpenClassSync,
   useTelegramAuthActions,
 } from "./use-chat-state.ts";
-import { type StreamStateSetters, useChatStream } from "./use-chat-stream.ts";
+import { useChatStream } from "./use-chat-stream.ts";
 import { useThreadState } from "./use-thread-state.ts";
 import { useTurnstile } from "./use-turnstile.ts";
 
@@ -78,6 +80,9 @@ export type ChatContextValue = {
 const ChatContext = createContext<ChatContextValue | null>(null);
 
 type BuildCtxArgs = {
+  readonly unsent: ChatMessage | null;
+  readonly setUnsent: (message: ChatMessage | null) => void;
+  readonly detach: () => void;
   readonly auth: ReturnType<typeof useChatAuthState>;
   readonly docContext: ChatDocContext;
   readonly draft: string;
@@ -121,12 +126,13 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   isStreaming: a.thr.isStreaming,
   isThreadLoading: a.thr.isThreadLoading,
   login: a.tgAuth.login,
-  messages: a.thr.messages,
+  messages: a.unsent === null ? a.thr.messages : [...a.thr.messages, a.unsent],
   newChat: () => {
-    if (a.thr.isStreaming) {
-      return;
-    }
+    a.setUnsent(null);
+    a.detach();
     a.thr.invalidateLoad();
+    a.thr.setPollRunId(null);
+    a.thr.setIsStreaming(false);
     if (a.quote?.messageId !== undefined) {
       a.setQuote(null);
     }
@@ -141,9 +147,11 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   rateLimitUntil: a.auth.rateLimitUntil,
   retryMessage: a.retryMessage,
   selectThread: (threadId: string) => {
-    if (a.thr.isStreaming) {
+    if (a.thr.activeThreadId === threadId && !a.thr.isThreadLoading) {
       return;
     }
+    a.setUnsent(null);
+    a.detach();
     if (a.quote?.messageId !== undefined) {
       a.setQuote(null);
     }
@@ -191,13 +199,14 @@ const useChatSessionValue = ({
   turnstileOpen,
 }: SessionProps): ChatContextValue => {
   const isConfigured = isChatConfigured();
-  const { draft, setDraft, quote, setQuote } = composer;
+  const { draft, setDraft, quote, setQuote, unsent, setUnsent } = composer;
 
   const { pathname } = useLocation();
   const pageKey = `${auth.user?.id ?? "guest"}:/${pathname.split("/").filter(Boolean).join("/")}`;
   const thr = useThreadState(isOpen, isConfigured, pageKey);
 
   const setters: StreamStateSetters = {
+    setUnsent,
     setPollRunId: thr.setPollRunId,
     setActiveThreadId: thr.setActiveThreadId,
     setBlock: auth.setBlock,
@@ -215,6 +224,9 @@ const useChatSessionValue = ({
   const actions = useChatSendActions({ docContext, draft, quote, stream, thr });
 
   return buildContextValue({
+    unsent,
+    setUnsent,
+    detach: stream.detachActive,
     auth,
     docContext,
     draft,

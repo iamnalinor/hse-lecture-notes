@@ -406,7 +406,7 @@ $$\lambda = -\frac{a_{kj}}{a_{ij}}$$
 # Практика
 
 ::: {.problem #prob:lec02:expression}
-Вычислите $(3B)^2 - 2(BA - E)^T$, где $A = \begin{pmatrix} 0 & -2 \\ 1 & -3 \end{pmatrix}$, $B = \begin{pmatrix} 5 & 1 \\ -1 & 0 \end{pmatrix}$.
+Вычисли $(3B)^2 - 2(BA - E)^T$, где $A = \begin{pmatrix} 0 & -2 \\ 1 & -3 \end{pmatrix}$, $B = \begin{pmatrix} 5 & 1 \\ -1 & 0 \end{pmatrix}$.
 :::
 
 ::: solution
@@ -422,7 +422,7 @@ $BA = \begin{pmatrix} 5 & 1 \\ -1 & 0 \end{pmatrix} \begin{pmatrix} 0 & -2 \\ 1 
 :::
 
 ::: {.problem #prob:lec02:commute}
-Найдите все матрицы $X \in M_2(\R)$, перестановочные с $A = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$, то есть такие, что $AX = XA$.
+Найди все матрицы $X \in M_2(\R)$, перестановочные с $A = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$, то есть такие, что $AX = XA$.
 :::
 
 ::: solution
@@ -434,7 +434,7 @@ $$AX = \begin{pmatrix} a + c & b + d \\ c & d \end{pmatrix}, \qquad XA = \begin{
 :::
 
 ::: {.problem #prob:lec02:transpose-chain}
-Докажите, что $(ABC)^T = C^T B^T A^T$, и выведите отсюда, что для любой $A \in M_{m \times n}(\R)$ матрица $AA^T$ квадратная и $(AA^T)^T = AA^T$.
+Докажи, что $(ABC)^T = C^T B^T A^T$, и выведи отсюда, что для любой $A \in M_{m \times n}(\R)$ матрица $AA^T$ квадратная и $(AA^T)^T = AA^T$.
 :::
 
 ::: solution
@@ -444,7 +444,7 @@ $$(ABC)^T = ((AB)C)^T = C^T (AB)^T = C^T (B^T A^T) = C^T B^T A^T.$$
 :::
 
 ::: {.problem #prob:lec02:chain}
-Матрицу $A$ из трёх строк преобразовали так: сначала $\rw{I} \leftrightarrow \rw{II}$, затем $\rw{II} - 3 \cdot \rw{I}$ (номера строк — уже после перестановки). Найдите матрицу $S$, для которой результат равен $SA$, и проверьте ответ на $A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \\ 5 & 6 \end{pmatrix}$.
+Матрицу $A$ из трёх строк преобразовали так: сначала $\rw{I} \leftrightarrow \rw{II}$, затем $\rw{II} - 3 \cdot \rw{I}$ (номера строк — уже после перестановки). Найди матрицу $S$, для которой результат равен $SA$, и проверь ответ на $A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \\ 5 & 6 \end{pmatrix}$.
 :::
 
 ::: solution
@@ -458,7 +458,7 @@ $$(ABC)^T = ((AB)C)^T = C^T (AB)^T = C^T (B^T A^T) = C^T B^T A^T.$$
 :::
 
 ::: {.problem #prob:lec02:gauss}
-Приведите к ступенчатому и каноническому виду методом Гаусса:
+Приведи к ступенчатому и каноническому виду методом Гаусса:
 а) $\begin{pmatrix} 1 & 2 & 1 & 3 \\ 2 & 4 & 3 & 7 \\ 3 & 6 & 5 & 12 \end{pmatrix}$; б) $\begin{pmatrix} 1 & 2 & 3 \\ 2 & 4 & 7 \\ 1 & 3 & 2 \end{pmatrix}$.
 :::
 

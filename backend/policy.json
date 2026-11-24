@@ -30,7 +30,8 @@
       "effort": "medium",
       "pricingVersion": 1,
       "limits": {
-        "internal": 20
+        "student": 6,
+        "extended": 12
       }
     },
     "low": {
@@ -38,9 +39,10 @@
       "effort": "low",
       "pricingVersion": 1,
       "limits": {
-        "guest": 3,
-        "external": 20,
-        "internal": 80
+        "guest": 4,
+        "default": 8,
+        "student": 18,
+        "extended": 36
       }
     }
   }

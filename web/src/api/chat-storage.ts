@@ -57,7 +57,7 @@ const parseStoredUser = (raw: null | string): ChatUser | null => {
 };
 
 const parseStoredTier = (raw: null | string): ChatTier => {
-  return raw === "internal" || raw === "external" ? raw : "guest";
+  return raw === "student" || raw === "default" || raw === "extended" ? raw : "guest";
 };
 
 export const readStoredAuth = (): StoredChatAuth => {

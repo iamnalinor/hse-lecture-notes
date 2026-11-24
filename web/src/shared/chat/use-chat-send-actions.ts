@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import type { ChatDocContext, ChatQuote, ChatUser } from "#web/domain/chat.ts";
+import type { ChatDocContext, ChatMessage, ChatQuote, ChatUser } from "#web/domain/chat.ts";
 
 import type { ChatStreamController } from "./use-chat-stream.ts";
 import type { useThreadState } from "./use-thread-state.ts";
@@ -11,11 +11,12 @@ export const useComposerDraft = (docKey: string, user: ChatUser | null) => {
     readonly key: string;
     readonly text: string;
     readonly quote: ChatQuote | null;
+    readonly unsent: ChatMessage | null;
   };
   const key = String(user?.id ?? "guest");
-  const [draft, setDraft] = useState<Draft>({ key, docKey, text: "", quote: null });
+  const [draft, setDraft] = useState<Draft>({ key, docKey, text: "", quote: null, unsent: null });
   if (draft.key !== key) {
-    setDraft({ key, docKey, text: "", quote: null });
+    setDraft({ key, docKey, text: "", quote: null, unsent: null });
   } else if (draft.docKey !== docKey) {
     setDraft({
       ...draft,
@@ -29,6 +30,10 @@ export const useComposerDraft = (docKey: string, user: ChatUser | null) => {
   return {
     draft: draft.text,
     quote: draft.quote,
+    unsent: draft.unsent,
+    setUnsent: (unsent: ChatMessage | null) => {
+      updateDraft({ unsent });
+    },
     setDraft: (text: string) => {
       updateDraft({ text });
     },
