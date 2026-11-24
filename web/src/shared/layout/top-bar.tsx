@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from "react-router";
+import { Link, NavLink } from "react-router";
 
 import { COURSES } from "#web/domain/courses.ts";
 import { paths } from "#web/domain/paths.ts";
@@ -7,31 +7,8 @@ import { HeaderSearch } from "#web/shared/search/header-search.tsx";
 
 import { ThemeToggle } from "./theme-toggle.tsx";
 
-const CompactCourseMenu = () => {
-  const navigate = useNavigate();
-  return (
-    <select
-      aria-label="Перейти к курсу"
-      className="min-h-8 max-w-16 min-w-0 bg-transparent text-footnote text-muted @4xl:hidden"
-      onChange={(event) => {
-        void navigate(paths.course(event.target.value));
-      }}
-      value=""
-    >
-      <option disabled value="">
-        Курсы
-      </option>
-      {COURSES.map((course) => (
-        <option key={course.id} value={course.id}>
-          {course.name}
-        </option>
-      ))}
-    </select>
-  );
-};
-
 export const TopBar = () => (
-  <header className="@container border-b border-rule bg-paper">
+  <header className="@container border-b border-rule bg-paper" data-site-header="">
     <div className="relative mx-auto flex min-h-13 max-w-[1360px] items-center gap-x-1 px-4 py-2 min-[380px]:gap-x-2 sm:min-h-15 sm:gap-x-4 sm:px-8 md:gap-x-7">
       <Link
         className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
@@ -44,7 +21,6 @@ export const TopBar = () => (
           Конспекты ФКН <span className="font-normal text-faint">2026/27</span>
         </span>
       </Link>
-      <CompactCourseMenu />
       <nav aria-label="Курсы" className="hidden shrink-0 gap-1 @4xl:flex" data-course-nav="">
         {COURSES.map((course) => (
           <NavLink

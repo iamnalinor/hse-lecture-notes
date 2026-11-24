@@ -6,6 +6,23 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+@media screen and (min-width: 64rem) and (hover: hover) and (pointer: fine) {
+  html {
+    /* The desktop bar has a 3.75rem row and a 1px bottom border. */
+    --top-bar-height: calc(3.75rem + 1px);
+    scroll-padding-top: var(--top-bar-height);
+  }
+  [data-site-header] {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .ai-toc {
+    top: var(--top-bar-height);
+    max-height: calc(100dvh - var(--top-bar-height));
+  }
+}
+
 /* Palette «Тихая бумага»: near-white neutral paper, graphite at night; the warm hue is left to theorems. */
 :root {
   color-scheme: light;
