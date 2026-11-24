@@ -355,6 +355,7 @@ export class ChatRunner extends DurableObject<Env> {
         loggedRunId = admit.runId;
         safeSend({
           type: "meta",
+          replayed: true,
           threadId: admit.threadId,
           threadTitle: admit.threadTitle,
           generatedTitle: admit.generatedTitle,

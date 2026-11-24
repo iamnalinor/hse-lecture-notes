@@ -14,7 +14,10 @@ it("keeps the citation preview open when the pointer moves onto the card", () =>
     render(
       <>
         <section data-block-label="Теорема" id="theorem">
-          <p>Формулировка</p>
+          <div data-block-body>
+            <p>Формулировка</p>
+          </div>
+          <button type="button">Показать решение</button>
         </section>
         <ChatRefPreview onJumpToBlock={vi.fn()} panelElement={panel} />
       </>,
@@ -24,6 +27,8 @@ it("keeps the citation preview open when the pointer moves onto the card", () =>
       vi.advanceTimersByTime(200);
     });
     const card = screen.getByRole("tooltip");
+    expect(card).toHaveTextContent("Формулировка");
+    expect(card).not.toHaveTextContent("Показать решение");
     fireEvent.pointerOut(link, { pointerType: "mouse" });
     fireEvent.pointerOver(card, { pointerType: "mouse" });
     act(() => {

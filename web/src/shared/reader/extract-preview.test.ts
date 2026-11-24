@@ -23,6 +23,7 @@ const part = (id: string, shouldAttachProof = false) =>
 describe("extractAnswerPart", () => {
   it("gives a problem's solution with its answer, not its statement", () => {
     const html = part("prob:colloq1:sup")?.html ?? "";
+    expect(extractPreview(FRAGMENT, "prob:colloq1:sup")).not.toContain("Решение.");
     expect(html).toContain("<em>Ответ:</em> 1.");
     expect(html).toContain("Решение.");
     expect(html).not.toContain("Найдите");

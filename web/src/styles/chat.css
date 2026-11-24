@@ -894,8 +894,7 @@ html.ai-open .ai-panel {
   color: var(--muted);
   transition: color 200ms ease-out;
 }
-.ai-step-label q {
-  quotes: "«" "»";
+.ai-step-query {
   color: var(--ink);
 }
 .ai-step-res {

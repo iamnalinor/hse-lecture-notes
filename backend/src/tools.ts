@@ -1,6 +1,6 @@
 import { SYSTEM_PROMPT } from "./system-prompt";
 import type { TrackedD1 } from "./db";
-import { buildFtsMatchQuery } from "./stemmer";
+import { buildFtsMatchQuery, tokenizeAndStem } from "./stemmer";
 import type {
   ChatStep,
   CodexFunctionTool,
@@ -220,7 +220,7 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
     type: "function",
     name: "search_materials",
     description:
-      "Гибридный поиск (FTS5 + семантика) по определениям, теоремам, леммам, задачам, примерам и разделам конспектов. Возвращает список подходящих блоков с ID, заголовком, фрагментом и меткой chronology.",
+      "Гибридный поиск (FTS5 + семантика) по определениям, теоремам, леммам, задачам, примерам и разделам конспектов. Для квизов и других проверочных работ также ищет страницы подготовки по каталогу, возвращая дату, ссылку и doc_id для read_document. Возвращает список подходящих блоков с ID, заголовком, фрагментом и меткой chronology.",
     parameters: {
       type: "object",
       properties: {
@@ -230,7 +230,7 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
         },
         course: {
           type: "string",
-          description: "Код курса (например, discrete, linalg, calculus). По умолчанию — текущий курс.",
+          description: "Алгебра — algebra, матанализ (матан) — calculus, дискретная математика — discrete, алгоритмы — aiya. all — все курсы.",
         },
         doc_kind: {
           type: "string",
@@ -285,7 +285,7 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
     parameters: {
       type: "object",
       properties: {
-        course: { type: "string", description: "Код курса." },
+        course: { type: "string", enum: ["algebra", "calculus", "discrete", "aiya"], description: "Код курса: calculus — математический анализ (матан), algebra — алгебра, discrete — дискретная математика, aiya — алгоритмы." },
         doc_id: { type: "string", description: "ID документа (например, 07_oct16_primes_fta)." },
         section_id: { type: "string", description: "Опциональный ID раздела внутри документа." },
       },
@@ -338,6 +338,40 @@ function isExactBlockIdQuery(q: string): boolean {
 
 function materialLink(row: { course: string; doc_id: string; anchor_id: string }): string {
   return `/${row.course}/${row.doc_id}#${row.anchor_id}`;
+}
+
+function courseCode(value: string): string {
+  const name = value.toLowerCase().trim();
+  if (/^(?:матан(?:ализ)?[а-я]*|математическ[а-я]* анализ[а-я]*)$/u.test(name)) return "calculus";
+  return name === "linalg" ? "algebra" : name;
+}
+
+type PreparationPage = {
+  course: string;
+  doc_id: string;
+  title: string;
+  date: string | null;
+};
+
+function titleTerms(text: string): Set<string> {
+  return new Set([...tokenizeAndStem(text).filter(word => word.length > 2), ...(text.match(/\d+/g) ?? [])]);
+}
+
+async function searchPreparationPages(db: TrackedD1, course: string, query: string) {
+  const words = titleTerms(query);
+  const rows = await db.all<PreparationPage>(
+    db.prepare(`SELECT course, doc_id, title, date FROM course_documents
+      WHERE doc_kind = 'prep' AND (? IN ('', 'all') OR course = ?)
+      ORDER BY date, course, doc_id`).bind(course, course),
+  );
+  return rows.results.map(page => {
+    const titleWords = titleTerms(page.title);
+    const score = [...words].filter(word => titleWords.has(word)).length;
+    return { page, score };
+  }).filter(hit => hit.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map(({ page }) => ({ ...page, url: `/${page.course}/${page.doc_id}` }));
 }
 
 export class AgentToolRunner {
@@ -408,7 +442,7 @@ export class AgentToolRunner {
   ): Promise<{ output: string; step: ChatStep }> {
     const query = String(args.query ?? "").trim();
     const course = typeof args.course === "string" && args.course.trim()
-      ? args.course.trim()
+      ? courseCode(args.course)
       : this.ctx.currentCourse;
     const docKind = typeof args.doc_kind === "string" ? args.doc_kind.trim() : null;
     const blockKind = typeof args.block_kind === "string" ? args.block_kind.trim() : null;
@@ -461,19 +495,22 @@ export class AgentToolRunner {
       binds.push(12);
 
       try {
-        const res = await this.ctx.db.all<SearchBlockRow>(
-          this.ctx.db
-            .prepare(
-              `SELECT b.id, b.anchor_id, b.course, b.doc_kind, b.doc_id, b.doc_order, b.block_kind, b.title, b.statement_tex
-               FROM course_blocks_fts
-               JOIN course_blocks b ON b.id = course_blocks_fts.id
-               WHERE ${filters.join(" AND ")}
-               ORDER BY bm25(course_blocks_fts, 0, 0, 0, 0, 10.0, 5.0, 2.0, 4.0)
-               LIMIT ?`,
-            )
-            .bind(...binds),
+        const statement = this.ctx.db.prepare(
+          `SELECT b.id, b.anchor_id, b.course, b.doc_kind, b.doc_id, b.doc_order, b.block_kind, b.title, b.statement_tex
+           FROM course_blocks_fts
+           JOIN course_blocks b ON b.id = course_blocks_fts.id
+           WHERE ${filters.join(" AND ")}
+           ORDER BY bm25(course_blocks_fts, 0, 0, 0, 0, 10.0, 5.0, 2.0, 4.0)
+           LIMIT ?`,
         );
+        const res = await this.ctx.db.all<SearchBlockRow>(statement.bind(...binds));
         ftsRows.push(...res.results);
+        if (!ftsRows.length && ftsQuery.includes(" AND ")) {
+          const broader = await this.ctx.db.all<SearchBlockRow>(
+            statement.bind(buildFtsMatchQuery(query, "OR"), ...binds.slice(1)),
+          );
+          ftsRows.push(...broader.results);
+        }
       } catch {
         // Malformed FTS query fallback: continue cleanly
       }
@@ -558,11 +595,18 @@ export class AgentToolRunner {
       .slice(0, 8)
       .map((entry) => this.formatSearchItem(entry.row));
 
-    const labels = merged.slice(0, 3).map((m) => m.title || m.id);
-    const more = Math.max(0, merged.length - labels.length);
+    const pages = !blockKind && (!docKind || docKind === "prep")
+      ? await searchPreparationPages(this.ctx.db, course, query) : [];
+    const hits = [
+      ...pages.map(page => ({ label: page.title, url: page.url })),
+      ...merged.map(block => ({ label: block.title || block.id, url: materialLink(block) })),
+    ];
+    const visible = hits.slice(0, 3);
+    const more = hits.length - visible.length;
 
     return {
       output: JSON.stringify({
+        documents: pages,
         results: merged,
         usedSemantic: vecRows.length > 0,
       }),
@@ -570,8 +614,8 @@ export class AgentToolRunner {
         kind: "search",
         q: query,
         state: "done",
-        res: labels,
-        links: merged.slice(0, 3).map(materialLink),
+        res: visible.map(hit => hit.label),
+        links: visible.map(hit => hit.url),
         ...(more > 0 ? { more } : {}),
       },
     };
@@ -706,7 +750,7 @@ export class AgentToolRunner {
   ): Promise<{ output: string; step: ChatStep }> {
     const course =
       typeof args.course === "string" && args.course.trim()
-        ? args.course.trim()
+        ? courseCode(args.course)
         : this.ctx.currentCourse;
     const docId = typeof args.doc_id === "string" && args.doc_id.trim() ? args.doc_id.trim() : null;
     const sectionId =
@@ -739,10 +783,12 @@ export class AgentToolRunner {
       order_index: number;
       title: string;
       outline_json: string;
+      date: string | null;
+      introduction: string;
     }>(
       this.ctx.db
         .prepare(
-          "SELECT doc_kind, doc_id, order_index, title, outline_json FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1",
+          "SELECT doc_kind, doc_id, order_index, title, date, substr(body_tex, 1, 800) AS introduction, outline_json FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1",
         )
         .bind(course, docId),
     );
@@ -816,6 +862,8 @@ export class AgentToolRunner {
         doc_kind: doc.doc_kind,
         doc_id: doc.doc_id,
         title: doc.title,
+        date: doc.date,
+        introduction: doc.introduction,
         chronology: classifyChronology(
           course,
           doc.doc_id,

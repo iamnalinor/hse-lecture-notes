@@ -8,7 +8,7 @@ import type {
   ChatThreadSummary,
 } from "#web/domain/chat.ts";
 
-import { type AllowanceResponse, getChatEnvConfig } from "#web/api/chat-client.ts";
+import { type ChatAccess, getChatEnvConfig } from "#web/api/chat-client.ts";
 import {
   type ActiveWsStream,
   openChatMessageStream,
@@ -83,6 +83,29 @@ const markUnconfirmed = ({ setters, args, clientRequestId }: WsCallbackDeps): vo
   );
 };
 
+const finishTurn = (
+  setters: StreamStateSetters,
+  payload: Parameters<WsStreamCallbacks["onDone"]>[0],
+): void => {
+  setters.setIsStreaming(payload.replayed === true);
+  if (payload.replayed === true) {
+    setters.setPollRunId(payload.runId);
+    return;
+  }
+  setters.setDegraded(payload.degraded);
+  if (payload.block !== null) {
+    setters.setBlock(payload.block);
+  }
+  setters.setMessages((prev) =>
+    patchLastAssistant(prev, (m) => ({
+      ...m,
+      contentTex: payload.text === "" ? m.contentTex : payload.text,
+      status: payload.status,
+      steps: payload.steps.length > 0 ? payload.steps : m.steps,
+    })),
+  );
+};
+
 const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
   const { args, clearActive, setters } = deps;
   let runId: null | string = null;
@@ -108,23 +131,7 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     },
     onDone: (payload) => {
       clearActive();
-      setters.setIsStreaming(payload.replayed === true);
-      setters.setDegraded(payload.degraded);
-      if (payload.replayed === true) {
-        setters.setPollRunId(payload.runId);
-        return;
-      }
-      if (payload.block !== null) {
-        setters.setBlock(payload.block);
-      }
-      setters.setMessages((prev) =>
-        patchLastAssistant(prev, (m) => ({
-          ...m,
-          contentTex: payload.text === "" ? m.contentTex : payload.text,
-          status: payload.status,
-          steps: payload.steps.length > 0 ? payload.steps : m.steps,
-        })),
-      );
+      finishTurn(setters, payload);
     },
     onError: (payload) => {
       clearActive();
@@ -140,7 +147,9 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     onMeta: (payload) => {
       runId = payload.runId;
       setters.setActiveThreadId(payload.threadId);
-      setters.setDegraded(payload.degraded);
+      if (payload.replayed !== true) {
+        setters.setDegraded(payload.degraded);
+      }
       setters.setMessages((prev) =>
         applyMetaMessageIds(prev, {
           assistantId: payload.assistantMessageId,
@@ -194,7 +203,7 @@ const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): vo
 
 const connectStream = (
   args: SendArgs & { readonly clientRequestId: string },
-  allowance: AllowanceResponse,
+  allowance: ChatAccess,
   callbacks: WsStreamCallbacks,
 ): ActiveWsStream | null => {
   try {

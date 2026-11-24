@@ -53,6 +53,10 @@ export type AllowanceResponse = {
   readonly user: ChatUser | null;
 };
 
+export type ChatAccess = Omit<AllowanceResponse, "degraded"> & {
+  readonly degraded: ChatDegraded | null;
+};
+
 export type ThreadResponse = {
   readonly hasMore?: boolean;
   readonly browserToken?: string;
@@ -124,14 +128,10 @@ const assertSameSession = (sessionToken: null | string): void => {
 };
 
 /** Obtains or refreshes the 30-minute allowanceToken (with multi-tab lock & 409 mismatch recovery). */
-export const ensureChatAllowance = async (
-  turnstileHooks: TurnstileHooks,
-  shouldForceRefresh = false,
-): Promise<AllowanceResponse> => {
+export const ensureChatAllowance = async (turnstileHooks: TurnstileHooks): Promise<ChatAccess> => {
   const cached = readStoredAuth();
   const marginMs = 60_000;
   if (
-    !shouldForceRefresh &&
     cached.allowanceToken !== null &&
     cached.browserToken !== null &&
     cached.allowanceExpiresAt > Date.now() + marginMs
@@ -141,12 +141,17 @@ export const ensureChatAllowance = async (
       allowanceToken: cached.allowanceToken,
       block: null,
       browserToken: cached.browserToken,
-      degraded: { active: false },
+      degraded: null,
       tier: cached.tier,
       user: cached.user,
     };
   }
 
+  return await refreshChatAllowance(turnstileHooks);
+};
+
+const refreshChatAllowance = async (turnstileHooks: TurnstileHooks): Promise<AllowanceResponse> => {
+  const cached = readStoredAuth();
   return await withBrowserInitLock(async () => {
     const { turnstileSiteKey } = getChatEnvConfig();
     const [turnstileToken, fingerprint] = await Promise.all([
@@ -222,7 +227,7 @@ export const fetchChatRunStatus = async (runId: string): Promise<null | RunStatu
 
 const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string> => {
   if (readStoredAuth().browserToken === null) {
-    await ensureChatAllowance(turnstileHooks, true);
+    await refreshChatAllowance(turnstileHooks);
   }
   const nonceRes = await apiJson("/v1/auth/nonce", { method: "POST" });
   const nonceData = nonceRes.data as { readonly nonce?: string };
@@ -257,7 +262,7 @@ export const loginViaTelegram = async (
   saveBrowserToken(loginData.browserToken);
   saveSessionAuth(loginData.sessionToken, loginData.tier, loginData.user);
   clearAllowanceToken();
-  return await ensureChatAllowance(turnstileHooks, true);
+  return await refreshChatAllowance(turnstileHooks);
 };
 
 export const logoutChatSession = async (): Promise<"logged_out" | "session_changed"> => {

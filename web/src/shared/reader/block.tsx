@@ -62,7 +62,9 @@ export const Block = ({ children, footer, id, isFlat = false, kind, name, number
     return (
       <div className={`${theme} rounded-lg bg-(--t)`} data-block-label={name.label} id={id}>
         <div className="px-5 pt-3.5">{header}</div>
-        <div className="px-5 py-2">{children}</div>
+        <div className="px-5 py-2" data-block-body>
+          {children}
+        </div>
         {footer}
       </div>
     );

@@ -22,9 +22,8 @@ export const isMaterialLink = (target: string): boolean => {
   const [path = "", hash, extra] = target.split("#", 3);
   return (
     extra === undefined &&
-    hash !== undefined &&
     /^\/[a-z]+\/[\w-]+$/u.test(path) &&
-    /^[\p{L}\p{N}_.:-]+$/u.test(hashTarget(hash))
+    (hash === undefined || /^[\p{L}\p{N}_.:-]+$/u.test(hashTarget(hash)))
   );
 };
 

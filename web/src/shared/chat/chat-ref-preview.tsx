@@ -23,12 +23,13 @@ const KIND_TONES: Readonly<Record<string, string>> = {
 };
 
 const clonePreviewBody = (el: HTMLElement): string => {
-  let kids = [...el.children];
-  if (kids[0]?.querySelector("b.font-semibold") !== null) {
+  const body = el.querySelector(":scope > [data-block-body]");
+  let kids = [...(body ?? el).children];
+  if (body === null && kids[0]?.querySelector("b.font-semibold") !== null) {
     kids = kids.slice(1);
   }
   const single = kids.length === 1 ? kids[0] : undefined;
-  if (single?.tagName === "DIV" && !single.classList.contains("math-display")) {
+  if (body === null && single?.tagName === "DIV" && !single.classList.contains("math-display")) {
     kids = [...single.children];
   }
   return kids

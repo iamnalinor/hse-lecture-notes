@@ -127,7 +127,7 @@ export function tokenizeAndStem(text: string): string[] {
   return out;
 }
 
-export function buildFtsMatchQuery(rawQuery: string): string {
+export function buildFtsMatchQuery(rawQuery: string, operator: "AND" | "OR" = "AND"): string {
   const rawTokens = rawQuery
     .toLowerCase()
     .replace(/ё/g, "е")
@@ -151,5 +151,5 @@ export function buildFtsMatchQuery(rawQuery: string): string {
     }
     if (clauses.length >= 8) break;
   }
-  return clauses.join(" AND ");
+  return clauses.join(` ${operator} `);
 }

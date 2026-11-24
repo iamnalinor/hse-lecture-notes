@@ -192,6 +192,26 @@ it("polls a restored running turn through a failed request to completion", async
   expect(chat.current.messages.at(-1)?.contentTex).toBe("A");
 });
 
+it("retains the degraded caption while a cached allowance starts the next turn", async () => {
+  const chat = mount();
+  const degraded = { active: true, restoresAt: Date.now() + 60_000 };
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, degraded });
+  await act(() => chat.current.send("first"));
+  act(() =>
+    vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onDone({
+      degraded,
+      block: null,
+      runId: "r",
+      status: "done",
+      steps: [],
+      text: "answer",
+    }),
+  );
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, degraded: null });
+  await act(() => chat.current.send("second"));
+  expect(chat.current.degraded).toEqual(degraded);
+});
+
 it("restores the draft and unlocks a quota block at its deadline", async () => {
   vi.useFakeTimers();
   vi.mocked(ensureChatAllowance).mockResolvedValueOnce({

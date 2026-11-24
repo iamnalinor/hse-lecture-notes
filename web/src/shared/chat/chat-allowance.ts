@@ -1,7 +1,7 @@
 import type { TurnstileHooks } from "#web/api/chat-widgets.ts";
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat.ts";
 
-import { type AllowanceResponse, ensureChatAllowance } from "#web/api/chat-client.ts";
+import { type ChatAccess, ensureChatAllowance } from "#web/api/chat-client.ts";
 
 export type AllowanceSetters = {
   readonly setBlock: (block: ChatBlock | null) => void;
@@ -11,10 +11,18 @@ export type AllowanceSetters = {
 };
 
 type AllowanceOutcome =
-  | { readonly allowance: AllowanceResponse; readonly kind: "ok" }
+  | { readonly allowance: ChatAccess; readonly kind: "ok" }
   | { readonly kind: "blocked" }
   | { readonly kind: "cancelled" }
   | { readonly kind: "error"; readonly message: string };
+
+const applyAccess = (setters: AllowanceSetters, allowance: ChatAccess): void => {
+  setters.setTier(allowance.tier);
+  setters.setUser(allowance.user);
+  if (allowance.degraded !== null) {
+    setters.setDegraded(allowance.degraded);
+  }
+};
 
 export const fetchAllowanceOutcome = async (
   turnstileHooks: TurnstileHooks,
@@ -26,9 +34,7 @@ export const fetchAllowanceOutcome = async (
     if (!isCurrent()) {
       return { kind: "cancelled" };
     }
-    setters.setTier(allowance.tier);
-    setters.setUser(allowance.user);
-    setters.setDegraded(allowance.degraded);
+    applyAccess(setters, allowance);
     if (allowance.block !== null) {
       setters.setBlock(allowance.block);
       return { kind: "blocked" };

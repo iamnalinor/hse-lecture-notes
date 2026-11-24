@@ -40,7 +40,7 @@ const StepLabel = ({ step }: { readonly step: ChatStep }): JSX.Element => {
     return (
       <span className="ai-step-label">
         {prefix}
-        <q>{step.q ?? ""}</q>
+        <span className="ai-step-query">{step.q}</span>
       </span>
     );
   }

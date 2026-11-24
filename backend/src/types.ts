@@ -236,6 +236,7 @@ export type ServerWsFrame =
   | { type: "title"; threadId: string; title: string }
   | {
       type: "meta";
+      replayed?: boolean;
       threadId: string;
       threadTitle: string;
       generatedTitle: string | null;

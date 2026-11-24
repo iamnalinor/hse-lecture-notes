@@ -25,6 +25,7 @@ export type WsStreamCallbacks = {
     readonly message: string;
   }) => void;
   readonly onMeta: (payload: {
+    readonly replayed?: boolean;
     readonly assistantMessageId: string;
     readonly degraded: ChatDegraded;
     readonly runId: string;

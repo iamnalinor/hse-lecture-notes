@@ -776,6 +776,24 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     ]);
   });
 
+  test("finds a calculus quiz by its page title even when its blocks miss a compound query", async () => {
+    const shim = new SqliteD1Shim();
+    const db = new TrackedD1(shim.asD1());
+    await db.run(db.prepare(`INSERT INTO course_documents
+      (id, course, doc_kind, doc_id, order_index, title, date, outline_json, body_tex, content_hash, updated_at)
+      VALUES ('quiz', 'calculus', 'prep', 'quiz-o-symbols', 1, 'Подготовка к квизу 4: О-символика',
+      '2026-11-23', '[]', '', 'hash', 1)`));
+    const runner = new AgentToolRunner({
+      env: makeTestEnv(shim.asD1()), db, currentCourse: "", currentDocId: "", currentDocOrder: 0,
+      maxToolOutputChars: 12000, maxTotalToolOutputChars: 36000,
+    });
+    const result = await runner.execute("search_materials", JSON.stringify({ query: "матан сложные функции квиз", course: "матан" }));
+    expect(JSON.parse(result.output).documents[0]).toMatchObject({ url: "/calculus/quiz-o-symbols", date: "2026-11-23" });
+    expect(result.step.links).toEqual(["/calculus/quiz-o-symbols"]);
+    const catalog = await runner.execute("read_document", JSON.stringify({ course: "calculus" }));
+    expect(JSON.parse(catalog.output).documents[0].doc_id).toBe("quiz-o-symbols");
+  });
+
   test("BM25 ranks title match above proof match, caches repeated tool calls, and validates LaTeX quotes", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
