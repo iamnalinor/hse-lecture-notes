@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router";
 
 import { COURSES } from "#web/domain/courses.ts";
 import { paths } from "#web/domain/paths.ts";
+import { ChatToggleButton } from "#web/shared/chat/chat-toggle-button.tsx";
 import { HeaderSearch } from "#web/shared/search/header-search.tsx";
 
 import { ThemeToggle } from "./theme-toggle.tsx";
@@ -23,6 +24,7 @@ export const TopBar = () => (
       <nav
         aria-label="Курсы"
         className="flex min-w-0 flex-1 gap-0.5 overflow-x-auto md:flex-none md:gap-1"
+        data-course-nav=""
       >
         {COURSES.map((course) => (
           <NavLink
@@ -36,6 +38,7 @@ export const TopBar = () => (
       </nav>
       <div className="flex shrink-0 items-center justify-end gap-1 md:ml-auto md:gap-2">
         <HeaderSearch />
+        <ChatToggleButton />
         <ThemeToggle place="bar" />
       </div>
     </div>

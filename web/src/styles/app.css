@@ -2,6 +2,7 @@
 @import "katex/dist/katex.min.css";
 @import "./fonts.css";
 @import "./prose.css";
+@import "./chat.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -184,6 +185,33 @@ stray `text-sm` does nothing instead of adding an eleventh size.
   :focus-visible {
     outline: 2px solid var(--def);
     outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.708 0 0 / 0.5);
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.708 0 0 / 0.7);
+  }
+
+  :root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: oklch(0.556 0 0 / 0.5);
+  }
+
+  :root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.556 0 0 / 0.7);
   }
 }
 

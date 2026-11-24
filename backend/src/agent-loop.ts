@@ -1,0 +1,490 @@
+import { CodexAuthError } from "./codex-auth";
+import { CodexUpstreamError } from "./codex-provider";
+import type { TrackedD1 } from "./db";
+import { logEvent } from "./logger";
+import { computeRoundCostMicros } from "./pricing";
+import { checkpointRound, finalizeRunAtomic } from "./quotas";
+import { AGENT_TOOLS, AgentToolRunner, buildSystemPrompt } from "./tools";
+import type {
+  ChatStep,
+  CodexInputItem,
+  DegradedInfo,
+  Env,
+  LlmProvider,
+  ModelId,
+  QuotaBucket,
+  QuotePayload,
+  RunStatus,
+  ServerWsFrame,
+  ServicePolicy,
+  Tier,
+} from "./types";
+
+export interface AgentLoopParams {
+  env: Env;
+  db: TrackedD1;
+  provider: LlmProvider;
+  policy: ServicePolicy;
+  runId: string;
+  threadId: string;
+  excludeMessageIds?: readonly string[];
+  course: string;
+  docId: string;
+  tier: Tier;
+  bucket: QuotaBucket;
+  model: ModelId;
+  initialReserveMicros: number;
+  degraded: DegradedInfo;
+  questionText: string;
+  quote: QuotePayload | null;
+  signal: AbortSignal;
+  isStoppedByUser: () => boolean;
+  sendFrame: (frame: ServerWsFrame) => void;
+}
+
+interface HistoryRow {
+  role: "user" | "assistant";
+  status: string;
+  content_tex: string;
+  quote_json: string | null;
+}
+
+function formatUserTurnContent(text: string, quote: QuotePayload | null): string {
+  if (!quote) return text;
+  const header = quote.blockId
+    ? `Цитата из конспекта (${quote.label}, блок #${quote.blockId}):`
+    : `Цитата из конспекта (${quote.label}):`;
+  return `${header}\n> ${quote.tex}\n\nВопрос студента:\n${text}`;
+}
+
+function extractPreviewArg(rawArgs: string, field: string): string {
+  try {
+    const parsed = JSON.parse(rawArgs) as Record<string, unknown>;
+    return typeof parsed[field] === "string" ? parsed[field] : "";
+  } catch {
+    return "";
+  }
+}
+
+async function loadThreadHistoryInput(
+  db: TrackedD1,
+  threadId: string,
+  excludeRunId: string,
+  excludeMessageIds: readonly string[],
+  policy: ServicePolicy,
+): Promise<CodexInputItem[]> {
+  const excluded = new Set(excludeMessageIds);
+  const rows = await db.all<HistoryRow & { id: string }>(
+    db
+      .prepare(
+        `SELECT id, role, status, content_tex, quote_json
+         FROM chat_messages
+         WHERE thread_id = ? AND (run_id IS NULL OR run_id != ?) AND status IN ('done', 'stopped', 'incomplete')
+         ORDER BY seq DESC
+         LIMIT ?`,
+      )
+      .bind(threadId, excludeRunId, policy.maxHistoryMessages + excluded.size),
+  );
+
+  const chronological = [...rows.results]
+    .filter((r) => !excluded.has(r.id))
+    .slice(0, policy.maxHistoryMessages)
+    .reverse();
+  const items: CodexInputItem[] = [];
+  let charBudget = policy.maxHistoryChars;
+
+  const selected: HistoryRow[] = [];
+  for (let i = chronological.length - 1; i >= 0; i -= 1) {
+    const r = chronological[i]!;
+    const len = r.content_tex.length + (r.quote_json?.length ?? 0);
+    if (len > charBudget && selected.length > 0) break;
+    charBudget -= len;
+    selected.unshift(r);
+  }
+
+  for (const r of selected) {
+    let quote: QuotePayload | null = null;
+    if (r.quote_json) {
+      try {
+        quote = JSON.parse(r.quote_json) as QuotePayload;
+      } catch {
+        quote = null;
+      }
+    }
+    if (r.role === "user") {
+      items.push({
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: formatUserTurnContent(r.content_tex, quote) }],
+      });
+    } else if (r.content_tex.trim()) {
+      items.push({
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: r.content_tex }],
+      });
+    }
+  }
+
+  return items;
+}
+
+export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
+  const {
+    env,
+    db,
+    provider,
+    policy,
+    runId,
+    threadId,
+    course,
+    docId,
+    tier,
+    bucket,
+    model,
+    degraded,
+    questionText,
+    quote,
+    signal,
+    isStoppedByUser,
+    sendFrame,
+  } = params;
+
+  const steps: ChatStep[] = [];
+  const turnNewAgentItems: CodexInputItem[] = [];
+
+  let currentReservedMicros = params.initialReserveMicros;
+  let cumulativeCostMicros = 0;
+  let totalInputTokens = 0;
+  let totalCachedTokens = 0;
+  let totalCacheWriteTokens = 0;
+  let totalOutputTokens = 0;
+  let roundsCompleted = 0;
+  let totalToolCalls = 0;
+  let accumulatedText = "";
+  let isCostUncertain = false;
+  let estimatedPromptChars = 0;
+
+  const { instructions, currentDocOrder } = await buildSystemPrompt(db, course, docId);
+  const historyItems = await loadThreadHistoryInput(
+    db,
+    threadId,
+    runId,
+    params.excludeMessageIds ?? [],
+    policy,
+  );
+
+  const userTurnItem: CodexInputItem = {
+    type: "message",
+    role: "user",
+    content: [{ type: "input_text", text: formatUserTurnContent(questionText, quote) }],
+  };
+  const conversationInput: CodexInputItem[] = [...historyItems, userTurnItem];
+
+  const toolRunner = new AgentToolRunner({
+    env,
+    db,
+    currentCourse: course,
+    currentDocId: docId,
+    currentDocOrder,
+    maxToolOutputChars: policy.maxToolOutputChars,
+    maxTotalToolOutputChars: policy.maxTotalToolOutputChars,
+  });
+
+  const timeoutAbort = new AbortController();
+  let timedOut = false;
+  const timeoutTimer = setTimeout(() => {
+    timedOut = true;
+    timeoutAbort.abort("run_timeout");
+  }, policy.maxRunDurationMs);
+
+  const onExternalAbort = () => timeoutAbort.abort(signal.reason);
+  if (signal.aborted) {
+    timeoutAbort.abort(signal.reason);
+  } else {
+    signal.addEventListener("abort", onExternalAbort, { once: true });
+  }
+
+  try {
+    let allowTools = true;
+
+    for (let round = 1; round <= policy.maxToolRounds; round += 1) {
+      if (timeoutAbort.signal.aborted) break;
+
+      const isFinalAllowedRound = round === policy.maxToolRounds || !allowTools;
+      const toolsForRound = isFinalAllowedRound ? [] : AGENT_TOOLS;
+
+      estimatedPromptChars =
+        instructions.length +
+        conversationInput.reduce((acc, item) => acc + JSON.stringify(item).length, 0);
+
+      let roundText = "";
+      const remainingChars = Math.max(200, policy.maxResponseChars - accumulatedText.length);
+      const roundStartMs = Date.now();
+
+      const roundRes = await provider.runRound({
+        model,
+        instructions,
+        input: conversationInput,
+        tools: toolsForRound,
+        maxResponseChars: remainingChars,
+        signal: timeoutAbort.signal,
+        onDelta: (delta) => {
+          roundText += delta;
+          accumulatedText += delta;
+          sendFrame({ type: "delta", text: delta });
+        },
+      });
+
+      const roundDurationMs = Date.now() - roundStartMs;
+      logEvent(roundRes.completed ? "info" : "warn", "codex_round", {
+        runId,
+        round,
+        model,
+        completed: roundRes.completed,
+        status: roundRes.status,
+        truncated: roundRes.truncated,
+        durationMs: roundDurationMs,
+        textChars: roundText.length,
+        toolCalls: roundRes.functionCalls.map((f) => f.name),
+        usage: roundRes.usage,
+      });
+
+      if (!roundRes.completed) {
+        isCostUncertain = true;
+        break;
+      }
+
+      roundsCompleted += 1;
+      if (roundRes.usage) {
+        const roundCost = computeRoundCostMicros(model, roundRes.usage);
+        cumulativeCostMicros += roundCost;
+        totalInputTokens += roundRes.usage.inputTokens;
+        totalCachedTokens += roundRes.usage.cachedTokens;
+        totalCacheWriteTokens += roundRes.usage.cacheWriteTokens;
+        totalOutputTokens += roundRes.usage.outputTokens;
+      } else {
+        isCostUncertain = true;
+      }
+
+      for (const item of roundRes.outputItems) {
+        conversationInput.push(item);
+        turnNewAgentItems.push(item);
+      }
+
+      const cp = await checkpointRound(db, policy, {
+        runId,
+        tier,
+        bucket,
+        currentReservedMicros,
+        cumulativeActualMicros: cumulativeCostMicros,
+        inputTokens: totalInputTokens,
+        cachedTokens: totalCachedTokens,
+        cacheWriteTokens: totalCacheWriteTokens,
+        outputTokens: totalOutputTokens,
+        toolRounds: roundsCompleted,
+        toolCalls: totalToolCalls,
+        nowMs: Date.now(),
+      });
+      currentReservedMicros = cp.updatedReservedMicros;
+      if (!cp.canContinueToolRounds) {
+        allowTools = false;
+      }
+
+      if (roundRes.functionCalls.length === 0 || roundRes.truncated || isFinalAllowedRound) {
+        if (!accumulatedText && roundRes.text) {
+          accumulatedText = roundRes.text;
+          sendFrame({ type: "delta", text: roundRes.text });
+        }
+        break;
+      }
+
+      for (const fc of roundRes.functionCalls) {
+        if (timeoutAbort.signal.aborted) break;
+
+        if (totalToolCalls >= policy.maxToolCalls) {
+          const capItem: CodexInputItem = {
+            type: "function_call_output",
+            call_id: fc.callId,
+            output: JSON.stringify({
+              error: "Tool call limit reached for this turn. Answer using already gathered materials.",
+            }),
+          };
+          conversationInput.push(capItem);
+          turnNewAgentItems.push(capItem);
+          allowTools = false;
+          continue;
+        }
+
+        totalToolCalls += 1;
+
+        const runningStep: ChatStep =
+          fc.name === "search_materials"
+            ? { kind: "search", q: extractPreviewArg(fc.arguments, "query"), state: "running" }
+            : {
+                kind: "read",
+                target:
+                  extractPreviewArg(fc.arguments, "id") ||
+                  extractPreviewArg(fc.arguments, "doc_id") ||
+                  extractPreviewArg(fc.arguments, "course"),
+                state: "running",
+              };
+        const stepIdx = steps.push(runningStep) - 1;
+        sendFrame({ type: "step", steps: [...steps] });
+
+        const toolResult = await toolRunner.execute(fc.name, fc.arguments);
+        steps[stepIdx] = toolResult.step;
+        sendFrame({ type: "step", steps: [...steps] });
+
+        const outputItem: CodexInputItem = {
+          type: "function_call_output",
+          call_id: fc.callId,
+          output: toolResult.output,
+        };
+        conversationInput.push(outputItem);
+        turnNewAgentItems.push(outputItem);
+      }
+
+      if (roundText && !roundText.endsWith("\n")) {
+        accumulatedText += "\n\n";
+        sendFrame({ type: "delta", text: "\n\n" });
+      }
+    }
+
+    let finalStatus: Exclude<RunStatus, "running"> = "done";
+    let errorCode: string | null = null;
+    let errorMessage: string | null = null;
+
+    if (isStoppedByUser()) {
+      finalStatus = "stopped";
+      isCostUncertain = true;
+    } else if (timedOut) {
+      finalStatus = "incomplete";
+      errorCode = "run_timeout";
+      errorMessage = "Время генерации ответа истекло (60 с).";
+      isCostUncertain = true;
+    } else if (isCostUncertain && !accumulatedText.trim()) {
+      finalStatus = "error";
+      errorCode = "upstream_incomplete";
+      errorMessage = "Соединение с моделью прервалось до завершения ответа.";
+    }
+
+    await finalizeRunAtomic(db, {
+      runId,
+      finalStatus,
+      messageStatus: finalStatus,
+      contentTex: accumulatedText,
+      stepsJson: steps.length > 0 ? JSON.stringify(steps) : null,
+      agentItemsJson:
+        turnNewAgentItems.length > 0 ? JSON.stringify(turnNewAgentItems.slice(-24)) : null,
+      errorCode,
+      errorMessage,
+      actualCostMicros: cumulativeCostMicros,
+      isCostUncertain,
+      estimatedPromptChars,
+      streamedOutputChars: accumulatedText.length,
+      inputTokens: totalInputTokens,
+      cachedTokens: totalCachedTokens,
+      cacheWriteTokens: totalCacheWriteTokens,
+      outputTokens: totalOutputTokens,
+      toolRounds: roundsCompleted,
+      toolCalls: totalToolCalls,
+    });
+
+    sendFrame({
+      type: "done",
+      runId,
+      status: finalStatus,
+      text: accumulatedText,
+      steps,
+      degraded,
+      block: null,
+    });
+  } catch (err) {
+    const abortedByUser = isStoppedByUser();
+    const isAuthErr = err instanceof CodexAuthError;
+    const isUpstreamErr = err instanceof CodexUpstreamError;
+
+    logEvent(abortedByUser ? "info" : "error", "agent_run_exception", {
+      runId,
+      threadId,
+      course,
+      docId,
+      model,
+      abortedByUser,
+      timedOut,
+      roundsCompleted,
+      totalToolCalls,
+      errCode: isAuthErr || isUpstreamErr ? err.code : "internal_error",
+      upstreamStatus: isUpstreamErr ? err.status : undefined,
+      errMessage: err instanceof Error ? err.message.slice(0, 500) : String(err),
+    });
+
+    const finalStatus: Exclude<RunStatus, "running"> = abortedByUser
+      ? "stopped"
+      : timedOut
+        ? "incomplete"
+        : "error";
+    const errorCode = abortedByUser
+      ? "user_stopped"
+      : timedOut
+        ? "run_timeout"
+        : isAuthErr
+          ? err.code
+          : isUpstreamErr
+            ? err.code
+            : "internal_error";
+    const rawErrDetail = (err instanceof Error ? err.message : String(err)).trim().slice(0, 400);
+    const errorMessage = abortedByUser
+      ? null
+      : isAuthErr
+        ? `Ошибка авторизации Codex (${err.code}): ${rawErrDetail} [run: ${runId}]`
+        : isUpstreamErr
+          ? `Ошибка модели HTTP ${err.status} (${err.code}): ${rawErrDetail} [run: ${runId}]`
+          : `Ошибка сервера (${errorCode}): ${rawErrDetail} [run: ${runId}]`;
+
+    await finalizeRunAtomic(db, {
+      runId,
+      finalStatus,
+      messageStatus: finalStatus,
+      contentTex: accumulatedText,
+      stepsJson: steps.length > 0 ? JSON.stringify(steps) : null,
+      agentItemsJson:
+        turnNewAgentItems.length > 0 ? JSON.stringify(turnNewAgentItems.slice(-24)) : null,
+      errorCode,
+      errorMessage,
+      actualCostMicros: cumulativeCostMicros,
+      isCostUncertain: true,
+      estimatedPromptChars,
+      streamedOutputChars: accumulatedText.length,
+      inputTokens: totalInputTokens,
+      cachedTokens: totalCachedTokens,
+      cacheWriteTokens: totalCacheWriteTokens,
+      outputTokens: totalOutputTokens,
+      toolRounds: roundsCompleted,
+      toolCalls: totalToolCalls,
+    });
+
+    if (abortedByUser) {
+      sendFrame({
+        type: "done",
+        runId,
+        status: "stopped",
+        text: accumulatedText,
+        steps,
+        degraded,
+        block: null,
+      });
+    } else {
+      sendFrame({
+        type: "error",
+        code: errorCode,
+        message: errorMessage ?? "Ошибка генерации",
+        block: isAuthErr ? { code: "oauth_unavailable" } : null,
+      });
+    }
+  } finally {
+    clearTimeout(timeoutTimer);
+    signal.removeEventListener("abort", onExternalAbort);
+  }
+}

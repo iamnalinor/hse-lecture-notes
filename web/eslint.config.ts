@@ -306,7 +306,7 @@ export default defineConfig([
     rules: {
       ...betterTailwind.configs["recommended-error"].rules,
       "better-tailwindcss/enforce-consistent-line-wrapping": "off",
-      // Hand-written classes of src/styles/prose.css (styling of the build's HTML fragments).
+      // Hand-written classes of src/styles/prose.css and src/styles/chat.css.
       "better-tailwindcss/no-unknown-classes": [
         "error",
         {
@@ -318,6 +318,8 @@ export default defineConfig([
             "^math-inline$",
             "^flash$",
             "^table-cards$",
+            "^ai-",
+            "^is-(?:open|run|on|done|stop|clipped)$",
           ],
         },
       ],

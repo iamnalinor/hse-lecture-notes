@@ -349,7 +349,12 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   const isInScope = url.origin === SCOPE.origin && url.pathname.startsWith(SCOPE.pathname);
-  if (!isInScope || request.method !== "GET" || url.pathname.endsWith(".pdf")) {
+  if (
+    !isInScope ||
+    request.method !== "GET" ||
+    url.pathname.endsWith(".pdf") ||
+    url.pathname.startsWith("/v1/")
+  ) {
     return;
   }
   if (request.mode === "navigate") {

@@ -1,0 +1,193 @@
+export type InlineSpan =
+  | { readonly end: number; readonly kind: "bold"; readonly text: string }
+  | { readonly end: number; readonly kind: "code"; readonly text: string }
+  | { readonly end: number; readonly kind: "ref"; readonly label: string; readonly target: string };
+
+export type ParsedPiece =
+  | { readonly kind: "plain"; readonly pos: number; readonly text: string }
+  | { readonly kind: "span"; readonly pos: number; readonly span: InlineSpan };
+
+export type BlockSegment =
+  | { readonly kind: "code"; readonly lang: string; readonly value: string }
+  | { readonly kind: "display-math"; readonly value: string }
+  | { readonly kind: "list"; readonly items: readonly string[]; readonly ordered: boolean }
+  | { readonly kind: "paragraph"; readonly value: string };
+
+const matchMdRef = (text: string, pos: number): InlineSpan | null => {
+  const closeBracket = text.indexOf("](#", pos + 1);
+  if (closeBracket === -1) {
+    return null;
+  }
+  const closeParen = text.indexOf(")", closeBracket + 3);
+  if (closeParen === -1) {
+    return null;
+  }
+  const label = text.slice(pos + 1, closeBracket);
+  const target = text.slice(closeBracket + 3, closeParen);
+  return label === "" || target === "" || label.includes("\n")
+    ? null
+    : { end: closeParen + 1, kind: "ref", label, target };
+};
+
+const matchWikiRef = (text: string, pos: number): InlineSpan | null => {
+  const close = text.indexOf("]]", pos + 2);
+  if (close === -1) {
+    return null;
+  }
+  const body = text.slice(pos + 2, close);
+  const pipe = body.indexOf("|");
+  return pipe <= 0 || pipe === body.length - 1
+    ? null
+    : { end: close + 2, kind: "ref", label: body.slice(pipe + 1), target: body.slice(0, pipe) };
+};
+
+const matchDelimited = (text: string, pos: number, delim: "**" | "`"): InlineSpan | null => {
+  const close = text.indexOf(delim, pos + delim.length);
+  if (close <= pos + delim.length) {
+    return null;
+  }
+  return {
+    end: close + delim.length,
+    kind: delim === "**" ? "bold" : "code",
+    text: text.slice(pos + delim.length, close),
+  };
+};
+
+const matchSpanAt = (text: string, pos: number): InlineSpan | null => {
+  const ch = text[pos];
+  if (ch === "[" && text[pos + 1] === "[") {
+    return matchWikiRef(text, pos);
+  }
+  if (ch === "[") {
+    return matchMdRef(text, pos);
+  }
+  if (ch === "*" && text[pos + 1] === "*") {
+    return matchDelimited(text, pos, "**");
+  }
+  if (ch === "`") {
+    return matchDelimited(text, pos, "`");
+  }
+  return null;
+};
+
+const cutPlainTail = (text: string): string => {
+  let out = text;
+  if ((out.split("$$").length - 1) % 2 === 1) {
+    out = out.slice(0, out.lastIndexOf("$$"));
+  }
+  if ((out.replaceAll("$$", "").split("$").length - 1) % 2 === 1) {
+    out = out.slice(0, out.lastIndexOf("$"));
+  }
+  if ((out.split("**").length - 1) % 2 === 1) {
+    out = out.slice(0, out.lastIndexOf("**"));
+  }
+  if (out.lastIndexOf("[[") > out.lastIndexOf("]]")) {
+    out = out.slice(0, out.lastIndexOf("[["));
+  }
+  return out;
+};
+
+/** Cuts incomplete trailing `$`, `$$`, `**`, or `[[` while streaming outside fenced code blocks. */
+export const safeStreamCut = (text: string): string => {
+  if ((text.split("```").length - 1) % 2 === 1) {
+    return text;
+  }
+  const lastFence = text.lastIndexOf("```");
+  return lastFence === -1
+    ? cutPlainTail(text)
+    : text.slice(0, lastFence + 3) + cutPlainTail(text.slice(lastFence + 3));
+};
+
+const pushPlainSlice = (
+  pieces: ParsedPiece[],
+  text: string,
+  bounds: readonly [number, number],
+): void => {
+  const [start, end] = bounds;
+  if (end > start) {
+    pieces.push({ kind: "plain", pos: start, text: text.slice(start, end) });
+  }
+};
+
+export const scanInlinePieces = (text: string): readonly ParsedPiece[] => {
+  const pieces: ParsedPiece[] = [];
+  let plainStart = 0;
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    const matched = matchSpanAt(text, cursor);
+    if (matched === null) {
+      cursor += 1;
+      continue;
+    }
+    pushPlainSlice(pieces, text, [plainStart, cursor]);
+    pieces.push({ kind: "span", pos: cursor, span: matched });
+    cursor = matched.end;
+    plainStart = matched.end;
+  }
+  pushPlainSlice(pieces, text, [plainStart, text.length]);
+  return pieces;
+};
+
+const parseParagraph = (para: string): BlockSegment | null => {
+  const lines = para
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+  if (lines.length === 0) {
+    return null;
+  }
+  if (lines.every((line) => /^[-*•]\s+/.test(line))) {
+    return {
+      items: lines.map((line) => line.replace(/^[-*•]\s+/, "")),
+      kind: "list",
+      ordered: false,
+    };
+  }
+  if (lines.every((line) => /^\d+\.\s+/.test(line))) {
+    return {
+      items: lines.map((line) => line.replace(/^\d+\.\s+/, "")),
+      kind: "list",
+      ordered: true,
+    };
+  }
+  return { kind: "paragraph", value: lines.join(" ") };
+};
+
+const appendParagraphs = (trimmed: string, blocks: BlockSegment[]): void => {
+  for (const para of trimmed.split(/\n{2,}/)) {
+    const seg = parseParagraph(para);
+    if (seg !== null) {
+      blocks.push(seg);
+    }
+  }
+};
+
+const appendProseSegment = (source: string, blocks: BlockSegment[]): void => {
+  for (const part of source.split(/(\$\$[^$]+\$\$)/)) {
+    const trimmed = part.trim();
+    if (trimmed === "") {
+      continue;
+    }
+    if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
+      blocks.push({ kind: "display-math", value: trimmed.slice(2, -2).trim() });
+    } else {
+      appendParagraphs(trimmed, blocks);
+    }
+  }
+};
+
+export const parseChatBlocks = (source: string): readonly BlockSegment[] => {
+  const blocks: BlockSegment[] = [];
+  for (const [idx, raw] of source.split("```").entries()) {
+    if (idx % 2 === 0) {
+      appendProseSegment(raw, blocks);
+      continue;
+    }
+    const nl = raw.indexOf("\n");
+    const lang = nl === -1 ? "" : raw.slice(0, nl).trim();
+    const code = (nl === -1 ? raw : raw.slice(nl + 1)).replace(/\n$/, "");
+    blocks.push({ kind: "code", lang, value: code });
+  }
+  return blocks;
+};

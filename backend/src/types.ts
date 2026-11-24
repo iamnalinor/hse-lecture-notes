@@ -1,0 +1,294 @@
+import type { ChatRunner } from "./chat-runner";
+
+export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
+export type Tier = "guest" | "external" | "internal";
+export type QuotaBucket = "high" | "low";
+export type ModelId = "gpt-6.1-terra" | "gpt-6-luna";
+export type RunStatus = "running" | "done" | "stopped" | "incomplete" | "error";
+export type MessageStatus = "done" | "running" | "stopped" | "incomplete" | "error";
+export type DocKind = "lecture" | "theory" | "prep" | "program";
+
+export interface Env {
+  DB: D1Database;
+  CHAT_RUNNER: DurableObjectNamespace<ChatRunner>;
+  VECTORIZE?: VectorizeIndex;
+  AI?: Ai;
+  ARCHIVE_BUCKET?: R2Bucket;
+
+  // Vars
+  ALLOWED_ORIGINS: string;
+  TURNSTILE_EXPECTED_HOSTNAMES: string;
+  CODEX_OAUTH_CLIENT_ID: string;
+  CODEX_RESPONSES_URL: string;
+  CODEX_TOKEN_URL: string;
+  TELEGRAM_JWKS_URL: string;
+  TELEGRAM_ISSUER: string;
+
+  // Secrets
+  ALLOWANCE_JWT_SECRET: string;
+  BROWSER_TOKEN_SECRET: string;
+  CODEX_CREDENTIALS_ENCRYPTION_KEY: string;
+  CODEX_PROXY_URL?: string;
+  TURNSTILE_SECRET_KEY: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CLIENT_ID?: string;
+  OWNER_TELEGRAM_ID?: string;
+}
+
+export interface ServicePolicy {
+  rateLimitPerMinute: number;
+  maxQuestionChars: number;
+  maxQuoteChars: number;
+  maxBodyBytes: number;
+  maxHistoryMessages: number;
+  maxHistoryChars: number;
+  maxToolRounds: number;
+  maxToolCalls: number;
+  maxToolOutputChars: number;
+  maxTotalToolOutputChars: number;
+  maxResponseChars: number;
+  maxRunDurationMs: number;
+  staleRunTimeoutMs: number;
+  allowanceTtlMs: number;
+  sessionTtlMs: number;
+  archiveAfterDays: number;
+  threadsPageSize: number;
+  requireLoginWithoutFingerprint: boolean;
+  budgets: {
+    weeklyGlobalUsdMicros: number;
+    weeklyWarnRatio: number;
+    dailyGuestUsdMicros: number;
+    reserveHighMicros: number;
+    reserveLowMicros: number;
+  };
+  tiers: {
+    guest: { lowLimit: number };
+    external: { lowLimit: number };
+    internal: { highLimit: number; lowLimit: number };
+  };
+}
+
+export const DEFAULT_POLICY: ServicePolicy = {
+  rateLimitPerMinute: 4,
+  maxQuestionChars: 2000,
+  maxQuoteChars: 4000,
+  maxBodyBytes: 32768,
+  maxHistoryMessages: 16,
+  maxHistoryChars: 24000,
+  maxToolRounds: 5,
+  maxToolCalls: 10,
+  maxToolOutputChars: 12000,
+  maxTotalToolOutputChars: 36000,
+  maxResponseChars: 24000,
+  maxRunDurationMs: 60000,
+  staleRunTimeoutMs: 75000,
+  allowanceTtlMs: 1800000,
+  sessionTtlMs: 2592000000,
+  archiveAfterDays: 30,
+  threadsPageSize: 20,
+  requireLoginWithoutFingerprint: false,
+  budgets: {
+    weeklyGlobalUsdMicros: 30_000_000,
+    weeklyWarnRatio: 0.8,
+    dailyGuestUsdMicros: 500_000,
+    reserveHighMicros: 40_000,
+    reserveLowMicros: 5_000,
+  },
+  tiers: {
+    guest: { lowLimit: 3 },
+    external: { lowLimit: 20 },
+    internal: { highLimit: 20, lowLimit: 80 },
+  },
+};
+
+export interface QuotePayload {
+  blockId?: string;
+  sectionId?: string;
+  label: string;
+  tex: string;
+}
+
+export interface ChatStep {
+  kind: "search" | "read" | "note";
+  q?: string;
+  target?: string;
+  note?: string;
+  state: "running" | "done" | "error";
+  res?: string[];
+  more?: number;
+}
+
+export interface DegradedInfo {
+  active: boolean;
+  restoresAt?: number | null;
+}
+
+export interface BlockInfo {
+  code:
+    | "auth_required"
+    | "tier_quota_exceeded"
+    | "guest_budget_exceeded"
+    | "global_budget_exceeded"
+    | "rate_limited"
+    | "concurrent_run"
+    | "oauth_unavailable"
+    | "service_unavailable";
+  nextAvailableAt?: number | null;
+  retryAfterSec?: number | null;
+}
+
+export interface SessionJwtPayload {
+  typ: "session";
+  sid: string;
+  tgId: number;
+  tgName: string;
+  browserId: string;
+  iat: number;
+  exp: number;
+}
+
+export interface AllowanceJwtPayload {
+  typ: "allowance";
+  browserId: string;
+  sid?: string;
+  tgId?: number;
+  tgName?: string;
+  tier: Tier;
+  ip: string;
+  fp: string;
+  iat: number;
+  exp: number;
+}
+
+// =============================================================================
+// Codex Responses API types
+// =============================================================================
+
+export interface CodexFunctionTool {
+  type: "function";
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export type CodexInputItem =
+  | {
+      type: "message";
+      role: "user" | "assistant";
+      content: Array<{ type: "input_text" | "output_text"; text: string }>;
+    }
+  | {
+      type: "reasoning";
+      id?: string;
+      summary?: unknown;
+      encrypted_content?: string;
+      [key: string]: unknown;
+    }
+  | {
+      type: "function_call";
+      id?: string;
+      call_id: string;
+      name: string;
+      arguments: string;
+    }
+  | {
+      type: "function_call_output";
+      call_id: string;
+      output: string;
+    };
+
+export interface RoundTokenUsage {
+  inputTokens: number;
+  cachedTokens: number;
+  cacheWriteTokens: number;
+  outputTokens: number;
+}
+
+export interface LlmRoundRequest {
+  model: ModelId;
+  instructions: string;
+  input: CodexInputItem[];
+  tools: CodexFunctionTool[];
+  maxResponseChars: number;
+  signal: AbortSignal;
+  onDelta: (delta: string) => void;
+}
+
+export interface LlmRoundResult {
+  completed: boolean;
+  status: string;
+  text: string;
+  truncated: boolean;
+  outputItems: CodexInputItem[];
+  functionCalls: Array<{
+    id?: string;
+    callId: string;
+    name: string;
+    arguments: string;
+  }>;
+  usage: RoundTokenUsage | null;
+}
+
+export interface LlmProvider {
+  runRound(req: LlmRoundRequest): Promise<LlmRoundResult>;
+}
+
+// =============================================================================
+// WebSocket protocol (/v1/messages)
+// =============================================================================
+
+export type ClientWsFrame =
+  | {
+      type: "send";
+      allowanceToken: string;
+      browserToken: string;
+      sessionToken?: string;
+      clientRequestId: string;
+      threadId?: string | null;
+      retryAssistantMessageId?: string | null;
+      course: string;
+      docId: string;
+      text: string;
+      quote?: QuotePayload | null;
+    }
+  | {
+      type: "stop";
+    };
+
+export type ServerWsFrame =
+  | {
+      type: "meta";
+      threadId: string;
+      threadTitle: string;
+      userMessageId: string;
+      assistantMessageId: string;
+      runId: string;
+      tier: Tier;
+      model: ModelId;
+      degraded: DegradedInfo;
+    }
+  | {
+      type: "step";
+      steps: ChatStep[];
+    }
+  | {
+      type: "delta";
+      text: string;
+    }
+  | {
+      type: "done";
+      runId: string;
+      status: RunStatus;
+      text: string;
+      steps: ChatStep[];
+      degraded: DegradedInfo;
+      block: BlockInfo | null;
+    }
+  | {
+      type: "error";
+      code: string;
+      message: string;
+      block?: BlockInfo | null;
+      retryAfterSec?: number;
+    };

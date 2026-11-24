@@ -1,0 +1,56 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hse-lecture-notes-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-23",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hse-lecture-notes",
+      "database_id": "3516cc7d-e847-4266-8764-95c43dd0881c",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "hse-course-blocks"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CHAT_RUNNER",
+        "class_name": "ChatRunner"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ChatRunner"]
+    }
+  ],
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://hse.nalinor.dev,https://pr-45-hse-lecture-notes.nalinor.workers.dev,http://localhost:5173,http://127.0.0.1:5173",
+    "TURNSTILE_EXPECTED_HOSTNAMES": "hse.nalinor.dev,pr-45-hse-lecture-notes.nalinor.workers.dev,localhost,127.0.0.1",
+    "CODEX_OAUTH_CLIENT_ID": "app_EMoamEEZ73f0CkXaXp7hrann",
+    "CODEX_RESPONSES_URL": "https://chatgpt.com/backend-api/codex/responses",
+    "CODEX_TOKEN_URL": "https://auth.openai.com/oauth/token",
+    "TELEGRAM_JWKS_URL": "https://oauth.telegram.org/.well-known/jwks.json",
+    "TELEGRAM_ISSUER": "https://oauth.telegram.org"
+  }
+}
