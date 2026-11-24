@@ -3,7 +3,6 @@ import {
   handleCreateNonce,
   handleLogout,
   handleTelegramLogin,
-  makeBrowserTokenCookie,
   resolveBrowserToken,
   verifyActiveSession,
 } from "./auth";
@@ -31,6 +30,7 @@ function withCorsHeaders(
 ): Headers {
   if (allowedOrigin) {
     headers.set("Access-Control-Allow-Origin", allowedOrigin);
+    // Older clients still use credentials: "include"; browser cookies remain ignored.
     headers.set("Access-Control-Allow-Credentials", "true");
     headers.set("Vary", "Origin");
   }
@@ -47,7 +47,6 @@ function jsonResponse(
   status: number,
   body: Record<string, unknown>,
   allowedOrigin: string | null,
-  setCookie?: string,
 ): Response {
   const headers = withCorsHeaders(
     new Headers({
@@ -56,9 +55,6 @@ function jsonResponse(
     }),
     allowedOrigin,
   );
-  if (setCookie) {
-    headers.append("Set-Cookie", setCookie);
-  }
   return new Response(JSON.stringify(body), { status, headers });
 }
 
@@ -98,7 +94,7 @@ async function handleGetThread(
   db: TrackedD1,
   request: Request,
   url: URL,
-): Promise<{ status: number; body: Record<string, unknown>; setCookie?: string }> {
+): Promise<{ status: number; body: Record<string, unknown> }> {
   const requestedThreadId = url.searchParams.get("threadId")?.trim() || null;
   const beforeUpdatedAtRaw = url.searchParams.get("beforeUpdatedAt");
   const beforeUpdatedAt =
@@ -106,12 +102,8 @@ async function handleGetThread(
 
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
-    request.headers.get("Cookie"),
     request.headers.get("X-Browser-Token"),
   );
-  if (btCheck.status === "mismatch") {
-    return { status: 409, body: { code: "browser_token_mismatch", message: "Browser token mismatch" } };
-  }
 
   const session = await verifyActiveSession(env, db, extractSessionToken(request));
   if (!session && btCheck.status === "missing") {
@@ -192,7 +184,6 @@ async function handleGetThread(
     }
   }
 
-  const isSecure = request.url.startsWith("https://");
   return {
     status: 200,
     body: {
@@ -200,13 +191,7 @@ async function handleGetThread(
       hasMore: threadsRes.results.length > pageSize,
       thread,
       requestedThreadMissing,
-      ...(btCheck.status === "ok" && btCheck.needsStorageSync
-        ? { browserToken: btCheck.browserToken }
-        : {}),
     },
-    ...(btCheck.status === "ok" && btCheck.needsCookieSync
-      ? { setCookie: makeBrowserTokenCookie(btCheck.browserToken, isSecure) }
-      : {}),
   };
 }
 
@@ -222,12 +207,8 @@ async function handleGetRunStatus(
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
-    request.headers.get("Cookie"),
     request.headers.get("X-Browser-Token"),
   );
-  if (btCheck.status === "mismatch") {
-    return { status: 409, body: { code: "browser_token_mismatch", message: "Browser token mismatch" } };
-  }
 
   const session = await verifyActiveSession(env, db, extractSessionToken(request));
   if (!session && btCheck.status === "missing") {
@@ -348,7 +329,6 @@ export default {
     const finish = (
       status: number,
       body: Record<string, unknown>,
-      setCookie?: string,
     ): Response => {
       logEvent(status >= 500 ? "error" : status >= 400 ? "warn" : "info", "http_request", {
         reqId,
@@ -360,13 +340,13 @@ export default {
         durationMs: Date.now() - reqStart,
         ...db.telemetry.snapshot(),
       });
-      return jsonResponse(status, body, allowedOrigin, setCookie);
+      return jsonResponse(status, body, allowedOrigin);
     };
 
     try {
       if (url.pathname === "/v1/auth/nonce" && request.method === "POST") {
         const res = await handleCreateNonce(env, db, request);
-        return finish(res.status, res.body, res.setCookie);
+        return finish(res.status, res.body);
       }
 
       if (url.pathname === "/v1/auth/telegram" && request.method === "POST") {
@@ -375,7 +355,7 @@ export default {
           return finish(400, { code: "invalid_json", message: "Invalid JSON body" });
         }
         const res = await handleTelegramLogin(env, db, request, body as { telegramIdToken?: string });
-        return finish(res.status, res.body, res.setCookie);
+        return finish(res.status, res.body);
       }
 
       if (url.pathname === "/v1/auth/logout" && request.method === "POST") {
@@ -400,12 +380,12 @@ export default {
           browserToken: typeof body.browserToken === "string" ? body.browserToken : undefined,
           fingerprint: typeof body.fingerprint === "string" ? body.fingerprint : undefined,
         });
-        return finish(res.status, res.body, res.setCookie);
+        return finish(res.status, res.body);
       }
 
       if (url.pathname === "/v1/thread" && request.method === "GET") {
         const res = await handleGetThread(env, db, request, url);
-        return finish(res.status, res.body, res.setCookie);
+        return finish(res.status, res.body);
       }
 
       const runStatusMatch = /^\/v1\/runs\/([a-zA-Z0-9_-]+)\/status$/.exec(url.pathname);

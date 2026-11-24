@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { TurnstileHooks } from "#web/api/chat-widgets.ts";
 import type {
   ChatDocContext,
   ChatMessage,
@@ -14,7 +15,6 @@ import {
   openChatMessageStream,
   type WsStreamCallbacks,
 } from "#web/api/chat-stream.ts";
-import { cancelActiveTurnstile, type TurnstileHooks } from "#web/api/chat-widgets.ts";
 
 import { type AllowanceSetters, fetchAllowanceOutcome } from "./chat-allowance.ts";
 import {
@@ -45,6 +45,7 @@ export type SendArgs = {
 };
 
 export type ChatStreamController = {
+  readonly isCheckingBrowser: boolean;
   readonly sendQuestion: (args: SendArgs) => Promise<void>;
   readonly stopActive: () => void;
 };
@@ -239,10 +240,13 @@ export const useChatStream = (
   const abortedPreWsRef = useRef(false);
   const mountedRef = useRef(true);
   const sendingRef = useRef(false);
+  const allowanceAbortRef = useRef<AbortController | null>(null);
+  const [isCheckingBrowser, setIsCheckingBrowser] = useState(false);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      allowanceAbortRef.current?.abort();
       streamRef.current?.disconnect();
     };
   }, []);
@@ -255,7 +259,7 @@ export const useChatStream = (
       return;
     }
     abortedPreWsRef.current = true;
-    cancelActiveTurnstile();
+    allowanceAbortRef.current?.abort();
   }, []);
 
   const clearActive = useCallback((): void => {
@@ -267,6 +271,7 @@ export const useChatStream = (
     (args: SendArgs, clientRequestId: string) => {
       sendingRef.current = true;
       abortedPreWsRef.current = false;
+      allowanceAbortRef.current = new AbortController();
       startOptimisticTurn(setters, args);
       return buildWsCallbacks({ args, clearActive, clientRequestId, setters });
     },
@@ -279,7 +284,18 @@ export const useChatStream = (
       }
       const clientRequestId = args.retryMessage?.pendingRequestId ?? crypto.randomUUID();
       const callbacks = startTurn(args, clientRequestId);
-      const outcome = await fetchAllowanceOutcome(turnstileHooks, setters, isCurrent);
+      const outcome = await fetchAllowanceOutcome(turnstileHooks, setters, {
+        isCurrent,
+        signal: allowanceAbortRef.current?.signal ?? AbortSignal.abort(),
+        onChecking: () => {
+          setIsCheckingBrowser(true);
+        },
+        onChecked: () => {
+          if (mountedRef.current) {
+            setIsCheckingBrowser(false);
+          }
+        },
+      });
       if (!mountedRef.current) {
         return;
       }
@@ -297,5 +313,5 @@ export const useChatStream = (
     [clearActive, isCurrent, setters, startTurn, turnstileHooks],
   );
 
-  return { sendQuestion, stopActive };
+  return { isCheckingBrowser, sendQuestion, stopActive };
 };

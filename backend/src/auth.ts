@@ -17,106 +17,23 @@ import type {
   Tier,
 } from "./types";
 
-const BROWSER_COOKIE_NAME = "browser_token";
 const NONCE_TTL_MS = 5 * 60_000;
 const MIGRATION_IDEMPOTENCY_WINDOW_MS = 10 * 60_000;
 
 let cachedJwks: { doc: JwksDocument; fetchedAt: number } | null = null;
 const JWKS_CACHE_TTL_MS = 10 * 60_000;
 
-export function parseCookieHeader(header: string | null): Record<string, string> {
-  if (!header) return {};
-  const out: Record<string, string> = {};
-  for (const part of header.split(";")) {
-    const eq = part.indexOf("=");
-    if (eq === -1) continue;
-    const k = part.slice(0, eq).trim();
-    const v = part.slice(eq + 1).trim();
-    if (k) out[k] = decodeURIComponent(v);
-  }
-  return out;
-}
-
-export function makeBrowserTokenCookie(browserToken: string, isSecure = true): string {
-  const attrs = [
-    `${BROWSER_COOKIE_NAME}=${encodeURIComponent(browserToken)}`,
-    "Max-Age=31536000",
-    "Path=/",
-    "HttpOnly",
-  ];
-  if (isSecure) {
-    attrs.push("Secure", "SameSite=None", "Partitioned");
-  } else {
-    attrs.push("SameSite=Lax");
-  }
-  return attrs.join("; ");
-}
-
 export type BrowserTokenCheck =
-  | {
-      status: "ok";
-      browserId: string;
-      browserToken: string;
-      needsCookieSync: boolean;
-      needsStorageSync: boolean;
-    }
-  | { status: "mismatch" }
+  | { status: "ok"; browserId: string; browserToken: string }
   | { status: "missing" };
 
-/**
- * 2-copy browserToken contract:
- *  - Copy 1: HttpOnly worker-domain cookie `browser_token`
- *  - Copy 2: SPA localStorage sent via `X-Browser-Token` (or body/WS frame)
- * If both are validly signed and differ -> mismatch (409).
- * If one is missing and the other is valid -> ok + backfill signal.
- */
+/** Verifies only the signed token explicitly sent by the SPA from localStorage. */
 export async function resolveBrowserToken(
   secret: string,
-  cookieHeader: string | null,
   storageToken: string | null | undefined,
 ): Promise<BrowserTokenCheck> {
-  const cookies = parseCookieHeader(cookieHeader);
-  const cookieRaw = cookies[BROWSER_COOKIE_NAME] ?? null;
-
-  const [cookieVerified, storageVerified] = await Promise.all([
-    verifyBrowserToken(secret, cookieRaw),
-    verifyBrowserToken(secret, storageToken ?? null),
-  ]);
-
-  if (cookieVerified && storageVerified) {
-    if (cookieVerified.browserId !== storageVerified.browserId) {
-      return { status: "mismatch" };
-    }
-    return {
-      status: "ok",
-      browserId: cookieVerified.browserId,
-      browserToken: cookieVerified.browserToken,
-      needsCookieSync: false,
-      needsStorageSync: false,
-    };
-  }
-
-  if (cookieVerified) {
-    return {
-      status: "ok",
-      browserId: cookieVerified.browserId,
-      browserToken: cookieVerified.browserToken,
-      needsCookieSync: false,
-      needsStorageSync: true,
-    };
-  }
-
-  if (storageVerified) {
-    return {
-      status: "ok",
-      browserId: storageVerified.browserId,
-      browserToken: storageVerified.browserToken,
-      needsCookieSync: true,
-      needsStorageSync: false,
-    };
-  }
-
-  return { status: "missing" };
+  const verified = await verifyBrowserToken(secret, storageToken ?? null);
+  return verified ? { status: "ok", ...verified } : { status: "missing" };
 }
 
 export interface VerifiedSession {
@@ -346,15 +263,11 @@ export async function handleCreateNonce(
   db: TrackedD1,
   request: Request,
   nowMs = Date.now(),
-): Promise<{ status: number; body: Record<string, unknown>; setCookie?: string }> {
+): Promise<{ status: number; body: Record<string, unknown> }> {
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
-    request.headers.get("Cookie"),
     request.headers.get("X-Browser-Token"),
   );
-  if (btCheck.status === "mismatch") {
-    return { status: 409, body: { code: "browser_token_mismatch", message: "Browser token mismatch" } };
-  }
   if (btCheck.status === "missing") {
     return { status: 401, body: { code: "browser_token_required", message: "Call /v1/allowance first" } };
   }
@@ -374,17 +287,12 @@ export async function handleCreateNonce(
       .bind(nonce, btCheck.browserId, expiresAt),
   ]);
 
-  const isSecure = request.url.startsWith("https://");
   return {
     status: 200,
     body: {
       nonce,
       expiresAt,
-      ...(btCheck.needsStorageSync ? { browserToken: btCheck.browserToken } : {}),
     },
-    ...(btCheck.needsCookieSync
-      ? { setCookie: makeBrowserTokenCookie(btCheck.browserToken, isSecure) }
-      : {}),
   };
 }
 
@@ -394,16 +302,12 @@ export async function handleTelegramLogin(
   request: Request,
   body: { telegramIdToken?: string },
   options: { nowMs?: number; fetchImpl?: typeof fetch; jwksOverride?: JwksDocument } = {},
-): Promise<{ status: number; body: Record<string, unknown>; setCookie?: string }> {
+): Promise<{ status: number; body: Record<string, unknown> }> {
   const nowMs = options.nowMs ?? Date.now();
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
-    request.headers.get("Cookie"),
     request.headers.get("X-Browser-Token"),
   );
-  if (btCheck.status === "mismatch") {
-    return { status: 409, body: { code: "browser_token_mismatch", message: "Browser token mismatch" } };
-  }
   if (btCheck.status === "missing") {
     return { status: 401, body: { code: "browser_token_required", message: "Browser token required" } };
   }
@@ -499,7 +403,6 @@ export async function handleTelegramLogin(
       .bind(tgOwnerKey, nowMs, brOwnerKey, nowMs - MIGRATION_IDEMPOTENCY_WINDOW_MS, tgOwnerKey),
   ]);
 
-  const isSecure = request.url.startsWith("https://");
   return {
     status: 200,
     body: {
@@ -509,9 +412,6 @@ export async function handleTelegramLogin(
       user: { id: verified.telegramId, name: verified.telegramName },
       expiresAt,
     },
-    ...(btCheck.needsCookieSync
-      ? { setCookie: makeBrowserTokenCookie(btCheck.browserToken, isSecure) }
-      : {}),
   };
 }
 
@@ -550,7 +450,7 @@ export async function handleAllowance(
     nowMs?: number;
     turnstileVerifier?: (token: string, ip: string) => Promise<TurnstileVerifyResult>;
   } = {},
-): Promise<{ status: number; body: Record<string, unknown>; setCookie?: string }> {
+): Promise<{ status: number; body: Record<string, unknown> }> {
   const nowMs = options.nowMs ?? Date.now();
   const ipAddress = normalizeIpAddress(
     request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For"),
@@ -561,16 +461,8 @@ export async function handleAllowance(
   const storageToken = body.browserToken ?? request.headers.get("X-Browser-Token");
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
-    request.headers.get("Cookie"),
     storageToken,
   );
-
-  if (btCheck.status === "mismatch") {
-    return {
-      status: 409,
-      body: { code: "browser_token_mismatch", message: "Cookie and localStorage browser tokens differ" },
-    };
-  }
 
   // Turnstile verification is always required to issue a fresh 30-min allowanceToken (and to mint a new browserToken)
   const verifier =
@@ -589,20 +481,9 @@ export async function handleAllowance(
     };
   }
 
-  let browserId: string;
-  let browserToken: string;
-  let setCookieNeeded = false;
-
-  if (btCheck.status === "missing") {
-    const minted = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
-    browserId = minted.browserId;
-    browserToken = minted.browserToken;
-    setCookieNeeded = true;
-  } else {
-    browserId = btCheck.browserId;
-    browserToken = btCheck.browserToken;
-    setCookieNeeded = btCheck.needsCookieSync;
-  }
+  const { browserId, browserToken } = btCheck.status === "missing"
+    ? await mintBrowserToken(env.BROWSER_TOKEN_SECRET)
+    : btCheck;
 
   // Resolve optional authenticated session
   const session = await verifyActiveSession(env, db, body.sessionToken, nowMs);
@@ -637,7 +518,6 @@ export async function handleAllowance(
     { checkConcurrency: false, checkRateLimit: false },
   );
 
-  const isSecure = request.url.startsWith("https://");
   return {
     status: 200,
     body: {
@@ -649,6 +529,5 @@ export async function handleAllowance(
       degraded: evalRes.degraded,
       block: evalRes.block,
     },
-    ...(setCookieNeeded ? { setCookie: makeBrowserTokenCookie(browserToken, isSecure) } : {}),
   };
 }

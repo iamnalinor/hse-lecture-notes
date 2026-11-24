@@ -31,6 +31,7 @@ describe("chat domain helpers", () => {
       "Повышенное число запросов. Качество ответов снижено — вернётся через 12 часов 37 минут",
     );
     expect(formatDegradedCaption({ active: false }, now)).toBeNull();
+    expect(formatDegradedCaption({ active: true, restoresAt: now }, now)).toBeNull();
   });
 
   it("converts LaTeX/Markdown answer to readable Unicode plain text", () => {

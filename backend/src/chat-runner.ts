@@ -31,7 +31,6 @@ export class ChatRunner extends DurableObject<Env> {
     const server = pair[1];
     server.accept();
 
-    const upgradeCookieHeader = request.headers.get("Cookie");
     const clientIp = normalizeIpAddress(
       request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For"),
     );
@@ -136,7 +135,6 @@ export class ChatRunner extends DurableObject<Env> {
       const runPromise = this.handleSendFrame({
         frame,
         byteLength,
-        upgradeCookieHeader,
         clientIp,
         signal: abortCtrl.signal,
         isStoppedByUser: () => stoppedByUser,
@@ -153,7 +151,6 @@ export class ChatRunner extends DurableObject<Env> {
   private async handleSendFrame(opts: {
     frame: Extract<ClientWsFrame, { type: "send" }>;
     byteLength: number;
-    upgradeCookieHeader: string | null;
     clientIp: string;
     signal: AbortSignal;
     isStoppedByUser: () => boolean;
@@ -163,7 +160,6 @@ export class ChatRunner extends DurableObject<Env> {
     const {
       frame,
       byteLength,
-      upgradeCookieHeader,
       clientIp,
       signal,
       isStoppedByUser,
@@ -183,18 +179,8 @@ export class ChatRunner extends DurableObject<Env> {
 
       const btCheck = await resolveBrowserToken(
         this.env.BROWSER_TOKEN_SECRET,
-        upgradeCookieHeader,
         frame.browserToken,
       );
-      if (btCheck.status === "mismatch") {
-        safeSend({
-          type: "error",
-          code: "browser_token_mismatch",
-          message: "Browser token mismatch between cookie and localStorage",
-        });
-        safeClose(4409, "browser_token_mismatch");
-        return;
-      }
       if (btCheck.status === "missing") {
         safeSend({
           type: "error",

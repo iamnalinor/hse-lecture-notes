@@ -37,7 +37,7 @@ const matchMdRef = (text: string, pos: number): InlineSpan | null => {
     return null;
   }
   const label = text.slice(pos + 1, closeBracket);
-  const href = text.slice(closeBracket + 2, closeParen);
+  const href = text.slice(closeBracket + 2, closeParen).trim();
   const target = href.startsWith("#") ? href.slice(1) : href;
   if (!href.startsWith("#") && !isMaterialLink(href)) {
     return null;

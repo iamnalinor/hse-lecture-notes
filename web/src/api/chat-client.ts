@@ -1,6 +1,4 @@
 import type {
-  ChatBlock,
-  ChatDegraded,
   ChatMessageStatus,
   ChatThread,
   ChatThreadSummary,
@@ -8,58 +6,21 @@ import type {
   ChatUser,
 } from "#web/domain/chat.ts";
 
+import { type ChatAccess, ensureChatAllowance } from "./chat-access.ts";
+import { apiJson, assertSameSession, getChatEnvConfig } from "./chat-http.ts";
 import {
   clearAllowanceToken,
   readStoredAuth,
-  saveAllowanceToken,
   saveBrowserToken,
   saveSessionAuth,
-  withBrowserInitLock,
 } from "./chat-storage.ts";
-import {
-  getBrowserFingerprint,
-  openTelegramLoginPopup,
-  requestTurnstileToken,
-  type TurnstileHooks,
-} from "./chat-widgets.ts";
+import { openTelegramLoginPopup, type TurnstileHooks } from "./chat-widgets.ts";
 
-export type ChatEnvConfig = {
-  readonly apiUrl: string;
-  readonly telegramClientId: string;
-  readonly turnstileSiteKey: string;
-};
-
-const stripTrailingSlash = (url: string): string =>
-  url.endsWith("/") ? stripTrailingSlash(url.slice(0, -1)) : url;
-
-export const getChatEnvConfig = (): ChatEnvConfig => {
-  const env = import.meta.env as Record<string, string | undefined>;
-  return {
-    apiUrl: stripTrailingSlash(env["VITE_CHAT_API_URL"] ?? ""),
-    telegramClientId: env["VITE_TELEGRAM_CLIENT_ID"] ?? "",
-    turnstileSiteKey: env["VITE_TURNSTILE_SITE_KEY"] ?? "",
-  };
-};
-
-export const isChatConfigured = (): boolean => getChatEnvConfig().apiUrl !== "";
-
-export type AllowanceResponse = {
-  readonly allowanceExpiresAt: number;
-  readonly allowanceToken: string;
-  readonly block: ChatBlock | null;
-  readonly browserToken: string;
-  readonly degraded: ChatDegraded;
-  readonly tier: ChatTier;
-  readonly user: ChatUser | null;
-};
-
-export type ChatAccess = Omit<AllowanceResponse, "degraded"> & {
-  readonly degraded: ChatDegraded | null;
-};
+export { type ChatAccess, ensureChatAllowance } from "./chat-access.ts";
+export { getChatEnvConfig, isChatConfigured } from "./chat-http.ts";
 
 export type ThreadResponse = {
   readonly hasMore?: boolean;
-  readonly browserToken?: string;
   readonly requestedThreadMissing: boolean;
   readonly thread: ChatThread | null;
   readonly threads: readonly ChatThreadSummary[];
@@ -71,114 +32,6 @@ export type RunStatusResponse = {
   readonly runId: string;
   readonly status: ChatMessageStatus;
   readonly threadId: string;
-};
-
-const buildHeaders = (extra?: Record<string, string>): Headers => {
-  const auth = readStoredAuth();
-  const headers = new Headers(extra);
-  if (auth.browserToken !== null) {
-    headers.set("X-Browser-Token", auth.browserToken);
-  }
-  if (auth.sessionToken !== null) {
-    headers.set("X-Session-Token", auth.sessionToken);
-  }
-  return headers;
-};
-
-const apiJson = async (
-  path: string,
-  init: RequestInit,
-): Promise<{ readonly data: unknown; readonly ok: boolean; readonly status: number }> => {
-  const { apiUrl } = getChatEnvConfig();
-  const response = await fetch(`${apiUrl}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: buildHeaders(init.headers as Record<string, string> | undefined),
-  });
-  try {
-    const data: unknown = await response.json();
-    return { data, ok: response.ok, status: response.status };
-  } catch {
-    return { data: {}, ok: response.ok, status: response.status };
-  }
-};
-
-const postAllowanceOnce = async (
-  turnstileToken: string,
-  fingerprint: string,
-): Promise<{ readonly data: AllowanceResponse; readonly ok: boolean; readonly status: number }> => {
-  const auth = readStoredAuth();
-  const res = await apiJson("/v1/allowance", {
-    body: JSON.stringify({
-      browserToken: auth.browserToken ?? undefined,
-      fingerprint,
-      sessionToken: auth.sessionToken ?? undefined,
-      turnstileToken,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
-  return { data: res.data as AllowanceResponse, ok: res.ok, status: res.status };
-};
-
-const assertSameSession = (sessionToken: null | string): void => {
-  if (sessionToken !== readStoredAuth().sessionToken) {
-    throw new Error("Chat session changed");
-  }
-};
-
-/** Obtains or refreshes the 30-minute allowanceToken (with multi-tab lock & 409 mismatch recovery). */
-export const ensureChatAllowance = async (turnstileHooks: TurnstileHooks): Promise<ChatAccess> => {
-  const cached = readStoredAuth();
-  const marginMs = 60_000;
-  if (
-    cached.allowanceToken !== null &&
-    cached.browserToken !== null &&
-    cached.allowanceExpiresAt > Date.now() + marginMs
-  ) {
-    return {
-      allowanceExpiresAt: cached.allowanceExpiresAt,
-      allowanceToken: cached.allowanceToken,
-      block: null,
-      browserToken: cached.browserToken,
-      degraded: null,
-      tier: cached.tier,
-      user: cached.user,
-    };
-  }
-
-  return await refreshChatAllowance(turnstileHooks);
-};
-
-const refreshChatAllowance = async (turnstileHooks: TurnstileHooks): Promise<AllowanceResponse> => {
-  const cached = readStoredAuth();
-  return await withBrowserInitLock(async () => {
-    const { turnstileSiteKey } = getChatEnvConfig();
-    const [turnstileToken, fingerprint] = await Promise.all([
-      requestTurnstileToken(turnstileSiteKey, turnstileHooks),
-      getBrowserFingerprint(),
-    ]);
-
-    const post = async (token: string) => {
-      assertSameSession(cached.sessionToken);
-      const result = await postAllowanceOnce(token, fingerprint);
-      assertSameSession(cached.sessionToken);
-      return result;
-    };
-    let res = await post(turnstileToken);
-    if (res.status === 409) {
-      saveBrowserToken(null);
-      const retryTs = await requestTurnstileToken(turnstileSiteKey, turnstileHooks);
-      res = await post(retryTs);
-    }
-    if (!res.ok) {
-      throw new Error(`Allowance error (${res.status})`);
-    }
-    saveBrowserToken(res.data.browserToken);
-    saveAllowanceToken(res.data.allowanceToken, res.data.allowanceExpiresAt);
-    saveSessionAuth(readStoredAuth().sessionToken, res.data.tier, res.data.user);
-    return res.data;
-  });
 };
 
 type HistoryCursor = Pick<ChatThreadSummary, "id" | "updatedAt">;
@@ -203,20 +56,10 @@ export const fetchChatThread = async (
     return null;
   }
   const res = await apiJson(threadUrl(threadId, before), { method: "GET" });
-  if (auth.sessionToken !== readStoredAuth().sessionToken) {
-    return null;
-  }
-  if (res.status === 409) {
-    saveBrowserToken(null);
-    return null;
-  }
-  if (!res.ok) {
+  if (auth.sessionToken !== readStoredAuth().sessionToken || !res.ok) {
     return null;
   }
   const data = res.data as ThreadResponse;
-  if (typeof data.browserToken === "string" && data.browserToken !== "") {
-    saveBrowserToken(data.browserToken);
-  }
   return data;
 };
 
@@ -227,7 +70,7 @@ export const fetchChatRunStatus = async (runId: string): Promise<null | RunStatu
 
 const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string> => {
   if (readStoredAuth().browserToken === null) {
-    await refreshChatAllowance(turnstileHooks);
+    await ensureChatAllowance(turnstileHooks);
   }
   const nonceRes = await apiJson("/v1/auth/nonce", { method: "POST" });
   const nonceData = nonceRes.data as { readonly nonce?: string };
@@ -237,9 +80,7 @@ const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string
   return nonceData.nonce;
 };
 
-export const loginViaTelegram = async (
-  turnstileHooks: TurnstileHooks,
-): Promise<AllowanceResponse> => {
+export const loginViaTelegram = async (turnstileHooks: TurnstileHooks): Promise<ChatAccess> => {
   const { sessionToken } = readStoredAuth();
   const nonce = await requestLoginNonce(turnstileHooks);
   const idToken = await openTelegramLoginPopup(getChatEnvConfig().telegramClientId, nonce);
@@ -262,7 +103,7 @@ export const loginViaTelegram = async (
   saveBrowserToken(loginData.browserToken);
   saveSessionAuth(loginData.sessionToken, loginData.tier, loginData.user);
   clearAllowanceToken();
-  return await refreshChatAllowance(turnstileHooks);
+  return await ensureChatAllowance(turnstileHooks);
 };
 
 export const logoutChatSession = async (): Promise<"logged_out" | "session_changed"> => {

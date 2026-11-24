@@ -134,7 +134,10 @@ export const formatRemainingDuration = (targetMs: number, nowMs: number): string
 
 /** Formats degraded quality banner text matching the approved prototype copy. */
 export const formatDegradedCaption = (degraded: ChatDegraded, nowMs: number): null | string => {
-  if (!degraded.active) {
+  if (
+    !degraded.active ||
+    (typeof degraded.restoresAt === "number" && degraded.restoresAt <= nowMs)
+  ) {
     return null;
   }
   if (degraded.restoresAt !== undefined && degraded.restoresAt !== null) {

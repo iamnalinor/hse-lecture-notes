@@ -17,8 +17,17 @@ import { ChatResizeHandle } from "./chat-resize-handle.tsx";
 import { applyMetaMessageIds, makeAssistantMsg, makeUserMsg } from "./chat-stream-helpers.ts";
 import { ChatToggleButton } from "./chat-toggle-button.tsx";
 import { SelectionAskButton } from "./selection-ask-button.tsx";
+import { TurnstileModal } from "./turnstile-modal.tsx";
 
-const state: { docContext: ChatDocContext; messages: readonly ChatMessage[]; tier: ChatTier } = {
+const state: {
+  docContext: ChatDocContext;
+  messages: readonly ChatMessage[];
+  tier: ChatTier;
+  isThreadLoading?: boolean;
+  isCheckingBrowser?: boolean;
+  isStreaming?: boolean;
+  canStop?: boolean;
+} = {
   docContext: parseDocContext("/"),
   messages: [],
   tier: "guest",
@@ -97,7 +106,7 @@ it("shows and copies the agent link without a trailing slash", () => {
       </QueryClientProvider>
     </MemoryRouter>,
   );
-  const url = "https://hse.nalinor.dev/calculus/quiz-o-symbols";
+  const url = `${globalThis.location.origin}/calculus/quiz-o-symbols`;
   expect(screen.getByText(url)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: `Копировать ссылку ${url}` }));
   expect(writeText).toHaveBeenCalledWith(url);
@@ -254,4 +263,93 @@ it("shows the account switch caption only for an external account", () => {
   } finally {
     state.tier = "guest";
   }
+});
+
+it("replaces stale messages with accessible skeletons until history is ready", () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  state.messages = [
+    { ...makeAssistantMsg(state.docContext), status: "done", contentTex: "Old answer" },
+  ];
+  state.isThreadLoading = true;
+  const panel = (
+    <MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <ChatPanel />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+  try {
+    const view = render(panel);
+    expect(screen.getByRole("status", { name: "Загрузка переписки" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.queryByText("Old answer")).toBeNull();
+    state.isThreadLoading = false;
+    view.rerender(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <ChatPanel />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole("status", { name: "Загрузка переписки" })).toBeNull();
+    expect(screen.getByText("Old answer")).toBeVisible();
+  } finally {
+    state.isThreadLoading = false;
+    vi.unstubAllGlobals();
+  }
+});
+
+const statusPanel = () => (
+  <MemoryRouter>
+    <QueryClientProvider client={new QueryClient()}>
+      <ChatPanel />
+    </QueryClientProvider>
+  </MemoryRouter>
+);
+
+it("uses the response status component for browser verification and then model waiting", () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  state.messages = [makeAssistantMsg(state.docContext)];
+  state.isCheckingBrowser = true;
+  try {
+    const view = render(statusPanel());
+    const status = screen.getByText("Проверяем браузер");
+    expect(status).toHaveClass("ai-steps-sum");
+    expect(status.closest(".ai-steps")).toHaveClass("is-run");
+    state.isCheckingBrowser = false;
+    view.rerender(statusPanel());
+    expect(screen.getByText("Готовлю ответ")).toBe(status);
+    state.isStreaming = true;
+    state.canStop = false;
+    state.messages = state.messages.map((message) => ({
+      ...message,
+      contentTex: "Частичный ответ",
+    }));
+    view.rerender(statusPanel());
+    expect(screen.getByText("Готовлю ответ в фоне")).toBe(status);
+    expect(view.container.querySelector(".ai-answer")).toHaveTextContent("Частичный ответ");
+  } finally {
+    state.isCheckingBrowser = false;
+    state.isStreaming = false;
+    state.canStop = true;
+    vi.unstubAllGlobals();
+  }
+});
+
+it("keeps the Turnstile host and iframe mounted while toggling modal visibility", () => {
+  const cancel = vi.fn();
+  const view = render(<TurnstileModal cancelTurnstile={cancel} turnstileOpen={false} />);
+  const host = document.querySelector("#hse-turnstile-host");
+  const iframe = document.createElement("iframe");
+  host?.append(iframe);
+  expect(host?.closest(".ai-modal")).toHaveAttribute("inert");
+  view.rerender(<TurnstileModal cancelTurnstile={cancel} turnstileOpen />);
+  expect(document.querySelector("#hse-turnstile-host")).toBe(host);
+  expect(host?.firstChild).toBe(iframe);
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+  view.rerender(<TurnstileModal cancelTurnstile={cancel} turnstileOpen={false} />);
+  expect(host?.firstChild).toBe(iframe);
+  expect(host?.closest(".ai-modal")).toHaveAttribute("aria-hidden", "true");
 });

@@ -24,6 +24,7 @@ import {
   parseDocContext,
 } from "#web/domain/chat.ts";
 
+import { TurnstileModal } from "./turnstile-modal.tsx";
 import { useChatSendActions, useComposerDraft } from "./use-chat-send-actions.ts";
 import {
   useChatAuthState,
@@ -32,8 +33,7 @@ import {
 } from "./use-chat-state.ts";
 import { type StreamStateSetters, useChatStream } from "./use-chat-stream.ts";
 import { useThreadState } from "./use-thread-state.ts";
-
-export const TURNSTILE_HOST_ID = "hse-turnstile-host";
+import { useTurnstile } from "./use-turnstile.ts";
 
 export type ChatContextValue = {
   readonly activeThreadId: null | string;
@@ -46,6 +46,7 @@ export type ChatContextValue = {
   readonly degraded: ChatDegraded;
   readonly docContext: ChatDocContext;
   readonly draft: string;
+  readonly isCheckingBrowser: boolean;
   readonly isConfigured: boolean;
   readonly isLoginBusy: boolean;
   readonly isOpen: boolean;
@@ -80,6 +81,7 @@ type BuildCtxArgs = {
   readonly auth: ReturnType<typeof useChatAuthState>;
   readonly docContext: ChatDocContext;
   readonly draft: string;
+  readonly isCheckingBrowser: boolean;
   readonly isConfigured: boolean;
   readonly isOpen: boolean;
   readonly quote: ChatQuote | null;
@@ -106,11 +108,13 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     a.setQuote(null);
   },
   close: () => {
+    cancelActiveTurnstile();
     a.setIsOpen(false);
   },
   degraded: a.auth.degraded,
   docContext: a.docContext,
   draft: a.draft,
+  isCheckingBrowser: a.isCheckingBrowser,
   isConfigured: a.isConfigured,
   isLoginBusy: a.tgAuth.isLoginBusy,
   isOpen: a.isOpen,
@@ -156,6 +160,9 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   isLoadingMore: a.thr.isLoadingMore,
   tier: a.auth.tier,
   toggle: () => {
+    if (a.isOpen) {
+      cancelActiveTurnstile();
+    }
     a.setIsOpen((prev) => !prev);
   },
   turnstileOpen: a.turnstileOpen,
@@ -189,7 +196,6 @@ const useChatSessionValue = ({
   const { pathname } = useLocation();
   const pageKey = `${auth.user?.id ?? "guest"}:/${pathname.split("/").filter(Boolean).join("/")}`;
   const thr = useThreadState(isOpen, isConfigured, pageKey);
-  useRootOpenClassSync(isOpen);
 
   const setters: StreamStateSetters = {
     setPollRunId: thr.setPollRunId,
@@ -212,6 +218,7 @@ const useChatSessionValue = ({
     auth,
     docContext,
     draft,
+    isCheckingBrowser: stream.isCheckingBrowser,
     isConfigured,
     isOpen,
     quote,
@@ -247,19 +254,8 @@ export const ChatProvider = ({
   const location = useLocation();
   const auth = useChatAuthState();
   const [isOpen, setIsOpen] = useState(false);
-  const [turnstileOpen, setTurnstileOpen] = useState(false);
-  const turnstileHooks = useMemo<TurnstileHooks>(
-    () => ({
-      getContainer: () => document.querySelector<HTMLElement>(`#${TURNSTILE_HOST_ID}`),
-      onInteractiveClose: () => {
-        setTurnstileOpen(false);
-      },
-      onInteractiveOpen: () => {
-        setTurnstileOpen(true);
-      },
-    }),
-    [],
-  );
+  useRootOpenClassSync(isOpen);
+  const { turnstileHooks, turnstileOpen } = useTurnstile(isOpen);
 
   const docContext = useMemo(
     () => parseDocContext(general ? "/" : location.pathname),
@@ -276,19 +272,24 @@ export const ChatProvider = ({
     turnstileHooks,
   });
   return (
-    <ChatDocSessionProvider
-      auth={auth}
-      composer={composer}
-      docContext={docContext}
-      isOpen={isOpen}
-      key={auth.user?.id ?? "guest"}
-      setIsOpen={setIsOpen}
-      tgAuth={tgAuth}
-      turnstileHooks={turnstileHooks}
-      turnstileOpen={turnstileOpen}
-    >
-      {children}
-    </ChatDocSessionProvider>
+    <>
+      <ChatDocSessionProvider
+        auth={auth}
+        composer={composer}
+        docContext={docContext}
+        isOpen={isOpen}
+        key={auth.user?.id ?? "guest"}
+        setIsOpen={setIsOpen}
+        tgAuth={tgAuth}
+        turnstileHooks={turnstileHooks}
+        turnstileOpen={turnstileOpen}
+      >
+        {children}
+      </ChatDocSessionProvider>
+      {isChatConfigured() && (
+        <TurnstileModal cancelTurnstile={cancelActiveTurnstile} turnstileOpen={turnstileOpen} />
+      )}
+    </>
   );
 };
 

@@ -4,7 +4,12 @@ import type { TurnstileHooks } from "#web/api/chat-widgets.ts";
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat.ts";
 
 import { loginViaTelegram, logoutChatSession } from "#web/api/chat-client.ts";
-import { readStoredAuth, subscribeAuthStorage } from "#web/api/chat-storage.ts";
+import {
+  readStoredAuth,
+  readStoredDegraded,
+  saveDegraded,
+  subscribeAuthStorage,
+} from "#web/api/chat-storage.ts";
 
 export const useRootOpenClassSync = (isOpen: boolean): void => {
   const savedScrollYRef = useRef<null | number>(null);
@@ -44,9 +49,13 @@ export const useChatAuthState = () => {
   const initial = useMemo(() => readStoredAuth(), []);
   const [tier, setTier] = useState<ChatTier>(initial.tier);
   const [user, setUser] = useState<ChatUser | null>(initial.user);
-  const [degraded, setDegraded] = useState<ChatDegraded>({ active: false });
+  const [degraded, setDegraded] = useState<ChatDegraded>(readStoredDegraded);
   const [block, setBlock] = useState<ChatBlock | null>(null);
   const [rateLimitUntil, setRateLimitUntil] = useState(0);
+  const applyDegraded = useCallback((next: ChatDegraded): void => {
+    saveDegraded(next);
+    setDegraded(next);
+  }, []);
 
   const applyBlock = useCallback((next: ChatBlock | null): void => {
     setBlock(next);
@@ -76,8 +85,8 @@ export const useChatAuthState = () => {
         const fresh = readStoredAuth();
         if (fresh.user?.id !== user?.id) {
           applyBlock(null);
-          setDegraded({ active: false });
         }
+        setDegraded(readStoredDegraded());
         setTier(fresh.tier);
         setUser(fresh.user);
       }),
@@ -89,7 +98,7 @@ export const useChatAuthState = () => {
     degraded,
     rateLimitUntil,
     setBlock: applyBlock,
-    setDegraded,
+    setDegraded: applyDegraded,
     setTier,
     setUser,
     tier,
@@ -119,7 +128,9 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
       deps.onLogin(res.user);
       deps.setTier(res.tier);
       deps.setUser(res.user);
-      deps.setDegraded(res.degraded);
+      if (res.degraded !== null) {
+        deps.setDegraded(res.degraded);
+      }
       deps.setBlock(res.block);
     } catch {
       // User cancelled Telegram popup or network error

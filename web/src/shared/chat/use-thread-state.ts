@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchChatRunStatus, fetchChatThread, type ThreadResponse } from "#web/api/chat-client.ts";
 import { readPageThread, readStoredAuth, savePageThread } from "#web/api/chat-storage.ts";
-import { warmupChatWidgets } from "#web/api/chat-widgets.ts";
 import { type ChatMessage, nextRunPollDelayMs } from "#web/domain/chat.ts";
 
 import { useThreadHistory } from "./use-thread-history.ts";
@@ -15,7 +14,7 @@ const readThread = async (threadId?: null | string): Promise<null | ThreadRespon
   }
 };
 
-const usePageState = (pageKey: string, isConfigured: boolean) => {
+const usePageState = (pageKey: string, isConfigured: boolean, isOpen: boolean) => {
   const [threadId, setThreadId] = useState<null | string>(null);
   const [messages, setMessages] = useState<readonly ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -25,7 +24,7 @@ const usePageState = (pageKey: string, isConfigured: boolean) => {
 
   const [pollRunId, setPollRunId] = useState<null | string>(null);
   const [currentKey, setCurrentKey] = useState(pageKey);
-  if (!isStreaming && currentKey !== pageKey) {
+  if (!isOpen && !isStreaming && currentKey !== pageKey) {
     setCurrentKey(pageKey);
     setThreadId(null);
     setMessages([]);
@@ -59,10 +58,11 @@ type PageRestore = {
   isOpen: boolean;
   isConfigured: boolean;
   requestRef: React.RefObject<number>;
+  invalidateLoad: () => void;
   loadThread: (id: null | string) => Promise<"loaded" | "unavailable">;
 };
 const usePageRestore = (options: PageRestore) => {
-  const { currentKey, isOpen, isConfigured, requestRef, loadThread } = options;
+  const { currentKey, isOpen, isConfigured, requestRef, loadThread, invalidateLoad } = options;
   const loadedPageRef = useRef<null | string>(null);
   useEffect(() => {
     loadedPageRef.current = null;
@@ -87,16 +87,8 @@ const usePageRestore = (options: PageRestore) => {
       }
     };
     queueMicrotask(() => void restore());
-    return () => {
-      requestRef.current += 1;
-    };
-  }, [currentKey, isConfigured, isOpen, loadThread, requestRef]);
-
-  useEffect(() => {
-    if (isOpen && isConfigured) {
-      warmupChatWidgets();
-    }
-  }, [isConfigured, isOpen]);
+    return invalidateLoad;
+  }, [currentKey, invalidateLoad, isConfigured, isOpen, loadThread, requestRef]);
 };
 
 const selectThread = (data: ThreadResponse, id?: null | string) => {
@@ -125,7 +117,7 @@ export const useThreadState = (isOpen: boolean, isConfigured: boolean, pageKey: 
     setPollRunId,
     isThreadLoading,
     setIsThreadLoading,
-  } = usePageState(pageKey, isConfigured);
+  } = usePageState(pageKey, isConfigured, isOpen);
   const requestRef = useRef(0);
   const invalidateLoad = useCallback(() => {
     requestRef.current += 1;
@@ -134,6 +126,7 @@ export const useThreadState = (isOpen: boolean, isConfigured: boolean, pageKey: 
   const loadThread = useCallback(
     async (requestedThreadId?: null | string): Promise<"loaded" | "unavailable"> => {
       const request = ++requestRef.current;
+      setIsThreadLoading(true);
       const data = await readThread(requestedThreadId);
       if (request !== requestRef.current) {
         return "unavailable";
@@ -160,6 +153,7 @@ export const useThreadState = (isOpen: boolean, isConfigured: boolean, pageKey: 
     isOpen: isOpen && !isStreaming,
     isConfigured,
     requestRef,
+    invalidateLoad,
     loadThread,
   });
   return {

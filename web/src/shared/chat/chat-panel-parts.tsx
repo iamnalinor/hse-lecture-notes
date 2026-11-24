@@ -1,11 +1,9 @@
 import { type JSX, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { useLocation } from "react-router";
 
 import { getChatSuggestions } from "#web/domain/chat-suggestion-pools.ts";
-import { pageUrl, routeOf } from "#web/domain/seo.ts";
 
-import { TURNSTILE_HOST_ID, useChat } from "./chat-context.tsx";
+import { useChat } from "./chat-context.tsx";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -18,37 +16,6 @@ import {
   TriangleExclamationPointIcon,
 } from "./chat-icons.tsx";
 import { useCopyFeedback } from "./use-chat-state.ts";
-
-export const TurnstileModal = (): JSX.Element => {
-  const { cancelTurnstile, turnstileOpen } = useChat();
-
-  return createPortal(
-    <div
-      className={turnstileOpen ? "ai-modal is-on" : "ai-modal-hidden"}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          cancelTurnstile();
-        }
-      }}
-      onKeyDown={undefined}
-      role="presentation"
-    >
-      <div aria-labelledby="ai-ts-title" aria-modal="true" className="ai-modal-card" role="dialog">
-        <button
-          aria-label="Закрыть"
-          className="ai-icon-btn ai-modal-x"
-          onClick={cancelTurnstile}
-          type="button"
-        >
-          <CloseIcon />
-        </button>
-        <h2 id="ai-ts-title">Подтвердите, что вы не бот</h2>
-        <div id={TURNSTILE_HOST_ID} />
-      </div>
-    </div>,
-    document.body,
-  );
-};
 
 type PanelHeaderProps = {
   readonly historyOpen: boolean;
@@ -139,6 +106,17 @@ export const ChatPanelHeader = ({
           Войти
         </button>
       )}
+      <button
+        aria-label="Новый чат"
+        className="ai-icon-btn"
+        disabled={chat.isStreaming}
+        hidden={chat.messages.length === 0}
+        onClick={chat.newChat}
+        title="Новый чат"
+        type="button"
+      >
+        <NewChatIcon />
+      </button>
       {chat.threads.length > 0 && (
         <button
           aria-expanded={historyOpen}
@@ -152,17 +130,6 @@ export const ChatPanelHeader = ({
           <HistoryIcon />
         </button>
       )}
-      <button
-        aria-label="Новый чат"
-        className="ai-icon-btn"
-        disabled={chat.isStreaming}
-        hidden={chat.messages.length === 0}
-        onClick={chat.newChat}
-        title="Новый чат"
-        type="button"
-      >
-        <NewChatIcon />
-      </button>
       <button
         aria-label="Закрыть чат"
         className="ai-icon-btn"
@@ -217,7 +184,8 @@ export const ChatEmptyView = (): JSX.Element => {
 const AgentLinkCard = (): JSX.Element => {
   const { pathname } = useLocation();
   const { copyText, isCopied } = useCopyFeedback();
-  const url = pageUrl(routeOf(pathname)).replace(/\/$/u, "");
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/u, "");
+  const url = `${globalThis.location.origin}${basePath}${pathname}`.replace(/\/$/u, "");
 
   return (
     <section aria-labelledby="ai-agent-title" className="ai-agent">

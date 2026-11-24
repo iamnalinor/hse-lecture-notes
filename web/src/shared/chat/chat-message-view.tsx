@@ -59,6 +59,8 @@ const AssistantFootActions = ({ contentTex, canRetry, onRetry }: FootActionsProp
 
 type Props = {
   readonly canRetry: boolean;
+  readonly isCheckingBrowser?: boolean;
+  readonly isBackgroundResponse?: boolean;
   readonly message: ChatMessage;
   readonly onJumpToBlock: (blockId: string) => void;
   readonly onRetry: (messageId: string) => void;
@@ -117,11 +119,14 @@ const MessageError = ({
 
 const AssistantMessageView = ({
   canRetry,
+  isCheckingBrowser,
+  isBackgroundResponse,
   message,
   onJumpToBlock,
   onRetry,
 }: Props): JSX.Element => {
-  const isRunningSteps = message.status === "running" && message.contentTex === "";
+  const isRunningSteps =
+    message.status === "running" && (message.contentTex === "" || isBackgroundResponse === true);
   const isStopped = message.status === "stopped" || message.status === "incomplete";
   const isFinished = message.status === "done" || isStopped;
   const retrySelf = (): void => {
@@ -131,6 +136,8 @@ const AssistantMessageView = ({
   return (
     <div className="ai-msg ai-asst ai-enter">
       <ChatStepsBlock
+        isBackgroundResponse={isBackgroundResponse === true}
+        isCheckingBrowser={isCheckingBrowser === true}
         isRunningSteps={isRunningSteps}
         onJumpToBlock={onJumpToBlock}
         steps={message.steps}

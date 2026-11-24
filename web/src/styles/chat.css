@@ -557,6 +557,52 @@ html.ai-open .ai-panel {
 }
 
 /* сообщения */
+.ai-skeleton {
+  padding-top: 4px;
+  animation: ai-skeleton-pulse 1.8s ease-in-out infinite;
+}
+.ai-skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--rule);
+}
+.ai-skeleton-question {
+  width: 76%;
+  padding-block: 15px;
+}
+.ai-skeleton-question .ai-skeleton-line + .ai-skeleton-line {
+  margin-top: 9px;
+  width: 64%;
+}
+.ai-skeleton-short {
+  width: 52%;
+}
+.ai-skeleton-summary {
+  width: 30%;
+  height: 10px;
+  margin-bottom: 20px;
+}
+.ai-skeleton-paragraph {
+  display: grid;
+  gap: 11px;
+  margin-block: 0 24px;
+}
+.ai-skeleton-paragraph .ai-skeleton-line:nth-child(2) {
+  width: 94%;
+}
+.ai-skeleton-paragraph .ai-skeleton-line:last-child {
+  width: 68%;
+}
+@keyframes ai-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 .ai-msg {
   margin-bottom: 24px;
 }
@@ -1268,16 +1314,14 @@ html.ai-open .ai-panel {
   place-items: center;
   padding: 16px;
   background: rgb(0 0 0 / 0);
+  opacity: 0;
+  pointer-events: none;
   transition: background-color 220ms ease-out;
 }
 .ai-modal.is-on {
   background: rgb(0 0 0 / 0.32);
-}
-.ai-modal-hidden {
-  position: fixed;
-  left: -9999px;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 1;
+  pointer-events: auto;
 }
 .ai-modal-card {
   position: relative;
@@ -1515,6 +1559,7 @@ html.ai-open .ai-panel {
     transition: none !important;
   }
   .ai-enter,
+  .ai-skeleton,
   .ai-fade,
   .ai-step-enter,
   .ai-step-ic > *,

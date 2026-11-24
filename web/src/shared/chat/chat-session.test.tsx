@@ -13,7 +13,7 @@ import {
   loginViaTelegram,
   type ThreadResponse,
 } from "#web/api/chat-client.ts";
-import { saveBrowserToken, saveSessionAuth } from "#web/api/chat-storage.ts";
+import { saveBrowserToken, saveDegraded, saveSessionAuth } from "#web/api/chat-storage.ts";
 import { openChatMessageStream } from "#web/api/chat-stream.ts";
 
 import { ChatProvider, useChat } from "./chat-context.tsx";
@@ -234,10 +234,15 @@ it("keeps the guest draft on login and clears it when switching between accounts
     user: { id: 1, name: "one" },
   });
   const chat = mount();
+  const host = document.querySelector("#hse-turnstile-host");
+  const iframe = document.createElement("iframe");
+  host?.append(iframe);
   act(() => {
     chat.current.setDraft("my question");
   });
   await act(() => chat.current.login());
+  expect(document.querySelector("#hse-turnstile-host")).toBe(host);
+  expect(host?.firstChild).toBe(iframe);
   expect(chat.current.draft).toBe("my question");
   act(() => {
     saveSessionAuth("other", "internal", { id: 2, name: "two" });
@@ -246,7 +251,7 @@ it("keeps the guest draft on login and clears it when switching between accounts
   expect(chat.current.draft).toBe("");
 });
 
-it("keeps the pending answer on its original page and starts a fresh chat on another", async () => {
+it("keeps the open conversation visible across navigation, including after streaming finishes", async () => {
   const view = renderHook(() => ({ chat: useChat(), go: useNavigate() }), {
     wrapper: ({ children }: { readonly children: ReactNode }) => (
       <MemoryRouter>
@@ -291,11 +296,14 @@ it("keeps the pending answer on its original page and starts a fresh chat on ano
   });
   await act(() => view.current.chat.send("А здесь?"));
   expect(vi.mocked(openChatMessageStream).mock.calls[1]?.[1]).toMatchObject({
-    threadId: null,
+    threadId: "t",
     course: "algebra",
     docId: "",
   });
-  expect(view.current.chat.messages[0]?.page).toEqual({ course: "algebra", docId: "" });
+  expect(view.current.chat.messages).toHaveLength(4);
+  expect(view.current.chat.messages[0]?.page).toEqual({ course: "", docId: "" });
+  expect(view.current.chat.isOpen).toBe(true);
+  expect(document.documentElement).toHaveClass("ai-open");
   expect(localStorage.getItem("hse_chat_thread:guest:/")).toBe("t");
 });
 
@@ -341,4 +349,173 @@ it("remembers the history selection per page across reloads and forgets it for a
     second.current.newChat();
   });
   expect(localStorage.getItem("hse_chat_thread:guest:/")).toBeNull();
+});
+
+it("preserves a loaded conversation while open and restores the new page after reopening", async () => {
+  saveBrowserToken("browser");
+  localStorage.setItem("hse_chat_thread:guest:/", "home-thread");
+  localStorage.setItem("hse_chat_thread:guest:/algebra", "algebra-thread");
+  vi.mocked(fetchChatThread).mockImplementation((id) =>
+    Promise.resolve(
+      thread(id ?? "unused", [
+        { ...makeAssistantMsg({ course: "", docId: "" }), status: "done", contentTex: id ?? "" },
+      ]),
+    ),
+  );
+  const { result } = renderHook(() => ({ chat: useChat(), go: useNavigate() }), {
+    wrapper: ({ children }: { readonly children: ReactNode }) => (
+      <MemoryRouter>
+        <ChatProvider>{children}</ChatProvider>
+      </MemoryRouter>
+    ),
+  });
+  await act(async () => {
+    result.current.chat.toggle();
+    await Promise.resolve();
+  });
+  expect(result.current.chat.activeThreadId).toBe("home-thread");
+  const messages = result.current.chat.messages;
+  await act(async () => {
+    await result.current.go("/algebra");
+  });
+  expect(result.current.chat.messages).toBe(messages);
+  expect(result.current.chat.activeThreadId).toBe("home-thread");
+  expect(result.current.chat.isOpen).toBe(true);
+  expect(document.documentElement).toHaveClass("ai-open");
+  expect(fetchChatThread).toHaveBeenCalledOnce();
+  act(() => {
+    result.current.chat.close();
+  });
+  await act(async () => {
+    result.current.chat.toggle();
+    await Promise.resolve();
+  });
+  expect(result.current.chat.activeThreadId).toBe("algebra-thread");
+});
+
+it("tracks loading while restoring or selecting a conversation and clears it on failure", async () => {
+  saveBrowserToken("browser");
+  localStorage.setItem("hse_chat_thread:guest:/", "saved");
+  const restored = Promise.withResolvers<ThreadResponse>();
+  const selected = Promise.withResolvers<ThreadResponse>();
+  vi.mocked(fetchChatThread)
+    .mockReturnValueOnce(restored.promise)
+    .mockReturnValueOnce(selected.promise);
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  expect(chat.current.isThreadLoading).toBe(true);
+  await act(async () => {
+    restored.resolve(thread("saved"));
+    await Promise.resolve();
+  });
+  expect(chat.current.isThreadLoading).toBe(false);
+  act(() => {
+    chat.current.selectThread("chosen");
+  });
+  expect(chat.current.isThreadLoading).toBe(true);
+  await act(async () => {
+    selected.reject(new Error("offline"));
+    await Promise.resolve();
+  });
+  expect(chat.current.isThreadLoading).toBe(false);
+  expect(chat.current.activeThreadId).toBe("saved");
+});
+
+it("shows local browser verification only for a sent message that needs allowance", async () => {
+  const pending = Promise.withResolvers<typeof allowance>();
+  vi.mocked(ensureChatAllowance).mockImplementationOnce((_hooks, options) => {
+    options?.onChecking?.();
+    return pending.promise;
+  });
+  const chat = mount();
+  expect(chat.current.isCheckingBrowser).toBe(false);
+  let sending: Promise<void> | undefined;
+  act(() => {
+    sending = chat.current.send("question");
+  });
+  expect(chat.current.isCheckingBrowser).toBe(true);
+  expect(chat.current.messages.at(-1)?.status).toBe("running");
+  await act(async () => {
+    pending.resolve(allowance);
+    await sending;
+  });
+  expect(chat.current.isCheckingBrowser).toBe(false);
+  expect(openChatMessageStream).toHaveBeenCalledOnce();
+});
+
+it("clears a cancelled history selection when closed and can reopen the loaded conversation", async () => {
+  saveBrowserToken("browser");
+  localStorage.setItem("hse_chat_thread:guest:/", "saved");
+  const selected = Promise.withResolvers<ThreadResponse>();
+  vi.mocked(fetchChatThread)
+    .mockResolvedValueOnce(thread("saved"))
+    .mockReturnValueOnce(selected.promise);
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  expect(chat.current.activeThreadId).toBe("saved");
+  act(() => {
+    chat.current.selectThread("chosen");
+  });
+  expect(chat.current.isThreadLoading).toBe(true);
+  act(() => {
+    chat.current.close();
+  });
+  expect(chat.current.isThreadLoading).toBe(false);
+  await act(async () => {
+    chat.current.toggle();
+    selected.resolve(thread("chosen"));
+    await Promise.resolve();
+  });
+  expect(chat.current.isThreadLoading).toBe(false);
+  expect(chat.current.activeThreadId).toBe("saved");
+  await act(() => chat.current.send("next"));
+  expect(openChatMessageStream).toHaveBeenCalledOnce();
+});
+
+it("clears browser verification and restores the draft when a pre-stream request is stopped", async () => {
+  vi.mocked(ensureChatAllowance).mockImplementationOnce(async (_hooks, options) => {
+    options?.onChecking?.();
+    return await new Promise((_resolve, reject) => {
+      options?.signal?.addEventListener(
+        "abort",
+        () => {
+          reject(new Error("stopped"));
+        },
+        { once: true },
+      );
+    });
+  });
+  const chat = mount();
+  let sending: Promise<void> | undefined;
+  act(() => {
+    sending = chat.current.send("draft");
+  });
+  expect(chat.current.isCheckingBrowser).toBe(true);
+  await act(async () => {
+    chat.current.stop();
+    await sending;
+  });
+  expect(chat.current.isCheckingBrowser).toBe(false);
+  expect(chat.current.isStreaming).toBe(false);
+  expect(chat.current.draft).toBe("draft");
+  expect(chat.current.messages).toHaveLength(0);
+  expect(openChatMessageStream).not.toHaveBeenCalled();
+});
+
+it("shows the already known degraded quota immediately and keeps it scoped to the account", () => {
+  const degraded = { active: true, restoresAt: Date.now() + 120_000 };
+  saveSessionAuth("one", "internal", { id: 1, name: "one" });
+  saveDegraded(degraded);
+  const first = mount();
+  expect(first.current.degraded).toEqual(degraded);
+  expect(ensureChatAllowance).not.toHaveBeenCalled();
+  saveSessionAuth("two", "internal", { id: 2, name: "two" });
+  const second = mount();
+  expect(second.current.degraded).toEqual({ active: false });
 });

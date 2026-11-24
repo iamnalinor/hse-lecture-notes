@@ -1,22 +1,9 @@
 import { load as loadFingerprint } from "@fingerprintjs/fingerprintjs";
 
-type TurnstileApi = {
-  execute: (widgetId: string) => void;
-  remove: (widgetId: string) => void;
-  render: (
-    container: HTMLElement,
-    options: {
-      readonly action?: string;
-      readonly appearance?: "always" | "execute" | "interaction-only";
-      readonly "before-interactive-callback"?: () => void;
-      readonly callback?: (token: string) => void;
-      readonly "error-callback"?: () => void;
-      readonly execution?: "execute" | "render";
-      readonly "expired-callback"?: () => void;
-      readonly sitekey: string;
-    },
-  ) => string;
-};
+import { awaitWithSignal } from "./chat-abort.ts";
+import { ManagedTurnstile, type TurnstileApi, type TurnstileHooks } from "./chat-turnstile.ts";
+
+export type { TurnstileHooks } from "./chat-turnstile.ts";
 
 type TelegramLoginSdk = {
   auth: (
@@ -86,45 +73,32 @@ export const getBrowserFingerprint = async (): Promise<string> => {
   }
 };
 
-export type TurnstileHooks = {
-  readonly getContainer: () => HTMLElement | null;
-  readonly onInteractiveClose: () => void;
-  readonly onInteractiveOpen: () => void;
+const turnstile: { widget: ManagedTurnstile | null; mounting: null | Promise<ManagedTurnstile> } = {
+  widget: null,
+  mounting: null,
 };
 
-const activeTurnstile: { cancel: (() => void) | null } = { cancel: null };
+const cancellationListeners = new Set<() => void>();
 
-/** Cancels any active interactive Turnstile verification modal without marking service down. */
+export const subscribeTurnstileCancellation = (cancel: () => void): (() => void) => {
+  cancellationListeners.add(cancel);
+  return () => {
+    cancellationListeners.delete(cancel);
+  };
+};
+
+/** Cancels the application's wait, leaving background verification and the widget alive. */
 export const cancelActiveTurnstile = (): void => {
-  activeTurnstile.cancel?.();
-};
-
-const preloadTurnstileScript = async (): Promise<void> => {
-  try {
-    await loadExternalScript(
-      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",
-      "hse-turnstile-script",
-    );
-  } catch {
-    // will retry on send if network was offline
+  for (const cancel of cancellationListeners) {
+    cancel();
   }
+  turnstile.widget?.cancel();
 };
 
-/** Pre-warms FingerprintJS and Turnstile script silently when the chat panel opens. */
-export const warmupChatWidgets = (): void => {
-  void getBrowserFingerprint();
-  void preloadTurnstileScript();
-};
-
-/**
-Mounts Managed Turnstile in `execution: "execute", appearance: "interaction-only"`,
-runs it once, opens the modal only if Cloudflare demands interaction, and immediately
-removes the widget afterwards so it never polls in the background.
-*/
-export const requestTurnstileToken = async (
+const mountTurnstile = async (
   siteKey: string,
   hooks: TurnstileHooks,
-): Promise<string> => {
+): Promise<ManagedTurnstile> => {
   if (siteKey === "") {
     throw new Error("Turnstile site key is not configured");
   }
@@ -137,49 +111,54 @@ export const requestTurnstileToken = async (
   if (api === undefined || container === null) {
     throw new Error("Turnstile widget unavailable");
   }
+  const widget = new ManagedTurnstile(api, container, { siteKey, hooks });
+  turnstile.widget = widget;
+  return widget;
+};
 
-  return await new Promise<string>((resolve, reject) => {
-    let widgetId = "";
-    const cleanup = (): void => {
-      activeTurnstile.cancel = null;
-      hooks.onInteractiveClose();
-      if (widgetId !== "") {
-        try {
-          api.remove(widgetId);
-        } catch {
-          // ignore unmount race
-        }
-      }
-    };
+const ensureTurnstile = async (
+  siteKey: string,
+  hooks: TurnstileHooks,
+): Promise<ManagedTurnstile> => {
+  if (turnstile.widget?.isConnected === false) {
+    turnstile.widget.dispose();
+    turnstile.widget = null;
+  }
+  if (turnstile.widget !== null) {
+    turnstile.widget.updateHooks(hooks);
+    return turnstile.widget;
+  }
+  turnstile.mounting ??= mountTurnstile(siteKey, hooks);
+  try {
+    const widget = await turnstile.mounting;
+    widget.updateHooks(hooks);
+    return widget;
+  } finally {
+    turnstile.mounting = null;
+  }
+};
 
-    activeTurnstile.cancel = () => {
-      cleanup();
-      reject(new Error("Turnstile cancelled"));
-    };
+/** Starts background verification on first open; never requests an allowance. */
+export const warmupChatWidgets = (siteKey: string, hooks: TurnstileHooks): void => {
+  void getBrowserFingerprint();
+  void warmupTurnstile(siteKey, hooks);
+};
 
-    widgetId = api.render(container, {
-      action: "chat_allowance",
-      appearance: "interaction-only",
-      "before-interactive-callback": () => {
-        hooks.onInteractiveOpen();
-      },
-      callback: (token) => {
-        cleanup();
-        resolve(token);
-      },
-      "error-callback": () => {
-        cleanup();
-        reject(new Error("Turnstile verification error"));
-      },
-      execution: "execute",
-      "expired-callback": () => {
-        cleanup();
-        reject(new Error("Turnstile token expired"));
-      },
-      sitekey: siteKey,
-    });
-    api.execute(widgetId);
-  });
+const warmupTurnstile = async (siteKey: string, hooks: TurnstileHooks): Promise<void> => {
+  try {
+    await ensureTurnstile(siteKey, hooks);
+  } catch {
+    // A subsequent action can retry loading the SDK after a network failure.
+  }
+};
+
+export const requestTurnstileToken = async (
+  siteKey: string,
+  hooks: TurnstileHooks,
+  signal: AbortSignal,
+): Promise<string> => {
+  const widget = await awaitWithSignal(ensureTurnstile(siteKey, hooks), signal);
+  return await widget.request(signal);
 };
 
 /** Opens Telegram OIDC popup via `telegram-login.js` with `scope: ["profile"]` and server nonce. */

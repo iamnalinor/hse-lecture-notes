@@ -33,3 +33,27 @@ it("renders emphasis without consuming multiplication inside math or code", () =
     "italic",
   ]);
 });
+
+it.each([" ", "\n", "\n  "])(
+  "accepts whitespace around material link destinations: %j",
+  (space) => {
+    const target = "/calculus/09_nov06_asymptotes_o_symbols#def:lec09:o";
+    const source = `Это определение есть в [лекции об О-символике](${space}${target}${space}).`;
+    const blocks = parseChatBlocks(source);
+    const paragraph = blocks[0];
+    expect(paragraph?.kind).toBe("paragraph");
+    if (paragraph?.kind !== "paragraph") {
+      throw new Error("Missing paragraph");
+    }
+    const spans = scanInlinePieces(paragraph.value)
+      .filter((piece) => piece.kind === "span")
+      .map((piece) => piece.span);
+    expect(spans).toMatchObject([{ kind: "ref", label: "лекции об О-символике", target }]);
+  },
+);
+
+it("keeps the material-link restriction when trimming whitespace", () => {
+  expect(
+    scanInlinePieces("[ссылка]( javascript:alert(1) )").some((piece) => piece.kind === "span"),
+  ).toBe(false);
+});

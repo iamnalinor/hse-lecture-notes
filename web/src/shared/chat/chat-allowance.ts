@@ -27,11 +27,16 @@ const applyAccess = (setters: AllowanceSetters, allowance: ChatAccess): void => 
 export const fetchAllowanceOutcome = async (
   turnstileHooks: TurnstileHooks,
   setters: AllowanceSetters,
-  isCurrent: () => boolean,
+  context: {
+    readonly isCurrent: () => boolean;
+    readonly signal: AbortSignal;
+    readonly onChecking: () => void;
+    readonly onChecked: () => void;
+  },
 ): Promise<AllowanceOutcome> => {
   try {
-    const allowance = await ensureChatAllowance(turnstileHooks);
-    if (!isCurrent()) {
+    const allowance = await ensureChatAllowance(turnstileHooks, context);
+    if (!context.isCurrent()) {
       return { kind: "cancelled" };
     }
     applyAccess(setters, allowance);
@@ -41,10 +46,15 @@ export const fetchAllowanceOutcome = async (
     }
     return { allowance, kind: "ok" };
   } catch (error) {
-    if (error instanceof Error && error.message === "Turnstile cancelled") {
+    if (
+      context.signal.aborted ||
+      (error instanceof Error && error.message === "Turnstile cancelled")
+    ) {
       return { kind: "cancelled" };
     }
     const detail = error instanceof Error ? error.message : String(error);
     return { kind: "error", message: `Ошибка доступа (/v1/allowance): ${detail}` };
+  } finally {
+    context.onChecked();
   }
 };

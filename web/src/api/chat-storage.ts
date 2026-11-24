@@ -1,4 +1,4 @@
-import type { ChatTier, ChatUser } from "#web/domain/chat.ts";
+import type { ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat.ts";
 
 const KEY_BROWSER = "hse_chat_browser_token";
 const KEY_SESSION = "hse_chat_session_token";
@@ -6,6 +6,7 @@ const KEY_ALLOWANCE = "hse_chat_allowance_token";
 const KEY_ALLOWANCE_EXP = "hse_chat_allowance_exp";
 const KEY_USER = "hse_chat_user";
 const KEY_TIER = "hse_chat_tier";
+const KEY_DEGRADED = "hse_chat_degraded:";
 
 export type StoredChatAuth = {
   readonly allowanceExpiresAt: number;
@@ -95,19 +96,57 @@ export const clearAllowanceToken = (): void => {
   saveAllowanceToken(null, 0);
 };
 
+/** Keeps already known quota information available before the next message is sent. */
+export const readStoredDegraded = (): ChatDegraded => {
+  try {
+    const key = `${KEY_DEGRADED}${readStoredAuth().user?.id ?? "guest"}`;
+    const cached = JSON.parse(safeGet(key) ?? "null") as null | {
+      savedAt?: number;
+      restoresAt?: number;
+    };
+    if (cached === null || typeof cached.savedAt !== "number") {
+      return { active: false };
+    }
+    const expiresAt =
+      typeof cached.restoresAt === "number" ? cached.restoresAt : cached.savedAt + 1_800_000;
+    if (expiresAt <= Date.now()) {
+      return { active: false };
+    }
+    return typeof cached.restoresAt === "number"
+      ? { active: true, restoresAt: cached.restoresAt }
+      : { active: true };
+  } catch {
+    return { active: false };
+  }
+};
+
+export const saveDegraded = (degraded: ChatDegraded): void => {
+  const key = `${KEY_DEGRADED}${readStoredAuth().user?.id ?? "guest"}`;
+  safeSet(
+    key,
+    degraded.active
+      ? JSON.stringify({ savedAt: Date.now(), restoresAt: degraded.restoresAt })
+      : null,
+  );
+};
+
 /** Serializes first-time browserToken initialization across tabs via Web Locks API. */
-export const withBrowserInitLock = async <T>(work: () => Promise<T>): Promise<T> => {
+export const withBrowserInitLock = async <T>(
+  work: () => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> => {
   const locks = globalThis.navigator.locks as LockManager | undefined;
+  const options = signal === undefined ? {} : { signal };
   return locks === undefined
     ? await work()
-    : await locks.request("hse-chat-browser-token-init", async () => await work());
+    : await locks.request("hse-chat-browser-token-init", options, async () => await work());
 };
 
 /** Subscribes to cross-tab `localStorage` changes so tabs stay synchronized on tokens/auth. */
 export const subscribeAuthStorage = (onChange: () => void): (() => void) => {
   const watched = new Set([KEY_BROWSER, KEY_SESSION, KEY_USER, KEY_TIER]);
   const listener = (event: StorageEvent): void => {
-    if (event.key === null || watched.has(event.key)) {
+    if (event.key === null || watched.has(event.key) || event.key.startsWith(KEY_DEGRADED)) {
       onChange();
     }
   };

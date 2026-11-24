@@ -105,6 +105,8 @@ const StepResult = ({ onJumpToBlock, step }: StepResProps): JSX.Element | null =
 };
 
 type StepsBlockProps = {
+  readonly isBackgroundResponse: boolean;
+  readonly isCheckingBrowser: boolean;
   readonly isRunningSteps: boolean;
   readonly onJumpToBlock: (blockId: string) => void;
   readonly steps: readonly ChatStep[];
@@ -112,6 +114,8 @@ type StepsBlockProps = {
 
 /** Exact `.ai-steps` collapsible search/read timeline from prototype.html. */
 export const ChatStepsBlock = ({
+  isBackgroundResponse,
+  isCheckingBrowser,
   isRunningSteps,
   onJumpToBlock,
   steps,
@@ -124,8 +128,10 @@ export const ChatStepsBlock = ({
 
   const isOpen = isRunningSteps || stepsOpen;
   const count = steps.length;
+  const responseSummary = isBackgroundResponse ? "Готовлю ответ в фоне" : "Готовлю ответ";
+  const runningSummary = isCheckingBrowser ? "Проверяем браузер" : responseSummary;
   const summary = isRunningSteps
-    ? "Готовлю ответ"
+    ? runningSummary
     : `Посмотрел конспекты: ${count} ${pluralSteps(count)}`;
   const boxClass = `ai-steps ai-fade${isOpen ? " is-open" : ""}${isRunningSteps ? " is-run" : ""}`;
 

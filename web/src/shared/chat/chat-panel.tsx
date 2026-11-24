@@ -10,11 +10,12 @@ import { findMaterialTarget } from "#web/shared/ui/dom.ts";
 import { ChatComposer } from "./chat-composer.tsx";
 import { useChat } from "./chat-context.tsx";
 import { SparklesIcon } from "./chat-icons.tsx";
+import { ChatLog } from "./chat-log.tsx";
 import { isMaterialLink } from "./chat-markdown-parse.ts";
-import { ChatMessageView } from "./chat-message-view.tsx";
-import { ChatEmptyView, ChatPanelHeader, TurnstileModal } from "./chat-panel-parts.tsx";
+import { ChatPanelHeader } from "./chat-panel-parts.tsx";
 import { ChatRefPreview } from "./chat-ref-preview.tsx";
 import { ChatResizeHandle } from "./chat-resize-handle.tsx";
+import { useChatAutoScroll } from "./use-chat-auto-scroll.ts";
 
 const isMobileViewport = (): boolean => globalThis.window.matchMedia("(max-width: 720px)").matches;
 const isReducedMotion = (): boolean =>
@@ -65,28 +66,12 @@ const usePanelEscapeKey = (deps: EscHandlerDeps): void => {
   }, [deps]);
 };
 
-const useAutoScroll = (scrollerRef: { current: HTMLDivElement | null }, dep: unknown): void => {
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (el === null) {
-      return;
-    }
-    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distance < 140) {
-      el.scrollTo({ behavior: isReducedMotion() ? "auto" : "smooth", top: el.scrollHeight });
-    }
-  }, [dep, scrollerRef]);
-};
-
-const useMaterialNavigation = (course: string, close: () => void) => {
+const useMaterialNavigation = (course: string) => {
   const client = useQueryClient();
   const navigate = useNavigate();
   return useCallback(
     async (anchor: string): Promise<void> => {
       if (isMaterialLink(anchor)) {
-        if (isMobileViewport()) {
-          close();
-        }
         await navigate(anchor);
         return;
       }
@@ -97,12 +82,9 @@ const useMaterialNavigation = (course: string, close: () => void) => {
         return;
       }
 
-      if (isMobileViewport()) {
-        close();
-      }
       await navigate(paths.lecture(course, label.weekId, anchor));
     },
-    [client, close, course, navigate],
+    [client, course, navigate],
   );
 };
 
@@ -110,7 +92,7 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
   const { isOpen, close } = chat;
   const { course, docId } = chat.docContext;
   const documentPrefix = `${paths.lecture(course, docId)}#`;
-  const openMissing = useMaterialNavigation(course, close);
+  const openMissing = useMaterialNavigation(course);
   const pendingRef = useRef<Element | null>(null);
   useEffect(() => {
     const target = pendingRef.current;
@@ -149,11 +131,6 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
 };
 
 /** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
-const getRetryableMessage = (chat: ReturnType<typeof useChat>) =>
-  !chat.isStreaming && !chat.isThreadLoading && chat.messages.at(-2)?.role === "user"
-    ? chat.messages.at(-1)
-    : undefined;
-
 export const ChatPanel = (): JSX.Element | null => {
   const chat = useChat();
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -181,9 +158,8 @@ export const ChatPanel = (): JSX.Element | null => {
     isOpen: chat.isOpen,
     turnstileOpen: chat.turnstileOpen,
   });
-  useAutoScroll(scrollerRef, chat.messages);
+  useChatAutoScroll(scrollerRef, { messages: chat.messages, isLoading: chat.isThreadLoading });
 
-  const retryableMessage = getRetryableMessage(chat);
   if (!chat.isConfigured) {
     return null;
   }
@@ -201,19 +177,7 @@ export const ChatPanel = (): JSX.Element | null => {
         />
         <div className="ai-scroll" ref={scrollerRef}>
           <div aria-live="polite" className="ai-log">
-            {chat.messages.length === 0
-              ? !chat.isThreadLoading && <ChatEmptyView />
-              : chat.messages.map((message) => (
-                  <ChatMessageView
-                    canRetry={message === retryableMessage}
-                    key={message.renderKey ?? message.id}
-                    message={message}
-                    onJumpToBlock={jumpToBlock}
-                    onRetry={(msgId) => {
-                      void chat.retryMessage(msgId);
-                    }}
-                  />
-                ))}
+            <ChatLog onJumpToBlock={jumpToBlock} />
           </div>
         </div>
         <ChatComposer />
@@ -234,7 +198,6 @@ export const ChatPanel = (): JSX.Element | null => {
         </button>,
         document.body,
       )}
-      <TurnstileModal />
     </>
   );
 };

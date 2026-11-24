@@ -366,38 +366,43 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
   });
 });
 
-describe("3. 2-copy browserToken, Telegram OIDC + nonce, Session & Guest Migration", () => {
-  test("detects cookie vs localStorage mismatch and backfills missing side", async () => {
+describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migration", () => {
+  test("accepts only a valid signed browser token supplied by the client", async () => {
     const secret = "browser_secret_12345678901234567890";
-    const a = await mintBrowserToken(secret);
-    const b = await mintBrowserToken(secret);
+    const token = await mintBrowserToken(secret);
+    expect(await resolveBrowserToken(secret, token.browserToken)).toEqual({ status: "ok", ...token });
+    expect(await resolveBrowserToken(secret, null)).toEqual({ status: "missing" });
+    expect(await resolveBrowserToken(secret, undefined)).toEqual({ status: "missing" });
+    expect(await resolveBrowserToken(secret, "invalid")).toEqual({ status: "missing" });
+    expect(await resolveBrowserToken(secret, `${token.browserToken}tampered`)).toEqual({ status: "missing" });
+  });
 
-    const mismatch = await resolveBrowserToken(
-      secret,
-      `browser_token=${encodeURIComponent(a.browserToken)}`,
-      b.browserToken,
-    );
-    expect(mismatch.status).toBe("mismatch");
+  test("ignores legacy cookies and never returns browser-token cookies", async () => {
+    const shim = new SqliteD1Shim();
+    const db = new TrackedD1(shim.asD1());
+    const env = makeTestEnv(shim.asD1());
+    const browser = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
+    const legacy = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
+    const cookie = `browser_token=${encodeURIComponent(legacy.browserToken)}`;
+    const missing = await handleCreateNonce(env, db, new Request("https://api.test/v1/auth/nonce", {
+      headers: { Cookie: cookie },
+    }));
+    expect(missing.status).toBe(401);
 
-    const backfillStorage = await resolveBrowserToken(
-      secret,
-      `browser_token=${encodeURIComponent(a.browserToken)}`,
-      null,
-    );
-    expect(backfillStorage).toMatchObject({
-      status: "ok",
-      browserId: a.browserId,
-      needsStorageSync: true,
-      needsCookieSync: false,
+    const request = new Request("https://api.test/v1/allowance", {
+      headers: { Cookie: cookie, "X-Browser-Token": browser.browserToken },
     });
-
-    const backfillCookie = await resolveBrowserToken(secret, null, a.browserToken);
-    expect(backfillCookie).toMatchObject({
-      status: "ok",
-      browserId: a.browserId,
-      needsCookieSync: true,
-      needsStorageSync: false,
+    const allowance = await handleAllowance(env, db, request, { turnstileToken: "ok" }, {
+      turnstileVerifier: async () => ({ ok: true }),
     });
+    expect(allowance.status).toBe(200);
+    expect(allowance.body.browserToken).toBe(browser.browserToken);
+    expect(allowance).not.toHaveProperty("setCookie");
+    const nonce = await handleCreateNonce(env, db, request);
+    expect(nonce.status).toBe(200);
+    expect(nonce).not.toHaveProperty("setCookie");
+    const stored = await db.first<{ browser_id: string }>(db.prepare("SELECT browser_id FROM auth_nonces WHERE nonce = ?").bind(nonce.body.nonce));
+    expect(stored?.browser_id).toBe(browser.browserId);
   });
 
   test("Telegram login always consumes nonce, migrates threads + running runs, and logout revokes allowance", async () => {
@@ -427,7 +432,7 @@ describe("3. 2-copy browserToken, Telegram OIDC + nonce, Session & Guest Migrati
     );
     expect(allowRes.status).toBe(200);
     const browserToken = String(allowRes.body.browserToken);
-    const btVerified = await resolveBrowserToken(env.BROWSER_TOKEN_SECRET, null, browserToken);
+    const btVerified = await resolveBrowserToken(env.BROWSER_TOKEN_SECRET, browserToken);
     expect(btVerified.status).toBe("ok");
     const browserId = btVerified.status === "ok" ? btVerified.browserId : "";
 
