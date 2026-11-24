@@ -203,7 +203,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          MESSAGE: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
+          MESSAGE: "PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}"
         run: |
           # wrangler-action ставит wrangler 3.x, а превью-алиасы и wrangler.jsonc нужны из 4.x
           set -o pipefail
