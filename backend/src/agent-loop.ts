@@ -276,7 +276,7 @@ export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
         maxResponseChars: remainingChars,
         signal: timeoutAbort.signal,
         onUnconfirmedRetry: () => { isCostUncertain = true; },
-        onDelta: (delta) => {
+          onDelta: (delta) => {
           streamed = true;
           emit(titleStream ? titleStream.push(delta) : delta);
         },
