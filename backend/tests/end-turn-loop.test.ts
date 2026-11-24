@@ -200,3 +200,24 @@ test("each missing-usage round is estimated, without double charging known round
   expect(run.is_cost_uncertain).toBe(1);
   expect(run.actual_cost_micros).toBeGreaterThanOrEqual(2000);
 });
+
+test("visible answer before end can have the native commentary phase", async () => {
+  const answer = round("Ответ", [end()]);
+  for (const item of answer.outputItems) if (item.type === "message") item.phase = "commentary";
+  const r = await fixture([answer]);
+  expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ" });
+  expect(r.requests).toHaveLength(1);
+});
+
+test("commentary before search does not satisfy the later empty end", async () => {
+  const preamble = round("Сейчас проверю", [
+    { callId: "read", name: "read_document", arguments: '{"course":"math"}' },
+  ]);
+  for (const item of preamble.outputItems) if (item.type === "message") item.phase = "commentary";
+  const answer = round("Ответ", [end("Итог", "Объясни дальше")]);
+  for (const item of answer.outputItems) if (item.type === "message") item.phase = "commentary";
+  const r = await fixture([preamble, round("", [end("Рано", "Не надо")]), answer]);
+  expect(r.requests).toHaveLength(3);
+  expect(r.message).toMatchObject({ status: "done", suggestion: "Объясни дальше" });
+  expect(JSON.stringify(r.requests[2]?.input)).toContain("answer_required");
+});

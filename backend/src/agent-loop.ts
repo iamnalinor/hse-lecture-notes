@@ -230,12 +230,9 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
       for (const c of calls) seenIds.add(c.callId);
       input.push(...result.outputItems);
       newItems.push(...result.outputItems);
-      if (
-        roundText.trim() &&
-        !calls.some((c) => c.name !== "end_turn") &&
-        !result.outputItems.some((i) => i.type === "message" && i.phase === "commentary")
-      )
-        hasAnswer = true;
+      // Responses may label visible text before a tool as commentary, including
+      // the actual answer before end_turn. Search/read preambles still do not count.
+      if (roundText.trim() && !calls.some((c) => c.name !== "end_turn")) hasAnswer = true;
       if (ends.length === 1) {
         const end = ends[0]!;
         let repairCode: string | undefined;
