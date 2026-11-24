@@ -59,8 +59,6 @@ const PREP_CHAT_SUGGESTIONS: readonly string[] = [
   "Проверь моё решение: я пришлю его, а ты найдёшь пробелы",
 ];
 
-export const DEFAULT_CHAT_SUGGESTIONS = LECTURE_CHAT_SUGGESTIONS;
-
 const SUGGESTIONS_MAP: Readonly<Record<string, readonly string[]>> = chatSuggestionsData;
 
 const genericPoolFor = (docId: string): readonly string[] => {
