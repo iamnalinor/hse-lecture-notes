@@ -132,53 +132,68 @@ type CaptionProps = {
   readonly rateRemainSec: number;
 };
 
+const AccountCaption = ({ compact }: { readonly compact: boolean }): JSX.Element | null => {
+  const { isLoginBusy, isStreaming, switchAccount, tier, user } = useChat();
+  if (tier !== "default" || user === null) {
+    return null;
+  }
+  return (
+    <p className="ai-caption ai-fade">
+      {!compact && <InfoIcon />}
+      <span>
+        {!compact && (
+          <>
+            У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который есть
+            в чате потока.
+            <br />
+          </>
+        )}
+        {`Вы вошли как ${user.name}. `}
+        <button
+          disabled={isLoginBusy || isStreaming}
+          onClick={() => {
+            void switchAccount();
+          }}
+          type="button"
+        >
+          Сменить аккаунт
+        </button>
+      </span>
+    </p>
+  );
+};
+
 export const BottomCaption = ({ mode, nowMs, rateRemainSec }: CaptionProps): JSX.Element | null => {
-  const { degraded, isLoginBusy, switchAccount, tier, user } = useChat();
-
-  if (mode === "composer" && rateRemainSec > 0) {
-    const padded = String(rateRemainSec).padStart(2, "0");
-    return (
-      <p className="ai-caption ai-fade" role="status">
-        <InfoIcon />
-        <span>
-          Слишком много вопросов подряд. Отправить можно через <time>{`0:${padded}`}</time>
-        </span>
-      </p>
-    );
+  const { contextLimited, degraded } = useChat();
+  let primary: JSX.Element | null = null;
+  if (mode === "composer") {
+    const copy =
+      contextLimited === true
+        ? "Чат слишком длинный, качество снижено. Рекомендуем создать новый чат"
+        : formatDegradedCaption(degraded, nowMs);
+    if (rateRemainSec > 0) {
+      primary = (
+        <p className="ai-caption ai-fade" role="status">
+          <InfoIcon />
+          <span>
+            Слишком много вопросов подряд. Отправить можно через{" "}
+            <time>{`0:${String(rateRemainSec).padStart(2, "0")}`}</time>
+          </span>
+        </p>
+      );
+    } else if (copy !== null) {
+      primary = (
+        <p className="ai-caption ai-fade" role="status">
+          <InfoIcon />
+          <span>{copy}</span>
+        </p>
+      );
+    }
   }
-
-  if (tier === "default" && mode !== "down" && user !== null) {
-    return (
-      <p className="ai-caption ai-fade">
-        <InfoIcon />
-        <span>
-          У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который есть в
-          чате потока.
-          <br />
-          {`Вы вошли как ${user.name}. `}
-          <button
-            disabled={isLoginBusy}
-            onClick={() => {
-              void switchAccount();
-            }}
-            type="button"
-          >
-            Сменить аккаунт
-          </button>
-        </span>
-      </p>
-    );
-  }
-
-  const degradedCopy = mode === "composer" ? formatDegradedCaption(degraded, nowMs) : null;
-  if (degradedCopy !== null) {
-    return (
-      <p className="ai-caption ai-fade">
-        <InfoIcon />
-        <span>{degradedCopy}</span>
-      </p>
-    );
-  }
-
-  return null;
+  return (
+    <>
+      {primary}
+      <AccountCaption compact={mode !== "composer" || primary !== null} />
+    </>
+  );
 };

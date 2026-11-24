@@ -219,7 +219,7 @@ export const SelectionAskButton = (): JSX.Element | null => {
   }, [chat.quote]);
 
   const isAllowed = pill?.quote.messageId === undefined ? canQuoteMaterial : canQuoteAnswer;
-  if (!isActive || !isAllowed) {
+  if (!isActive || !isAllowed || pill === null) {
     return null;
   }
 
@@ -240,19 +240,18 @@ const SelectionPill = ({
   pill,
   onSelect,
 }: {
-  readonly pill: FloatingPill | null;
+  readonly pill: FloatingPill;
   readonly onSelect: (selected: FloatingPill) => void;
 }): JSX.Element => {
-  const isReplying = pill?.quote.messageId !== undefined;
+  const isReplying = pill.quote.messageId !== undefined;
   return (
     <button
       aria-label={
         isReplying ? "Ответить на выделенный фрагмент" : "Спросить ИИ о выделенном фрагменте"
       }
-      className={pill === null ? "ai-sel-btn" : "ai-sel-btn is-on"}
-      disabled={pill === null}
+      className="ai-sel-btn is-on"
       onClick={() => {
-        if (pill?.range.startContainer.isConnected !== true) {
+        if (!pill.range.startContainer.isConnected) {
           return;
         }
         onSelect(pill);
@@ -260,7 +259,7 @@ const SelectionPill = ({
       onMouseDown={(event) => {
         event.preventDefault();
       }}
-      style={pill === null ? undefined : { left: `${pill.left}px`, top: `${pill.top}px` }}
+      style={{ left: `${pill.left}px`, top: `${pill.top}px` }}
       type="button"
     >
       {!isReplying && <SparklesIcon />}

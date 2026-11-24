@@ -84,6 +84,7 @@ const finishTurn = (
       ...m,
       contentTex: payload.text === "" ? m.contentTex : payload.text,
       status: payload.status,
+      suggestion: payload.status === "done" ? (payload.suggestion ?? null) : null,
       steps: payload.steps.length > 0 ? payload.steps : m.steps,
     })),
   );
@@ -143,6 +144,7 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
       setters.setThreads((prev) => [
         {
           id: payload.threadId,
+          contextLimited: payload.contextLimited === true,
           title: payload.threadTitle,
           generatedTitle: payload.generatedTitle ?? null,
           updatedAt: Date.now(),

@@ -50,6 +50,7 @@ export type ChatStep = {
 export type ChatMessageStatus = "done" | "error" | "incomplete" | "running" | "stopped";
 
 export type ChatMessage = {
+  readonly suggestion?: null | string;
   readonly page: ChatDocContext;
   readonly contentTex: string;
   readonly createdAt: number;
@@ -66,6 +67,7 @@ export type ChatMessage = {
 };
 
 export type ChatThreadSummary = {
+  readonly contextLimited?: boolean;
   readonly id: string;
   readonly generatedTitle?: null | string;
   readonly title: string;
@@ -73,6 +75,7 @@ export type ChatThreadSummary = {
 };
 
 export type ChatThread = {
+  readonly contextLimited?: boolean;
   readonly createdAt: number;
   readonly id: string;
   readonly messages: readonly ChatMessage[];
@@ -286,3 +289,11 @@ export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number):
     }
   }
 };
+
+export const parseChatSuggestion = (value: unknown): null | string =>
+  typeof value === "string" &&
+  value.trim() !== "" &&
+  (value.match(/./gsu)?.length ?? 0) <= 160 &&
+  !/[\p{Cc}\p{Cf}]/u.test(value)
+    ? value
+    : null;

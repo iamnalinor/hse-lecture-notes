@@ -1,9 +1,10 @@
-import type {
-  ChatBlock,
-  ChatDegraded,
-  ChatMessageStatus,
-  ChatQuote,
-  ChatStep,
+import {
+  type ChatBlock,
+  type ChatDegraded,
+  type ChatMessageStatus,
+  type ChatQuote,
+  type ChatStep,
+  parseChatSuggestion,
 } from "#web/domain/chat.ts";
 
 export type WsStreamCallbacks = {
@@ -12,6 +13,8 @@ export type WsStreamCallbacks = {
   readonly onDelta: (text: string) => void;
   readonly onDone: (payload: {
     readonly replayed?: boolean;
+    readonly contextLimited?: boolean;
+    readonly suggestion?: null | string;
     readonly block: ChatBlock | null;
     readonly degraded: ChatDegraded;
     readonly runId: string;
@@ -26,6 +29,8 @@ export type WsStreamCallbacks = {
   }) => void;
   readonly onMeta: (payload: {
     readonly replayed?: boolean;
+    readonly contextLimited?: boolean;
+    readonly suggestion?: null | string;
     readonly assistantMessageId: string;
     readonly degraded: ChatDegraded;
     readonly runId: string;
@@ -58,9 +63,64 @@ const toWsUrl = (httpUrl: string): string => httpUrl.replace(/^http/, "ws");
 
 const parseFrame = (raw: string): null | Record<string, unknown> => {
   try {
-    return JSON.parse(raw) as Record<string, unknown>;
+    const value: unknown = JSON.parse(raw);
+    return value !== null && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
   } catch {
     return null;
+  }
+};
+
+type StreamIdentity = { readonly threadId: null | string; readonly runId: null | string };
+const isMatchingIdentity = (frame: Record<string, unknown>, identity: StreamIdentity): boolean => {
+  if (frame["type"] === "meta") {
+    const isValid = [
+      "threadId",
+      "runId",
+      "assistantMessageId",
+      "userMessageId",
+      "threadTitle",
+    ].every((field) => typeof frame[field] === "string");
+    return (
+      isValid &&
+      (identity.threadId === null || frame["threadId"] === identity.threadId) &&
+      (identity.runId === null || frame["runId"] === identity.runId)
+    );
+  }
+  return frame["type"] === "title"
+    ? frame["threadId"] === identity.threadId
+    : frame["type"] !== "done" || frame["runId"] === identity.runId;
+};
+
+const deliverDone = (parsed: Record<string, unknown>, callbacks: WsStreamCallbacks): void => {
+  callbacks.onDone({
+    ...parsed,
+    suggestion: parseChatSuggestion(parsed["suggestion"]),
+    contextLimited: parsed["contextLimited"] === true,
+    text: typeof parsed["text"] === "string" ? parsed["text"] : "",
+    steps: Array.isArray(parsed["steps"]) ? parsed["steps"] : [],
+  } as unknown as Parameters<WsStreamCallbacks["onDone"]>[0]);
+};
+
+const deliverMeta = (parsed: Record<string, unknown>, callbacks: WsStreamCallbacks): void => {
+  if (typeof parsed["threadId"] !== "string" || typeof parsed["runId"] !== "string") {
+    return;
+  }
+  callbacks.onMeta({
+    ...parsed,
+    contextLimited: parsed["contextLimited"] === true,
+  } as unknown as Parameters<WsStreamCallbacks["onMeta"]>[0]);
+};
+
+const deliverTitle = (parsed: Record<string, unknown>, callbacks: WsStreamCallbacks): void => {
+  const title = parsed["title"];
+  const threadId = parsed["threadId"];
+  if (typeof threadId !== "string" || typeof title !== "string") {
+    return;
+  }
+  if ((title.match(/./gsu)?.length ?? 0) <= 48) {
+    callbacks.onTitle(threadId, title);
   }
 };
 
@@ -70,11 +130,11 @@ const isTerminalWsFrame = (
 ): boolean => {
   switch (parsed["type"]) {
     case "meta": {
-      callbacks.onMeta(parsed as unknown as Parameters<WsStreamCallbacks["onMeta"]>[0]);
+      deliverMeta(parsed, callbacks);
       return false;
     }
     case "title": {
-      callbacks.onTitle(parsed["threadId"] as string, parsed["title"] as string);
+      deliverTitle(parsed, callbacks);
       return false;
     }
     case "step": {
@@ -88,7 +148,7 @@ const isTerminalWsFrame = (
       return false;
     }
     case "done": {
-      callbacks.onDone(parsed as unknown as Parameters<WsStreamCallbacks["onDone"]>[0]);
+      deliverDone(parsed, callbacks);
       return true;
     }
     case "error": {
@@ -108,6 +168,7 @@ export const openChatMessageStream = (
 ): ActiveWsStream => {
   const ws = new WebSocket(`${toWsUrl(apiUrl)}/v1/messages`);
   let isFinished = false;
+  let identity: StreamIdentity = { threadId: params.threadId, runId: null };
 
   ws.addEventListener("open", () => {
     if (!isFinished) {
@@ -120,7 +181,13 @@ export const openChatMessageStream = (
       return;
     }
     const parsed = parseFrame(event.data);
-    if (parsed !== null && isTerminalWsFrame(parsed, callbacks)) {
+    if (parsed === null || !isMatchingIdentity(parsed, identity)) {
+      return;
+    }
+    if (parsed["type"] === "meta") {
+      identity = { threadId: parsed["threadId"] as string, runId: parsed["runId"] as string };
+    }
+    if (isTerminalWsFrame(parsed, callbacks)) {
       isFinished = true;
     }
   });

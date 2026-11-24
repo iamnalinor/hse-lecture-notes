@@ -4,7 +4,7 @@ Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
 ## Architecture
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/nonce`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
-- **SQLite-backed Durable Object (`ChatRunner`, `src/chat-runner.ts`)**: `WS /v1/messages` — runs the multi-round Codex agent loop (up to 5 rounds / 10 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
+- **SQLite-backed Durable Object (`ChatRunner`, `src/chat-runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 6 rounds / 12 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
 - **D1 (`hse-lecture-notes`)**: schema in `migrations/` (sessions, hourly O(1) budget buckets, quotas, threads, messages, FTS5 course materials).
 - **Vectorize (`hse-course-blocks`, 1024 dim cosine) + Workers AI (`@cf/baai/bge-m3`)**: semantic search with automatic fallback to FTS5.
 
@@ -14,7 +14,7 @@ The service policy lives in D1 under `service_config.policy`. `policy.json` cont
 
 ## LLM provider selection
 
-`LlmProvider` has two implementations: Codex OAuth (the default) and the standard OpenAI **Responses API** with API-key authentication. `ChatRunner` selects the provider from runtime environment variables; no code changes are needed to switch. Existing installations keep using Codex when `LLM_PROVIDER` is unset or `codex`. Setting an OpenAI key alone never switches providers.
+`LlmProvider` has two implementations: Codex OAuth (the default) and the standard OpenAI **Responses API** with API-key authentication. `ChatRunner` selects the provider from runtime environment variables; no code changes are needed to switch. Existing installations keep using Codex when `LLM_PROVIDER` is unset or `codex`. Setting an OpenAI key alone never switches providers. Production explicitly selects `openai` in the versioned Worker configuration.
 
 For OpenAI, set these Worker environment variables/secrets (or put them in `backend/.env` for local `wrangler dev`; `.env` is ignored by Git):
 
@@ -94,3 +94,17 @@ env -u OPENAI_API_KEY -u OPENAI_BASE_URL OPENAI_LIVE_TESTS=1 \
 The command clears inherited key/base URL values before loading the file, because Bun preserves existing environment variables over `.env` values.
 
 Live tests default to `gpt-6-luna` with low reasoning effort. Override `OPENAI_TEST_MODEL` and `OPENAI_TEST_EFFORT` for a model supported by the endpoint. They are skipped in the ordinary suite and never switch the active Worker provider.
+
+## Turn metadata and bounded context
+
+Every successful turn ends with the hidden strict `end_turn({title, suggestion})` function after the answer. Both keys are required nullable strings. A first generated title must be nonempty; later null preserves the title. Suggestions are natural user messages (one line, at most 160 Unicode code points), without Markdown or TeX; null restores the ordinary placeholder. Tool calls, arguments, acknowledgements and validation errors are never public steps or message text. The client inserts a suggestion with plain Tab without submitting it; touch only sees the placeholder.
+
+Parallel search/read calls are enabled. The finishing response contains exactly one function call, `end_turn`; the harness validates this independently of tool choice. One corrective request is allowed within the same 6-round / 60-second budget. Invalid output, stop, timeout and exhausted reserves preserve received text and paid usage without committing partial metadata or regenerating the answer automatically.
+
+The model receives a whole-exchange suffix: at most 15 logical user/assistant messages including the new question, and 50,000 JavaScript characters in serialized input items. Context snapshots, quotes, calls/results and encrypted reasoning count toward size. The complete visible conversation remains stored. Reaching either threshold latches only that thread to the low route with its own quota/reserve and a persistent warning. New threads keep ordinary routing. Context revision plus max sequence guards admission against finalize/retry races.
+
+System instructions and tool definitions remain stable. The immutable snapshot of each question stores navigation/catalog/time/title context next to that question. Complete compatible reasoning/tool exchanges replay within the window; changed or unverified provider/model/effort/prefix compatibility falls back the entire historical exchange to its original question snapshot and visible answer, preserving the stored original.
+
+Bootstrap defaults and production policy target a $15 rolling seven-day global budget, warning at $12; actual plus reserved spend gates admission. Standard tariffs for Terra and Luna were rechecked on 2026-11-24 against [official pricing](https://developers.openai.com/api/docs/pricing.md); pricing version 1 remains valid. Cache savings use returned usage, not an assumed cache hit rate.
+
+Detailed release and production verification: [production checks](../docs/chat-production-checks.md).

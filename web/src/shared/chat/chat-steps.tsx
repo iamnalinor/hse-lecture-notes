@@ -126,7 +126,7 @@ const RunningSummary = ({
   isCheckingBrowser,
 }: Pick<StepsBlockProps, "isBackgroundResponse" | "isCheckingBrowser">): JSX.Element => {
   if (isCheckingBrowser) {
-    return <>Проверяем браузер…</>;
+    return <>Проверяю браузер…</>;
   }
   if (isBackgroundResponse) {
     return <>Отвечаю в фоне…</>;

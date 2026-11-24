@@ -4,6 +4,7 @@ import { BottomCaption, BottomPlate, resolveBottomMode } from "./chat-composer-p
 import { useChat } from "./chat-context.tsx";
 import { SendIcon, StopIcon } from "./chat-icons.tsx";
 import { ChatQuoteCard } from "./chat-quote-card.tsx";
+import { useComposerSuggestion } from "./use-composer-suggestion.ts";
 
 const useClockTicker = (rateLimitUntil: number, isDegraded: boolean): number => {
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -64,15 +65,20 @@ const useComposerTextarea = (draft: string, isOpen: boolean, quoteKey: string) =
   return textareaRef;
 };
 
-const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element => {
-  const { canStop, clearQuote, draft, isOpen, messages, quote, send, setDraft, stop } = useChat();
-  const textareaRef = useComposerTextarea(draft, isOpen, quote?.tex ?? "");
+const isPlainTab = (event: KeyboardEvent<HTMLTextAreaElement>): boolean =>
+  event.key === "Tab" &&
+  !event.nativeEvent.isComposing &&
+  ![event.shiftKey, event.altKey, event.ctrlKey, event.metaKey].some(Boolean);
 
-  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
-    setDraft(event.target.value);
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+const useComposerKeyDown = (canSend: boolean, suggestion: null | string, consume: () => void) => {
+  const { send, setDraft } = useChat();
+  return (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (suggestion !== null && isPlainTab(event)) {
+      event.preventDefault();
+      setDraft(suggestion);
+      consume();
+      return;
+    }
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
       return;
     }
@@ -81,6 +87,25 @@ const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element =>
       void send();
     }
   };
+};
+
+const ComposerBox = ({
+  canSend,
+  suggestion,
+  consume,
+}: {
+  readonly canSend: boolean;
+  readonly suggestion: null | string;
+  readonly consume: () => void;
+}): JSX.Element => {
+  const { canStop, clearQuote, draft, isOpen, messages, quote, send, setDraft, stop } = useChat();
+  const textareaRef = useComposerTextarea(draft, isOpen, quote?.tex ?? "");
+
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
+    setDraft(event.target.value);
+  };
+
+  const handleKeyDown = useComposerKeyDown(canSend, suggestion, consume);
 
   return (
     <div className="ai-composer">
@@ -97,7 +122,7 @@ const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element =>
           id="ai-input"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={resolvePlaceholder(quote !== null, messages.length > 0)}
+          placeholder={suggestion ?? resolvePlaceholder(quote !== null, messages.length > 0)}
           ref={textareaRef}
           rows={1}
           value={draft}
@@ -134,6 +159,7 @@ const ComposerBox = ({ canSend }: { readonly canSend: boolean }): JSX.Element =>
 /** Exact `.ai-bottom` (composer / limit plate / status caption) from prototype.html. */
 export const ChatComposer = (): JSX.Element => {
   const { block, degraded, draft, isStreaming, isThreadLoading, quote, rateLimitUntil } = useChat();
+  const { suggestion, consume } = useComposerSuggestion();
   const nowMs = useClockTicker(rateLimitUntil, degraded.active);
   const mode = resolveBottomMode(block);
   const rateRemainSec =
@@ -148,7 +174,11 @@ export const ChatComposer = (): JSX.Element => {
   return (
     <div className="ai-bottom">
       <div className="ai-mode ai-flow">
-        {mode === "composer" ? <ComposerBox canSend={canSend} /> : <BottomPlate mode={mode} />}
+        {mode === "composer" ? (
+          <ComposerBox canSend={canSend} consume={consume} suggestion={suggestion} />
+        ) : (
+          <BottomPlate mode={mode} />
+        )}
       </div>
       <div className="ai-caption-slot ai-flow">
         <BottomCaption mode={mode} nowMs={nowMs} rateRemainSec={rateRemainSec} />

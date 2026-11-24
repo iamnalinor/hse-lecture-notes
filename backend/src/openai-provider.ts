@@ -41,8 +41,9 @@ export class OpenAIResponsesProvider implements LlmProvider {
           instructions: req.instructions,
           input: req.input,
           // Existing tools have optional parameters; keep their semantics in Responses.
-          tools: req.tools.map(tool => ({ ...tool, strict: false })),
-          parallel_tool_calls: true,
+          tools: req.tools.map(tool => ({ ...tool, strict: tool.strict ?? false })),
+          ...(req.toolChoice ? {tool_choice: req.toolChoice} : {}),
+          parallel_tool_calls: req.parallelToolCalls ?? true,
           store: false,
           stream: true,
           include: ["reasoning.encrypted_content"],
@@ -50,15 +51,15 @@ export class OpenAIResponsesProvider implements LlmProvider {
         signal: localAbort.signal,
       });
       if (!response.ok) {
-        const detail = (await response.text().catch(() => "")).replaceAll(this.apiKey, "[redacted]");
+        await response.body?.cancel().catch(() => {});
         throw new LlmUpstreamError(response.status,
           response.status === 429 ? "openai_rate_limited" : "openai_upstream_error",
-          `OpenAI API HTTP ${response.status}: ${detail.slice(0, 300)}`);
+          `OpenAI API HTTP ${response.status}`);
       }
       if (!response.body) throw new LlmUpstreamError(502, "openai_empty_body", "OpenAI API returned empty stream");
       // Never replay a possibly billable request automatically after an HTTP/stream failure.
       return await parseResponsesSseStream(response.body, req.maxResponseChars, req.onDelta,
-        () => localAbort.abort("max_response_chars"), "openai");
+        () => localAbort.abort("max_response_chars"), "openai", { enforceProtocol: Boolean(req.toolChoice), metadataOnly: req.metadataOnly });
     } finally {
       req.signal.removeEventListener("abort", onAbort);
     }

@@ -1,19 +1,75 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import { SelectionAskButton } from "./selection-ask-button.tsx";
 
-const openWithQuote = vi.fn();
+const { docContext, openWithQuote } = vi.hoisted(() => ({
+  docContext: { course: "", docId: "" },
+  openWithQuote: vi.fn(),
+}));
 vi.mock("./chat-context.tsx", () => ({
   useChat: () => ({
     activeThreadId: "t",
-    docContext: { course: "", docId: "" },
+    docContext,
     isConfigured: true,
     isOpen: true,
     openWithQuote,
     quote: null,
   }),
 }));
+
+afterEach(() => {
+  docContext.docId = "";
+  globalThis.getSelection()?.removeAllRanges();
+});
+
+it("does not mount a quote action when selecting agent steps on a lecture page", async () => {
+  docContext.docId = "lecture";
+  render(
+    <>
+      <div className="ai-steps">
+        <span>Ищу в конспектах</span>
+      </div>
+      <SelectionAskButton />
+    </>,
+  );
+  const range = document.createRange();
+  range.selectNodeContents(screen.getByText("Ищу в конспектах"));
+  Object.defineProperty(range, "getClientRects", { value: () => [new DOMRect(100, 80, 120, 20)] });
+  globalThis.getSelection()?.addRange(range);
+  fireEvent.mouseUp(document);
+  await act(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)));
+  expect(document.querySelector(".ai-sel-btn")).toBeNull();
+});
+
+it.each(["mousedown", "selectionchange"])(
+  "removes the positioned quote action immediately on %s on a lecture page",
+  async (event) => {
+    docContext.docId = "lecture";
+    render(
+      <>
+        <div data-answer-id="answer">
+          <div className="ai-answer">
+            <p>Выделенный ответ</p>
+          </div>
+        </div>
+        <SelectionAskButton />
+      </>,
+    );
+    const paragraph = screen.getByText("Выделенный ответ");
+    const range = document.createRange();
+    range.selectNodeContents(paragraph);
+    Object.defineProperty(range, "getClientRects", {
+      value: () => [new DOMRect(100, 80, 120, 20)],
+    });
+    globalThis.getSelection()?.addRange(range);
+    fireEvent.mouseUp(document);
+    const reply = await screen.findByRole("button", { name: "Ответить на выделенный фрагмент" });
+    expect(reply).toHaveStyle({ left: "152px", top: "108px" });
+    fireEvent(paragraph, new Event(event, { bubbles: true }));
+    expect(document.querySelector(".ai-sel-btn")).toBeNull();
+  },
+);
 
 it("attaches the selected text from a saved assistant answer on the homepage", async () => {
   render(

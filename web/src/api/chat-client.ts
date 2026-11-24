@@ -1,9 +1,10 @@
-import type {
-  ChatMessageStatus,
-  ChatThread,
-  ChatThreadSummary,
-  ChatTier,
-  ChatUser,
+import {
+  type ChatMessageStatus,
+  type ChatThread,
+  type ChatThreadSummary,
+  type ChatTier,
+  type ChatUser,
+  parseChatSuggestion,
 } from "#web/domain/chat.ts";
 
 import { type ChatAccess, ensureChatAllowance } from "./chat-access.ts";
@@ -60,7 +61,24 @@ export const fetchChatThread = async (
     return null;
   }
   const data = res.data as ThreadResponse;
-  return data;
+  return {
+    ...data,
+    threads: data.threads.map((thread) => ({
+      ...thread,
+      contextLimited: thread.contextLimited === true,
+    })),
+    thread:
+      data.thread === null
+        ? null
+        : {
+            ...data.thread,
+            contextLimited: data.thread.contextLimited === true,
+            messages: data.thread.messages.map((message) => ({
+              ...message,
+              suggestion: parseChatSuggestion(message.suggestion),
+            })),
+          },
+  };
 };
 
 export const fetchChatRunStatus = async (runId: string): Promise<null | RunStatusResponse> => {

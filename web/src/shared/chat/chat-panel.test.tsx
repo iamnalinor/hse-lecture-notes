@@ -163,17 +163,31 @@ it.each([
   ["/algebra/program", true],
   ["/calculus/kr1", true],
   ["/aiya/04_nov24_integer_operations", true],
-] as const)("shows the chat and scopes selection on %s", (path, material) => {
+] as const)("shows the chat and scopes selection on %s", async (path, material) => {
   state.docContext = parseDocContext(path);
   render(
     <>
+      <div className="prose-notes">
+        <p>Выделенный фрагмент конспекта</p>
+      </div>
       <ChatToggleButton />
       <SelectionAskButton />
     </>,
   );
   expect(screen.getByRole("button", { name: "Чат" })).toBeInTheDocument();
-  const ask = screen.queryByRole("button", { name: "Спросить ИИ о выделенном фрагменте" });
-  expect(ask !== null).toBe(material);
+  expect(screen.queryByRole("button", { name: "Спросить ИИ о выделенном фрагменте" })).toBeNull();
+  const range = document.createRange();
+  range.selectNodeContents(screen.getByText("Выделенный фрагмент конспекта"));
+  Object.defineProperty(range, "getClientRects", { value: () => [new DOMRect(100, 80, 120, 20)] });
+  const selection = globalThis.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  fireEvent.mouseUp(document);
+  await waitFor(() => {
+    const ask = screen.queryByRole("button", { name: "Спросить ИИ о выделенном фрагменте" });
+    expect(ask !== null).toBe(material);
+  });
+  selection?.removeAllRanges();
 });
 
 const LocationProbe = () => {
@@ -319,9 +333,9 @@ it("rotates response words every five seconds while browser and background statu
   state.isCheckingBrowser = true;
   try {
     const view = render(statusPanel());
-    const status = screen.getByText("Проверяем браузер…");
+    const status = screen.getByText("Проверяю браузер…");
     await act(() => vi.advanceTimersByTime(10_000));
-    expect(screen.getByText("Проверяем браузер…")).toBe(status);
+    expect(screen.getByText("Проверяю браузер…")).toBe(status);
     expect(status).toHaveClass("ai-steps-sum");
     expect(status.closest(".ai-steps")).toHaveClass("is-run");
     state.isCheckingBrowser = false;

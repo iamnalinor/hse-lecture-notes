@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { ContextSizeError } from "./chat-history";
 import { executeAgentRun } from "./agent-loop";
 import { r2ToArchiveStorage, runArchiveBatch, type ArchiveBatchStats } from "./archiver";
 import { resolveBrowserToken, verifyAllowanceToken } from "./auth";
@@ -344,6 +345,7 @@ export class ChatRunner extends DurableObject<Env> {
         safeSend({
           type: "meta",
           replayed: true,
+          contextLimited: admit.contextLimited,
           threadId: admit.threadId,
           threadTitle: admit.threadTitle,
           generatedTitle: admit.generatedTitle,
@@ -357,6 +359,7 @@ export class ChatRunner extends DurableObject<Env> {
         safeSend({
           type: "done",
           replayed: true,
+          contextLimited: admit.contextLimited,
           runId: admit.runId,
           status: admit.status,
           text: "",
@@ -372,6 +375,7 @@ export class ChatRunner extends DurableObject<Env> {
 
       safeSend({
         type: "meta",
+        contextLimited: admit.contextLimited,
         threadId: admit.threadId,
         threadTitle: admit.threadTitle,
         generatedTitle: admit.generatedTitle,
@@ -388,6 +392,9 @@ export class ChatRunner extends DurableObject<Env> {
         db,
         provider,
         requestTitle: admit.requestTitle,
+        generatedTitle: admit.generatedTitle,
+        preparedContext: admit.preparedContext,
+        contextLimited: admit.contextLimited,
         questionCreatedAt: admit.questionCreatedAt,
         policy,
         runId: admit.runId,
@@ -411,8 +418,8 @@ export class ChatRunner extends DurableObject<Env> {
     } catch (err) {
       safeSend({
         type: "error",
-        code: "internal_error",
-        message: err instanceof Error ? err.message : "Unexpected error",
+        code: err instanceof ContextSizeError ? "context_too_large" : "internal_error",
+        message: err instanceof ContextSizeError ? "Вопрос с цитатой слишком длинный. Сократи его и попробуй снова." : "Не удалось обработать запрос. Попробуй ещё раз.",
       });
       safeClose(1011, "internal_error");
     } finally {

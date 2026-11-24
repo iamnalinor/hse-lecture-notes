@@ -149,12 +149,15 @@ export interface CodexFunctionTool {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
+  strict?: boolean;
 }
 
 export type CodexInputItem =
   | {
       type: "message";
-      role: "user" | "assistant";
+      role: "user" | "assistant" | "developer";
+      id?: string;
+      phase?: string;
       content: Array<{ type: "input_text" | "output_text"; text: string }>;
     }
   | {
@@ -191,12 +194,29 @@ export interface LlmRoundRequest {
   input: CodexInputItem[];
   tools: CodexFunctionTool[];
   maxResponseChars: number;
+  toolChoice?: "auto" | "required" | { type: "function"; name: string };
+  parallelToolCalls?: boolean;
+  metadataOnly?: boolean;
   signal: AbortSignal;
   onDelta: (delta: string) => void;
   onUnconfirmedRetry?: () => void;
 }
 
+export interface EndTurnMetadata { title: string | null; suggestion: string | null }
+export interface TurnContextSnapshot {
+  version: 1; contextItems: CodexInputItem[]; userItem: CodexInputItem; currentDocOrder: number;
+}
+export interface ReplayProvenance {
+  provider: string; model: string; effort: string; promptVersion: string; toolsVersion: string; inputPrefixHash: string;
+}
+export interface AgentReplayEnvelope {
+  version: 1; complete: boolean; provenance: ReplayProvenance | null; items: CodexInputItem[];
+}
 export interface LlmRoundResult {
+  responseId?: string;
+  protocolViolations?: string[];
+  refusal?: string;
+
   completed: boolean;
   status: string;
   text: string;
@@ -241,6 +261,7 @@ export type ServerWsFrame =
   | { type: "title"; threadId: string; title: string }
   | {
       type: "meta";
+      contextLimited?: boolean;
       replayed?: boolean;
       threadId: string;
       threadTitle: string;
@@ -262,6 +283,8 @@ export type ServerWsFrame =
     }
   | {
       type: "done";
+      suggestion?: string | null;
+      contextLimited?: boolean;
       replayed?: boolean;
       runId: string;
       status: RunStatus;

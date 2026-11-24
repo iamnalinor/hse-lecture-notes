@@ -90,6 +90,7 @@ export const resetRetryAssistant = (
     contentTex: "",
     errorMessage: null,
     status: "running",
+    suggestion: null,
     steps: [],
   };
   return [...prev.slice(0, -1), reset];

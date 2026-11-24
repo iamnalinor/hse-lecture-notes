@@ -38,6 +38,7 @@ import { useThreadState } from "./use-thread-state.ts";
 import { useTurnstile } from "./use-turnstile.ts";
 
 export type ChatContextValue = {
+  readonly contextLimited?: boolean;
   readonly activeThreadId: null | string;
   readonly block: ChatBlock | null;
   readonly cancelTurnstile: () => void;
@@ -103,6 +104,8 @@ type BuildCtxArgs = {
 
 const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   activeThreadId: a.thr.activeThreadId,
+  contextLimited:
+    a.thr.threads.find((thread) => thread.id === a.thr.activeThreadId)?.contextLimited === true,
   block: a.auth.block,
   cancelTurnstile: cancelActiveTurnstile,
   canStop: a.thr.canStop,

@@ -119,8 +119,8 @@ async function handleGetThread(
   const beforeId = url.searchParams.get("beforeId");
   const cursor = beforeUpdatedAt === null ? "" : beforeId ? "AND (updated_at, id) < (?, ?)" : "AND updated_at < ?";
   const bounds = beforeUpdatedAt === null ? [] : beforeId ? [beforeUpdatedAt, beforeId] : [beforeUpdatedAt];
-  const threadsRes = await db.all<{ id: string; title: string; generated_title: string | null; updated_at: number }>(
-    db.prepare(`SELECT id, title, generated_title, updated_at FROM chat_threads
+  const threadsRes = await db.all<{ id: string; title: string; generated_title: string | null; context_limited: number; updated_at: number }>(
+    db.prepare(`SELECT id, title, generated_title, context_limited, updated_at FROM chat_threads
                 WHERE ${owner} ${cursor} ORDER BY updated_at DESC, id DESC LIMIT ?`)
       .bind(ownerId, ...bounds, pageSize + 1),
   );
@@ -129,6 +129,7 @@ async function handleGetThread(
     id: t.id,
     title: t.generated_title ?? t.title,
     generatedTitle: t.generated_title,
+    contextLimited: Boolean(t.context_limited),
     updatedAt: t.updated_at,
   }));
 
@@ -139,11 +140,11 @@ async function handleGetThread(
   if (targetThreadId) {
     // Verify ownership + fetch last 50 messages (WITHOUT agent_items_json) in 1 batch
     const [thrRes, msgRes] = await db.batch<Record<string, unknown>>([
-      db.prepare(`SELECT id, title, generated_title, created_at, updated_at
+      db.prepare(`SELECT id, title, generated_title, context_limited, created_at, updated_at
                   FROM chat_threads WHERE id = ? AND ${owner}`).bind(targetThreadId, ownerId),
       db
         .prepare(
-          `SELECT id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json, error_message, run_id, created_at, updated_at
+          `SELECT id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json, suggestion, error_message, run_id, created_at, updated_at
            FROM chat_messages
            WHERE thread_id = ?
            ORDER BY seq DESC
@@ -153,7 +154,7 @@ async function handleGetThread(
     ]);
 
     const thrRow = thrRes?.results[0] as
-      | { id: string; title: string; generated_title: string | null; created_at: number; updated_at: number }
+      | { id: string; title: string; generated_title: string | null; context_limited: number; created_at: number; updated_at: number }
       | undefined;
 
     if (!thrRow) {
@@ -167,6 +168,7 @@ async function handleGetThread(
         status: m.status,
         contentTex: m.content_tex,
         quote: typeof m.quote_json === "string" ? safeJsonParse(m.quote_json) : null,
+        suggestion: typeof m.suggestion === "string" ? m.suggestion : null,
         steps: typeof m.steps_json === "string" ? safeJsonParse(m.steps_json) : [],
         errorMessage: m.error_message ?? null,
         runId: m.run_id ?? null,
@@ -177,6 +179,7 @@ async function handleGetThread(
         id: thrRow.id,
         title: thrRow.generated_title ?? thrRow.title,
         generatedTitle: thrRow.generated_title,
+        contextLimited: Boolean(thrRow.context_limited),
         createdAt: thrRow.created_at,
         updatedAt: thrRow.updated_at,
         messages,

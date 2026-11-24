@@ -45,6 +45,8 @@
     "crons": ["17 3 * * *"]
   },
   "vars": {
+    "LLM_PROVIDER": "openai",
+    "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "ALLOWED_ORIGINS": "https://hse.nalinor.dev,https://pr-45-hse-lecture-notes.nalinor.workers.dev,http://localhost:5173,http://127.0.0.1:5173",
     "TURNSTILE_EXPECTED_HOSTNAMES": "hse.nalinor.dev,pr-45-hse-lecture-notes.nalinor.workers.dev,localhost,127.0.0.1",
     "CODEX_OAUTH_CLIENT_ID": "app_EMoamEEZ73f0CkXaXp7hrann",

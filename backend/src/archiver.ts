@@ -117,7 +117,7 @@ export async function runArchiveBatch(
   }>(
     db
       .prepare(
-        `SELECT id, COALESCE(generated_title, title) AS title, browser_id, telegram_id, created_at, updated_at
+        `SELECT id, COALESCE(generated_title, title) AS title, generated_title, context_limited, context_revision, browser_id, telegram_id, created_at, updated_at
          FROM chat_threads
          WHERE updated_at < ?
          ORDER BY updated_at ASC
@@ -147,7 +147,7 @@ export async function runArchiveBatch(
     const placeholders = ids.map(() => "?").join(",");
     const result = await db.all<Record<string, unknown> & { thread_id: string }>(
       db.prepare(`SELECT thread_id, id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json,
-                         error_message, run_id, created_at, updated_at
+                         error_message, agent_items_json, prompt_context_json, suggestion, run_id, created_at, updated_at
                   FROM chat_messages WHERE thread_id IN (${placeholders}) ORDER BY thread_id, seq`).bind(...ids),
     );
     for (const { thread_id, ...message } of result.results) {

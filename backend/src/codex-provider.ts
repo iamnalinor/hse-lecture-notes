@@ -88,7 +88,9 @@ export class CodexResponsesProvider implements LlmProvider {
           instructions: req.instructions,
           input: req.input,
           tools: req.tools,
-          parallel_tool_calls: true,
+          parallel_tool_calls: req.parallelToolCalls ?? true,
+          ...(req.toolChoice ? {tool_choice: req.toolChoice} : {}),
+          include: ["reasoning.encrypted_content"],
           store: false,
           stream: true,
         };
@@ -119,11 +121,11 @@ export class CodexResponsesProvider implements LlmProvider {
         }
 
         if (!resp.ok) {
-          const text = await resp.text().catch(() => "");
+          await resp.body?.cancel().catch(() => {});
           throw new CodexUpstreamError(
             resp.status,
             resp.status === 429 ? "codex_rate_limited" : "codex_upstream_error",
-            `Codex API HTTP ${resp.status}: ${text.slice(0, 300)}`,
+            `Codex API HTTP ${resp.status}`,
           );
         }
 
@@ -136,6 +138,7 @@ export class CodexResponsesProvider implements LlmProvider {
           req.maxResponseChars,
           req.onDelta,
           () => localAbort.abort("max_response_chars"),
+          "codex", { enforceProtocol: Boolean(req.toolChoice), metadataOnly: req.metadataOnly },
         );
       } catch (error) {
         const proxyFailure = error instanceof ProxyConnectError &&

@@ -1,17 +1,23 @@
-import { FIRST_TURN_TITLE_PROMPT } from "./system-prompt";
-import { ThreadTitleStream } from "./thread-title";
+import { END_TURN_PROMPT, SYSTEM_PROMPT } from "./system-prompt";
+import { buildEndTurnTool, MetadataValidationError, parseEndTurnArguments } from "./end-turn";
+import { prepareTurnContext, type PreparedTurnContext } from "./chat-history";
 import { CodexAuthError } from "./codex-auth";
 import { ProxyConnectError, ResponseEofError } from "./socks5-fetch";
 import { LlmUpstreamError } from "./responses-stream";
 import type { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
-import { computeRoundCostMicros, type ModelRoute } from "./pricing";
+import {
+  computeRoundCostMicros,
+  estimateUncertainRoundCostMicros,
+  type ModelRoute,
+} from "./pricing";
 import { checkpointRound, finalizeRunAtomic } from "./quotas";
-import { AGENT_TOOLS, AgentToolRunner, buildSystemPrompt } from "./tools";
+import { AGENT_TOOLS, AgentToolRunner } from "./tools";
 import type {
   ChatStep,
   CodexInputItem,
   DegradedInfo,
+  EndTurnMetadata,
   Env,
   LlmProvider,
   QuotaBucket,
@@ -22,6 +28,8 @@ import type {
   Tier,
 } from "./types";
 
+const TURN_TOOLS = [...AGENT_TOOLS, buildEndTurnTool()];
+const TOOL_NAMES = new Set(AGENT_TOOLS.map((t) => t.name));
 export interface AgentLoopParams {
   env: Env;
   db: TrackedD1;
@@ -30,6 +38,9 @@ export interface AgentLoopParams {
   runId: string;
   threadId: string;
   requestTitle?: boolean;
+  generatedTitle?: string | null;
+  preparedContext?: PreparedTurnContext;
+  contextLimited?: boolean;
   excludeMessageIds?: readonly string[];
   course: string;
   docId: string;
@@ -45,497 +56,370 @@ export interface AgentLoopParams {
   isStoppedByUser: () => boolean;
   sendFrame: (frame: ServerWsFrame) => void;
 }
-
-interface HistoryRow {
-  created_at: number;
-  course: string;
-  doc_id: string;
-  role: "user" | "assistant";
-  status: string;
-  content_tex: string;
-  quote_json: string | null;
-}
-
-function formatUserTurnContent(text: string, quote: QuotePayload | null): string {
-  if (!quote) return text;
-  const header = quote.messageId ? "Цитата из предыдущего ответа ассистента:" : quote.blockId
-    ? `Цитата из конспекта (${quote.label}, блок #${quote.blockId}):`
-    : `Цитата из конспекта (${quote.label}):`;
-  return `${header}\n> ${quote.tex}\n\nВопрос студента:\n${text}`;
-}
-
-function extractPreviewArg(rawArgs: string, field: string): string {
+function preview(raw: string, field: string): string {
   try {
-    const parsed = JSON.parse(rawArgs) as Record<string, unknown>;
-    return typeof parsed[field] === "string" ? parsed[field] : "";
+    const value = JSON.parse(raw) as Record<string, unknown>;
+    return typeof value[field] === "string" ? value[field] : "";
   } catch {
     return "";
   }
 }
-
-async function loadThreadHistoryInput(
-  db: TrackedD1,
-  threadId: string,
-  excludeRunId: string,
-  excludeMessageIds: readonly string[],
-  policy: ServicePolicy,
-): Promise<CodexInputItem[]> {
-  const excluded = new Set(excludeMessageIds);
-  const rows = await db.all<HistoryRow & { id: string }>(
-    db
-      .prepare(
-        `SELECT m.id, m.created_at, m.role, m.status, m.course, m.doc_id, m.content_tex, m.quote_json
-         FROM chat_messages m
-         WHERE m.thread_id = ? AND (m.run_id IS NULL OR m.run_id != ?) AND m.status IN ('done', 'stopped', 'incomplete')
-         ORDER BY seq DESC
-         LIMIT ?`,
-      )
-      .bind(threadId, excludeRunId, policy.maxHistoryMessages + excluded.size),
-  );
-
-  const chronological = [...rows.results]
-    .filter((r) => !excluded.has(r.id))
-    .slice(0, policy.maxHistoryMessages)
-    .reverse();
-  const items: CodexInputItem[] = [];
-  let charBudget = policy.maxHistoryChars;
-
-  const selected: HistoryRow[] = [];
-  for (let i = chronological.length - 1; i >= 0; i -= 1) {
-    const r = chronological[i]!;
-    const len = r.content_tex.length + (r.quote_json?.length ?? 0);
-    if (len > charBudget && selected.length > 0) break;
-    charBudget -= len;
-    selected.unshift(r);
-  }
-
-  for (const r of selected) {
-    let quote: QuotePayload | null = null;
-    if (r.quote_json) {
-      try {
-        quote = JSON.parse(r.quote_json) as QuotePayload;
-      } catch {
-        quote = null;
-      }
-    }
-    if (r.role === "user") {
-      items.push(userTurn(r.course, r.doc_id, r.created_at, r.content_tex, quote));
-    } else if (r.content_tex.trim()) {
-      items.push({
-        type: "message",
-        role: "assistant",
-        content: [{ type: "output_text", text: r.content_tex }],
-      });
-    }
-  }
-
-  return items;
-}
-
-function describeRunError(err: unknown, code: string): string {
-  if (err instanceof ProxyConnectError) {
-    if (err.reply === null) return "Не удалось установить соединение через прокси.";
-    if (err.reply === 2) return "Правила прокси запрещают подключение к модели (SOCKS5 REP=2).";
-    return `Прокси отклонил подключение к модели (SOCKS5 REP=${err.reply}).`;
-  }
-  if (err instanceof ResponseEofError) {
-    return err.stage === "before_event" ? "Соединение с моделью оборвалось до подтверждения начала ответа (EOF)." : err.stage === "headers"
-      ? "Соединение с моделью оборвалось до получения заголовков ответа (EOF)."
-      : "Соединение с моделью оборвалось во время получения ответа (EOF).";
-  }
-  const detail = (err instanceof Error ? err.message : String(err)).trim().slice(0, 400);
-  if (err instanceof CodexAuthError) return `Ошибка авторизации Codex (${code}): ${detail}`;
-  if (err instanceof LlmUpstreamError) return `Ошибка модели HTTP ${err.status} (${code}): ${detail}`;
-  return `Ошибка сервера (${code}): ${detail}`;
-}
-
-const moscowClock = new Intl.DateTimeFormat("ru-RU", {
-  timeZone: "Europe/Moscow",
-  dateStyle: "short",
-  timeStyle: "short",
-});
-
-function userTurn(course: string, docId: string, createdAt: number, question: string, quote: QuotePayload | null): CodexInputItem {
-  const path = "/" + [course, docId].filter(Boolean).join("/");
-  const context = `Страница на момент вопроса: ${path}\nДата и время вопроса (МСК): ${moscowClock.format(createdAt)}`;
-  return {
-    type: "message",
-    role: "user",
-    content: [{ type: "input_text", text: `${context}\n\n${formatUserTurnContent(question, quote)}` }],
-  };
-}
-
-export async function executeAgentRun(params: AgentLoopParams): Promise<void> {
-  const {
-    env,
-    db,
-    provider,
-    policy,
-    runId,
-    threadId,
-    course,
-    docId,
-    tier,
-    bucket,
-    route,
-    degraded,
-    questionText,
-    quote,
-    signal,
-    isStoppedByUser,
-    sendFrame,
-  } = params;
-  const { model, effort } = route;
-
-  const steps: ChatStep[] = [];
-  const turnNewAgentItems: CodexInputItem[] = [];
-
-  let currentReservedMicros = params.initialReserveMicros;
-  let cumulativeCostMicros = 0;
-  let totalInputTokens = 0;
-  let totalCachedTokens = 0;
-  let totalCacheWriteTokens = 0;
-  let totalOutputTokens = 0;
-  let roundsCompleted = 0;
-  let totalToolCalls = 0;
-  let accumulatedText = "";
-  let upstreamIncomplete = false;
-  let isCostUncertain = false;
-  let estimatedPromptChars = 0;
-
-  const { instructions, currentDocOrder } = await buildSystemPrompt(db, course, docId);
-  const historyItems = await loadThreadHistoryInput(
-    db,
-    threadId,
-    runId,
-    params.excludeMessageIds ?? [],
-    policy,
-  );
-
-  const conversationInput: CodexInputItem[] = [
-    ...historyItems,
-    userTurn(course, docId, params.questionCreatedAt, questionText, quote),
-  ];
-
-  const toolRunner = new AgentToolRunner({
-    env,
-    db,
-    currentCourse: course,
-    currentDocId: docId,
-    currentDocOrder,
-    maxToolOutputChars: policy.maxToolOutputChars,
-    maxTotalToolOutputChars: policy.maxTotalToolOutputChars,
-  });
-
-  const timeoutAbort = new AbortController();
-  let timedOut = false;
-  const timeoutTimer = setTimeout(() => {
+export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
+  const { env, db, policy, runId, threadId, route, sendFrame, signal } = p;
+  const steps: ChatStep[] = [],
+    newItems: CodexInputItem[] = [];
+  let text = "",
+    cost = 0,
+    inputTokens = 0,
+    cachedTokens = 0,
+    cacheWriteTokens = 0,
+    outputTokens = 0,
+    rounds = 0,
+    toolCalls = 0,
+    reserve = p.initialReserveMicros;
+  let pendingRequest = false;
+  let roundStartChars = 0;
+  let uncertain = false,
+    estimatedPromptChars = 0,
+    metadata: EndTurnMetadata | undefined,
+    hasAnswer = false,
+    repairs = 0,
+    metadataOnly = false,
+    timedOut = false,
+    canContinue = true;
+  let finalStatus: Exclude<RunStatus, "running"> = "incomplete",
+    errorCode: string | null = null;
+  const abort = new AbortController();
+  const timer = setTimeout(() => {
     timedOut = true;
-    timeoutAbort.abort("run_timeout");
+    abort.abort("run_timeout");
   }, policy.maxRunDurationMs);
-
-  const onExternalAbort = () => timeoutAbort.abort(signal.reason);
-  if (signal.aborted) {
-    timeoutAbort.abort(signal.reason);
-  } else {
-    signal.addEventListener("abort", onExternalAbort, { once: true });
-  }
-
+  const forwardAbort = () => abort.abort(signal.reason);
+  if (signal.aborted) forwardAbort();
+  else signal.addEventListener("abort", forwardAbort, { once: true });
+  const seenIds = new Set<string>();
+  let prepared: PreparedTurnContext | undefined = p.preparedContext;
   try {
-    let allowTools = true;
-    let titleReceived = false;
-
-    for (let round = 1; round <= policy.maxToolRounds; round += 1) {
-      if (timeoutAbort.signal.aborted) break;
-
-      const isFinalAllowedRound = round === policy.maxToolRounds || !allowTools;
-      const toolsForRound = isFinalAllowedRound ? [] : AGENT_TOOLS;
-
-      estimatedPromptChars =
-        instructions.length +
-        conversationInput.reduce((acc, item) => acc + JSON.stringify(item).length, 0);
-
-      let roundText = "";
-      const remainingChars = Math.max(200, policy.maxResponseChars - accumulatedText.length);
-      const roundStartMs = Date.now();
-
-      const titleStream = params.requestTitle && !titleReceived ? new ThreadTitleStream() : null;
-      const emit = (text: string) => {
-        if (!text) return;
-        roundText += text;
-        accumulatedText += text;
-        sendFrame({ type: "delta", text });
+    prepared ??= await prepareTurnContext(db, {
+      threadId,
+      course: p.course,
+      docId: p.docId,
+      questionText: p.questionText,
+      quote: p.quote,
+      createdAt: p.questionCreatedAt,
+      generatedTitle: p.generatedTitle ?? null,
+      route: {
+        provider: env.LLM_PROVIDER?.trim().toLowerCase() === "openai" ? "openai" : "codex",
+        model: route.model,
+        effort: route.effort,
+      },
+      limits: policy,
+    });
+    const input = [...prepared.history.items];
+    const instructions = SYSTEM_PROMPT + "\n\n" + END_TURN_PROMPT;
+    const runner = new AgentToolRunner({
+      env,
+      db,
+      currentCourse: p.course,
+      currentDocId: p.docId,
+      currentDocOrder: prepared.snapshot.currentDocOrder,
+      maxToolOutputChars: policy.maxToolOutputChars,
+      maxTotalToolOutputChars: policy.maxTotalToolOutputChars,
+    });
+    const output = (callId: string, value: unknown) => {
+      const item: CodexInputItem = {
+        type: "function_call_output",
+        call_id: callId,
+        output: JSON.stringify(value),
       };
-      let streamed = false;
-      const roundRes = await provider.runRound({
-        model,
-        effort,
-        instructions: titleStream ? instructions + "\n\n" + FIRST_TURN_TITLE_PROMPT : instructions,
-        input: conversationInput,
-        tools: toolsForRound,
-        maxResponseChars: remainingChars,
-        signal: timeoutAbort.signal,
-        onUnconfirmedRetry: () => { isCostUncertain = true; },
-          onDelta: (delta) => {
-          streamed = true;
-          emit(titleStream ? titleStream.push(delta) : delta);
+      input.push(item);
+      newItems.push(item);
+    };
+    for (let n = 1; n <= policy.maxToolRounds && !abort.signal.aborted && canContinue; n++) {
+      const forced = n === policy.maxToolRounds || metadataOnly || toolCalls >= policy.maxToolCalls;
+      let roundText = "";
+      estimatedPromptChars = instructions.length + JSON.stringify(input).length;
+      pendingRequest = true;
+      roundStartChars = text.length;
+      const result = await p.provider.runRound({
+        model: route.model,
+        effort: route.effort,
+        instructions,
+        input,
+        tools: TURN_TOOLS,
+        toolChoice: forced ? { type: "function", name: "end_turn" } : "required",
+        parallelToolCalls: true,
+        metadataOnly,
+        maxResponseChars: Math.max(0, policy.maxResponseChars - text.length),
+        signal: abort.signal,
+        onUnconfirmedRetry: () => {
+          uncertain = true;
+          cost += estimateUncertainRoundCostMicros(route, estimatedPromptChars, 0);
+        },
+        onDelta: (delta) => {
+          if (!metadataOnly && delta) {
+            roundText += delta;
+            text += delta;
+            sendFrame({ type: "delta", text: delta });
+          }
         },
       });
-
-      const tail = streamed ? "" : roundRes.text;
-      emit(titleStream ? titleStream.push(tail, true) : tail);
-      if (titleStream?.title) {
-        const title = titleStream.title;
-        try {
-          const saved = await db.run(db.prepare(
-            "UPDATE chat_threads SET generated_title = ? WHERE id = ? AND generated_title IS NULL",
-          ).bind(title, threadId));
-          if (saved.meta.changes === 1) sendFrame({ type: "title", threadId, title });
-        } catch {
-          logEvent("warn", "thread_title_save_failed", { threadId, runId });
-        }
-        titleReceived = true;
+      pendingRequest = false;
+      if (!roundText && result.text && !metadataOnly) {
+        roundText = result.text;
+        text += result.text;
+        sendFrame({ type: "delta", text: result.text });
       }
-      const roundDurationMs = Date.now() - roundStartMs;
-      logEvent(roundRes.completed ? "info" : "warn", "codex_round", {
+      rounds++;
+      if (result.usage) {
+        cost += computeRoundCostMicros(route, result.usage);
+        inputTokens += result.usage.inputTokens;
+        cachedTokens += result.usage.cachedTokens;
+        cacheWriteTokens += result.usage.cacheWriteTokens;
+        outputTokens += result.usage.outputTokens;
+      } else {
+        uncertain = true;
+        cost += estimateUncertainRoundCostMicros(
+          route,
+          estimatedPromptChars,
+          JSON.stringify(result.outputItems).length + roundText.length,
+        );
+      }
+      logEvent(result.completed ? "info" : "warn", "llm_round", {
         runId,
-        round,
-        model,
-        completed: roundRes.completed,
-        status: roundRes.status,
-        truncated: roundRes.truncated,
-        durationMs: roundDurationMs,
-        textChars: roundText.length,
-        toolCalls: roundRes.functionCalls.map((f) => f.name),
-        usage: roundRes.usage,
+        provider: prepared.provenance.provider,
+        round: n,
+        model: route.model,
+        effort: route.effort,
+        responseId: result.responseId,
+        completed: result.completed,
+        status: result.status,
+        usage: result.usage,
       });
-
-      upstreamIncomplete = !roundRes.completed || roundRes.truncated;
-      if (!roundRes.completed) {
-        isCostUncertain = true;
+      if (!result.completed || result.truncated || result.refusal) {
+        errorCode = "upstream_incomplete";
         break;
       }
-
-      roundsCompleted += 1;
-      if (roundRes.usage) {
-        const roundCost = computeRoundCostMicros(route, roundRes.usage);
-        cumulativeCostMicros += roundCost;
-        totalInputTokens += roundRes.usage.inputTokens;
-        totalCachedTokens += roundRes.usage.cachedTokens;
-        totalCacheWriteTokens += roundRes.usage.cacheWriteTokens;
-        totalOutputTokens += roundRes.usage.outputTokens;
+      const calls = result.functionCalls;
+      const ends = calls.filter((c) => c.name === "end_turn");
+      const badCalls = calls.some(
+        (c) =>
+          !c.callId || seenIds.has(c.callId) || (!TOOL_NAMES.has(c.name) && c.name !== "end_turn"),
+      );
+      const repeated = new Set(calls.map((c) => c.callId)).size !== calls.length;
+      const endIndex = result.outputItems.findIndex(
+        (i) => i.type === "function_call" && i.name === "end_turn",
+      );
+      const textAfterEnd =
+        endIndex >= 0 &&
+        result.outputItems
+          .slice(endIndex + 1)
+          .some((i) => i.type === "message" && i.content.some((c) => c.text.trim()));
+      if (
+        result.protocolViolations?.length ||
+        badCalls ||
+        repeated ||
+        ends.length > 1 ||
+        (ends.length && calls.length !== 1) ||
+        textAfterEnd ||
+        (metadataOnly && result.text.trim())
+      ) {
+        errorCode = "response_protocol_invalid";
+        break;
+      }
+      for (const c of calls) seenIds.add(c.callId);
+      input.push(...result.outputItems);
+      newItems.push(...result.outputItems);
+      if (
+        roundText.trim() &&
+        !calls.some((c) => c.name !== "end_turn") &&
+        !result.outputItems.some((i) => i.type === "message" && i.phase === "commentary")
+      )
+        hasAnswer = true;
+      if (ends.length === 1) {
+        const end = ends[0]!;
+        let repairCode: string | undefined;
+        if (!hasAnswer) repairCode = "answer_required";
+        else
+          try {
+            metadata = parseEndTurnArguments(end.arguments, !p.generatedTitle);
+          } catch (e) {
+            repairCode = e instanceof MetadataValidationError ? e.code : "metadata_invalid";
+          }
+        if (!repairCode) {
+          output(end.callId, { ok: true });
+          finalStatus = "done";
+          break;
+        }
+        output(end.callId, {
+          error: repairCode,
+          instruction:
+            repairCode === "answer_required"
+              ? "Сначала напиши ответ, затем новый end_turn с метаданными по нему."
+              : "Исправь метаданные через end_turn без повторения уже данного ответа.",
+        });
+        if (repairs++ >= 1) {
+          errorCode = "completion_unavailable";
+          break;
+        }
+        metadataOnly = hasAnswer;
+      } else if (calls.length === 0) {
+        if (!hasAnswer || repairs++ >= 1) {
+          errorCode = "completion_unavailable";
+          break;
+        }
+        metadataOnly = true;
+        input.push({
+          type: "message",
+          role: "developer",
+          content: [
+            {
+              type: "input_text",
+              text: "Ответ уже дан. Заверши его только вызовом end_turn, без нового текста ответа.",
+            },
+          ],
+        });
+        // The repair instruction is part of the actual exchange replay.
+        newItems.push(input.at(-1)!);
       } else {
-        isCostUncertain = true;
+        hasAnswer = false;
+        if (forced) {
+          errorCode = "response_protocol_invalid";
+          break;
+        }
+        for (const call of calls) {
+          if (abort.signal.aborted) break;
+          if (toolCalls >= policy.maxToolCalls) {
+            output(call.callId, {
+              error: "tool_call_limit",
+              instruction: "Заверши ответ через end_turn по уже найденным материалам.",
+            });
+            continue;
+          }
+          toolCalls++;
+          const step: ChatStep =
+            call.name === "search_materials"
+              ? { kind: "search", q: preview(call.arguments, "query"), state: "running" }
+              : {
+                  kind: "read",
+                  target:
+                    preview(call.arguments, "id") ||
+                    preview(call.arguments, "doc_id") ||
+                    preview(call.arguments, "course"),
+                  state: "running",
+                };
+          const index = steps.push(step) - 1;
+          sendFrame({ type: "step", steps: [...steps] });
+          const value = await runner.execute(call.name, call.arguments);
+          steps[index] = value.step;
+          sendFrame({ type: "step", steps: [...steps] });
+          output(call.callId, JSON.parse(value.output));
+        }
       }
-
-      for (const item of roundRes.outputItems) {
-        conversationInput.push(item);
-        turnNewAgentItems.push(item);
-      }
-
+      if (n === policy.maxToolRounds || abort.signal.aborted) break;
       const cp = await checkpointRound(db, policy, {
         runId,
-        tier,
-        bucket,
-        currentReservedMicros,
-        cumulativeActualMicros: cumulativeCostMicros,
-        inputTokens: totalInputTokens,
-        cachedTokens: totalCachedTokens,
-        cacheWriteTokens: totalCacheWriteTokens,
-        outputTokens: totalOutputTokens,
-        toolRounds: roundsCompleted,
-        toolCalls: totalToolCalls,
+        tier: p.tier,
+        bucket: p.bucket,
+        currentReservedMicros: reserve,
+        cumulativeActualMicros: cost,
+        inputTokens,
+        cachedTokens,
+        cacheWriteTokens,
+        outputTokens,
+        toolRounds: rounds,
+        toolCalls,
         nowMs: Date.now(),
       });
-      currentReservedMicros = cp.updatedReservedMicros;
-      if (!cp.canContinueToolRounds) {
-        allowTools = false;
-      }
-
-      if (roundRes.functionCalls.length === 0 || roundRes.truncated || isFinalAllowedRound) {
-        break;
-      }
-
-      for (const fc of roundRes.functionCalls) {
-        if (timeoutAbort.signal.aborted) break;
-
-        if (totalToolCalls >= policy.maxToolCalls) {
-          const capItem: CodexInputItem = {
-            type: "function_call_output",
-            call_id: fc.callId,
-            output: JSON.stringify({
-              error: "Tool call limit reached for this turn. Answer using already gathered materials.",
-            }),
-          };
-          conversationInput.push(capItem);
-          turnNewAgentItems.push(capItem);
-          allowTools = false;
-          continue;
-        }
-
-        totalToolCalls += 1;
-
-        const runningStep: ChatStep =
-          fc.name === "search_materials"
-            ? { kind: "search", q: extractPreviewArg(fc.arguments, "query"), state: "running" }
-            : {
-                kind: "read",
-                target:
-                  extractPreviewArg(fc.arguments, "id") ||
-                  extractPreviewArg(fc.arguments, "doc_id") ||
-                  extractPreviewArg(fc.arguments, "course"),
-                state: "running",
-              };
-        const stepIdx = steps.push(runningStep) - 1;
-        sendFrame({ type: "step", steps: [...steps] });
-
-        const toolResult = await toolRunner.execute(fc.name, fc.arguments);
-        steps[stepIdx] = toolResult.step;
-        sendFrame({ type: "step", steps: [...steps] });
-
-        const outputItem: CodexInputItem = {
-          type: "function_call_output",
-          call_id: fc.callId,
-          output: toolResult.output,
-        };
-        conversationInput.push(outputItem);
-        turnNewAgentItems.push(outputItem);
-      }
-
-      if (roundText && !roundText.endsWith("\n")) {
-        accumulatedText += "\n\n";
-        sendFrame({ type: "delta", text: "\n\n" });
-      }
+      reserve = cp.updatedReservedMicros;
+      canContinue = cp.canContinueToolRounds;
     }
-
-    let finalStatus: Exclude<RunStatus, "running"> = "done";
-    let errorCode: string | null = null;
-    let errorMessage: string | null = null;
-
-    if (isStoppedByUser()) {
-      finalStatus = "stopped";
-      isCostUncertain = true;
-    } else if (timedOut) {
-      finalStatus = "incomplete";
-      errorCode = "run_timeout";
-      errorMessage = "Время генерации ответа истекло (60 с).";
-      isCostUncertain = true;
-    } else if (upstreamIncomplete) {
-      finalStatus = accumulatedText.trim() ? "incomplete" : "error";
-      errorCode = "upstream_incomplete";
-      errorMessage = "Соединение с моделью прервалось до завершения ответа.";
-    }
-
-    await finalizeRunAtomic(db, {
+  } catch (error) {
+    const proxy = error instanceof ProxyConnectError;
+    const unknownRequest =
+      pendingRequest &&
+      !proxy &&
+      !(error instanceof CodexAuthError) &&
+      !(error instanceof LlmUpstreamError && error.status < 500);
+    uncertain ||= unknownRequest;
+    if (unknownRequest)
+      cost += estimateUncertainRoundCostMicros(
+        route,
+        estimatedPromptChars,
+        text.length - roundStartChars,
+      );
+    errorCode =
+      error instanceof CodexAuthError
+        ? "oauth_unavailable"
+        : error instanceof LlmUpstreamError
+          ? "upstream_error"
+          : error instanceof ResponseEofError
+            ? "upstream_eof"
+            : "internal_error";
+    logEvent("error", "agent_run_exception", {
       runId,
-      finalStatus,
-      messageStatus: finalStatus,
-      contentTex: accumulatedText,
-      stepsJson: steps.length > 0 ? JSON.stringify(steps) : null,
-      agentItemsJson:
-        turnNewAgentItems.length > 0 ? JSON.stringify(turnNewAgentItems.slice(-24)) : null,
-      errorCode,
-      errorMessage,
-      actualCostMicros: cumulativeCostMicros,
-      isCostUncertain,
-      estimatedPromptChars,
-      streamedOutputChars: accumulatedText.length,
-      inputTokens: totalInputTokens,
-      cachedTokens: totalCachedTokens,
-      cacheWriteTokens: totalCacheWriteTokens,
-      outputTokens: totalOutputTokens,
-      toolRounds: roundsCompleted,
-      toolCalls: totalToolCalls,
+      code: errorCode,
+      upstreamStatus: error instanceof LlmUpstreamError ? error.status : undefined,
     });
-
-    sendFrame({
-      type: "done",
-      runId,
-      status: finalStatus,
-      text: accumulatedText,
-      steps,
-      degraded,
-      block: null,
-    });
-  } catch (err) {
-    const abortedByUser = isStoppedByUser();
-    const isProxyError = err instanceof ProxyConnectError;
-    const isAuthErr = err instanceof CodexAuthError;
-    const isUpstreamErr = err instanceof LlmUpstreamError;
-
-    const errorCode = abortedByUser
-      ? "user_stopped"
-      : timedOut
-        ? "run_timeout"
-        : isProxyError ? "proxy_unavailable"
-        : err instanceof ResponseEofError ? "upstream_eof"
-        : isAuthErr || isUpstreamErr ? err.code
-        : "internal_error";
-
-    logEvent(abortedByUser ? "info" : "error", "agent_run_exception", {
-      runId,
-      threadId,
-      course,
-      docId,
-      model,
-      abortedByUser,
-      timedOut,
-      roundsCompleted,
-      totalToolCalls,
-      errCode: errorCode,
-      upstreamStatus: isUpstreamErr ? err.status : undefined,
-      errMessage: err instanceof Error ? err.message.slice(0, 500) : String(err),
-    });
-
-    const finalStatus: Exclude<RunStatus, "running"> = abortedByUser
-      ? "stopped"
-      : timedOut
-        ? "incomplete"
-        : "error";
-    const errorMessage = abortedByUser ? null : `${describeRunError(err, errorCode)} [run: ${runId}]`;
-
-    await finalizeRunAtomic(db, {
-      runId,
-      finalStatus,
-      messageStatus: finalStatus,
-      contentTex: accumulatedText,
-      stepsJson: steps.length > 0 ? JSON.stringify(steps) : null,
-      agentItemsJson:
-        turnNewAgentItems.length > 0 ? JSON.stringify(turnNewAgentItems.slice(-24)) : null,
-      errorCode,
-      errorMessage,
-      actualCostMicros: cumulativeCostMicros,
-      isCostUncertain: isProxyError ? isCostUncertain : true,
-      estimatedPromptChars,
-      streamedOutputChars: accumulatedText.length,
-      inputTokens: totalInputTokens,
-      cachedTokens: totalCachedTokens,
-      cacheWriteTokens: totalCacheWriteTokens,
-      outputTokens: totalOutputTokens,
-      toolRounds: roundsCompleted,
-      toolCalls: totalToolCalls,
-    });
-
-    if (abortedByUser) {
-      sendFrame({
-        type: "done",
-        runId,
-        status: "stopped",
-        text: accumulatedText,
-        steps,
-        degraded,
-        block: null,
-      });
-    } else {
-      sendFrame({
-        type: "error",
-        code: errorCode,
-        message: errorMessage ?? "Ошибка генерации",
-        block: isAuthErr ? { code: "oauth_unavailable" } : null,
-      });
-    }
+    finalStatus = text.trim() ? "incomplete" : "error";
   } finally {
-    clearTimeout(timeoutTimer);
-    signal.removeEventListener("abort", onExternalAbort);
+    clearTimeout(timer);
+    signal.removeEventListener("abort", forwardAbort);
   }
+  if (p.isStoppedByUser()) {
+    finalStatus = "stopped";
+    metadata = undefined;
+    errorCode = "user_stopped";
+  } else if (timedOut || signal.aborted) {
+    finalStatus = "incomplete";
+    metadata = undefined;
+    errorCode = timedOut ? "run_timeout" : "upstream_incomplete";
+  }
+  if (finalStatus !== "done") metadata = undefined;
+  const errorMessage =
+    finalStatus === "done" || finalStatus === "stopped"
+      ? null
+      : finalStatus === "error"
+        ? "Не удалось получить ответ. Попробуй ещё раз."
+        : "Ответ не завершён. Полученный текст сохранён.";
+  const won = await finalizeRunAtomic(db, {
+    runId,
+    finalStatus,
+    messageStatus: finalStatus,
+    contentTex: text,
+    stepsJson: JSON.stringify(steps),
+    agentItemsJson: JSON.stringify({
+      version: 1,
+      complete: finalStatus === "done",
+      provenance: prepared?.provenance ?? null,
+      items: newItems,
+    }),
+    metadata,
+    errorCode,
+    errorMessage,
+    actualCostMicros: cost,
+    isCostUncertain: uncertain,
+    uncertaintyEstimated: true,
+    estimatedPromptChars,
+    streamedOutputChars: text.length,
+    inputTokens,
+    cachedTokens,
+    cacheWriteTokens,
+    outputTokens,
+    toolRounds: rounds,
+    toolCalls,
+  });
+  if (!won) return;
+  if (metadata?.title) sendFrame({ type: "title", threadId, title: metadata.title });
+  sendFrame({
+    type: "done",
+    runId,
+    status: finalStatus,
+    text,
+    steps,
+    degraded: p.degraded,
+    block: null,
+    suggestion: metadata?.suggestion ?? null,
+    contextLimited: p.contextLimited ?? false,
+  });
 }

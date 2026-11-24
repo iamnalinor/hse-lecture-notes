@@ -19,7 +19,6 @@ import {
   normalizeIpAddress,
   type JwksDocument,
 } from "../src/crypto";
-import { ThreadTitleStream } from "../src/thread-title";
 import { ProxyConnectError, ResponseEofError } from "../src/socks5-fetch";
 import { TrackedD1 } from "../src/db";
 import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
@@ -36,21 +35,6 @@ import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
 import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateAssistantQuote, validateQuoteAgainstCourse } from "../src/tools";
 import { type Env, type LlmProvider, type ServerWsFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
-
-test("an oversized title split across chunks stays out of the answer", () => {
-  const stream = new ThreadTitleStream();
-  expect(stream.push("Назва")).toBe("");
-  expect(stream.push("ние: " + "а".repeat(100))).toBe("");
-  expect(stream.push("б".repeat(30) + "\nОтвет")).toBe("Ответ");
-  expect(stream.title).toBe("а".repeat(47) + "…");
-});
-
-test("preserves a descriptive chat title", () => {
-  const stream = new ThreadTitleStream();
-  const title = "Начало изучения дискретной математики";
-  expect(stream.push(`Название: ${title}\nОтвет`)).toBe("Ответ");
-  expect(stream.title).toBe(title);
-});
 
 function makeTestEnv(db: D1Database): Env {
   return {
@@ -833,12 +817,12 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
 
     const calls = db.telemetry.dbCalls;
     const home = await buildSystemPrompt(db, "", "");
-    expect(home.instructions).toContain("Курс и документ не выбраны");
+    expect(home.context).toContain("Курс и документ не выбраны");
     expect(db.telemetry.dbCalls).toBe(calls);
     const course = await buildSystemPrompt(db, "discrete", "");
-    expect(course.instructions).toContain("на странице курса discrete");
-    expect(course.instructions).toContain("Простые числа и ОТА");
-    expect(course.instructions).not.toContain("МЫ ЗДЕСЬ");
+    expect(course.context).toContain("на странице курса discrete");
+    expect(course.outline).toContain("Простые числа и ОТА");
+    expect(course.outline).not.toContain("МЫ ЗДЕСЬ");
 
     const runner = new AgentToolRunner({
       env,
@@ -940,15 +924,8 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     let roundCalls = 0;
     const fakeProvider: LlmProvider = {
       async runRound(req) {
-        const previous = req.input[0];
-        if (previous?.type !== "message") throw new Error("missing previous turn");
-        expect(previous.content[0]?.text).toContain("Страница на момент вопроса: /\nДата и время вопроса (МСК): 24.11.2026, 23:15");
-        const question = req.input[1];
-        if (question?.type !== "message") throw new Error("missing user turn");
-        expect(question.role).toBe("user");
-        expect(question.content[0]?.text).toContain("Страница на момент вопроса: /discrete/01");
-        expect(question.content[0]?.text).toContain("25.11.2026, 00:15");
-        expect(question.content[0]?.text).toContain("Объясни теорему 1");
+        expect(req.input.some(item => item.type === "message" && item.role === "developer" && item.content.some(c => c.text.includes('/discrete/01')))).toBe(true);
+        expect(req.input.some(item => item.type === "message" && item.role === "user" && item.content.some(c => c.text.includes('Объясни теорему 1')))).toBe(true);
         expect(req.model).toBe("gpt-6.1-terra");
         expect(req.effort).toBe("high");
         roundCalls += 1;
@@ -970,16 +947,17 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
           (item) => item.type === "function_call_output" && item.call_id === "c_1",
         );
         expect(hasToolOutput).toBe(true);
-        req.onDelta("Назва");
-        req.onDelta("ние: Разбор первой теоремы\n");
         req.onDelta("По [Теореме 1](#thm:1) всё следует сразу.");
         return {
           completed,
           status: completed ? "completed" : "incomplete",
           text: "По [Теореме 1](#thm:1) всё следует сразу.",
           truncated: false,
-          outputItems: [],
-          functionCalls: [],
+          outputItems: [
+            { type: "message", role: "assistant", content: [{type:"output_text", text:"По [Теореме 1](#thm:1) всё следует сразу."}] },
+            { type: "function_call", call_id:"end", name:"end_turn", arguments:'{"title":"Разбор первой теоремы","suggestion":null}' },
+          ],
+          functionCalls: [{callId:"end",name:"end_turn",arguments:'{"title":"Разбор первой теоремы","suggestion":null}'}],
           usage: { inputTokens: 1500, cachedTokens: 800, cacheWriteTokens: 0, outputTokens: 150 },
         };
       },
@@ -1009,9 +987,9 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       sendFrame: (f) => frames.push(f),
     });
 
-    expect(frames).toContainEqual({ type: "title", threadId: adm.threadId, title: "Разбор первой теоремы" });
+    expect(frames.some(f => f.type === "title" && f.title === "Разбор первой теоремы")).toBe(completed);
     expect(await db.first(db.prepare("SELECT generated_title FROM chat_threads WHERE id = ?").bind(adm.threadId)))
-      .toEqual({ generated_title: "Разбор первой теоремы" });
+      .toEqual({ generated_title: completed ? "Разбор первой теоремы" : null });
     const reply = { messageId: adm.assistantMessageId, tex: "По Теореме 1 всё", label: "Ответ ассистента" };
     expect(await validateAssistantQuote(db, adm.threadId, reply, "br_loop")).toBe(true);
     expect(await validateAssistantQuote(db, adm.threadId, reply, "other")).toBe(false);

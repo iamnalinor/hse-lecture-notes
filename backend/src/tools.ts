@@ -169,7 +169,7 @@ export async function buildSystemPrompt(
   db: TrackedD1,
   course: string,
   docId: string,
-): Promise<{ instructions: string; currentDocOrder: number; currentDocTitle: string }> {
+): Promise<{ instructions: string; context: string; outline: string; currentDocOrder: number; currentDocTitle: string }> {
   const docsRes = course === "" ? { results: [] } : await db.all<{
     doc_kind: string;
     doc_id: string;
@@ -206,9 +206,9 @@ export async function buildSystemPrompt(
     pageContext = `Студент на странице курса ${course}. Конкретный документ не выбран. Не предполагай, какие темы уже пройдены.`;
   }
 
-  const instructions = `${SYSTEM_PROMPT}\n\n${pageContext}${outlineSection}`;
+  const instructions = SYSTEM_PROMPT;
 
-  return { instructions, currentDocOrder, currentDocTitle };
+  return { instructions, context: pageContext, outline: outlineSection, currentDocOrder, currentDocTitle };
 }
 
 // =============================================================================

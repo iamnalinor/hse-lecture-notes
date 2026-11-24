@@ -122,6 +122,9 @@ const MessageError = ({
   </div>
 );
 
+const incompleteCaption = (status: ChatMessage["status"]): string =>
+  status === "stopped" ? "Ответ остановлен" : "Ответ не завершён";
+
 const AssistantMessageView = ({
   canRetry,
   isCheckingBrowser,
@@ -158,7 +161,9 @@ const AssistantMessageView = ({
                 onJumpToBlock={onJumpToBlock}
                 text={message.contentTex}
               />
-              {isStopped && <div className="ai-stopped ai-fade">Ответ остановлен</div>}
+              {isStopped && (
+                <div className="ai-stopped ai-fade">{incompleteCaption(message.status)}</div>
+              )}
             </>
           )
         )}
