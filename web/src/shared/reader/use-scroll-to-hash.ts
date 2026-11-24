@@ -9,7 +9,7 @@ const flashTarget = (target: Element): Element => {
     return target;
   }
   const first = target.firstElementChild;
-  return first?.tagName === "DETAILS"
+  return first?.matches("details[data-ticket]") === true
     ? (first.querySelector(":scope > summary") ?? first)
     : (first ?? target);
 };
@@ -36,9 +36,9 @@ export const useScrollToHash = (): void => {
     if (target === null) {
       return;
     }
-    const ownDetails = target.querySelector(":scope > details");
-    if (ownDetails instanceof HTMLDetailsElement) {
-      ownDetails.open = true;
+    const ownTicket = target.querySelector(":scope > details[data-ticket]");
+    if (ownTicket instanceof HTMLDetailsElement) {
+      ownTicket.open = true;
     }
     for (
       let node = target.closest("details");

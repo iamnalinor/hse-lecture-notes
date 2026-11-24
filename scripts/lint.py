@@ -733,6 +733,19 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         rep.err(rel, "нет ни раздела «# Билеты», ни раздела «# Задачи»")
     elif kind not in ("colloq", "exam") and "Задачи" not in h1 and "Прототипы" not in h2:
         rep.err(rel, "нет задач: ни раздела «# Задачи», ни одного подраздела «## Прототипы»")
+    if "Билеты" in h1:
+        in_tickets = False
+        has_ticket_h2 = False
+        for b in blocks:
+            if b["t"] == "Header" and b["c"][0] == 1:
+                if in_tickets:
+                    break
+                in_tickets = text_of_block(b).strip() == "Билеты"
+            elif in_tickets and b["t"] == "Header" and b["c"][0] == 2:
+                has_ticket_h2 = True
+                break
+        if not has_ticket_h2:
+            rep.err(rel, "в разделе «# Билеты» нет ни одного билета уровня «## »")
     lint_bank(path, course, exam, labels, own, rep)
     # на сайте генератор встаёт в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
     generator = f"sec:{exam}:{ticket_bank.GENERATOR_SECTION}"

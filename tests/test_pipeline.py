@@ -741,6 +741,19 @@ def test_colloq_without_problems(demo: Path):
     assert "нет ни раздела «# Билеты», ни подраздела «## Что нужно знать»" in res.stdout, res.stdout
 
 
+def test_prep_tickets_requires_h2(demo: Path):
+    """Раздел «# Билеты» без заголовков «## » (например, только «### ») не проходит линтер."""
+    p = demo / "prep" / "algebra" / "exam1.md"
+    p.write_text(
+        "---\ncourse: algebra\ntitle: \"Подготовка к экзамену 1\"\n---\n\n"
+        "# Об экзамене\n\nТекст.\n\n# Билеты\n\n### 1. Вопрос\n\nОтвет.\n",
+        encoding="utf-8",
+    )
+    res = lint(demo)
+    assert res.returncode != 0
+    assert "в разделе «# Билеты» нет ни одного билета уровня «## »" in res.stdout, res.stdout
+
+
 @pytest.mark.parametrize(
     "old,new,expected",
     [

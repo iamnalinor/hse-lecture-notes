@@ -5,7 +5,9 @@ import {
   type HTMLReactParserOptions,
   Text,
 } from "html-react-parser";
-import { type ReactElement, type ReactNode, useRef, useState } from "react";
+import { type ReactElement, type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { useLocation } from "react-router";
+import { z } from "zod";
 
 import { ChevronIcon } from "#web/shared/ui/icons.tsx";
 
@@ -104,13 +106,82 @@ const partitionTickets = (
   return result;
 };
 
+const loadOpenTickets = (storageKey: string): ReadonlySet<string> => {
+  try {
+    const raw = sessionStorage.getItem(storageKey);
+    return new Set(raw === null ? [] : z.array(z.string()).parse(JSON.parse(raw)));
+  } catch {
+    return new Set();
+  }
+};
+
+const saveOpenTickets = (storageKey: string, keys: readonly string[]): void => {
+  try {
+    if (keys.length === 0) {
+      sessionStorage.removeItem(storageKey);
+    } else {
+      sessionStorage.setItem(storageKey, JSON.stringify(keys));
+    }
+  } catch {
+    // private mode or quota exceeded: open state stays in memory until navigation
+  }
+};
+
+const ticketKeyOf = (ticket: TicketEntry, index: number): string =>
+  ticket.id ?? `ticket-${String(index)}`;
+
+type RowProps = {
+  readonly onToggle: () => void;
+  readonly ticket: TicketEntry;
+  readonly ticketKey: string;
+};
+
+const TicketRow = ({ onToggle, ticket, ticketKey }: RowProps) => (
+  <section className="scroll-mt-6" id={ticket.id}>
+    <details className="group/ticket" data-ticket={ticketKey} onToggle={onToggle}>
+      <summary className="-mx-2 flex min-h-11 cursor-pointer list-none items-baseline gap-x-2.5 rounded-md px-2 py-2.5 text-left hover:bg-wash/60 [&::-webkit-details-marker]:hidden">
+        {ticket.number !== undefined && (
+          <span className="w-7 shrink-0 text-subhead font-semibold text-muted tabular-nums">
+            {ticket.number}.
+          </span>
+        )}
+        <h3 className="m-0 min-w-0 flex-1 text-body/snug font-semibold text-ink">{ticket.title}</h3>
+        <span className="ml-2 shrink-0 self-center text-muted transition-transform duration-200 ease-out group-open/ticket:rotate-90 group-hover/ticket:text-ink">
+          <ChevronIcon size={16} />
+        </span>
+      </summary>
+      <div className="pt-1 pb-5 [&>*:first-child]:mt-2 [&>*:last-child]:mb-0">{ticket.body}</div>
+    </details>
+  </section>
+);
+
+const restoreOpenTickets = (list: HTMLDivElement | null, storageKey: string): number => {
+  const saved = loadOpenTickets(storageKey);
+  if (list === null || saved.size === 0) {
+    return 0;
+  }
+  let count = 0;
+  for (const item of list.querySelectorAll<HTMLDetailsElement>(":scope > section > details")) {
+    const ticketKey = item.dataset["ticket"];
+    if (ticketKey === undefined || !saved.has(ticketKey)) {
+      continue;
+    }
+    item.open = true;
+    count += 1;
+  }
+  return count;
+};
+
 /**
 Compact table of contents for `# Билеты` on a prep page: each ticket is one row showing its number
 and question, and opens in place to reveal its definitions, statement and step-by-step proof.
 `<details>` elements stay uncontrolled so hash navigation (`useScrollToHash`) and browser find-in-page
-can open a ticket without fighting React state.
+can open a ticket without fighting React state; open ticket keys are persisted per history entry so
+navigating into a lecture and hitting Back restores them before scroll restoration.
 */
 const TicketList = ({ after, before, heading, id, tickets }: Props) => {
+  const { key: locationKey, pathname } = useLocation();
+  const storageKey = `ticket-list:${pathname}:${locationKey}:${id ?? ""}`;
   const listRef = useRef<HTMLDivElement>(null);
   const [openCount, setOpenCount] = useState(0);
 
@@ -119,15 +190,27 @@ const TicketList = ({ after, before, heading, id, tickets }: Props) => {
       ? []
       : [...listRef.current.querySelectorAll<HTMLDetailsElement>(":scope > section > details")];
 
-  const syncCount = (): void => {
-    setOpenCount(ticketElements().filter((item) => item.open).length);
+  const syncOpen = (): void => {
+    const openKeys = ticketElements()
+      .filter((item) => item.open)
+      .map((item) => item.dataset["ticket"])
+      .filter((item): item is string => item !== undefined);
+    setOpenCount(openKeys.length);
+    saveOpenTickets(storageKey, openKeys);
   };
+
+  useLayoutEffect(() => {
+    const count = restoreOpenTickets(listRef.current, storageKey);
+    if (count > 0) {
+      setOpenCount(count);
+    }
+  }, [storageKey]);
 
   const setAll = (isOpen: boolean): void => {
     for (const item of ticketElements()) {
       item.open = isOpen;
     }
-    syncCount();
+    syncOpen();
   };
 
   return (
@@ -159,32 +242,12 @@ const TicketList = ({ after, before, heading, id, tickets }: Props) => {
       </div>
       {before}
       <div className="divide-y divide-rule border-y border-rule" ref={listRef}>
-        {tickets.map((ticket, index) => (
-          <section
-            className="scroll-mt-6"
-            id={ticket.id}
-            key={ticket.id ?? `ticket-${String(index)}`}
-          >
-            <details className="group/ticket" onToggle={syncCount}>
-              <summary className="-mx-2 flex min-h-11 cursor-pointer list-none items-baseline gap-x-2.5 rounded-md px-2 py-2.5 text-left hover:bg-wash/60 [&::-webkit-details-marker]:hidden">
-                {ticket.number !== undefined && (
-                  <span className="w-7 shrink-0 text-subhead font-semibold text-muted tabular-nums">
-                    {ticket.number}.
-                  </span>
-                )}
-                <h3 className="m-0 min-w-0 flex-1 text-body/snug font-semibold text-ink">
-                  {ticket.title}
-                </h3>
-                <span className="ml-2 shrink-0 self-center text-muted transition-transform duration-200 ease-out group-open/ticket:rotate-90 group-hover/ticket:text-ink">
-                  <ChevronIcon size={16} />
-                </span>
-              </summary>
-              <div className="pt-1 pb-5 [&>*:first-child]:mt-2 [&>*:last-child]:mb-0">
-                {ticket.body}
-              </div>
-            </details>
-          </section>
-        ))}
+        {tickets.map((ticket, index) => {
+          const ticketKey = ticketKeyOf(ticket, index);
+          return (
+            <TicketRow key={ticketKey} onToggle={syncOpen} ticket={ticket} ticketKey={ticketKey} />
+          );
+        })}
       </div>
       {after}
     </section>
