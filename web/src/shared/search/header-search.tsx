@@ -26,8 +26,8 @@ const isShortcut = (event: KeyboardEvent): boolean => {
   return isSlash && !event.altKey && !isTyping(event.target);
 };
 
-/** Below `md` the field folds behind the magnifier (Tailwind's `md` is 48rem). */
-const PHONE_QUERY = "(width < 48rem)";
+/** Fold only when the logo, full chat and theme buttons leave too little room for a field. */
+const PHONE_QUERY = "(width < 21rem)";
 
 /** The index (a few megabytes) is fetched only once the field is touched. */
 const useHits = (
@@ -262,7 +262,7 @@ export const HeaderSearch = () => {
   const hasPanel = state.isOpen && state.query.trim() !== "";
   return (
     <div
-      className="md:min-w-0 md:flex-none"
+      className="min-w-0 flex-1 md:flex-none"
       {...boxHandlers(close, () => {
         dismiss(isPhone);
       })}

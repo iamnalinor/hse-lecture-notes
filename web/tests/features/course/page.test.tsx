@@ -1,0 +1,174 @@
+import { screen, within } from "@testing-library/react";
+import { Route, Routes } from "react-router";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import type { LectureEntry } from "#web/domain/schemas.ts";
+
+import { Component as CoursePage } from "#web/features/course/page.tsx";
+
+import { renderWithApp } from "../../support/render.tsx";
+
+type Dates = { activeUntil: string; date: string; highlightFrom: string };
+
+const prep = (id: string, dates: Dates) => ({ ...dates, cheatsheets: [], id, title: "" });
+
+const LECTURES: LectureEntry[] = [
+  {
+    date: "2026-10-16",
+    lecture: 7,
+    synced: ["lecture"],
+    title: "Предел функции",
+    weekId: "07_oct16_limits",
+  },
+  {
+    date: "2026-10-23",
+    lecture: 8,
+    synced: [],
+    title: "Непрерывность",
+    weekId: "08_oct23_continuity",
+  },
+  {
+    date: "2026-10-30",
+    lecture: 9,
+    synced: [],
+    title: "Производная",
+    weekId: "09_oct30_derivative",
+  },
+];
+
+const PREPS = [
+  prep("kr1", { activeUntil: "2026-10-23", date: "2026-10-22", highlightFrom: "2026-10-08" }),
+  prep("colloq1", { activeUntil: "2026-12-30", date: "2026-11-02", highlightFrom: "2026-12-07" }),
+  prep("kr2", { activeUntil: "2026-12-10", date: "2026-12-10", highlightFrom: "2026-11-26" }),
+  // not announced yet: no day at all
+  { cheatsheets: [], id: "kr3", title: "" },
+];
+
+/** The calculus page on a given Moscow day. */
+const calculusOn = (day: string) => {
+  vi.useFakeTimers({ now: new Date(`${day}T12:00:00+03:00`), toFake: ["Date"] });
+  renderWithApp(
+    <Routes>
+      <Route element={<CoursePage />} path=":course" />
+    </Routes>,
+    "/calculus",
+    { lectures: { calculus: LECTURES }, preps: { calculus: PREPS }, programs: [] },
+  );
+};
+
+const navLinks = (name: string) =>
+  within(screen.getByRole("navigation", { name }))
+    .getAllByRole("link")
+    .map((link) => link.textContent);
+
+const page = (programs: readonly string[]) => {
+  renderWithApp(
+    <Routes>
+      <Route element={<CoursePage />} path=":course" />
+    </Routes>,
+    "/discrete",
+    { lectures: { discrete: [] }, preps: {}, programs: [...programs] },
+  );
+};
+
+describe("course page", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("marks only the synced lectures with a check", () => {
+    calculusOn("2026-10-20");
+    const hint = /Сверено с лекцией: содержание и темп/;
+    const marked = screen
+      .getAllByRole("row")
+      .filter((row) => within(row).queryByText(hint) !== null)
+      .map((row) => within(row).getByRole("link", { name: /Предел|Непрерывность|Производная/ }));
+    expect(marked).toHaveLength(1);
+    expect(marked[0]).toHaveTextContent(/^Предел функции/);
+  });
+
+  it("makes the whole row open the lecture, keeping the PDF link apart", () => {
+    calculusOn("2026-10-20");
+    const row = screen.getByRole("row", { name: /Непрерывность/ });
+    const title = within(row).getByRole("link", { name: "Непрерывность" });
+    expect(row).toHaveClass("relative");
+    // the title's ::after covers the row: the one real link per row
+    expect(title).toHaveClass("after:absolute", "after:inset-0");
+    expect(title).toHaveAttribute("href", "/calculus/08_oct23_continuity");
+    const pdf = within(row).getByRole("link", { name: "PDF" });
+    expect(pdf).toHaveAttribute("download");
+    expect(pdf.closest("td")).toHaveClass("relative", "z-10");
+    expect(within(row).getAllByRole("link")).toHaveLength(2);
+  });
+
+  it("links the program page of the course next to the theory", () => {
+    page(["discrete"]);
+    expect(screen.getByRole("link", { name: "ПУД" })).toHaveAttribute("href", "/discrete/program");
+    expect(screen.getByRole("link", { name: "Теория" })).toBeInTheDocument();
+  });
+
+  it("has no program link when the course has no such page", () => {
+    page(["algebra"]);
+    expect(screen.queryByRole("link", { name: "ПУД" })).toBeNull();
+  });
+
+  it("puts the latest lecture with its day first, then the course documents", () => {
+    calculusOn("2026-10-26");
+    expect(screen.getByRole("link", { name: /Читать лекцию 8/u })).toHaveAttribute(
+      "href",
+      "/calculus/08_oct23_continuity",
+    );
+    expect(navLinks("Материалы курса")).toStrictEqual(["Читать лекцию 8 · 23 окт", "Теория"]);
+  });
+
+  it("lists the preps in the order of their events, each styled by its state", () => {
+    calculusOn("2026-10-26");
+    expect(navLinks("Подготовка")).toStrictEqual([
+      "КР-1",
+      "Коллоквиум 1 · 02.11–30.12",
+      "КР-2 · 10.12",
+      "КР-3",
+    ]);
+    expect(screen.getByRole("link", { name: "КР-1" })).toHaveClass("text-muted");
+    expect(screen.getByRole("link", { name: "КР-1" })).toHaveAttribute("href", "/calculus/kr1");
+    expect(screen.getByRole("link", { name: /Коллоквиум 1/u })).not.toHaveClass("bg-org-fill");
+    // a prep without a day: neutral, not muted like a past one
+    expect(screen.getByRole("link", { name: "КР-3" })).not.toHaveClass("bg-org-fill");
+    expect(screen.getByRole("link", { name: "КР-3" })).not.toHaveClass("text-muted");
+  });
+
+  it("keeps the order of the events and accents those near the event", () => {
+    calculusOn("2026-12-08");
+    expect(navLinks("Подготовка")).toStrictEqual([
+      "КР-1",
+      "Коллоквиум 1 · 02.11–30.12",
+      "КР-2 · 10.12",
+      "КР-3",
+    ]);
+    expect(screen.getByRole("link", { name: /КР-2/u })).toHaveClass("bg-org-fill");
+    expect(screen.getByRole("link", { name: /Коллоквиум 1/u })).toHaveClass("bg-org-fill");
+  });
+
+  it("lists the sources of the course, the public ones linked", () => {
+    page([]);
+    const sources = within(screen.getByRole("region", { name: "Источники" }));
+    expect(sources.getByRole("link", { name: "Elements of Discrete Mathematics" })).toHaveAttribute(
+      "href",
+      "https://drive.google.com/file/d/1YFYHP3oHlv6zPI6d0k96Intjyu0qZpus/view",
+    );
+    expect(sources.getByText("КР-1 2025/26")).not.toHaveAttribute("href");
+  });
+
+  it("links no closed chat among the sources", () => {
+    calculusOn("2026-10-26");
+    const links = within(screen.getByRole("region", { name: "Источники" })).getAllByRole("link");
+    expect(
+      links.map((link) => link.getAttribute("href") ?? "").filter((href) => href.includes("t.me/")),
+    ).toStrictEqual([]);
+  });
+
+  it("drops the prep row when nothing is ahead", () => {
+    calculusOn("2026-12-31");
+    expect(screen.queryByRole("navigation", { name: "Подготовка к контрольным" })).toBeNull();
+  });
+});

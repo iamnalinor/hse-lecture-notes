@@ -8,9 +8,9 @@ import {
   resolveBrowserToken,
   verifyAllowanceToken,
 } from "../src/auth";
-import { executeAgentRun } from "../src/agent-loop";
-import { CodexAuthError, getValidCodexCredentials } from "../src/codex-auth";
-import { CodexResponsesProvider, parseCodexSseStream } from "../src/codex-provider";
+import { executeAgentRun } from "../src/chat/agent-loop";
+import { CodexAuthError, getValidCodexCredentials } from "../src/llm/codex-auth";
+import { CodexResponsesProvider, parseCodexSseStream } from "../src/llm/codex-provider";
 import {
   bytesToBase64Url,
   decryptJsonAesGcm,
@@ -19,7 +19,7 @@ import {
   normalizeIpAddress,
   type JwksDocument,
 } from "../src/crypto";
-import { ProxyConnectError, ResponseEofError } from "../src/socks5-fetch";
+import { ProxyConnectError, ResponseEofError } from "../src/llm/socks5-fetch";
 import { TrackedD1 } from "../src/db";
 import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
 import {
@@ -32,7 +32,7 @@ import {
   sweepExpiredRuns,
 } from "../src/quotas";
 import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
-import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateAssistantQuote, validateQuoteAgainstCourse } from "../src/tools";
+import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateAssistantQuote, validateQuoteAgainstCourse } from "../src/chat/tools";
 import { type Env, type LlmProvider, type ServerWsFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
 
@@ -929,7 +929,13 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         expect(req.model).toBe("gpt-6.1-terra");
         expect(req.effort).toBe("high");
         roundCalls += 1;
-        if (roundCalls === 1) {
+        if (roundCalls === 1) return {
+          completed:true,status:"completed",text:"",truncated:false,
+          outputItems:[{type:"function_call",call_id:"topic",name:"set_topic",arguments:'{"title":"Разбор первой теоремы"}'}],
+          functionCalls:[{callId:"topic",name:"set_topic",arguments:'{"title":"Разбор первой теоремы"}'}],
+          usage:{inputTokens:100,cachedTokens:0,cacheWriteTokens:0,outputTokens:10},
+        };
+        if (roundCalls === 2) {
           return {
             completed: true,
             status: "completed",
@@ -955,9 +961,8 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
           truncated: false,
           outputItems: [
             { type: "message", role: "assistant", content: [{type:"output_text", text:"По [Теореме 1](#thm:1) всё следует сразу."}] },
-            { type: "function_call", call_id:"end", name:"end_turn", arguments:'{"title":"Разбор первой теоремы","suggestion":null}' },
           ],
-          functionCalls: [{callId:"end",name:"end_turn",arguments:'{"title":"Разбор первой теоремы","suggestion":null}'}],
+          functionCalls: [],
           usage: { inputTokens: 1500, cachedTokens: 800, cacheWriteTokens: 0, outputTokens: 150 },
         };
       },
@@ -987,16 +992,16 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       sendFrame: (f) => frames.push(f),
     });
 
-    expect(frames.some(f => f.type === "title" && f.title === "Разбор первой теоремы")).toBe(completed);
+    expect(frames.some(f => f.type === "title" && f.title === "Разбор первой теоремы")).toBe(true);
     expect(await db.first(db.prepare("SELECT generated_title FROM chat_threads WHERE id = ?").bind(adm.threadId)))
-      .toEqual({ generated_title: completed ? "Разбор первой теоремы" : null });
+      .toEqual({ generated_title: "Разбор первой теоремы" });
     const reply = { messageId: adm.assistantMessageId, tex: "По Теореме 1 всё", label: "Ответ ассистента" };
     expect(await validateAssistantQuote(db, adm.threadId, reply, "br_loop")).toBe(true);
     expect(await validateAssistantQuote(db, adm.threadId, reply, "other")).toBe(false);
     expect(await validateAssistantQuote(db, "other", reply, "br_loop")).toBe(false);
     expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "выдуманная цитата" }, "br_loop")).toBe(false);
     expect(await validateAssistantQuote(db, adm.threadId, { ...reply, messageId: adm.userMessageId }, "br_loop")).toBe(false);
-    expect(roundCalls).toBe(2);
+    expect(roundCalls).toBe(3);
     expect(frames.some((f) => f.type === "step")).toBe(true);
     expect(frames.some((f) => f.type === "done" && f.status === (completed ? "done" : "incomplete"))).toBe(true);
 

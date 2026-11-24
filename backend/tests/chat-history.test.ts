@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { selectHistoryWindow, prepareTurnContext } from "../src/chat-history";
-import { buildSystemPrompt } from "../src/tools";
+import { selectHistoryWindow, prepareTurnContext } from "../src/chat/history";
+import { buildSystemPrompt } from "../src/chat/tools";
 import { TrackedD1 } from "../src/db";
 import { SqliteD1Shim } from "./d1-shim";
 import type { CodexInputItem, TurnContextSnapshot } from "../src/types";

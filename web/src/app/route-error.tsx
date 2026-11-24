@@ -1,8 +1,8 @@
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 
 import { paths } from "#web/domain/paths.ts";
-import { ChatProvider } from "#web/shared/chat/chat-context.tsx";
-import { ChatPanel } from "#web/shared/chat/chat-panel.tsx";
+import { ChatPanel } from "#web/shared/chat/panel/panel.tsx";
+import { ChatProvider } from "#web/shared/chat/session/context.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
 import { applyUpdate, useHasUpdate } from "#web/shared/offline/sw-registration.ts";

@@ -174,13 +174,14 @@ jobs:
         working-directory: web
         env:
           BASE_PATH: /
-          VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL || 'https://hse-lecture-notes-api.nalinor.workers.dev' }}
-          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAGPcmq2WtuXcFzUF' }}
-          VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID || '8638200504' }}
+          VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+          VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID }}
         run: |
           find public/data -name index.html -delete
           shopt -s nullglob
           for f in public/pdf/*-theory.pdf; do cp "$f" "${f%-theory.pdf}-registry.pdf"; done
+          bun run scripts/validate-chat-config.ts
           bun run build
           # Превью не должно попадать в поиск
           printf '/*\n  X-Robots-Tag: noindex\n' > dist/_headers

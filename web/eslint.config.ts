@@ -33,15 +33,28 @@ const required = <T>(value: T | undefined, name: string): T => {
   return value;
 };
 
-const TESTS = ["**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"];
-const REACT = ["src/**/*.{ts,tsx}"];
+const TESTS = ["tests/e2e/**/*.ts", "**/*.test.{ts,tsx}", "tests/support/**/*.{ts,tsx}"];
+const REACT = ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"];
 // Tools require a default export from their config files.
-const CONFIG_FILES = ["*.config.ts", ".dependency-cruiser.mjs", "**/*.d.ts"];
+const CONFIG_FILES = [
+  "tests/e2e/playwright.config.ts",
+  "*.config.ts",
+  ".dependency-cruiser.mjs",
+  "**/*.d.ts",
+];
 // Shared domain logic: pure and immutable (functional rules apply).
 const PURE_LAYERS = ["src/domain/**/*.ts"];
 
 export default defineConfig([
-  globalIgnores(["dist/", "coverage/", "public/data/", "public/pdf/", "src/styles/fonts/"]),
+  globalIgnores([
+    "playwright-report/",
+    "test-results/",
+    "dist/",
+    "coverage/",
+    "public/data/",
+    "public/pdf/",
+    "src/styles/fonts/",
+  ]),
 
   // ── Base: JS + TypeScript, type-aware ───────────────────────────────────────
   eslint.configs.recommended,
@@ -346,7 +359,7 @@ export default defineConfig([
   },
   {
     ...vitest.configs.recommended,
-    files: ["src/**/*.test.{ts,tsx}"],
+    files: ["tests/**/*.test.{ts,tsx}"],
   },
 
   // ── Config files ─────────────────────────────────────────────────────────────

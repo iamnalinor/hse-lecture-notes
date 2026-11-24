@@ -6,7 +6,7 @@ import {
   resolveBrowserToken,
   verifyActiveSession,
 } from "./auth";
-import { ChatRunner } from "./chat-runner";
+import { ChatRunner } from "./chat/runner";
 import { randomToken } from "./crypto";
 import { TrackedD1 } from "./db";
 import { logEvent } from "./logger";

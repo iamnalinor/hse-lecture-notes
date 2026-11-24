@@ -19,7 +19,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = "chat-suggestions"
-OUTPUT_PATH = ROOT / "web" / "src" / "domain" / "chat-suggestions.json"
+OUTPUT_PATH = ROOT / "web" / "src" / "domain" / "chat" / "suggestions.json"
 QUESTIONS_PER_PAGE = 6
 MAX_LENGTH = 110
 HOME_KEY = "@home"
@@ -84,9 +84,9 @@ def main(argv: list[str]) -> int:
         return 1
     if "--check" in argv:
         if not OUTPUT_PATH.is_file() or OUTPUT_PATH.read_text(encoding="utf-8") != text:
-            print("chat-suggestions.json устарел: uv run scripts/build_chat_suggestions.py", file=sys.stderr)
+            print("suggestions.json устарел: uv run scripts/build_chat_suggestions.py", file=sys.stderr)
             return 1
-        print("chat-suggestions.json актуален")
+        print("suggestions.json актуален")
         return 0
     OUTPUT_PATH.write_text(text, encoding="utf-8")
     print(f"Записано страниц: {text.count('\n  \"')} → {OUTPUT_PATH.relative_to(ROOT)}")

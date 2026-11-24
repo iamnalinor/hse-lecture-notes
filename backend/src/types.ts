@@ -1,4 +1,4 @@
-import type { ChatRunner } from "./chat-runner";
+import type { ChatRunner } from "./chat/runner";
 
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -194,15 +194,15 @@ export interface LlmRoundRequest {
   input: CodexInputItem[];
   tools: CodexFunctionTool[];
   maxResponseChars: number;
-  toolChoice?: "auto" | "required" | { type: "function"; name: string };
+  toolChoice?: "auto" | "none" | "required" | { type: "function"; name: string };
   parallelToolCalls?: boolean;
-  metadataOnly?: boolean;
+  hideText?: boolean;
   signal: AbortSignal;
   onDelta: (delta: string) => void;
   onUnconfirmedRetry?: () => void;
 }
 
-export interface EndTurnMetadata { title: string | null; suggestion: string | null }
+export interface TurnSuggestion { suggestion: string | null }
 export interface TurnContextSnapshot {
   version: 1; contextItems: CodexInputItem[]; userItem: CodexInputItem; currentDocOrder: number;
 }
@@ -213,6 +213,7 @@ export interface AgentReplayEnvelope {
   version: 1; complete: boolean; provenance: ReplayProvenance | null; items: CodexInputItem[];
 }
 export interface LlmRoundResult {
+  observedOutputChars?: number;
   responseId?: string;
   protocolViolations?: string[];
   refusal?: string;
@@ -283,6 +284,7 @@ export type ServerWsFrame =
     }
   | {
       type: "done";
+      errorMessage?: string | null;
       suggestion?: string | null;
       contextLimited?: boolean;
       replayed?: boolean;

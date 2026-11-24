@@ -5,8 +5,8 @@ import type { PdfDoc } from "#web/domain/preps.ts";
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { DocPage } from "#web/shared/ui/doc-page.tsx";
-import { DocToc, WIDE_QUERY } from "#web/shared/ui/doc-toc.tsx";
-import { TocSheet } from "#web/shared/ui/toc-sheet.tsx";
+import { DocToc, WIDE_QUERY } from "#web/shared/ui/toc/document.tsx";
+import { TocSheet } from "#web/shared/ui/toc/sheet.tsx";
 import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
 import { FragmentView } from "./fragment-view.tsx";

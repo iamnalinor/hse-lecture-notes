@@ -1,17 +1,22 @@
 import { expect, test } from "bun:test";
-import { parseResponsesSseStream } from "../src/responses-stream";
+import { parseResponsesSseStream } from "../src/llm/responses-stream";
 const msg = (text: string) => ({
   type: "message",
   role: "assistant",
   content: [{ type: "output_text", text }],
 });
-const end = {
+const topic = {
   type: "function_call",
-  call_id: "end1",
-  name: "end_turn",
-  arguments: '{"title":"Тема","suggestion":null}',
+  call_id: "topic1",
+  name: "set_topic",
+  arguments: '{"title":"Тема"}',
 };
-async function run(output: unknown[], extra: unknown[] = [], status = "completed") {
+async function run(
+  output: unknown[],
+  extra: unknown[] = [],
+  status = "completed",
+  hideText = false,
+) {
   const events = [
     {
       type: "response.output_item.added",
@@ -45,27 +50,37 @@ async function run(output: unknown[], extra: unknown[] = [], status = "completed
     (d) => seen.push(d),
     undefined,
     "openai",
-    { enforceProtocol: true },
+    { enforceProtocol: true, hideText },
   );
   return { result, seen: seen.join("") };
 }
-test("text after end never reaches live delta or final text", async () => {
+test("separate text messages preserve paragraph boundaries in streaming and final text", async () => {
   const { result, seen } = await run(
-    [msg("Ответ"), end, msg("SECRET")],
+    [msg("Ответ"), msg("Исправляю"), topic],
     [
-      { type: "response.output_item.added", output_index: 1, item: end },
-      { type: "response.output_text.delta", output_index: 2, delta: "SECRET" },
+      {
+        type: "response.output_item.added",
+        output_index: 1,
+        item: { type: "message", role: "assistant", id: "m2" },
+      },
+      { type: "response.output_text.delta", output_index: 1, item_id: "m2", delta: "Исправляю" },
     ],
   );
-  expect(seen).toBe("Ответ");
-  expect(result.text).toBe("Ответ");
-  expect(result.protocolViolations?.length).toBeGreaterThan(0);
-});
-test("valid text then end preserves items/order/usage", async () => {
-  const { result } = await run([msg("Ответ"), end]);
-  expect(result.completed).toBe(true);
+  expect(seen).toBe("Ответ\n\nИсправляю");
+  expect(result.text).toBe(seen);
   expect(result.protocolViolations).toEqual([]);
+});
+test("initial topic service stage hides all text without rejecting a valid call", async () => {
+  const { result, seen } = await run([msg("Ответ"), topic], [], "completed", true);
+  expect(result.completed).toBe(true);
+  expect(result.text).toBe("");
+  expect(seen).toBe("");
+  expect(result.protocolViolations).toEqual([]);
+});
+test("text and metadata preserve order and usage", async () => {
+  const { result } = await run([msg("Ответ"), topic]);
   expect(result.usage?.cachedTokens).toBe(4);
+  expect(result.completed).toBe(true);
 });
 test("incomplete keeps usage and never reports completed", async () => {
   const { result } = await run([msg("Ответ")], [], "incomplete");
@@ -73,11 +88,46 @@ test("incomplete keeps usage and never reports completed", async () => {
   expect(result.usage?.inputTokens).toBe(10);
 });
 for (const invalid of [
-  { type: "function_call", name: "end_turn", arguments: "{}" },
-  { ...end, call_id: 42 },
+  { type: "function_call", name: "set_topic", arguments: "{}" },
+  { ...topic, call_id: 42 },
   { type: "message", role: "assistant", content: [{ type: "unknown", text: "secret" }] },
   { type: "future_tool", text: "secret" },
 ])
   test("unexpected output is a protocol violation", async () => {
     expect((await run([invalid])).result.protocolViolations?.length).toBeGreaterThan(0);
   });
+
+test("hidden service text is bounded even when it is never shown", async () => {
+  const { result, seen } = await run(
+    [msg("x".repeat(24001)), topic],
+    [{ type: "response.output_text.delta", output_index: 0, delta: "x".repeat(24001) }],
+    "completed",
+    true,
+  );
+  expect(seen).toBe("");
+  expect(result.text).toBe("");
+  expect(result.truncated).toBe(true);
+  expect(result.completed).toBe(false);
+  expect(result.observedOutputChars).toBe(24000);
+});
+
+test("oversized optional suggestion does not invalidate the answer, streamed or terminal", async () => {
+  const call = {
+    ...topic,
+    name: "suggest_reply",
+    arguments: JSON.stringify({ suggestion: "x".repeat(5000) }),
+  };
+  for (const extra of [
+    [],
+    [
+      { type: "response.output_item.added", output_index: 1, item: call },
+      { type: "response.function_call_arguments.delta", output_index: 1, delta: call.arguments },
+    ],
+  ]) {
+    const { result, seen } = await run([msg("Ответ"), call], extra);
+    expect(result.completed).toBe(true);
+    expect(result.truncated).toBe(false);
+    expect(result.protocolViolations).toEqual([]);
+    expect(seen).toBe("Ответ");
+  }
+});

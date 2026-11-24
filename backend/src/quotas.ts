@@ -1,4 +1,4 @@
-import { prepareTurnContext, type PreparedTurnContext } from "./chat-history";
+import { prepareTurnContext, type PreparedTurnContext } from "./chat/history";
 import { randomToken } from "./crypto";
 import type { TrackedD1 } from "./db";
 import {
@@ -7,13 +7,13 @@ import {
   modelPricing,
   type ModelRoute,
 } from "./pricing";
-import { shortenThreadTitle } from "./thread-title";
+import { shortenThreadTitle } from "./chat/thread-title";
 import { sendOwnerAlert } from "./telegram-alerts";
 import {
   type BlockInfo,
   type DegradedInfo,
   type Env,
-  type EndTurnMetadata,
+  type TurnSuggestion,
   type MessageStatus,
   type ModelId,
   type QuotaBucket,
@@ -538,7 +538,7 @@ interface FinalizeRunInput {
   contentTex?: string;
   stepsJson?: string | null;
   agentItemsJson?: string | null;
-  metadata?: EndTurnMetadata;
+  metadata?: TurnSuggestion;
   errorMessage?: string | null;
   errorCode?: string | null;
   actualCostMicros: number;
@@ -614,13 +614,10 @@ export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput):
         input.runId,
       ),
     db
-      .prepare(`UPDATE chat_threads SET updated_at = ?, context_revision = context_revision + 1,
-      generated_title = COALESCE(?, generated_title) WHERE id = (SELECT thread_id ${running})`)
-      .bind(
-        nowMs,
-        input.finalStatus === "done" ? (input.metadata?.title ?? null) : null,
-        input.runId,
-      ),
+      .prepare(
+        `UPDATE chat_threads SET updated_at = ?, context_revision = context_revision + 1 WHERE id = (SELECT thread_id ${running})`,
+      )
+      .bind(nowMs, input.runId),
     db
       .prepare(`INSERT INTO budget_hourly (hour_ts, global_actual_micros, guest_actual_micros, updated_at)
       SELECT created_at - created_at % ?, actual_cost_micros,
@@ -1429,4 +1426,20 @@ async function tryAdmitRun(
     reserveMicros: evalRes.reserveMicros,
     degraded: evalRes.degraded,
   };
+}
+
+/** Publish a model topic only while the owning run is still active. */
+export async function persistRunTopic(
+  db: TrackedD1,
+  runId: string,
+  title: string,
+): Promise<boolean> {
+  const result = await db.run(
+    db
+      .prepare(`UPDATE chat_threads
+    SET generated_title=?, updated_at=?, context_revision=context_revision+1
+    WHERE id=(SELECT thread_id FROM usage_runs WHERE id=? AND status='running')`)
+      .bind(title, Date.now(), runId),
+  );
+  return Number(result.meta.changes ?? 0) > 0;
 }

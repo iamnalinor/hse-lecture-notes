@@ -205,12 +205,12 @@ stray `text-sm` does nothing instead of adding an eleventh size.
   }
 
   :root {
-    --scroll-thumb: oklch(0.66 0 0 / 0.72);
-    --scroll-thumb-hover: oklch(0.57 0 0 / 0.9);
+    --scroll-thumb: oklch(0.708 0 0 / 0.5);
+    --scroll-thumb-hover: oklch(0.708 0 0 / 0.7);
   }
   :root[data-theme="dark"] {
-    --scroll-thumb: oklch(0.64 0 0 / 0.7);
-    --scroll-thumb-hover: oklch(0.72 0 0 / 0.9);
+    --scroll-thumb: oklch(0.556 0 0 / 0.5);
+    --scroll-thumb-hover: oklch(0.556 0 0 / 0.7);
   }
   ::-webkit-scrollbar {
     width: 8px;

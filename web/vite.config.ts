@@ -28,6 +28,7 @@ gtag('config', '${GA_ID}');`,
 });
 
 export default defineConfig({
+  server: { watch: { ignored: ["**/playwright-report/**", "**/test-results/**"] } },
   // GitHub Pages serves the project site from /<repo>/ (the deploy workflow sets BASE_PATH).
   base: process.env["BASE_PATH"] ?? "/",
   build: { chunkSizeWarningLimit: 700, sourcemap: false },
@@ -38,7 +39,7 @@ export default defineConfig({
     css: false,
     environment: "jsdom",
     globals: false,
-    include: ["src/**/*.test.{ts,tsx}"],
-    setupFiles: ["src/test/setup.ts"],
+    include: ["tests/**/*.test.{ts,tsx}"],
+    setupFiles: ["tests/support/setup.ts"],
   },
 });

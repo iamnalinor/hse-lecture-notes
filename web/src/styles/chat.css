@@ -108,6 +108,8 @@
 /* ---------- кнопка в шапке ---------- */
 .ai-head-btn {
   display: inline-flex;
+  flex-shrink: 0;
+  white-space: nowrap;
   align-items: center;
   gap: 8px;
   height: 40px;
@@ -132,27 +134,6 @@
   width: 18px;
   height: 18px;
   color: var(--ai-accent);
-}
-@media (max-width: 767px) {
-  .ai-head-btn {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    justify-content: center;
-    border: 0;
-    background: none;
-  }
-  .ai-head-btn span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-  .ai-head-btn svg {
-    width: 20px;
-    height: 20px;
-  }
 }
 
 /* ---------- плавающее действие у выделения ---------- */

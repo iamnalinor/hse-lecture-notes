@@ -43,3 +43,24 @@ jobs:
 
       - run: bun run test
       - run: bun run build
+
+  e2e:
+    name: Browser E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-web
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
+      - uses: actions/upload-artifact@v8
+        if: failure()
+        with:
+          name: browser-e2e-report
+          path: |
+            web/playwright-report/
+            web/test-results/
+          retention-days: 7

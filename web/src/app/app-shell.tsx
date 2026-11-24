@@ -2,9 +2,9 @@ import { Suspense } from "react";
 import { Outlet, ScrollRestoration, useLocation, useNavigation } from "react-router";
 
 import { isDocumentPath } from "#web/domain/paths.ts";
-import { ChatProvider } from "#web/shared/chat/chat-context.tsx";
-import { ChatPanel } from "#web/shared/chat/chat-panel.tsx";
-import { SelectionAskButton } from "#web/shared/chat/selection-ask-button.tsx";
+import { ChatPanel } from "#web/shared/chat/panel/panel.tsx";
+import { SelectionAskButton } from "#web/shared/chat/selection/ask-button.tsx";
+import { ChatProvider } from "#web/shared/chat/session/context.tsx";
 import { BackBar } from "#web/shared/layout/back-bar.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";

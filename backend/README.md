@@ -4,7 +4,7 @@ Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
 ## Architecture
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/nonce`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
-- **SQLite-backed Durable Object (`ChatRunner`, `src/chat-runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 6 rounds / 12 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
+- **SQLite-backed Durable Object (`ChatRunner`, `src/chat/runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 8 rounds / 16 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
 - **D1 (`hse-lecture-notes`)**: schema in `migrations/` (sessions, hourly O(1) budget buckets, quotas, threads, messages, FTS5 course materials).
 - **Vectorize (`hse-course-blocks`, 1024 dim cosine) + Workers AI (`@cf/baai/bge-m3`)**: semantic search with automatic fallback to FTS5.
 
@@ -97,9 +97,11 @@ Live tests default to `gpt-6-luna` with low reasoning effort. Override `OPENAI_T
 
 ## Turn metadata and bounded context
 
-Every successful turn ends with the hidden strict `end_turn({title, suggestion})` function after the answer. Both keys are required nullable strings. A first generated title must be nonempty; later null preserves the title. Suggestions are natural user messages (one line, at most 160 Unicode code points), without Markdown or TeX; null restores the ordinary placeholder. Tool calls, arguments, acknowledgements and validation errors are never public steps or message text. The client inserts a suggestion with plain Tab without submitting it; touch only sees the placeholder.
+New chats first make a forced hidden strict `set_topic({title})` call. The harness validates and persists the title before showing the answer; later topic changes are optional and published immediately. A saved title survives a subsequent stop or incomplete answer. Service-stage text and all metadata calls, arguments, acknowledgements and validation errors remain private.
 
-Parallel search/read calls are enabled. The finishing response contains exactly one function call, `end_turn`; the harness validates this independently of tool choice. One corrective request is allowed within the same 6-round / 60-second budget. Invalid output, stop, timeout and exhausted reserves preserve received text and paid usage without committing partial metadata or regenerating the answer automatically.
+`suggest_reply({suggestion})` is optional and requested after the visible answer. Suggestions use natural plain user wording, usually 3–7 words (target 50, hard cap 80 Unicode code points), without Markdown or TeX. Missing or invalid suggestions leave the ordinary placeholder and do not invalidate the answer. Tab inserts the placeholder without sending; touch only displays it.
+
+Parallel search/read calls remain enabled, with 8 provider rounds, 16 executed search/read calls, 12,000 characters per result, 60,000 material-output characters in total and 60 seconds per run. Tool definitions stay stable; the final available round disables calls through `tool_choice: none`. There is no mandatory finishing tool or metadata repair loop. Capped tool results are replayed as raw text. Exhausting the material-output budget forces the next round to answer from existing results; remaining calls receive a fixed internal explanation. Internal note steps stay out of public history and the UI. Known usage and conservative unknown-round estimates are settled even on failure. Terminal WebSocket frames carry the same safe error explanation as restored history; raw upstream payloads stay private.
 
 The model receives a whole-exchange suffix: at most 15 logical user/assistant messages including the new question, and 50,000 JavaScript characters in serialized input items. Context snapshots, quotes, calls/results and encrypted reasoning count toward size. The complete visible conversation remains stored. Reaching either threshold latches only that thread to the low route with its own quota/reserve and a persistent warning. New threads keep ordinary routing. Context revision plus max sequence guards admission against finalize/retry races.
 

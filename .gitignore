@@ -164,3 +164,9 @@ sources/*
 web/public/data/
 web/public/pdf/
 .claude/worktrees/
+
+# Local agent plans and execution notes
+.superpowers/
+docs/superpowers/
+web/playwright-report/
+web/test-results/

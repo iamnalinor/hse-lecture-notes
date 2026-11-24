@@ -3,7 +3,7 @@ import { MoonIcon, SunIcon } from "#web/shared/ui/icons.tsx";
 import { setTheme, useTheme } from "./theme.ts";
 
 type Props = {
-  /** `bar` — an icon in the top bar (from `md` up); `footer` — icon and words at the page end (phones). */
+  /** `bar` — an icon in the top bar; `footer` — icon and words at the page end (phones). */
   readonly place: "bar" | "footer";
 };
 
@@ -16,7 +16,7 @@ export const ThemeToggle = ({ place }: Props) => {
       aria-label={place === "bar" ? label : undefined}
       className={
         place === "bar"
-          ? "hidden size-10 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-ink md:flex"
+          ? "flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-ink"
           : "-ml-1 flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 text-muted hover:text-ink md:hidden"
       }
       onClick={() => {

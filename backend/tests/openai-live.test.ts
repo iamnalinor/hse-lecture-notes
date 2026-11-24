@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { OpenAIResponsesProvider } from "../src/openai-provider";
+import { OpenAIResponsesProvider } from "../src/llm/openai-provider";
 import type { LlmRoundRequest } from "../src/types";
 
 // Explicit opt-in: these tests call the real configured endpoint and spend API tokens.
@@ -94,64 +94,78 @@ live(
 );
 
 live(
-  "OpenAI live: strict hidden end follows answer and encrypted replay survives next question",
+  "OpenAI live: forced topic then optional suggestion and encrypted replay",
   async () => {
-    const { buildEndTurnTool, parseEndTurnArguments } = await import("../src/end-turn");
-    const tools = [buildEndTurnTool()];
+    const { buildMetadataTools, parseTopicArguments, parseSuggestionArguments } = await import(
+      "../src/chat/metadata-tools"
+    );
+    const { METADATA_PROMPT } = await import("../src/chat/system-prompt");
+    const tools = buildMetadataTools();
     const firstReq = request({
-      instructions:
-        "Write a visible short Russian answer FIRST, then call end_turn as your only tool. The user has not seen a title yet; give a nonempty Russian title. suggestion is a natural next user question without Markdown or TeX. Always write answer text before the tool call.",
+      instructions: METADATA_PROMPT,
       input: [
         {
           type: "message",
           role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: "Почему 2+2=4? Сначала напиши ответ текстом, затем вызови end_turn.",
-            },
-          ],
+          content: [{ type: "input_text", text: "Почему 2+2=4? Ответь коротко." }],
         },
       ],
       tools,
-      toolChoice: { type: "function", name: "end_turn" },
+      toolChoice: { type: "function", name: "set_topic" },
+      hideText: true,
       parallelToolCalls: true,
     });
     const first = await provider().runRound(firstReq);
     expect(first.completed).toBe(true);
-    expect(first.protocolViolations).toEqual([]);
-    expect(first.text.trim().length).toBeGreaterThan(0);
     expect(first.functionCalls).toHaveLength(1);
-    const call = first.functionCalls[0]!;
-    expect(parseEndTurnArguments(call.arguments, true).title).toBeTruthy();
-    const second = await provider().runRound({
-      ...firstReq,
-      input: [
-        ...firstReq.input,
-        ...first.outputItems,
-        { type: "function_call_output", call_id: call.callId, output: '{"ok":true}' },
-        {
-          type: "message",
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: "А 3+3? Сначала ответь текстом, затем end_turn. Название можно сохранить через null.",
-            },
-          ],
-        },
-      ],
-    });
+    expect(first.text).toBe("");
+    expect(parseTopicArguments(first.functionCalls[0]!.arguments)).toBeTruthy();
+    const input = [
+      ...firstReq.input,
+      ...first.outputItems,
+      {
+        type: "function_call_output" as const,
+        call_id: first.functionCalls[0]!.callId,
+        output: '{"ok":true,"instruction":"Тема установлена. Теперь ответь пользователю."}',
+      },
+    ];
+    const second = await provider().runRound(
+      request({ instructions: METADATA_PROMPT, input, tools, toolChoice: "auto" }),
+    );
     expect(second.completed).toBe(true);
-    expect(second.protocolViolations).toEqual([]);
     expect(second.text.trim().length).toBeGreaterThan(0);
-    expect(second.functionCalls).toHaveLength(1);
-    parseEndTurnArguments(second.functionCalls[0]!.arguments, false);
+    expect(second.protocolViolations).toEqual([]);
+    for (const c of second.functionCalls)
+      if (c.name === "suggest_reply") parseSuggestionArguments(c.arguments);
+    const third = await provider().runRound(
+      request({
+        instructions: METADATA_PROMPT,
+        tools,
+        toolChoice: "none",
+        input: [
+          ...input,
+          ...second.outputItems,
+          ...second.functionCalls.map((c) => ({
+            type: "function_call_output" as const,
+            call_id: c.callId,
+            output: '{"ok":true}',
+          })),
+          {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: "А 3+3? Ответь коротко." }],
+          },
+        ],
+      }),
+    );
+    expect(third.completed).toBe(true);
+    expect(third.text.trim().length).toBeGreaterThan(0);
     console.log("OpenAI live metadata usage", {
       model: firstReq.model,
       first: first.usage,
       second: second.usage,
+      third: third.usage,
     });
   },
-  65000,
+  95000,
 );

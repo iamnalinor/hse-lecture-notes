@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { encryptJsonAesGcm } from "../src/crypto";
-import type { CodexCredentialsPayload } from "../src/codex-auth";
+import type { CodexCredentialsPayload } from "../src/llm/codex-auth";
 import { assignmentSql, parseTelegramIds, rosterSql } from "./admin-tiers";
 import initialPolicy from "../policy.json";
 import type { ServicePolicy } from "../src/types";

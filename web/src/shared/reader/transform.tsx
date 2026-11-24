@@ -15,7 +15,7 @@ import { Block } from "./block.tsx";
 import { adjacentElement, childWithClass, hasClass, textOf } from "./dom-utils.ts";
 import { ProblemFooter } from "./problem-footer.tsx";
 import { Proof } from "./proof.tsx";
-import { RefLink } from "./ref-link.tsx";
+import { RefLink } from "./references/link.tsx";
 import { columnLabel, headerLabels } from "./table-labels.ts";
 import { TexMath } from "./tex-math.tsx";
 import { renderTicketSection } from "./ticket-list.tsx";

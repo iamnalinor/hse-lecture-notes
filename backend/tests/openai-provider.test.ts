@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { CodexResponsesProvider } from "../src/codex-provider";
+import { CodexResponsesProvider } from "../src/llm/codex-provider";
 import { TrackedD1 } from "../src/db";
-import { createLlmProvider } from "../src/llm-provider";
-import { OpenAIResponsesProvider } from "../src/openai-provider";
+import { createLlmProvider } from "../src/llm/provider";
+import { OpenAIResponsesProvider } from "../src/llm/openai-provider";
 import type { Env } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
 
@@ -56,15 +56,15 @@ describe("OpenAI configuration", () => {
   });
 });
 
-test("OpenAI forwards strict end and parallel choice, ignores Codex proxy and hides raw errors", async () => {
-  const { buildEndTurnTool } = await import("../src/end-turn");
+test("OpenAI forwards strict topic and parallel choice, ignores Codex proxy and hides raw errors", async () => {
+  const { buildMetadataTools } = await import("../src/chat/metadata-tools");
   let body: Record<string, unknown> | undefined;
   const provider = new OpenAIResponsesProvider(
     { OPENAI_API_KEY: "fake-key", CODEX_PROXY_URL: "socks5://unreachable.invalid" } as Env,
     {
       fetchImpl: async (_url, init) => {
         body = JSON.parse(init?.body as string) as Record<string, unknown>;
-        return new Response("schema end_turn arguments SECRET fake-key", { status: 400 });
+        return new Response("schema set_topic arguments SECRET fake-key", { status: 400 });
       },
     },
   );
@@ -74,8 +74,8 @@ test("OpenAI forwards strict end and parallel choice, ignores Codex proxy and hi
       effort: "low",
       instructions: "i",
       input: [],
-      tools: [buildEndTurnTool()],
-      toolChoice: { type: "function", name: "end_turn" },
+      tools: buildMetadataTools(),
+      toolChoice: { type: "function", name: "set_topic" },
       parallelToolCalls: true,
       maxResponseChars: 100,
       signal: new AbortController().signal,
@@ -84,7 +84,7 @@ test("OpenAI forwards strict end and parallel choice, ignores Codex proxy and hi
     .catch((e) => e as Error);
   expect(error).toBeInstanceOf(Error);
   expect((error as Error).message).toBe("OpenAI API HTTP 400");
-  expect(body?.tool_choice).toEqual({ type: "function", name: "end_turn" });
+  expect(body?.tool_choice).toEqual({ type: "function", name: "set_topic" });
   expect(body?.parallel_tool_calls).toBe(true);
   expect((body?.tools as Array<{ strict: boolean }>)[0]?.strict).toBe(true);
 });

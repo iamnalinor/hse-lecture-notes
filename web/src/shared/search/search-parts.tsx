@@ -31,7 +31,7 @@ export const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-80">
+  <label className="flex h-11 w-full items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-80">
     <SearchIcon size={16} />
     <input
       aria-activedescendant={hasPanel ? resultId(active) : undefined}
@@ -47,7 +47,7 @@ export const SearchField = ({
       onFocus={onFocus}
       onKeyDown={onKeyDown}
       onPointerDown={onFocus}
-      placeholder="Поиск: «4.3», «миноры»"
+      placeholder="Поиск"
       ref={fieldRef}
       role="combobox"
       tabIndex={isTabbable ? undefined : -1}
@@ -160,7 +160,7 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
   <>
     <button
       aria-label="Поиск"
-      className={`size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink md:hidden ${isOpen ? "hidden" : "flex"}`}
+      className={`size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink min-[21rem]:hidden ${isOpen ? "hidden" : "flex"}`}
       onClick={onOpen}
       ref={magnifierRef}
       type="button"
@@ -170,14 +170,14 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
     <div
       className={
         isOpen
-          ? "max-md:absolute max-md:inset-0 max-md:z-50 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4 max-md:opacity-100 max-md:transition-opacity max-md:duration-150"
-          : "max-md:sr-only max-md:opacity-0"
+          ? "max-[21rem]:absolute max-[21rem]:inset-0 max-[21rem]:z-50 max-[21rem]:flex max-[21rem]:items-center max-[21rem]:gap-1 max-[21rem]:bg-paper max-[21rem]:pr-2 max-[21rem]:pl-4 max-[21rem]:opacity-100 max-[21rem]:transition-opacity max-[21rem]:duration-150"
+          : "max-[21rem]:sr-only max-[21rem]:opacity-0"
       }
     >
       {children}
       {isOpen && (
         <button
-          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink md:hidden"
+          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink min-[21rem]:hidden"
           onClick={onCancel}
           type="button"
         >
