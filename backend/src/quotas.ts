@@ -358,7 +358,8 @@ export async function evaluateQuotasAndBudgets(
         count = r.cnt;
         oldest = r.oldest;
       } else if (r.cnt === count && r.cnt > 0 && r.oldest !== null) {
-        oldest = oldest === null ? r.oldest : Math.min(oldest, r.oldest);
+        // Every tied axis blocks the request, so access returns only when the last one expires.
+        oldest = oldest === null ? r.oldest : Math.max(oldest, r.oldest);
       }
     }
     return { count, oldest };

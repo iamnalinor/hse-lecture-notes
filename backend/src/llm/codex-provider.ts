@@ -116,6 +116,7 @@ export class CodexResponsesProvider implements LlmProvider {
 
         if (resp.status === 401 && !refreshedAuth && attempt < 2) {
           refreshedAuth = true;
+          await resp.body?.cancel().catch(() => {});
           creds = await this.loadCreds(true);
           continue;
         }
