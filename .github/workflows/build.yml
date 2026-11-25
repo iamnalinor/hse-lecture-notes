@@ -268,7 +268,7 @@ jobs:
           BODY="$MARKER
           **Превью сайта:** $LINK
 
-          Эта сборка (коммит \`${SHA:0:7}\`, слитый с main): $VERSION. Ссылка выше всегда ведёт на последний пуш."
+          Эта сборка (коммит \`${SHA:0:7}\`, слитый с main): $VERSION. Превью общее для всех PR: по ссылке выше — последний запушенный PR."
           ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$MARKER\"))) | .id" | head -n1)
           if [ -n "$ID" ]; then
