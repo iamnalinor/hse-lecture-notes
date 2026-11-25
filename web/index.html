@@ -30,6 +30,15 @@
           meta.removeAttribute("media");
           meta.content = dark ? "#141415" : "#fafaf8";
         });
+        // Overlay scrollbars (macOS, phones) take no width: keep them native, they hide by themselves.
+        // Only classic ones (Windows, Linux, macOS "always show") get the thin custom bar (app.css).
+        var probe = document.createElement("div");
+        probe.style.cssText = "position:absolute;top:-99px;width:50px;height:50px;overflow:scroll";
+        document.documentElement.appendChild(probe);
+        if (probe.offsetWidth - probe.clientWidth > 0) {
+          document.documentElement.dataset.scrollbars = "classic";
+        }
+        probe.remove();
       })();
     </script>
     <!-- The page copies put a text fallback for clients without scripts into #root (src/domain/seo.ts):

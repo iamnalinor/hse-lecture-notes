@@ -212,24 +212,31 @@ stray `text-sm` does nothing instead of adding an eleventh size.
     --scroll-thumb: oklch(0.556 0 0 / 0.5);
     --scroll-thumb-hover: oklch(0.556 0 0 / 0.7);
   }
-  ::-webkit-scrollbar {
+  /* Only over classic scrollbars: a custom ::-webkit-scrollbar turns macOS overlay bars into permanent
+  ones (index.html sets data-scrollbars). */
+  :root[data-scrollbars="classic"]::-webkit-scrollbar,
+  :root[data-scrollbars="classic"] ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  ::-webkit-scrollbar-track,
-  ::-webkit-scrollbar-corner {
+  :root[data-scrollbars="classic"]::-webkit-scrollbar-track,
+  :root[data-scrollbars="classic"] ::-webkit-scrollbar-track,
+  :root[data-scrollbars="classic"]::-webkit-scrollbar-corner,
+  :root[data-scrollbars="classic"] ::-webkit-scrollbar-corner {
     background: transparent;
   }
-  ::-webkit-scrollbar-thumb {
+  :root[data-scrollbars="classic"]::-webkit-scrollbar-thumb,
+  :root[data-scrollbars="classic"] ::-webkit-scrollbar-thumb {
     background: var(--scroll-thumb);
     border-radius: 4px;
     transition: background-color 160ms ease;
   }
-  ::-webkit-scrollbar-thumb:hover {
+  :root[data-scrollbars="classic"]::-webkit-scrollbar-thumb:hover,
+  :root[data-scrollbars="classic"] ::-webkit-scrollbar-thumb:hover {
     background: var(--scroll-thumb-hover);
   }
   @supports not selector(::-webkit-scrollbar) {
-    * {
+    :root[data-scrollbars="classic"] * {
       scrollbar-width: thin;
       scrollbar-color: var(--scroll-thumb) transparent;
     }
