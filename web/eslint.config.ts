@@ -37,7 +37,7 @@ const TESTS = ["tests/e2e/**/*.ts", "**/*.test.{ts,tsx}", "tests/support/**/*.{t
 const REACT = ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"];
 // Tools require a default export from their config files.
 const CONFIG_FILES = [
-  "tests/e2e/playwright.config.ts",
+  "tests/e2e/**/playwright.config.ts",
   "*.config.ts",
   ".dependency-cruiser.mjs",
   "**/*.d.ts",

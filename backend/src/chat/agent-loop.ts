@@ -253,6 +253,8 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
       } else {
         const externalCalls = calls.filter((c) => TOOL_NAMES.has(c.name));
         const answer = Boolean(roundText.trim()) && externalCalls.length === 0;
+        // A proposal made before subsequent research may no longer fit the answer.
+        if (externalCalls.length) metadata = undefined;
         const usedMetadata = new Set<string>();
         for (const call of calls) {
           if (abort.signal.aborted) break;
@@ -268,21 +270,20 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
                 if (await persistRunTopic(db, runId, title))
                   sendFrame({ type: "title", threadId, title });
               } else {
-                const index = result.outputItems.findIndex(
-                  (i) => i.type === "function_call" && i.call_id === call.callId,
-                );
-                const precededByAnswer =
-                  index > 0 &&
-                  result.outputItems
-                    .slice(0, index)
-                    .some((i) => i.type === "message" && i.content.some((c) => c.text.trim()));
-                if (!answer || !precededByAnswer) {
+                if (externalCalls.length) {
                   output(call.callId, { error: "answer_not_available" });
                   continue;
                 }
+                // Responses may emit a function call before the final text. Keep it
+                // pending; only a successfully completed answer can publish it.
                 metadata = { suggestion: parseSuggestionArguments(call.arguments) };
               }
-              output(call.callId, { ok: true });
+              output(call.callId, {
+                ok: true,
+                ...(call.name === "suggest_reply" && !answer
+                  ? { instruction: "Предложение сохранено. Теперь ответь пользователю; повторять служебный вызов не нужно." }
+                  : {}),
+              });
             } catch {
               output(call.callId, { error: "metadata_invalid" });
             }

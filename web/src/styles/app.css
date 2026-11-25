@@ -309,6 +309,18 @@ Everything is switched off under `prefers-reduced-motion` at the end of this fil
   }
 }
 
+/* Blend two complete page snapshots so text, formulas, menus and paper change together. */
+::view-transition-group(root) {
+  animation-duration: 280ms;
+  animation-timing-function: ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(root) {
+    animation-duration: 0s;
+  }
+}
+
 /* A theme switch repaints everything at once: no element may lag behind with its own fade (`theme.ts`). */
 :root[data-theme-switching] *,
 :root[data-theme-switching] *::before,

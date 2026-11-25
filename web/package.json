@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "prepare": "cd .. && lefthook install",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
+    "test:e2e:live": "playwright test --config tests/e2e/live/playwright.config.ts",
     "lint:eslint:app": "eslint src --max-warnings 0 --cache --cache-location .cache/eslint/ --fix",
     "lint:eslint:tests": "eslint tests --ignore-pattern tests/e2e/ --max-warnings 0 --cache --cache-location .cache/eslint/ --fix",
     "lint:eslint:e2e": "eslint tests/e2e --max-warnings 0 --cache --cache-location .cache/eslint/ --fix",

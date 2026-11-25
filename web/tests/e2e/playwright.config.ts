@@ -10,6 +10,7 @@ export default defineConfig({
   testDir: ".",
   outputDir: path.join(projectRoot, "test-results"),
   testMatch: "**/*.spec.ts",
+  testIgnore: "**/live/**",
   fullyParallel: false,
   workers: 1,
   retries: isCI ? 1 : 0,

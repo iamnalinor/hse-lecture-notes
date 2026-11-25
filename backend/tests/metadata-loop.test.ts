@@ -238,3 +238,46 @@ test("exhausted material output forces the next answer and stays out of public s
   const stored = r.shim.sqlite.query("SELECT steps_json FROM chat_messages WHERE role='assistant'").get() as {steps_json:string};
   expect(stored.steps_json).not.toContain("Лимит инструментов");
 });
+
+
+test("suggestion before the answer in its own round survives until successful completion", async () => {
+  const suggestion = "Помоги составить план подготовки";
+  const r = await fixture([round("", [suggest(suggestion)]), round("Ответ")], 6, true);
+  expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ", suggestion });
+  expect(r.frames.at(-1)).toMatchObject({ type: "done", suggestion });
+  expect(JSON.stringify(r.frames.slice(0, -1))).not.toContain(suggestion);
+  expect(JSON.stringify(r.requests[1]!.input)).not.toContain("answer_not_available");
+  expect(r.requests).toHaveLength(2);
+});
+
+test("suggestion before text within the same response is accepted", async () => {
+  const result = round("Ответ", [suggest()]);
+  result.outputItems.reverse();
+  const r = await fixture([result], 6, true);
+  expect(r.message).toMatchObject({ status: "done", suggestion: "Объясни подробнее" });
+  expect(r.requests).toHaveLength(1);
+});
+
+test("pending suggestion is discarded if more material is requested", async () => {
+  const read = { callId: "read", name: "read_document", arguments: '{"course":"algebra"}' };
+  for (const rounds of [
+    [round("", [suggest()]), round("", [read]), round("Ответ")],
+    [round("", [read, suggest()]), round("Ответ")],
+  ]) {
+    const r = await fixture(rounds, 6, true);
+    expect(r.message).toMatchObject({ status: "done", suggestion: null });
+  }
+});
+
+test("pending suggestion is never published without a complete answer", async () => {
+  for (const result of [round("", []), round("Часть", [], false)]) {
+    const r = await fixture([round("", [suggest()]), result], 6, true);
+    expect(r.message).toMatchObject({ status: "incomplete", suggestion: null });
+    expect(r.frames.at(-1)).toMatchObject({ type: "done", suggestion: null });
+  }
+});
+
+test("malformed early suggestion does not prevent a subsequent answer", async () => {
+  const r = await fixture([round("", [suggest("**Bad**")]), round("Ответ")], 6, true);
+  expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ", suggestion: null });
+});
