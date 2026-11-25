@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 import { env } from "node:process";
 
+const authState = (project: "DESKTOP" | "MOBILE") => {
+  const storageState = env[`E2E_STORAGE_STATE_${project}`];
+  return storageState === undefined ? {} : { storageState };
+};
+
 export default defineConfig({
   testDir: ".",
   testMatch: "site.spec.ts",
@@ -21,8 +26,15 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        ...authState("DESKTOP"),
+        viewport: { width: 1280, height: 900 },
+      },
     },
-    { name: "mobile", use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
+    {
+      name: "mobile",
+      use: { ...devices["iPhone 13"], ...authState("MOBILE"), defaultBrowserType: "chromium" },
+    },
   ],
 });

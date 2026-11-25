@@ -1,5 +1,4 @@
 import { expect, type Page, test } from "@playwright/test";
-import { env } from "node:process";
 
 // This suite never mocks content, HTTP or WebSocket responses. Run against a built
 // preview or deployment with `bun run test:e2e:live`. Chat uses short-lived tokens
@@ -125,36 +124,10 @@ test("real chat returns a usable suggestion, Tab fills it and history survives r
   page,
 }, info) => {
   test.setTimeout(110_000);
-  const raw = env[`E2E_CHAT_AUTH_${info.project.name.toUpperCase()}`];
   expect(
-    raw,
-    "Supply short-lived smoke-identity tokens to exercise the real chat API",
+    info.project.use.storageState,
+    "Supply a temporary Playwright storage state through E2E_STORAGE_STATE_DESKTOP / E2E_STORAGE_STATE_MOBILE",
   ).toBeDefined();
-  const auth = JSON.parse(raw ?? "{}") as {
-    browserToken: string;
-    allowanceToken: string;
-    expiresAt: number;
-    sessionToken?: string;
-    userId?: number;
-  };
-  await page.addInitScript(
-    ({ browserToken, allowanceToken, expiresAt, sessionToken, userId, origin }) => {
-      if (globalThis.location.origin !== origin) {
-        return;
-      }
-      localStorage.setItem("hse_chat_browser_token", browserToken);
-      localStorage.setItem("hse_chat_allowance_token", allowanceToken);
-      localStorage.setItem("hse_chat_allowance_exp", String(expiresAt));
-      if (sessionToken === undefined || userId === undefined) {
-        return;
-      }
-
-      localStorage.setItem("hse_chat_session_token", sessionToken);
-      localStorage.setItem("hse_chat_tier", "default");
-      localStorage.setItem("hse_chat_user", JSON.stringify({ id: userId, name: "Release smoke" }));
-    },
-    { ...auth, origin: new URL(info.project.use.baseURL ?? "https://hse.nalinor.dev").origin },
-  );
   const errors: string[] = [];
   page.on("pageerror", (error) => {
     errors.push(error.message);
