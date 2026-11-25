@@ -1,20 +1,46 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { NavigationType, useLocation, useNavigate, useNavigationType } from "react-router";
 
-import { BackStateSchema } from "#web/domain/navigation.ts";
+import { BackStateSchema, documentBackLabel } from "#web/domain/navigation.ts";
+import { isOtherPage } from "#web/domain/paths.ts";
 
 /**
-After a jump by a reference the reader sees where they came from: a bar at the bottom of the
-screen takes them back to the exact place (the history entry keeps the scroll position). It goes
-away with the return, with any other navigation (the new place has no jump state) or with ×.
+A plain link from one document to another (the next lecture, a lecture named in the theory) gets the
+same way back as a reference jump: the label names the page left. Only on a push, so Back and a
+reload show nothing; the label is kept per history entry, so returning to it later shows it again.
 */
+const useDocumentBack = (): string | undefined => {
+  const location = useLocation();
+  const type = useNavigationType();
+  const [track, setTrack] = useState(() => ({
+    key: location.key,
+    labels: new Map<string, string>(),
+    pathname: location.pathname,
+  }));
+  if (track.key !== location.key) {
+    const labels = new Map(track.labels);
+    const label =
+      type === NavigationType.Push && isOtherPage(track.pathname, location.pathname)
+        ? documentBackLabel(track.pathname, location.pathname)
+        : undefined;
+    if (label !== undefined && !labels.has(location.key)) {
+      labels.set(location.key, label);
+    }
+    // Adjusting state while rendering: React drops this render and starts over with the new track.
+    setTrack({ key: location.key, labels, pathname: location.pathname });
+  }
+  return track.labels.get(location.key);
+};
+
 export const BackBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [dismissedKey, setDismissedKey] = useState<string | undefined>(undefined);
   const state = BackStateSchema.safeParse(location.state);
+  const documentLabel = useDocumentBack();
+  const label = state.success ? state.data.backLabel : documentLabel;
 
-  if (!state.success || dismissedKey === location.key) {
+  if (label === undefined || dismissedKey === location.key) {
     return null;
   }
 
@@ -34,7 +60,7 @@ export const BackBar = () => {
         >
           <span aria-hidden="true">←</span>
           <span className="truncate">
-            Назад: <b className="font-semibold">{state.data.backLabel}</b>
+            Назад: <b className="font-semibold">{label}</b>
           </span>
         </button>
         <button

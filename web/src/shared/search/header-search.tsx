@@ -26,6 +26,19 @@ const isShortcut = (event: KeyboardEvent): boolean => {
   return isSlash && !event.altKey && !isTyping(event.target);
 };
 
+/**
+A letter or digit typed with no field in focus starts a search: focus moves to the field during
+keydown, so the browser puts the character there. Space keeps scrolling the page.
+*/
+const isTypeToSearch = (event: KeyboardEvent): boolean =>
+  event.key.length === 1 &&
+  event.key.trim() !== "" &&
+  !event.metaKey &&
+  !event.ctrlKey &&
+  !event.altKey &&
+  !event.isComposing &&
+  !isTyping(event.target);
+
 /** Fold only when the logo, full chat and theme buttons leave too little room for a field. */
 const PHONE_QUERY = "(width < 21rem)";
 
@@ -50,7 +63,7 @@ const useHits = (
 const step = (active: number, delta: number, count: number): number =>
   count === 0 ? 0 : (active + delta + count) % count;
 
-/** ⌘K, Ctrl+K and «/» focus the field; a press outside folds the panel. */
+/** ⌘K, Ctrl+K, «/» and plain typing focus the field; a press outside folds the panel. */
 const useGlobalKeys = (
   boxRef: React.RefObject<HTMLDivElement | null>,
   fieldRef: React.RefObject<HTMLInputElement | null>,
@@ -58,12 +71,14 @@ const useGlobalKeys = (
 ): void => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (!isShortcut(event)) {
+      if (isShortcut(event)) {
+        event.preventDefault();
+        fieldRef.current?.focus();
         return;
       }
-
-      event.preventDefault();
-      fieldRef.current?.focus();
+      if (isTypeToSearch(event) && !event.defaultPrevented) {
+        fieldRef.current?.focus();
+      }
     };
     const onPointerDown = (event: PointerEvent): void => {
       if (event.target instanceof Node && boxRef.current?.contains(event.target) !== true) {

@@ -9,13 +9,13 @@ import { ThemeToggle } from "./theme-toggle.tsx";
 
 export const TopBar = () => (
   <header className="@container border-b border-rule bg-paper" data-site-header="">
-    <div className="relative mx-auto flex min-h-13 max-w-[1360px] items-center gap-x-1 px-4 py-2 min-[380px]:gap-x-2 sm:min-h-15 sm:gap-x-4 sm:px-8 md:gap-x-7">
+    <div className="relative mx-auto flex min-h-13 max-w-[1360px] items-center gap-x-3 px-4 py-2 sm:min-h-15 sm:gap-x-4 sm:px-8 md:gap-x-7">
       <Link
         className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
         to={paths.home()}
       >
-        {/* Phones: the same 44 px as the search field and the buttons beside it; 28 px from 640 px. */}
-        <span className="flex size-11 items-center justify-center rounded-[22%] bg-brand text-white sm:size-7">
+        {/* Phones: 36 px, lighter than the 44 px search field beside it; 28 px from 640 px. */}
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white sm:size-7">
           {/* Σ built from HSE Sans 600 metrics (bars of E/Z, diagonal of Z, tip of >) with softened
               corners; the font has no Σ. The same path as public/favicon.svg. */}
           <svg aria-hidden="true" className="size-full" viewBox="0 0 32 32">
@@ -40,7 +40,7 @@ export const TopBar = () => (
           </NavLink>
         ))}
       </nav>
-      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1 max-[21rem]:flex-none md:flex-none md:gap-2">
+      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 max-[21rem]:flex-none md:flex-none">
         <HeaderSearch />
         <ChatToggleButton />
         <ThemeToggle />

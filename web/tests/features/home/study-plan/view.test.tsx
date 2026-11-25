@@ -38,14 +38,9 @@ describe("StudyPlan", () => {
     ).toBeInTheDocument();
   });
 
-  it("says the shading scale in hours per week in the legend", () => {
+  it("has no shading legend and centers the caption", () => {
     renderWithApp(<StudyPlan curriculum={SAMPLE} today="2027-01-05" />, "/");
-    expect(screen.getByText(/больше \(до 4,2 ч\/нед\)/u)).toBeInTheDocument();
-  });
-
-  it("centers the legend and the caption", () => {
-    renderWithApp(<StudyPlan curriculum={SAMPLE} today="2027-01-05" />, "/");
-    expect(screen.getByText(/меньше часов/u).closest("div")).toHaveClass("justify-center");
+    expect(screen.queryByText(/меньше часов/u)).toBeNull();
     expect(screen.getByText(/^Кредиты за год:/u)).toHaveClass("text-center");
   });
 

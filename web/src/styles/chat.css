@@ -124,22 +124,13 @@
   cursor: pointer;
   transition: background-color 150ms ease-out;
 }
-/* Phones: the chat and theme buttons are the same 44 × 44 square as the logo and the search field;
-the word returns from 640 px. */
+/* Phones: as tall as the search field (44 px), and the word stays: an unlabeled sparkle reads as
+decoration, «Чат» says what the button opens. */
 @media (width < 640px) {
   .ai-head-btn {
-    justify-content: center;
-    width: 44px;
     height: 44px;
-    padding: 0;
-  }
-  .ai-head-btn span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    gap: 6px;
+    padding: 0 12px 0 10px;
   }
 }
 .ai-head-btn:hover {
