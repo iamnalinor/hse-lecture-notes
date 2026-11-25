@@ -9,6 +9,7 @@
 | Процесс: план, проверка перед «готово», ревью, отладка | [obra/superpowers](https://github.com/obra/superpowers) `22f0b46`, MIT | этот файл |
 | Русский текст без признаков нейросети | см. шапку `style/writing-ru.md` | `style/writing-ru.md` |
 | Дизайн и удобство сайта | см. шапку `style/design.md` | `style/design.md` |
+| Продуктовые исследования (идеи фич, дерево возможностей, JTBD) | [deanpeters/Product-Manager-Skills](https://github.com/deanpeters/Product-Manager-Skills) `476ae12`, CC BY-NC-SA 4.0 | не адаптирован: читать `.cache/skills/deanpeters_Product-Manager-Skills/skills/opportunity-solution-tree/SKILL.md` и `jobs-to-be-done/SKILL.md` |
 
 Правила адаптированы, а не скопированы. При конфликте с `CLAUDE.md` или прямым указанием владельца верно указание владельца.
 
