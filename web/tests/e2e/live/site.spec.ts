@@ -134,15 +134,24 @@ test("real chat returns a usable suggestion, Tab fills it and history survives r
     browserToken: string;
     allowanceToken: string;
     expiresAt: number;
+    sessionToken?: string;
+    userId?: number;
   };
   await page.addInitScript(
-    ({ browserToken, allowanceToken, expiresAt, origin }) => {
+    ({ browserToken, allowanceToken, expiresAt, sessionToken, userId, origin }) => {
       if (globalThis.location.origin !== origin) {
         return;
       }
       localStorage.setItem("hse_chat_browser_token", browserToken);
       localStorage.setItem("hse_chat_allowance_token", allowanceToken);
       localStorage.setItem("hse_chat_allowance_exp", String(expiresAt));
+      if (sessionToken === undefined || userId === undefined) {
+        return;
+      }
+
+      localStorage.setItem("hse_chat_session_token", sessionToken);
+      localStorage.setItem("hse_chat_tier", "default");
+      localStorage.setItem("hse_chat_user", JSON.stringify({ id: userId, name: "Release smoke" }));
     },
     { ...auth, origin: new URL(info.project.use.baseURL ?? "https://hse.nalinor.dev").origin },
   );
