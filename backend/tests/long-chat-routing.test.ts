@@ -48,13 +48,12 @@ test("long thread latches low with low reserve while new thread keeps high", asy
   policy.budgets.weeklyGlobalUsdMicros = policy.budgets.reserveLowMicros + 10;
   shim.sqlite.query("UPDATE service_config SET value_json=? WHERE key='policy'").run(JSON.stringify(policy));
   shim.sqlite.query("INSERT INTO telegram_account_tiers(telegram_id,tier,added_at) VALUES (123,'student',?)").run(params.nowMs);
-  shim.sqlite.query("INSERT INTO user_sessions(id,telegram_id,telegram_name,browser_id,created_at,expires_at) VALUES ('s',123,'User','b',?,?)")
-    .run(params.nowMs, params.nowMs + 60000);
   const secret = "test-signing-secret";
-  const sessionToken = await signHs256Jwt(secret, {
-    typ: "session", sid: "s", tgId: 123, tgName: "User", browserId: "b", exp: (params.nowMs + 60000) / 1000,
-  });
   const browser = await mintBrowserToken(secret);
+  const sessionToken = await signHs256Jwt(secret, {
+    typ: "session_v2", tgId: 123, tgName: "User", browserId: browser.browserId,
+    iat: params.nowMs / 1000, exp: (params.nowMs + 60000) / 1000,
+  });
   const preliminary = await handleAllowance({ ALLOWANCE_JWT_SECRET: secret, BROWSER_TOKEN_SECRET: secret } as Env,
     db, new Request("https://test.invalid"), { sessionToken, browserToken: browser.browserToken, turnstileToken: "test" },
     { nowMs: params.nowMs, turnstileVerifier: async () => ({ ok: true }) });

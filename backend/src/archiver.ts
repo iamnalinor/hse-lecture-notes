@@ -56,7 +56,6 @@ export interface ArchiveBatchStats {
   runsFound: number;
   runsDeleted: number;
   archivesWritten: number;
-  sessionsCleaned: number;
 }
 
 /**
@@ -81,14 +80,7 @@ export async function runArchiveBatch(
     runsFound: 0,
     runsDeleted: 0,
     archivesWritten: 0,
-    sessionsCleaned: 0,
   };
-
-  const sessions = await db.run(
-    db.prepare("DELETE FROM user_sessions WHERE rowid IN (SELECT rowid FROM user_sessions WHERE expires_at < ? LIMIT 200)")
-      .bind(now),
-  );
-  stats.sessionsCleaned = sessions.meta.changes;
 
   if (!storage) {
     logEvent("warn", "archive_skipped_no_bucket", { ...stats });

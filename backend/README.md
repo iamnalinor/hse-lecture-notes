@@ -5,9 +5,9 @@ Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The Worker serves the API exclusively on its custom domain.
 
 ## Architecture
-- **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
+- **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/telegram`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
 - **SQLite-backed Durable Object (`ChatRunner`, `src/chat/runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 8 rounds / 16 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
-- **D1 (`hse-lecture-notes`)**: schema in `migrations/` (sessions, hourly O(1) budget buckets, quotas, threads, messages, FTS5 course materials).
+- **D1 (`hse-lecture-notes`)**: schema in `migrations/` (hourly O(1) budget buckets, quotas, threads, messages, FTS5 course materials).
 - **Vectorize (`hse-course-blocks`, 1024 dim cosine) + Workers AI (`@cf/baai/bge-m3`)**: semantic search with automatic fallback to FTS5.
 
 ## Model configuration
@@ -58,7 +58,7 @@ bunx wrangler secret put OWNER_TELEGRAM_ID
 bun run deploy
 ```
 
-The daily cron cleans expired sessions. With R2 disabled it logs
+With R2 disabled the daily cron logs
 `archive_skipped_no_bucket` and keeps conversation history and usage records in D1.
 To enable archiving later, create a private R2 bucket and add it to Wrangler's
 `r2_buckets` with the binding `ARCHIVE_BUCKET`. The cron then copies inactive
@@ -85,6 +85,8 @@ bun run admin set-tier <telegram-id> default --remote
 # Inspect live status
 bun run admin status --remote
 ```
+
+After Telegram login, the browser stores a signed site token. The Worker checks its signature, expiry and browser ID. Switching accounts replaces the local token after the new login succeeds.
 
 Authenticated accounts without a row in `telegram_account_tiers` use `default` (low bucket only). Assigned `student` and `extended` accounts have separate high and low limits over a rolling 24-hour window: high is used first, then low. Unauthenticated visitors remain `guest`. Limits are read from the database policy, independently for each tier. Tier changes apply to existing sessions and allowance tokens on their next request.
 

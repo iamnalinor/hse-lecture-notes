@@ -3,7 +3,7 @@
 PRAGMA foreign_keys = ON;
 
 -- =============================================================================
--- 1. Service configuration, budgets, OAuth credentials, accounts & sessions
+-- 1. Service configuration, budgets, OAuth credentials & accounts
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS service_config (
@@ -45,18 +45,6 @@ CREATE TABLE IF NOT EXISTS telegram_account_tiers (
 );
 
 DROP TABLE IF EXISTS auth_nonces;
-
-CREATE TABLE IF NOT EXISTS user_sessions (
-  id TEXT PRIMARY KEY,
-  telegram_id INTEGER NOT NULL,
-  telegram_name TEXT NOT NULL,
-  browser_id TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  expires_at INTEGER NOT NULL,
-  revoked_at INTEGER
-);
-
-CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
 
 -- =============================================================================
 -- 2. Chat threads, messages & usage runs

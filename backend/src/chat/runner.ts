@@ -197,7 +197,7 @@ export class ChatRunner extends DurableObject<Env> {
         safeSend({
           type: "error",
           code: "allowance_expired",
-          message: "Allowance expired or revoked. Refresh allowance.",
+          message: "Invalid allowance. Refresh allowance.",
         });
         safeClose(4401, "allowance_expired");
         return;

@@ -120,8 +120,7 @@ export interface BlockInfo {
 }
 
 export interface SessionJwtPayload {
-  typ: "session";
-  sid: string;
+  typ: "session_v2";
   tgId: number;
   tgName: string;
   browserId: string;
@@ -130,9 +129,8 @@ export interface SessionJwtPayload {
 }
 
 export interface AllowanceJwtPayload {
-  typ: "allowance";
+  typ: "allowance" | "account_allowance_v2";
   browserId: string;
-  sid?: string;
   tgId?: number;
   tgName?: string;
   tier: Tier;

@@ -2,12 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { runArchiveBatch, type ArchiveStoragePort } from "../src/archiver";
 import {
   handleAllowance,
-  handleLogout,
   handleTelegramLogin,
   resolveBrowserToken,
   verifyAllowanceToken,
   verifyTelegramIdToken,
 } from "../src/auth";
+import { handleGetThread } from "../src/chat/thread-route";
 import { executeAgentRun } from "../src/chat/agent-loop";
 import { CodexAuthError, getValidCodexCredentials } from "../src/llm/codex-auth";
 import { CodexResponsesProvider, parseCodexSseStream } from "../src/llm/codex-provider";
@@ -385,7 +385,7 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
 
   });
 
-  test("Telegram login migrates guest threads and running requests, and logout revokes allowance", async () => {
+  test("Telegram login migrates guest threads and running requests, and binds account allowances to the login browser", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const env = makeTestEnv(shim.asD1());
@@ -456,7 +456,7 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
       nowMs: earlier, jwksOverride: expired.jwks,
     });
     expect(late.status).toBe(401);
-    expect(shim.sqlite.query("SELECT COUNT(*) AS n FROM user_sessions").get()).toEqual({ n: 0 });
+    expect(shim.sqlite.query("SELECT telegram_id FROM chat_threads WHERE id=?").get(guestAdmit.threadId)).toEqual({ telegram_id: null });
     const loginRes = await handleTelegramLogin(
       env,
       db,
@@ -511,23 +511,31 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
       expect(retryAfterLogin.runId).toBe(guestAdmit.runId);
     }
 
-    // Mint logged-in allowanceToken, then logout -> allowanceToken MUST become invalid immediately
-    const loggedInAllow = await handleAllowance(
-      env,
-      db,
-      allowReq,
-      { turnstileToken: "ok_ts", sessionToken, browserToken, fingerprint: "fp_1" },
-      { nowMs: now + 6000, turnstileVerifier: async () => ({ ok: true }) },
-    );
-    const loggedInAllowanceToken = String(loggedInAllow.body.allowanceToken);
-    expect(
-      await verifyAllowanceToken(env, db, loggedInAllowanceToken, browserId, now + 7000),
-    ).not.toBeNull();
+    const issueAllowance = (token: string) => handleAllowance(env, db, allowReq, {
+      turnstileToken: "ok_ts", sessionToken, browserToken: token, fingerprint: "fp_1",
+    }, { nowMs: now + 6000, turnstileVerifier: async () => ({ ok: true }) });
+    const loggedInAllowance = await issueAllowance(browserToken);
+    const token = String(loggedInAllowance.body.allowanceToken);
+    expect(await verifyAllowanceToken(env, db, token, browserId, now + 7000)).toMatchObject({ tgId: 777123, tier: "student" });
+    expect(await verifyAllowanceToken(env, db, token, secondBrowser.browserId, now + 7000)).toBeNull();
+    expect((await issueAllowance(secondBrowser.browserToken)).body).toMatchObject({ tier: "guest", user: null });
 
-    await handleLogout(env, db, sessionToken, now + 8000);
-    expect(
-      await verifyAllowanceToken(env, db, loggedInAllowanceToken, browserId, now + 9000),
-    ).toBeNull();
+    const historyUrl = new URL(`https://api.test/v1/thread?threadId=${guestAdmit.threadId}`);
+    const history = (browser: string, session: string | null) =>
+      handleGetThread(env, db, new Request(historyUrl, { headers: { "X-Browser-Token": browser } }), historyUrl, session);
+    expect((await history(browserToken, sessionToken)).body.thread).toMatchObject({ id: guestAdmit.threadId });
+    expect((await history(browserToken, null)).body.thread).toBeNull();
+    expect((await history(secondBrowser.browserToken, sessionToken)).body.thread).toBeNull();
+
+    const switched = await generateRs256TestKeyAndJwt({
+      iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: (now + 60_000) / 1000, id: 777124,
+    });
+    const nextLogin = await handleTelegramLogin(env, db, loginReq, { telegramIdToken: switched.jwt }, {
+      nowMs: now + 8000, jwksOverride: switched.jwks,
+    });
+    expect(nextLogin.body.user).toMatchObject({ id: 777124 });
+    expect((await history(browserToken, String(nextLogin.body.sessionToken))).body.thread).toBeNull();
+
   });
 });
 
@@ -1132,15 +1140,10 @@ test("Turnstile gets the visitor IPv6 address while allowance retains the quota 
     .toBe("2001:0db8:abcd:0012::/64");
 });
 
-test("optional archive skips history and cleans expired sessions without R2", async () => {
+test("optional archive keeps history when R2 is disabled", async () => {
   const shim = new SqliteD1Shim();
   const db = new TrackedD1(shim.asD1());
-  const expiresAt = Date.now() + 60_000;
-  const insertSession = shim.sqlite.query("INSERT INTO user_sessions(id,telegram_id,telegram_name,browser_id,created_at,expires_at) VALUES (?,1,'test','b',1,?)");
-  insertSession.run("expired", expiresAt);
-  insertSession.run("active", expiresAt + 60_000);
   shim.sqlite.query("INSERT INTO chat_threads(id,title,browser_id,created_at,updated_at) VALUES ('old','old thread','b',1,1)").run();
-  expect(await runArchiveBatch(db, null, { nowMs: expiresAt + 1 })).toMatchObject({ sessionsCleaned: 1, threadsDeleted: 0, runsDeleted: 0 });
-  expect(shim.sqlite.query("SELECT id FROM user_sessions").all()).toEqual([{ id: "active" }]);
+  expect(await runArchiveBatch(db, null)).toMatchObject({ threadsDeleted: 0, runsDeleted: 0 });
   expect(shim.sqlite.query("SELECT id FROM chat_threads").get()).toEqual({ id: "old" });
 });

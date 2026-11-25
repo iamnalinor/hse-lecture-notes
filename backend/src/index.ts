@@ -2,7 +2,6 @@ import { readBoundedJson } from "./request-json";
 import { classifyError } from "./public-error";
 import {
   handleAllowance,
-  handleLogout,
   handleTelegramLogin,
   resolveBrowserToken,
   verifyActiveSession,
@@ -86,10 +85,10 @@ async function handleGetRunStatus(
     request.headers.get("X-Browser-Token"),
   );
 
-  const session = await verifyActiveSession(env, db, extractSessionToken(request));
-  if (!session && btCheck.status === "missing") {
-    return { status: 401, body: { code: "unauthorized", message: "Session or browser token required" } };
+  if (btCheck.status === "missing") {
+    return { status: 401, body: { code: "unauthorized", message: "Browser token required" } };
   }
+  const session = await verifyActiveSession(env, extractSessionToken(request), btCheck.browserId);
 
   const run = await db.first<{
     id: string;
@@ -111,10 +110,9 @@ async function handleGetRunStatus(
     return { status: 404, body: { code: "run_not_found", message: "Run not found" } };
   }
 
-  const ownsRun = session
-    ? run.telegram_id === session.telegramId ||
-      (run.telegram_id === null && btCheck.status === "ok" && run.browser_id === btCheck.browserId)
-    : btCheck.status === "ok" && run.telegram_id === null && run.browser_id === btCheck.browserId;
+  const ownsRun = run.telegram_id === null
+    ? run.browser_id === btCheck.browserId
+    : run.telegram_id === session?.telegramId;
 
   if (!ownsRun) {
     return { status: 403, body: { code: "forbidden", message: "Not owner of run" } };
@@ -237,15 +235,6 @@ export default {
           return finish(400, { code: "invalid_json", message: "Invalid JSON body" });
         }
         const res = await handleTelegramLogin(env, db, request, body as { telegramIdToken?: string });
-        return finish(res.status, res.body);
-      }
-
-      if (url.pathname === "/v1/auth/logout" && request.method === "POST") {
-        const body = await readBoundedJson(request);
-        if (!body) return finish(400, { code: "invalid_json", message: "Invalid JSON body" });
-        const token =
-          typeof body.sessionToken === "string" ? body.sessionToken : extractSessionToken(request);
-        const res = await handleLogout(env, db, token);
         return finish(res.status, res.body);
       }
 

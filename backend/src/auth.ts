@@ -3,7 +3,6 @@ import {
   bytesToBase64Url,
   decodeJwtUnverified,
   normalizeIpAddress,
-  randomToken,
   signHs256Jwt,
   verifyBrowserToken,
   verifyHs256Jwt,
@@ -11,14 +10,13 @@ import {
   type JwksDocument,
 } from "./crypto";
 import type { TrackedD1 } from "./db";
-import { accountTierFromValue, loadAccountTier } from "./account-tiers";
+import { loadAccountTier } from "./account-tiers";
 import { evaluateQuotasAndBudgets, loadPolicy } from "./quotas";
 import type {
   AllowanceJwtPayload,
   Env,
   SessionJwtPayload,
   Tier,
-  AccountTier,
 } from "./types";
 
 const MIGRATION_IDEMPOTENCY_WINDOW_MS = 10 * 60_000;
@@ -40,16 +38,15 @@ export async function resolveBrowserToken(
 }
 
 export interface VerifiedSession {
-  sessionId: string;
+  expiresAt: number;
   telegramId: number;
   telegramName: string;
-  tier: AccountTier;
 }
 
 export async function verifyActiveSession(
   env: Pick<Env, "ALLOWANCE_JWT_SECRET">,
-  db: TrackedD1,
   sessionToken: string | null | undefined,
+  expectedBrowserId: string,
   nowMs = Date.now(),
 ): Promise<VerifiedSession | null> {
   const payload = await verifyHs256Jwt<SessionJwtPayload>(
@@ -57,33 +54,15 @@ export async function verifyActiveSession(
     sessionToken,
     nowMs,
   );
-  if (!payload || payload.typ !== "session" || !payload.sid || typeof payload.tgId !== "number") {
+  if (!payload || payload.typ !== "session_v2" || payload.browserId !== expectedBrowserId ||
+      !Number.isSafeInteger(payload.exp) || !Number.isSafeInteger(payload.tgId) || payload.tgId <= 0 ||
+      typeof payload.tgName !== "string" || !payload.tgName.trim()) {
     return null;
   }
-
-  const [sessRes, tierRes] = await db.batch<Record<string, unknown>>([
-    db
-      .prepare(
-        "SELECT id, telegram_id, telegram_name, expires_at, revoked_at FROM user_sessions WHERE id = ?",
-      )
-      .bind(payload.sid),
-    db
-      .prepare("SELECT tier FROM telegram_account_tiers WHERE telegram_id = ?")
-      .bind(payload.tgId),
-  ]);
-
-  const row = sessRes?.results[0] as
-    | { id: string; telegram_id: number; telegram_name: string; expires_at: number; revoked_at: number | null }
-    | undefined;
-  if (!row || row.revoked_at !== null || row.expires_at <= nowMs || row.telegram_id !== payload.tgId) {
-    return null;
-  }
-
   return {
-    sessionId: row.id,
-    telegramId: row.telegram_id,
-    telegramName: row.telegram_name,
-    tier: accountTierFromValue(tierRes?.results[0]?.tier),
+    telegramId: payload.tgId,
+    telegramName: payload.tgName,
+    expiresAt: payload.exp * 1000,
   };
 }
 
@@ -99,24 +78,19 @@ export async function verifyAllowanceToken(
     allowanceToken,
     nowMs,
   );
-  if (!payload || payload.typ !== "allowance" || payload.browserId !== expectedBrowserId) {
+  if (!payload || payload.browserId !== expectedBrowserId || !Number.isSafeInteger(payload.exp)) {
     return null;
   }
-
-  // If this allowance was minted for a logged-in session, verify that the session hasn't been revoked
-  if (payload.sid) {
-    const sess = await db.first<{ revoked_at: number | null; expires_at: number; telegram_id: number; assigned_tier: string | null }>(
-      db
-        .prepare("SELECT s.revoked_at, s.expires_at, s.telegram_id, t.tier AS assigned_tier FROM user_sessions s LEFT JOIN telegram_account_tiers t ON t.telegram_id = s.telegram_id WHERE s.id = ?")
-        .bind(payload.sid),
-    );
-    if (!sess || sess.revoked_at !== null || sess.expires_at <= nowMs || sess.telegram_id !== payload.tgId) {
-      return null;
-    }
-    return { ...payload, tier: accountTierFromValue(sess.assigned_tier) };
+  if (payload.typ === "allowance") {
+    // Pre-migration authenticated allowances had a revocable sid. Only guest tokens carry over.
+    return payload.tier === "guest" && !("sid" in payload) && !("tgId" in payload) && !("tgName" in payload)
+      ? payload : null;
   }
-
-  return payload;
+  if (payload.typ !== "account_allowance_v2" || typeof payload.tgId !== "number" ||
+      !Number.isSafeInteger(payload.tgId) || payload.tgId <= 0) {
+    return null;
+  }
+  return { ...payload, tier: await loadAccountTier(db, payload.tgId) };
 }
 
 export interface TurnstileVerifyResult {
@@ -290,36 +264,24 @@ export async function handleTelegramLogin(
   const policy = await loadPolicy(db);
   const tier = await loadAccountTier(db, verified.telegramId);
 
-  const sessionId = `sess_${randomToken(18)}`;
-  const expiresAt = nowMs + policy.sessionTtlMs;
+  const exp = Math.floor((nowMs + policy.sessionTtlMs) / 1000);
 
   const sessionToken = await signHs256Jwt<SessionJwtPayload>(env.ALLOWANCE_JWT_SECRET, {
-    typ: "session",
-    sid: sessionId,
+    typ: "session_v2",
     tgId: verified.telegramId,
     tgName: verified.telegramName,
     browserId: btCheck.browserId,
     iat: Math.floor(nowMs / 1000),
-    exp: Math.floor(expiresAt / 1000),
+    exp,
   });
 
-  // Coordinated migration in one D1.batch():
-  // 1. Insert user_sessions
-  // 2. Migrate guest chat_threads to telegram_id
-  // 3. Migrate active `running` usage_runs to telegram_id (so other devices see active run)
-  // 4. Migrate recent owner_key (last 10 min) so clientRequestId retries stay idempotent
+  // Claim guest threads, running requests and recent retry keys in one transaction.
   const tgOwnerKey = `tg:${verified.telegramId}`;
   const brOwnerKey = `br:${btCheck.browserId}`;
   if (verified.expiresAt <= Date.now()) {
     return { status: 401, body: { code: "invalid_telegram_token", message: "Expired Telegram ID token" } };
   }
   await db.batch([
-    db
-      .prepare(
-        `INSERT INTO user_sessions (id, telegram_id, telegram_name, browser_id, created_at, expires_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(sessionId, verified.telegramId, verified.telegramName, btCheck.browserId, nowMs, expiresAt),
     db
       .prepare(
         `UPDATE chat_threads
@@ -354,30 +316,9 @@ export async function handleTelegramLogin(
       browserToken: btCheck.browserToken,
       tier,
       user: { id: verified.telegramId, name: verified.telegramName },
-      expiresAt,
+      expiresAt: exp * 1000,
     },
   };
-}
-
-export async function handleLogout(
-  env: Env,
-  db: TrackedD1,
-  sessionToken: string | null | undefined,
-  nowMs = Date.now(),
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  const payload = await verifyHs256Jwt<SessionJwtPayload>(
-    env.ALLOWANCE_JWT_SECRET,
-    sessionToken,
-    nowMs,
-  );
-  if (payload?.typ === "session" && payload.sid) {
-    await db.run(
-      db
-        .prepare("UPDATE user_sessions SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL")
-        .bind(nowMs, payload.sid),
-    );
-  }
-  return { status: 200, body: { ok: true } };
 }
 
 export async function handleAllowance(
@@ -430,16 +371,16 @@ export async function handleAllowance(
     : btCheck;
 
   // Resolve optional authenticated session
-  const session = await verifyActiveSession(env, db, body.sessionToken, nowMs);
-  const tier: Tier = session ? session.tier : "guest";
+  const session = await verifyActiveSession(env, body.sessionToken, browserId, nowMs);
+  const tier: Tier = session ? await loadAccountTier(db, session.telegramId) : "guest";
 
   const policy = await loadPolicy(db);
-  const allowanceExpMs = nowMs + policy.allowanceTtlMs;
+  const allowanceExpMs = Math.min(nowMs + policy.allowanceTtlMs, session?.expiresAt ?? Infinity);
 
   const allowanceToken = await signHs256Jwt<AllowanceJwtPayload>(env.ALLOWANCE_JWT_SECRET, {
-    typ: "allowance",
+    typ: session ? "account_allowance_v2" : "allowance",
     browserId,
-    ...(session ? { sid: session.sessionId, tgId: session.telegramId, tgName: session.telegramName } : {}),
+    ...(session ? { tgId: session.telegramId, tgName: session.telegramName } : {}),
     tier,
     ip: ipAddress,
     fp: fingerprint,

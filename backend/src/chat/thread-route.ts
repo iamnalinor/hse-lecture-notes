@@ -14,7 +14,7 @@ function safeJsonParse(raw: string): unknown {
 
 /**
  * GET /v1/thread?threadId=...&beforeUpdatedAt=...
- * Authorized by sessionToken (logged-in) or browserToken (guest) — NO Turnstile and NO IP binding!
+ * The signed browser token identifies guests and binds signed-in requests to their session.
  * Never selects `agent_items_json`.
  */
 export async function handleGetThread(
@@ -39,17 +39,17 @@ export async function handleGetThread(
     request.headers.get("X-Browser-Token"),
   );
 
-  const session = await verifyActiveSession(env, db, sessionToken);
-  if (!session && btCheck.status === "missing") {
-    return { status: 401, body: { code: "unauthorized", message: "Session or browser token required" } };
+  if (btCheck.status === "missing") {
+    return { status: 401, body: { code: "unauthorized", message: "Browser token required" } };
   }
+  const session = await verifyActiveSession(env, sessionToken, btCheck.browserId);
 
   const policy = await loadPolicy(db);
   const pageSize = policy.threadsPageSize;
 
   // Query threads list (1 query)
   const owner = session ? "telegram_id = ?" : "browser_id = ? AND telegram_id IS NULL";
-  const ownerId = session?.telegramId ?? (btCheck.status === "ok" ? btCheck.browserId : "");
+  const ownerId = session?.telegramId ?? btCheck.browserId;
   const beforeId = url.searchParams.get("beforeId");
   const cursor = beforeUpdatedAt === null ? "" : beforeId ? "AND (updated_at, id) < (?, ?)" : "AND updated_at < ?";
   const bounds = beforeUpdatedAt === null ? [] : beforeId ? [beforeUpdatedAt, beforeId] : [beforeUpdatedAt];
