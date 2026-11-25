@@ -18,7 +18,6 @@ type Props = {
   readonly docId: string;
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
-  readonly note: string;
   /** Crumb and title: «Теория», «План учебной дисциплины», «Подготовка к КР-1». */
   readonly pageName: string;
   /** TOC caption when the page name is long and would repeat the crumb right next to it: «КР-1». */
@@ -34,7 +33,6 @@ export const CourseDocument = ({
   courseName,
   docId,
   downloads,
-  note,
   pageName,
   slots,
   tocCaption = pageName,
@@ -53,7 +51,6 @@ export const CourseDocument = ({
       course={course}
       courseName={courseName}
       downloads={downloads}
-      note={note}
       pageName={pageName}
       pdfDoc={docId}
     >

@@ -85,13 +85,10 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   draft: a.draft,
   isCheckingBrowser: a.isCheckingBrowser,
   isConfigured: a.isConfigured,
-  isLoginBusy: a.tgAuth.isLoginBusy,
-  checkingLogin: a.tgAuth.checkingLogin,
-  verificationError: a.tgAuth.verificationError,
+  ...a.tgAuth,
   isOpen: a.isOpen,
   isStreaming: a.thr.isStreaming,
   isThreadLoading: a.thr.isThreadLoading,
-  login: a.tgAuth.login,
   messages: a.unsent === null ? a.thr.messages : [...a.thr.messages, a.unsent],
   newChat: () => {
     detachThread(a);
@@ -118,7 +115,6 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   send: a.send,
   setDraft: a.setDraft,
   stop: a.stop,
-  switchAccount: a.tgAuth.switchAccount,
   threads: a.thr.threads,
   earlierStatus: a.thr.earlierStatus,
   hasEarlier: a.thr.hasEarlier,
@@ -270,7 +266,7 @@ export const ChatProvider = ({
   const isOpen = sharedOpen ? isShared : localOpen;
   const setIsOpen = sharedOpen ? setChatOpen : setLocalOpen;
   useRootOpenClassSync(isOpen);
-  const { turnstileHooks, turnstileOpen } = useTurnstile(isOpen);
+  const widgets = useTurnstile(isOpen);
 
   const docContext = useMemo(
     () => parseDocContext(general ? "/" : location.pathname),
@@ -279,12 +275,12 @@ export const ChatProvider = ({
   const docKey = `${docContext.course}:${docContext.docId}`;
   const composer = useComposerDraft(docKey, auth.user);
   const tgAuth = useTelegramAuthActions({
+    ...widgets,
     onLogin: composer.onLogin,
     setBlock: auth.setBlock,
     setDegraded: auth.setDegraded,
     setTier: auth.setTier,
     setUser: auth.setUser,
-    turnstileHooks,
   });
   return (
     <>
@@ -296,13 +292,16 @@ export const ChatProvider = ({
         key={auth.user?.id ?? "guest"}
         setIsOpen={setIsOpen}
         tgAuth={tgAuth}
-        turnstileHooks={turnstileHooks}
-        turnstileOpen={turnstileOpen}
+        turnstileHooks={widgets.turnstileHooks}
+        turnstileOpen={widgets.turnstileOpen}
       >
         {children}
       </ChatDocSessionProvider>
       {isChatConfigured() && (
-        <TurnstileModal cancelTurnstile={cancelActiveTurnstile} turnstileOpen={turnstileOpen} />
+        <TurnstileModal
+          cancelTurnstile={cancelActiveTurnstile}
+          turnstileOpen={widgets.turnstileOpen}
+        />
       )}
     </>
   );

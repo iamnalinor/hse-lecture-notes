@@ -15,8 +15,6 @@ type Props = {
 };
 
 /** The title link covers the whole row (`tr` is `relative`), so a click anywhere on it opens the lecture. */
-const STRETCH = "after:absolute after:inset-0 after:content-['']";
-
 const CELL = "border-b border-rule px-2 py-3.5 align-baseline text-body sm:px-3";
 
 export const LectureTable = ({ course, current, lectures }: Props) => (
@@ -37,7 +35,7 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
       </thead>
       <tbody>
         {lectures.map((lecture) => (
-          <tr className="relative hover:bg-wash/60" key={lecture.weekId}>
+          <tr className="group relative hover:bg-wash/60" key={lecture.weekId}>
             <td
               className={`${CELL} w-11 font-semibold tabular-nums ${lecture.weekId === current ? "text-def" : "text-muted"}`}
             >
@@ -50,11 +48,12 @@ export const LectureTable = ({ course, current, lectures }: Props) => (
             </td>
             <td className={CELL}>
               <Link
-                className={`text-body/snug text-ink no-underline hover:text-def ${STRETCH}`}
+                className="absolute inset-0 focus-visible:outline-2 focus-visible:outline-brand"
                 to={paths.lecture(course, lecture.weekId)}
               >
-                <SyncedTitle synced={lecture.synced} title={lecture.title} />
+                <span className="sr-only">{lecture.title}</span>
               </Link>
+              <SyncedTitle synced={lecture.synced} title={lecture.title} />
               {/* The date column does not fit on a phone: the date moves under the title. */}
               <span className="mt-1 block text-footnote text-muted tabular-nums sm:hidden">
                 {shortDate(lecture.date)}

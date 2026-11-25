@@ -9,7 +9,6 @@ type TelegramLoginSdk = {
   auth: (
     options: {
       readonly client_id: number | string;
-      readonly nonce: string;
       readonly scope: readonly string[];
     },
     callback: (result: false | null | { readonly id_token?: string }) => void,
@@ -145,16 +144,21 @@ const ensureTurnstile = async (
 export const warmupChatWidgets = (siteKey: string, hooks: TurnstileHooks): void => {
   void getBrowserFingerprint();
   void warmupTurnstile(siteKey, hooks);
-  // Preloaded so the login popup is not delayed by the SDK download after the click.
-  void preloadTelegramSdk();
 };
 
-const preloadTelegramSdk = async (): Promise<void> => {
-  try {
-    await loadExternalScript(TELEGRAM_SDK_URL, TELEGRAM_SDK_ID);
-  } catch {
-    // Retried when the user starts the login.
+/** Prepare the SDK before enabling the login button, so even Safari keeps the click activation. */
+export const loadTelegramSdk = async (): Promise<void> => {
+  if (getWindow().Telegram?.Login !== undefined) {
+    return;
   }
+  await loadExternalScript(TELEGRAM_SDK_URL, TELEGRAM_SDK_ID);
+  if (getWindow().Telegram?.Login !== undefined) {
+    return;
+  }
+
+  scripts.delete(TELEGRAM_SDK_ID);
+  document.querySelector(`#${TELEGRAM_SDK_ID}`)?.remove();
+  throw new Error("Telegram Login SDK unavailable");
 };
 
 const warmupTurnstile = async (siteKey: string, hooks: TurnstileHooks): Promise<void> => {
@@ -174,18 +178,17 @@ export const requestTurnstileToken = async (
   return await widget.request(signal);
 };
 
-/** Opens Telegram OIDC popup via `telegram-login.js` with `scope: ["profile"]` and server nonce. */
-export const openTelegramLoginPopup = async (clientId: string, nonce: string): Promise<string> => {
+/** Opens Telegram OIDC popup via `telegram-login.js` with `scope: ["profile"]` on the original click when preloaded. */
+export const openTelegramLoginPopup = async (clientId: string): Promise<string> => {
   if (clientId === "") {
     throw new Error("Telegram client ID is not configured");
   }
-  await loadExternalScript(TELEGRAM_SDK_URL, TELEGRAM_SDK_ID);
   const sdk = getWindow().Telegram?.Login;
   if (sdk === undefined) {
     throw new Error("Telegram Login SDK unavailable");
   }
   return await new Promise<string>((resolve, reject) => {
-    sdk.auth({ client_id: clientId, nonce, scope: ["profile"] }, (result) => {
+    sdk.auth({ client_id: clientId, scope: ["profile"] }, (result) => {
       if (result !== false && result !== null && typeof result.id_token === "string") {
         resolve(result.id_token);
         return;

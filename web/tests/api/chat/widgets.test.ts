@@ -1,21 +1,38 @@
 import { expect, it, vi } from "vitest";
 
-import { openTelegramLoginPopup } from "#web/api/chat/widgets.ts";
+import { loadTelegramSdk, openTelegramLoginPopup } from "#web/api/chat/widgets.ts";
 
 vi.mock("@fingerprintjs/fingerprintjs", () => ({
   load: () => Promise.resolve({ get: () => Promise.resolve({ visitorId: "fingerprint" }) }),
 }));
 
+it("opens an already loaded SDK in the click call stack", async () => {
+  const auth = vi.fn((_options: unknown, done: (result: { id_token: string }) => void) => {
+    done({ id_token: "signed" });
+  });
+  vi.stubGlobal("Telegram", { Login: { auth } });
+  try {
+    const result = openTelegramLoginPopup("123");
+    expect(auth).toHaveBeenCalledExactlyOnceWith(
+      { client_id: "123", scope: ["profile"] },
+      expect.any(Function),
+    );
+    await expect(result).resolves.toBe("signed");
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 it("shares a pending SDK load and can retry after a network failure", async () => {
-  const first = openTelegramLoginPopup("123", "nonce-a");
-  const second = openTelegramLoginPopup("123", "nonce-b");
+  const first = loadTelegramSdk();
+  const second = loadTelegramSdk();
   const scripts = document.querySelectorAll("script[src*='telegram-login.js']");
   expect(scripts).toHaveLength(1);
   scripts[0]?.dispatchEvent(new Event("error"));
   const failed = await Promise.allSettled([first, second]);
   expect(failed.map((result) => result.status)).toEqual(["rejected", "rejected"]);
 
-  const retry = openTelegramLoginPopup("123", "nonce-c");
+  const retry = loadTelegramSdk();
   const script = document.querySelector("#hse-telegram-login-script");
   expect(script).not.toBe(scripts[0]);
   vi.stubGlobal("Telegram", {
@@ -27,7 +44,8 @@ it("shares a pending SDK load and can retry after a network failure", async () =
   });
   try {
     script?.dispatchEvent(new Event("load"));
-    await expect(retry).resolves.toBe("test-token");
+    await retry;
+    await expect(openTelegramLoginPopup("123")).resolves.toBe("test-token");
   } finally {
     vi.unstubAllGlobals();
     script?.remove();

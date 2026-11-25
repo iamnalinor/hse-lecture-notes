@@ -2,7 +2,6 @@ import { readBoundedJson } from "./request-json";
 import { classifyError } from "./public-error";
 import {
   handleAllowance,
-  handleCreateNonce,
   handleLogout,
   handleTelegramLogin,
   resolveBrowserToken,
@@ -232,11 +231,6 @@ export default {
     };
 
     try {
-      if (url.pathname === "/v1/auth/nonce" && request.method === "POST") {
-        const res = await handleCreateNonce(env, db, request);
-        return finish(res.status, res.body);
-      }
-
       if (url.pathname === "/v1/auth/telegram" && request.method === "POST") {
         const body = await readBoundedJson(request);
         if (!body) {

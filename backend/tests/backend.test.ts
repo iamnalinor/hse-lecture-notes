@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { runArchiveBatch, type ArchiveStoragePort } from "../src/archiver";
 import {
   handleAllowance,
-  handleCreateNonce,
   handleLogout,
   handleTelegramLogin,
   resolveBrowserToken,
@@ -351,7 +350,7 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
   });
 });
 
-describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migration", () => {
+describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", () => {
   test("accepts only a valid signed browser token supplied by the client", async () => {
     const secret = "browser_secret_12345678901234567890";
     const token = await mintBrowserToken(secret);
@@ -369,9 +368,9 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     const browser = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
     const legacy = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
     const cookie = `browser_token=${encodeURIComponent(legacy.browserToken)}`;
-    const missing = await handleCreateNonce(env, db, new Request("https://api.test/v1/auth/nonce", {
+    const missing = await handleTelegramLogin(env, db, new Request("https://api.test/v1/auth/telegram", {
       headers: { Cookie: cookie },
-    }));
+    }), {});
     expect(missing.status).toBe(401);
 
     const request = new Request("https://api.test/v1/allowance", {
@@ -383,18 +382,14 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     expect(allowance.status).toBe(200);
     expect(allowance.body.browserToken).toBe(browser.browserToken);
     expect(allowance).not.toHaveProperty("setCookie");
-    const nonce = await handleCreateNonce(env, db, request);
-    expect(nonce.status).toBe(200);
-    expect(nonce).not.toHaveProperty("setCookie");
-    const stored = await db.first<{ browser_id: string }>(db.prepare("SELECT browser_id FROM auth_nonces WHERE nonce = ?").bind(nonce.body.nonce));
-    expect(stored?.browser_id).toBe(browser.browserId);
+
   });
 
-  test("Telegram login always consumes nonce, migrates threads + running runs, and logout revokes allowance", async () => {
+  test("Telegram login consumes each verified token once, migrates threads + running runs, and logout revokes allowance", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const env = makeTestEnv(shim.asD1());
-    const now = 1_700_000_000_000;
+    const now = Math.floor(Date.now() / 1000) * 1000;
 
     // Seed internal student roster
     await db.run(
@@ -438,15 +433,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     expect(guestAdmit.kind).toBe("admitted");
     if (guestAdmit.kind !== "admitted") throw new Error("expected admitted");
 
-    // 3. Issue nonce & login via Telegram while guest run is STILL running!
-    const nonceReq = new Request("https://hse-api.nalinor.dev/v1/auth/nonce", {
-      method: "POST",
-      headers: { "X-Browser-Token": browserToken },
-    });
-    const nonceRes = await handleCreateNonce(env, db, nonceReq, now + 1000);
-    expect(nonceRes.status).toBe(200);
-    const nonce = String(nonceRes.body.nonce);
-
+    // Sign in while the guest run is still running.
     const { jwks, jwt: tgIdToken } = await generateRs256TestKeyAndJwt({
       iss: env.TELEGRAM_ISSUER,
       aud: env.TELEGRAM_CLIENT_ID,
@@ -454,13 +441,22 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
       id: 777123,
       sub: "opaque_sub_ignored",
       name: "Иван Студент",
-      nonce,
     });
 
     const loginReq = new Request("https://hse-api.nalinor.dev/v1/auth/telegram", {
       method: "POST",
       headers: { "X-Browser-Token": browserToken },
     });
+    // A verified token can expire while key lookup or D1 access is pending.
+    const earlier = now - 120_000;
+    const expired = await generateRs256TestKeyAndJwt({
+      iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: (earlier + 10_000) / 1000, id: 777123,
+    });
+    const late = await handleTelegramLogin(env, db, loginReq, { telegramIdToken: expired.jwt }, {
+      nowMs: earlier, jwksOverride: expired.jwks,
+    });
+    expect(late.status).toBe(401);
+    expect(shim.sqlite.query("SELECT COUNT(*) AS n FROM user_sessions").get()).toEqual({ n: 0 });
     const loginRes = await handleTelegramLogin(
       env,
       db,
@@ -472,7 +468,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     expect(loginRes.body.tier).toBe("student");
     const sessionToken = String(loginRes.body.sessionToken);
 
-    // Replaying the same telegramIdToken MUST fail (nonce already consumed)
+    // Replaying the same telegramIdToken MUST fail (token already consumed)
     const replayRes = await handleTelegramLogin(
       env,
       db,
@@ -481,7 +477,10 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
       { nowMs: now + 3000, jwksOverride: jwks },
     );
     expect(replayRes.status).toBe(401);
-    expect(replayRes.body.code).toBe("invalid_or_reused_nonce");
+    expect(replayRes.body.code).toBe("reused_telegram_token");
+
+    expect(shim.sqlite.query("SELECT length(token_hash) AS size, expires_at FROM used_telegram_tokens").all())
+      .toEqual([{ size: 64, expires_at: now + 60_000 }]);
 
     // Second browser (device B) for the SAME Telegram user CANNOT start a second parallel run in the migrated thread!
     const secondBrowser = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
@@ -1113,7 +1112,7 @@ test("Telegram checks audience and shares a ten-minute JWKS snapshot across fail
   const now = Date.now();
   const { jwt, jwks } = await generateRs256TestKeyAndJwt({
     iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: now / 1000 + 3600,
-    id: 42, nonce: "example-nonce",
+    id: 42,
   });
   let fetches = 0;
   const fetchKeys = (async () => { fetches++; return Response.json(jwks); }) as unknown as typeof fetch;
@@ -1147,12 +1146,13 @@ test("Turnstile gets the visitor IPv6 address while allowance retains the quota 
     .toBe("2001:0db8:abcd:0012::/64");
 });
 
-test("optional archive skips history and cleans expired nonces without R2", async () => {
+test("optional archive skips history and cleans expired Telegram token hashes without R2", async () => {
   const shim = new SqliteD1Shim();
   const db = new TrackedD1(shim.asD1());
-  shim.sqlite.query("INSERT INTO auth_nonces(nonce,browser_id,expires_at) VALUES ('n','b',1)").run();
+  const expiresAt = Date.now() + 60_000;
+  shim.sqlite.query("INSERT INTO used_telegram_tokens(token_hash,expires_at) VALUES ('hash',?)").run(expiresAt);
   shim.sqlite.query("INSERT INTO chat_threads(id,title,browser_id,created_at,updated_at) VALUES ('old','old thread','b',1,1)").run();
-  expect(await runArchiveBatch(db, null)).toMatchObject({ noncesCleaned: 1, threadsDeleted: 0, runsDeleted: 0 });
-  expect(shim.sqlite.query("SELECT nonce FROM auth_nonces").all()).toEqual([]);
+  expect(await runArchiveBatch(db, null, { nowMs: expiresAt + 1 })).toMatchObject({ telegramTokensCleaned: 1, threadsDeleted: 0, runsDeleted: 0 });
+  expect(shim.sqlite.query("SELECT token_hash FROM used_telegram_tokens").all()).toEqual([]);
   expect(shim.sqlite.query("SELECT id FROM chat_threads").get()).toEqual({ id: "old" });
 });

@@ -96,25 +96,6 @@ export const prepGoal = (id: string, quizNumber?: number): string => {
 export const prepTopicName = (name: string, topic?: string): string =>
   topic === undefined || topic === "" ? name : `${name} (${topic})`;
 
-/** What the page holds: a test is about problems, a colloquium about theory and proofs, an exam about both, a quiz about a few problem types. */
-export const prepContents = (id: string): string => {
-  switch (parse(id)?.kind) {
-    case "colloq": {
-      return "Определения, теоремы, ход доказательств, вопросы с ответами";
-    }
-    case "exam": {
-      return "Билеты с доказательствами, определения, задачи с ответами";
-    }
-    case "quiz": {
-      return "Типы задач, как решать, разобранные примеры";
-    }
-    case "kr":
-    case undefined: {
-      return "Темы, методы, задачи с ответами";
-    }
-  }
-};
-
 /** Meta description of the page shell (`spa-fallback.ts`), after the course name. */
 export const prepDescription = (id: string): string => {
   switch (parse(id)?.kind) {

@@ -12,9 +12,6 @@ export const CourseSources = ({ course }: { readonly course: CourseId }) => (
     <h2 className="mb-3 text-title3 font-semibold" id="sources">
       Источники
     </h2>
-    <p className="mb-4 max-w-160 text-subhead/relaxed text-ink/80">
-      Конспекты написаны по лекциям и материалам курса, часть задач и примеров взята из них.
-    </p>
     <ul className="flex max-w-200 flex-col gap-2 text-subhead/snug">
       {SOURCES[course].map((source) => (
         <li key={source.title}>

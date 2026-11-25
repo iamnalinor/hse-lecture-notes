@@ -44,8 +44,3 @@ const routes: RouteObject[] = [
 
 export const createAppRouter = () =>
   createBrowserRouter(routes, { basename: import.meta.env.BASE_URL });
-
-/** Page code is small: fetch all of it once the first page is up, so clicks never wait for it. */
-export const preloadPages = async (): Promise<void> => {
-  await Promise.allSettled(Object.values(PAGES).map(async (load) => await load()));
-};

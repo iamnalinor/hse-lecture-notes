@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { MemoryRouter, useNavigate } from "react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -31,12 +31,12 @@ vi.mock("#web/api/chat/client.ts", () => ({
   getChatEnvConfig: () => ({ apiUrl: "https://example.test" }),
   isChatConfigured: () => true,
   loginViaTelegram: vi.fn(),
-  logoutChatSession: vi.fn(),
 }));
 vi.mock("#web/api/chat/stream.ts", () => ({ openChatMessageStream: vi.fn() }));
 vi.mock("#web/api/chat/widgets.ts", () => ({
   cancelActiveTurnstile: vi.fn(),
   warmupChatWidgets: vi.fn(),
+  loadTelegramSdk: () => Promise.resolve(),
 }));
 
 const mount = () =>
@@ -385,6 +385,12 @@ it("keeps the guest draft on login and clears it when switching between accounts
     user: { id: 1, name: "one" },
   });
   const chat = mount();
+  act(() => {
+    chat.current.toggle();
+  });
+  await waitFor(() => {
+    expect(chat.current.isLoginBusy).toBe(false);
+  });
   const host = document.querySelector("#hse-turnstile-host");
   const iframe = document.createElement("iframe");
   host?.append(iframe);
@@ -822,6 +828,12 @@ it("shows the signed-in account while browser verification is pending and after 
   const pending = Promise.withResolvers<typeof allowance>();
   vi.mocked(ensureChatAllowance).mockReturnValueOnce(pending.promise);
   const chat = mount();
+  act(() => {
+    chat.current.toggle();
+  });
+  await waitFor(() => {
+    expect(chat.current.isLoginBusy).toBe(false);
+  });
   let login: Promise<void> | undefined;
   await act(async () => {
     login = chat.current.login();
@@ -829,7 +841,7 @@ it("shows the signed-in account while browser verification is pending and after 
   });
   expect(chat.current.user).toEqual(account);
   expect(chat.current.checkingLogin).toBe(true);
-  expect(chat.current.isLoginBusy).toBe(false);
+  expect(chat.current.isLoginBusy).toBe(true);
   await act(async () => {
     pending.reject(new Error("cancelled"));
     await login;
@@ -837,6 +849,7 @@ it("shows the signed-in account while browser verification is pending and after 
   expect(chat.current.user).toEqual(account);
   expect(chat.current.checkingLogin).toBe(false);
   expect(chat.current.verificationError).toBe(true);
+  expect(chat.current.isLoginBusy).toBe(false);
 });
 
 it("retries the unsent question after a rate limit with only retryAfterSec", async () => {

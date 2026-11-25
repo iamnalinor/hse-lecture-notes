@@ -1,5 +1,7 @@
 import {
   mintBrowserToken,
+  bytesToBase64Url,
+  sha256Hex,
   decodeJwtUnverified,
   normalizeIpAddress,
   randomToken,
@@ -20,7 +22,6 @@ import type {
   AccountTier,
 } from "./types";
 
-const NONCE_TTL_MS = 5 * 60_000;
 const MIGRATION_IDEMPOTENCY_WINDOW_MS = 10 * 60_000;
 
 const jwksCache = new Map<string, { doc: Promise<JwksDocument>; fetchedAt: number }>();
@@ -206,7 +207,6 @@ export interface TelegramIdClaims {
   id?: number | string;
   name?: string;
   preferred_username?: string;
-  nonce?: string;
   [key: string]: unknown;
 }
 
@@ -216,13 +216,13 @@ export async function verifyTelegramIdToken(
   nowMs = Date.now(),
   fetchImpl: typeof fetch = fetch,
   jwksOverride?: JwksDocument,
-): Promise<{ telegramId: number; telegramName: string; nonce: string } | null> {
+): Promise<{ telegramId: number; telegramName: string; expiresAt: number } | null> {
   const expectedAud = env.TELEGRAM_CLIENT_ID?.trim();
   const parsed = decodeJwtUnverified<TelegramIdClaims>(idToken);
   const claims = parsed?.payload;
   if (!expectedAud || parsed?.header?.alg !== "RS256" || !claims) return null;
   if (claims.iss !== env.TELEGRAM_ISSUER) return null;
-  if (typeof claims.exp !== "number" || claims.exp * 1000 <= nowMs) return null;
+  if (typeof claims.exp !== "number" || !Number.isFinite(claims.exp * 1000) || claims.exp * 1000 <= nowMs) return null;
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!audiences.some(aud => (typeof aud === "number" || typeof aud === "string") && String(aud) === expectedAud)) {
     return null;
@@ -238,7 +238,8 @@ export async function verifyTelegramIdToken(
         : NaN;
   if (!Number.isSafeInteger(telegramId) || telegramId <= 0) return null;
 
-  if (typeof claims.nonce !== "string" || claims.nonce.length < 12) return null;
+  // The receipt hashes the compact JWT. Accept only the canonical signature encoding.
+  if (idToken !== `${parsed.signingInput}.${bytesToBase64Url(parsed.signature)}`) return null;
 
   // Reject malformed claims locally. Only a verified signature can authorize login.
   const jwks = jwksOverride ?? await loadTelegramJwks(env.TELEGRAM_JWKS_URL, fetchImpl, nowMs);
@@ -249,50 +250,12 @@ export async function verifyTelegramIdToken(
     (typeof claims.preferred_username === "string" && claims.preferred_username.trim()) ||
     `User ${telegramId}`;
 
-  return { telegramId, telegramName, nonce: claims.nonce };
+  return { telegramId, telegramName, expiresAt: claims.exp * 1000 };
 }
 
 // =============================================================================
 // Endpoint handlers
 // =============================================================================
-
-export async function handleCreateNonce(
-  env: Env,
-  db: TrackedD1,
-  request: Request,
-  nowMs = Date.now(),
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  const btCheck = await resolveBrowserToken(
-    env.BROWSER_TOKEN_SECRET,
-    request.headers.get("X-Browser-Token"),
-  );
-  if (btCheck.status === "missing") {
-    return { status: 401, body: { code: "browser_token_required", message: "Call /v1/allowance first" } };
-  }
-
-  const nonce = randomToken(24);
-  const expiresAt = nowMs + NONCE_TTL_MS;
-
-  await db.batch([
-    // Bounded cleanup of expired nonces using idx_auth_nonces_expires
-    db
-      .prepare(
-        "DELETE FROM auth_nonces WHERE rowid IN (SELECT rowid FROM auth_nonces WHERE expires_at < ? LIMIT 50)",
-      )
-      .bind(nowMs),
-    db
-      .prepare("INSERT INTO auth_nonces (nonce, browser_id, expires_at) VALUES (?, ?, ?)")
-      .bind(nonce, btCheck.browserId, expiresAt),
-  ]);
-
-  return {
-    status: 200,
-    body: {
-      nonce,
-      expiresAt,
-    },
-  };
-}
 
 export async function handleTelegramLogin(
   env: Env,
@@ -325,20 +288,6 @@ export async function handleTelegramLogin(
     return { status: 401, body: { code: "invalid_telegram_token", message: "Invalid Telegram ID token" } };
   }
 
-  // ALWAYS consume nonce atomically (no client flag can ever bypass this!)
-  const consumeRes = await db.run(
-    db
-      .prepare(
-        `UPDATE auth_nonces
-         SET consumed_at = ?
-         WHERE nonce = ? AND browser_id = ? AND consumed_at IS NULL AND expires_at > ?`,
-      )
-      .bind(nowMs, verified.nonce, btCheck.browserId, nowMs),
-  );
-  if ((consumeRes.meta?.changes ?? 0) !== 1) {
-    return { status: 401, body: { code: "invalid_or_reused_nonce", message: "Nonce invalid, expired, or already used" } };
-  }
-
   const policy = await loadPolicy(db);
   const tier = await loadAccountTier(db, verified.telegramId);
 
@@ -362,39 +311,54 @@ export async function handleTelegramLogin(
   // 4. Migrate recent owner_key (last 10 min) so clientRequestId retries stay idempotent
   const tgOwnerKey = `tg:${verified.telegramId}`;
   const brOwnerKey = `br:${btCheck.browserId}`;
-  await db.batch([
-    db
-      .prepare(
-        `INSERT INTO user_sessions (id, telegram_id, telegram_name, browser_id, created_at, expires_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(sessionId, verified.telegramId, verified.telegramName, btCheck.browserId, nowMs, expiresAt),
-    db
-      .prepare(
-        `UPDATE chat_threads
-         SET telegram_id = ?, browser_id = NULL, updated_at = ?
-         WHERE browser_id = ? AND telegram_id IS NULL`,
-      )
-      .bind(verified.telegramId, nowMs, btCheck.browserId),
-    db
-      .prepare(
-        `UPDATE usage_runs
-         SET telegram_id = ?, updated_at = ?
-         WHERE browser_id = ? AND telegram_id IS NULL AND status = 'running'`,
-      )
-      .bind(verified.telegramId, nowMs, btCheck.browserId),
-    db
-      .prepare(
-        `UPDATE usage_runs
-         SET owner_key = ?, updated_at = ?
-         WHERE owner_key = ? AND created_at >= ?
-           AND NOT EXISTS (
-             SELECT 1 FROM usage_runs u2
-             WHERE u2.owner_key = ? AND u2.client_request_id = usage_runs.client_request_id
-           )`,
-      )
-      .bind(tgOwnerKey, nowMs, brOwnerKey, nowMs - MIGRATION_IDEMPOTENCY_WINDOW_MS, tgOwnerKey),
-  ]);
+  const tokenHash = await sha256Hex(body.telegramIdToken);
+  try {
+    await db.batch([
+      db.prepare("DELETE FROM used_telegram_tokens WHERE rowid IN (SELECT rowid FROM used_telegram_tokens WHERE expires_at <= ? LIMIT 50)")
+        .bind(nowMs),
+      db.prepare("INSERT INTO used_telegram_tokens (token_hash, expires_at) VALUES (?, ?)")
+        .bind(tokenHash, verified.expiresAt),
+      db
+        .prepare(
+          `INSERT INTO user_sessions (id, telegram_id, telegram_name, browser_id, created_at, expires_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(sessionId, verified.telegramId, verified.telegramName, btCheck.browserId, nowMs, expiresAt),
+      db
+        .prepare(
+          `UPDATE chat_threads
+           SET telegram_id = ?, browser_id = NULL, updated_at = ?
+           WHERE browser_id = ? AND telegram_id IS NULL`,
+        )
+        .bind(verified.telegramId, nowMs, btCheck.browserId),
+      db
+        .prepare(
+          `UPDATE usage_runs
+           SET telegram_id = ?, updated_at = ?
+           WHERE browser_id = ? AND telegram_id IS NULL AND status = 'running'`,
+        )
+        .bind(verified.telegramId, nowMs, btCheck.browserId),
+      db
+        .prepare(
+          `UPDATE usage_runs
+           SET owner_key = ?, updated_at = ?
+           WHERE owner_key = ? AND created_at >= ?
+             AND NOT EXISTS (
+               SELECT 1 FROM usage_runs u2
+               WHERE u2.owner_key = ? AND u2.client_request_id = usage_runs.client_request_id
+             )`,
+        )
+        .bind(tgOwnerKey, nowMs, brOwnerKey, nowMs - MIGRATION_IDEMPOTENCY_WINDOW_MS, tgOwnerKey),
+    ]);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("telegram_token_expired")) {
+      return { status: 401, body: { code: "invalid_telegram_token", message: "Expired Telegram ID token" } };
+    }
+    if (error instanceof Error && error.message.includes("UNIQUE constraint failed: used_telegram_tokens.token_hash")) {
+      return { status: 401, body: { code: "reused_telegram_token", message: "Telegram ID token already used" } };
+    }
+    throw error;
+  }
 
   return {
     status: 200,

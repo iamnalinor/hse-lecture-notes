@@ -8,8 +8,9 @@ import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
 import { isHighlighted, prepGoal, prepName, prepWhen, upcomingPreps } from "#web/domain/preps.ts";
 import { plural } from "#web/domain/text.ts";
-import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { ArrowUpRightIcon } from "#web/shared/ui/icons.tsx";
+
+import { HomeFormula } from "./home-formula.tsx";
 
 type Props = {
   readonly course: CourseInfo;
@@ -42,7 +43,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
           aria-hidden="true"
           className="absolute top-3.5 right-4.5 text-title3 text-faint sm:top-4.5 sm:right-5 sm:text-title2"
         >
-          <TexMath display={false} tex={course.symbol} />
+          <HomeFormula name={course.id} />
         </span>
         <span className="text-footnote text-muted">{course.weekday}</span>
         <h3 className="mt-1.5 mb-1 max-w-55 text-title3/tight font-bold sm:mt-2.5 sm:mb-1.5 sm:text-title2/tight">

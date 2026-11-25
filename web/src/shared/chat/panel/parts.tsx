@@ -79,6 +79,23 @@ const HistoryMenu = ({
   );
 };
 
+const LoginButton = () => {
+  const chat = useChat();
+  return (
+    <button
+      className="ai-text-btn"
+      disabled={chat.isLoginBusy}
+      onClick={() => {
+        void chat.login();
+      }}
+      type="button"
+    >
+      {chat.isLoginBusy ? <span className="ai-spin" /> : <TelegramIcon />}
+      {chat.telegramLoadFailed ? "Повторить загрузку Telegram" : "Войти"}
+    </button>
+  );
+};
+
 export const ChatPanelHeader = ({
   historyOpen,
   onClose,
@@ -94,19 +111,7 @@ export const ChatPanelHeader = ({
         <SparklesIcon />
         <span title={title}>{title}</span>
       </div>
-      {chat.user === null && (
-        <button
-          className="ai-text-btn"
-          disabled={chat.isLoginBusy}
-          onClick={() => {
-            void chat.login();
-          }}
-          type="button"
-        >
-          {chat.isLoginBusy ? <span className="ai-spin" /> : <TelegramIcon />}
-          Войти
-        </button>
-      )}
+      {chat.user === null && <LoginButton />}
       <button
         aria-label="Новый чат"
         className="ai-icon-btn"
@@ -197,8 +202,6 @@ const AgentLinkCard = (): JSX.Element => {
   const { copyText, isCopied } = useCopyFeedback();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/u, "");
   const url = `${globalThis.location.origin}${basePath}${pathname}`.replace(/\/$/u, "");
-  // The field shows the address without the scheme, as a browser's address bar does; the copy has it.
-  const shown = url.replace(/^https?:\/\//u, "");
 
   return (
     <section className="ai-agent">
@@ -208,7 +211,7 @@ const AgentLinkCard = (): JSX.Element => {
       <div aria-labelledby="ai-agent-label" className="ai-agent-field" role="group">
         {/* The feedback takes the address's place: a tip over the button would be cut by the field. */}
         <span className={isCopied ? "ai-agent-url is-done" : "ai-agent-url"} title={url}>
-          {isCopied ? "Скопировано" : shown}
+          {isCopied ? "Скопировано" : url}
         </span>
         <button
           aria-label={isCopied ? "Ссылка скопирована" : "Копировать ссылку"}
