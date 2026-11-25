@@ -130,7 +130,7 @@ def test_sync_recovers_fts_and_vector_deletions(tmp_path: Path) -> None:
         def __init__(self) -> None:
             self.db = sqlite3.connect(":memory:")
             self.db.row_factory = sqlite3.Row
-            self.db.executescript((ROOT / "backend/migrations/0001_chat_schema.sql").read_text())
+            self.db.executescript((ROOT / "backend/migrations/0001_init.sql").read_text())
             self.fail_fts = True
             self.vectors = set()
 
