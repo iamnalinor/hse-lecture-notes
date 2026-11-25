@@ -102,6 +102,12 @@ export const useChatAuthState = () => {
     degraded,
     rateLimitUntil,
     setBlock: applyBlock,
+    applyLogin: (account: ChatUser, nextTier: ChatTier) => {
+      setDegraded(readStoredDegraded());
+      setTier(nextTier);
+      setUser(account);
+      applyBlock(null);
+    },
     setDegraded: applyDegraded,
     setTier,
     setUser,
@@ -116,31 +122,58 @@ type LoginDeps = {
   readonly onLogin: (account: ChatUser | null, canResume: boolean) => void;
   readonly setBlock: (next: ChatBlock | null) => void;
   readonly setDegraded: (next: ChatDegraded) => void;
-  readonly setTier: (next: ChatTier) => void;
-  readonly setUser: (next: ChatUser | null) => void;
+  readonly applyLogin: (account: ChatUser, tier: ChatTier) => void;
   readonly turnstileHooks: TurnstileHooks;
+};
+
+const abortOnSessionChange = (sessionToken: null | string, controller: AbortController) =>
+  subscribeAuthStorage(() => {
+    if (sessionToken !== readStoredAuth().sessionToken) {
+      controller.abort();
+    }
+  });
+
+const useLoginCheck = (deps: LoginDeps) => {
+  type Check = { sessionToken: null | string; status: "checking" | "error" };
+  const [check, setCheck] = useState<Check | null>(null);
+  const checkLogin = useCallback(async () => {
+    const { sessionToken } = readStoredAuth();
+    const active: Check = { sessionToken, status: "checking" };
+    const controller = new AbortController();
+    const unsubscribe = abortOnSessionChange(sessionToken, controller);
+    setCheck(active);
+    try {
+      const access = await ensureChatAllowance(deps.turnstileHooks, { signal: controller.signal });
+      if (sessionToken === readStoredAuth().sessionToken) {
+        if (access.degraded !== null) {
+          deps.setDegraded(access.degraded);
+        }
+        deps.setBlock(access.block);
+      }
+      setCheck((prev) => (prev === active ? null : prev));
+    } catch {
+      const result: Check | null =
+        sessionToken === readStoredAuth().sessionToken ? { sessionToken, status: "error" } : null;
+      setCheck((prev) => (prev === active ? result : prev));
+    } finally {
+      unsubscribe();
+    }
+  }, [deps]);
+  const status = check?.sessionToken === readStoredAuth().sessionToken ? check.status : undefined;
+  return {
+    checkingLogin: status === "checking",
+    verificationError: status === "error",
+    clearVerificationError: () => {
+      setCheck(null);
+    },
+    checkLogin,
+  };
 };
 
 export const useTelegramAuthActions = (deps: LoginDeps) => {
   const [isLoginBusy, setIsLoginBusy] = useState(false);
-
-  const [checkingLogin, setCheckingLogin] = useState(false);
-  const [verificationError, setVerificationError] = useState(false);
-  const checkLogin = useCallback(async () => {
-    setCheckingLogin(true);
-    setVerificationError(false);
-    try {
-      const access = await ensureChatAllowance(deps.turnstileHooks);
-      if (access.degraded !== null) {
-        deps.setDegraded(access.degraded);
-      }
-      deps.setBlock(access.block);
-    } catch {
-      setVerificationError(true);
-    } finally {
-      setCheckingLogin(false);
-    }
-  }, [deps]);
+  const { checkLogin, ...verification } = useLoginCheck(deps);
+  const { checkingLogin } = verification;
   const login = useCallback(async (): Promise<void> => {
     if (isLoginBusy || checkingLogin || deps.telegramSdk === "loading") {
       return;
@@ -151,31 +184,19 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
     }
     setIsLoginBusy(true);
     try {
-      const res = await loginViaTelegram(deps.turnstileHooks, () => {
-        deps.setTier("guest");
-        deps.setUser(null);
-        deps.setDegraded({ active: false });
-        deps.setBlock(null);
-      });
+      const res = await loginViaTelegram(deps.turnstileHooks);
       deps.onLogin(res.user, true);
-      deps.setTier(res.tier);
-      deps.setUser(res.user);
-      deps.setBlock(null);
-      setIsLoginBusy(false);
-      await checkLogin();
+      deps.applyLogin(res.user, res.tier);
     } catch {
-      // User cancelled Telegram popup or network error
+      return;
     } finally {
       setIsLoginBusy(false);
     }
+    await checkLogin();
   }, [checkingLogin, checkLogin, deps, isLoginBusy]);
 
   return {
-    checkingLogin,
-    verificationError,
-    clearVerificationError: () => {
-      setVerificationError(false);
-    },
+    ...verification,
     isLoginBusy: isLoginBusy || checkingLogin || deps.telegramSdk === "loading",
     telegramLoadFailed: deps.telegramSdk === "failed",
     login,

@@ -13,16 +13,12 @@ import {
   loginViaTelegram,
   type ThreadResponse,
 } from "#web/api/chat/client.ts";
-import {
-  readStoredAuth,
-  saveAllowanceToken,
-  saveBrowserToken,
-  saveDegraded,
-  saveSessionAuth,
-} from "#web/api/chat/storage.ts";
+import { readStoredAuth, saveDegraded } from "#web/api/chat/storage.ts";
 import { type ActiveWsStream, openChatMessageStream } from "#web/api/chat/stream.ts";
 import { ChatProvider, useChat } from "#web/shared/chat/session/context.tsx";
 import { makeAssistantMsg, makeUserMsg } from "#web/shared/chat/stream/helpers.ts";
+
+import { seedChatAuth } from "../../../support/chat-auth.ts";
 
 vi.mock("#web/api/chat/client.ts", () => ({
   ensureChatAllowance: vi.fn(),
@@ -47,6 +43,13 @@ const mount = () =>
       </MemoryRouter>
     ),
   }).result;
+
+const mockLogin = (account: Awaited<ReturnType<typeof loginViaTelegram>>): void => {
+  vi.mocked(loginViaTelegram).mockImplementationOnce(() => {
+    seedChatAuth({ ...account, sessionToken: "session" });
+    return Promise.resolve(account);
+  });
+};
 
 const thread = (id: string, messages: readonly ChatMessage[] = []): ThreadResponse => ({
   requestedThreadMissing: false,
@@ -111,7 +114,7 @@ it("detaches an active response for a new chat and ignores its late events", asy
 
 it("can select history during a restored background response without its poll replacing the selection", async () => {
   vi.useFakeTimers();
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   localStorage.setItem("hse_chat_thread:guest:/", "running");
   const answer = { ...makeAssistantMsg({ course: "", docId: "" }), id: "a", runId: "r" };
   const status = Promise.withResolvers<Awaited<ReturnType<typeof fetchChatRunStatus>>>();
@@ -175,6 +178,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   localStorage.clear();
   vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  vi.mocked(fetchChatThread).mockResolvedValue(null);
   vi.mocked(ensureChatAllowance).mockResolvedValue(allowance);
   vi.mocked(openChatMessageStream).mockReturnValue({ stop: vi.fn(), disconnect: vi.fn() });
 });
@@ -184,8 +188,8 @@ afterEach(() => {
 });
 
 it("discards another account's late history after a storage event", async () => {
-  saveBrowserToken("browser");
-  saveSessionAuth("account1", "student", { id: 1, name: "one" });
+  seedChatAuth({ browserToken: "browser" });
+  seedChatAuth({ sessionToken: "account1", tier: "student", user: { id: 1, name: "one" } });
   const pending = Promise.withResolvers<ThreadResponse>();
   vi.mocked(fetchChatThread)
     .mockReturnValueOnce(pending.promise)
@@ -196,8 +200,8 @@ it("discards another account's late history after a storage event", async () => 
     await Promise.resolve();
   });
   await act(async () => {
-    saveSessionAuth("account2", "student", { id: 2, name: "two" });
-    globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_user" }));
+    seedChatAuth({ sessionToken: "account2", tier: "student", user: { id: 2, name: "two" } });
+    globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_auth" }));
     await Promise.resolve();
   });
   expect(chat.current.activeThreadId).toBeNull();
@@ -276,7 +280,7 @@ it("reuses the same request ID after a disconnect before meta", async () => {
 
 it("polls a restored running turn through a failed request to completion", async () => {
   vi.useFakeTimers();
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   const answer = { ...makeAssistantMsg({ course: "", docId: "" }), id: "assistant", runId: "run" };
   const user = makeUserMsg("Q", null, { course: "", docId: "" });
   vi.mocked(fetchChatThread)
@@ -367,7 +371,7 @@ it.each(["allowance", "websocket"])(
     expect(chat.current.isStreaming).toBe(false);
     expect(chat.current.draft).toBe("");
     const signedIn = { ...allowance, tier: "student" as const, user: { id: 1, name: "one" } };
-    vi.mocked(loginViaTelegram).mockResolvedValueOnce(signedIn);
+    mockLogin(signedIn);
     vi.mocked(ensureChatAllowance).mockResolvedValue(signedIn);
     const previousCalls = vi.mocked(openChatMessageStream).mock.calls.length;
     await act(() => chat.current.login());
@@ -402,8 +406,8 @@ it("keeps the guest draft on login and clears it when switching between accounts
   expect(host?.firstChild).toBe(iframe);
   expect(chat.current.draft).toBe("my question");
   act(() => {
-    saveSessionAuth("other", "student", { id: 2, name: "two" });
-    globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_user" }));
+    seedChatAuth({ sessionToken: "other", tier: "student", user: { id: 2, name: "two" } });
+    globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_auth" }));
   });
   expect(chat.current.draft).toBe("");
 });
@@ -465,7 +469,7 @@ it("keeps the open conversation visible across navigation, including after strea
 });
 
 it("loads the next history page without replacing the open thread", async () => {
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   const first = thread("z");
   vi.mocked(fetchChatThread)
     .mockResolvedValueOnce({ ...first, hasMore: true })
@@ -483,7 +487,7 @@ it("loads the next history page without replacing the open thread", async () => 
 });
 
 it("remembers the history selection per page across reloads and forgets it for a new chat", async () => {
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   vi.mocked(fetchChatThread).mockImplementation((id) => Promise.resolve(thread(id ?? "latest")));
   const first = mount();
   await act(async () => {
@@ -509,7 +513,7 @@ it("remembers the history selection per page across reloads and forgets it for a
 });
 
 it("preserves a loaded conversation while open and restores the new page after reopening", async () => {
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   localStorage.setItem("hse_chat_thread:guest:/", "home-thread");
   localStorage.setItem("hse_chat_thread:guest:/algebra", "algebra-thread");
   vi.mocked(fetchChatThread).mockImplementation((id) =>
@@ -551,7 +555,7 @@ it("preserves a loaded conversation while open and restores the new page after r
 });
 
 it("tracks loading while restoring or selecting a conversation and clears it on failure", async () => {
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   localStorage.setItem("hse_chat_thread:guest:/", "saved");
   const restored = Promise.withResolvers<ThreadResponse>();
   const selected = Promise.withResolvers<ThreadResponse>();
@@ -604,7 +608,7 @@ it("shows local browser verification only for a sent message that needs allowanc
 });
 
 it("clears a cancelled history selection when closed and can reopen the loaded conversation", async () => {
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   localStorage.setItem("hse_chat_thread:guest:/", "saved");
   const selected = Promise.withResolvers<ThreadResponse>();
   vi.mocked(fetchChatThread)
@@ -675,12 +679,12 @@ it("clears browser verification and restores the draft when a pre-stream request
 
 it("shows the already known degraded quota immediately and keeps it scoped to the account", () => {
   const degraded = { active: true, restoresAt: Date.now() + 120_000 };
-  saveSessionAuth("one", "student", { id: 1, name: "one" });
+  seedChatAuth({ sessionToken: "one", tier: "student", user: { id: 1, name: "one" } });
   saveDegraded(degraded);
   const first = mount();
   expect(first.current.degraded).toEqual(degraded);
   expect(ensureChatAllowance).not.toHaveBeenCalled();
-  saveSessionAuth("two", "student", { id: 2, name: "two" });
+  seedChatAuth({ sessionToken: "two", tier: "student", user: { id: 2, name: "two" } });
   const second = mount();
   expect(second.current.degraded).toEqual({ active: false });
 });
@@ -719,14 +723,14 @@ it("does not automatically send an edited pending draft after login", async () =
     chat.current.setDraft("Новый вопрос");
   });
   const signedIn = { ...allowance, tier: "student" as const, user: { id: 1, name: "one" } };
-  vi.mocked(loginViaTelegram).mockResolvedValueOnce(signedIn);
+  mockLogin(signedIn);
   vi.mocked(ensureChatAllowance).mockResolvedValue(signedIn);
   await act(() => chat.current.login());
   expect(openChatMessageStream).not.toHaveBeenCalled();
   expect(chat.current.draft).toBe("Новый вопрос");
 });
 it("resumes the original migrated thread after its history is restored", async () => {
-  saveBrowserToken("browser");
+  seedChatAuth({ browserToken: "browser" });
   localStorage.setItem("hse_chat_thread:guest:/", "g");
   vi.mocked(fetchChatThread).mockResolvedValue(thread("g"));
   const chat = mount();
@@ -740,7 +744,7 @@ it("resumes the original migrated thread after its history is restored", async (
   });
   await act(() => chat.current.send("Неотправленный вопрос"));
   const signedIn = { ...allowance, tier: "student" as const, user: { id: 1, name: "one" } };
-  vi.mocked(loginViaTelegram).mockResolvedValueOnce(signedIn);
+  mockLogin(signedIn);
   vi.mocked(ensureChatAllowance).mockResolvedValue(signedIn);
   await act(async () => {
     await chat.current.login();
@@ -812,7 +816,7 @@ it.each(["allowance", "newer"])(
   async (cached) => {
     const chat = mount();
     await act(() => chat.current.send("Вопрос"));
-    saveAllowanceToken(cached, Date.now() + 3_600_000);
+    seedChatAuth({ allowanceToken: cached, allowanceExpiresAt: Date.now() + 3_600_000 });
     act(() =>
       vi
         .mocked(openChatMessageStream)
@@ -922,4 +926,76 @@ it("keeps a failed answer on screen while its retry waits for the server, then s
     errorMessage: null,
     contentTex: "",
   });
+});
+
+it("discards a former account's verification after another tab switches accounts", async () => {
+  const first = { sessionToken: "one", tier: "student", user: { id: 1, name: "One" } } as const;
+  const second = { sessionToken: "two", tier: "extended", user: { id: 2, name: "Two" } } as const;
+  vi.mocked(loginViaTelegram).mockImplementationOnce(() => {
+    seedChatAuth(first);
+    return Promise.resolve(first);
+  });
+  const verification = Promise.withResolvers<typeof allowance>();
+  vi.mocked(ensureChatAllowance).mockReturnValueOnce(verification.promise);
+  const chat = mount();
+  act(() => {
+    chat.current.toggle();
+  });
+  await waitFor(() => {
+    expect(chat.current.isLoginBusy).toBe(false);
+  });
+  let login: Promise<void> | undefined;
+  await act(async () => {
+    login = chat.current.login();
+    await Promise.resolve();
+  });
+  expect(chat.current.checkingLogin).toBe(true);
+  act(() => {
+    seedChatAuth(second);
+    globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_auth" }));
+  });
+  expect(chat.current.user).toEqual(second.user);
+  await act(async () => {
+    verification.reject(new Error("Chat session changed"));
+    await login;
+  });
+  expect(chat.current.verificationError).toBe(false);
+  expect(chat.current.isLoginBusy).toBe(false);
+});
+
+it("does not send an old draft using credentials another tab already replaced", async () => {
+  seedChatAuth({ sessionToken: "one", user: { id: 1, name: "One" }, tier: "student" });
+  const chat = mount();
+  act(() => {
+    chat.current.setDraft("Private question");
+  });
+  seedChatAuth({ sessionToken: "two", user: { id: 2, name: "Two" }, tier: "extended" });
+  await act(() => chat.current.send());
+  expect(ensureChatAllowance).not.toHaveBeenCalled();
+  expect(openChatMessageStream).not.toHaveBeenCalled();
+});
+
+it("can finish a stream after the same account renews its session", async () => {
+  const user = { id: 4, name: "Reader" };
+  seedChatAuth({ sessionToken: "first", user, tier: "student" });
+  vi.mocked(ensureChatAllowance).mockResolvedValue({ ...allowance, user, tier: "student" });
+  const chat = mount();
+  await act(() => chat.current.send("First"));
+  const callbacks = vi.mocked(openChatMessageStream).mock.calls[0]?.[2];
+  act(() => {
+    seedChatAuth({ sessionToken: "renewed" });
+    globalThis.dispatchEvent(new StorageEvent("storage", { key: "hse_chat_auth" }));
+    callbacks?.onDone({
+      runId: "r",
+      text: "Answer",
+      status: "done",
+      steps: [],
+      block: null,
+      degraded: { active: false },
+    });
+  });
+  expect(chat.current.messages.at(-1)?.contentTex).toBe("Answer");
+  expect(chat.current.isStreaming).toBe(false);
+  await act(() => chat.current.send("Second"));
+  expect(openChatMessageStream).toHaveBeenCalledTimes(2);
 });

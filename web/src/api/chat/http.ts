@@ -20,13 +20,13 @@ export const getChatEnvConfig = (): ChatEnvConfig => {
 
 export const isChatConfigured = (): boolean => getChatEnvConfig().apiUrl !== "";
 
-const buildHeaders = (extra?: Record<string, string>): Headers => {
+const buildHeaders = (shouldSendSession: boolean, extra?: Record<string, string>): Headers => {
   const auth = readStoredAuth();
   const headers = new Headers(extra);
   if (auth.browserToken !== null) {
     headers.set("X-Browser-Token", auth.browserToken);
   }
-  if (auth.sessionToken !== null) {
+  if (shouldSendSession && auth.sessionToken !== null) {
     headers.set("X-Session-Token", auth.sessionToken);
   }
   return headers;
@@ -35,25 +35,20 @@ const buildHeaders = (extra?: Record<string, string>): Headers => {
 export const apiJson = async (
   path: string,
   init: RequestInit,
+  { shouldSendSession = true } = {},
 ): Promise<{ readonly data: unknown; readonly ok: boolean; readonly status: number }> => {
   const { apiUrl } = getChatEnvConfig();
   const response = await fetch(`${apiUrl}${path}`, {
     ...init,
     credentials: "omit",
     signal: init.signal ?? AbortSignal.timeout(30_000),
-    headers: buildHeaders(init.headers as Record<string, string> | undefined),
+    headers: buildHeaders(shouldSendSession, init.headers as Record<string, string> | undefined),
   });
   try {
     const data: unknown = await response.json();
     return { data, ok: response.ok, status: response.status };
   } catch {
     return { data: {}, ok: response.ok, status: response.status };
-  }
-};
-
-export const assertSameSession = (sessionToken: null | string): void => {
-  if (sessionToken !== readStoredAuth().sessionToken) {
-    throw new Error("Chat session changed");
   }
 };
 

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
 
 import { type ChatAccess, getChatEnvConfig } from "#web/api/chat/client.ts";
-import { clearAllowanceToken, readStoredAuth } from "#web/api/chat/storage.ts";
+import { invalidateAllowance, readStoredAuth } from "#web/api/chat/storage.ts";
 import {
   type ActiveWsStream,
   openChatMessageStream,
@@ -48,11 +48,8 @@ const connectStream = (
       {
         ...callbacks,
         onError: (error) => {
-          if (
-            error.code === "allowance_expired" &&
-            readStoredAuth().allowanceToken === allowance.allowanceToken
-          ) {
-            clearAllowanceToken();
+          if (error.code === "allowance_expired") {
+            void invalidateAllowance(allowance.allowanceToken);
           }
           callbacks.onError(error);
         },
@@ -141,7 +138,11 @@ const startStreamTurn = (
     setIsCheckingBrowser,
   } = connection;
   const generation = ++generationRef.current;
-  const isSameTurn = (): boolean => mountedRef.current && generationRef.current === generation;
+  const userId = readStoredAuth().user?.id;
+  const isSameTurn = (): boolean =>
+    mountedRef.current &&
+    generationRef.current === generation &&
+    userId === readStoredAuth().user?.id;
   const isCurrent = (): boolean => isSameTurn() && !abortedPreWsRef.current;
   const clientRequestId = args.retryMessage?.pendingRequestId ?? crypto.randomUUID();
   sendingRef.current = true;
@@ -193,13 +194,14 @@ const finishAccessFailure = (
 export const useChatStream = (
   setters: StreamStateSetters,
   turnstileHooks: TurnstileHooks,
+  userId: number | undefined,
 ): ChatStreamController => {
   const connection = useStreamConnection();
   const { sendingRef, streamRef, detachRef, detachActive, isCheckingBrowser, stopActive } =
     connection;
   const sendQuestion = useCallback(
     async (args: SendArgs): Promise<void> => {
-      if (sendingRef.current) {
+      if (sendingRef.current || readStoredAuth().user?.id !== userId) {
         return;
       }
       const { callbacks, clientRequestId, isCurrent, isSameTurn, context } = startStreamTurn(
@@ -220,7 +222,7 @@ export const useChatStream = (
         detachRef.current = callbacks.onCloseUnexpected;
       }
     },
-    [connection, detachRef, sendingRef, setters, streamRef, turnstileHooks],
+    [connection, detachRef, sendingRef, setters, streamRef, turnstileHooks, userId],
   );
 
   return { detachActive, isCheckingBrowser, sendQuestion, stopActive };

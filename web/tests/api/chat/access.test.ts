@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { ensureChatAllowance } from "#web/api/chat/access.ts";
 import { loginViaTelegram } from "#web/api/chat/client.ts";
-import { saveAllowanceToken, saveBrowserToken, saveSessionAuth } from "#web/api/chat/storage.ts";
+import { readStoredAuth } from "#web/api/chat/storage.ts";
 import {
   getBrowserFingerprint,
   openTelegramLoginPopup,
@@ -11,6 +11,7 @@ import {
 } from "#web/api/chat/widgets.ts";
 
 import { captureRejection } from "../../support/capture-rejection.ts";
+import { seedChatAuth } from "../../support/chat-auth.ts";
 
 vi.mock("#web/api/chat/widgets.ts", () => ({
   getBrowserFingerprint: vi.fn(),
@@ -66,12 +67,12 @@ it("coalesces parallel callers and posts the prepared token without cookies", as
       body: JSON.stringify({ fingerprint: "fingerprint", turnstileToken: "turnstile" }),
     }),
   );
-  expect(localStorage.getItem("hse_chat_browser_token")).toBe("browser");
+  expect(readStoredAuth().browserToken).toBe("browser");
 });
 
 it("skips browser verification and its UI state while allowance is valid", async () => {
-  saveBrowserToken("browser");
-  saveAllowanceToken("cached", Date.now() + 120_000);
+  seedChatAuth({ browserToken: "browser" });
+  seedChatAuth({ allowanceToken: "cached", allowanceExpiresAt: Date.now() + 120_000 });
   const onChecking = vi.fn();
   await expect(ensureChatAllowance(hooks, { onChecking })).resolves.toMatchObject({
     allowanceToken: "cached",
@@ -90,8 +91,8 @@ it("rechecks localStorage after acquiring the Web Lock", async () => {
   Object.defineProperty(navigator, "locks", { configurable: true, value: { request } });
   try {
     const pending = ensureChatAllowance(hooks);
-    saveBrowserToken("other-tab");
-    saveAllowanceToken("shared", Date.now() + 120_000);
+    seedChatAuth({ browserToken: "other-tab" });
+    seedChatAuth({ allowanceToken: "shared", allowanceExpiresAt: Date.now() + 120_000 });
     acquired.resolve(undefined);
     await expect(pending).resolves.toMatchObject({ allowanceToken: "shared" });
     expect(requestTurnstileToken).not.toHaveBeenCalled();
@@ -130,14 +131,14 @@ it("bounds a stalled verification and allows a later retry", async () => {
 it("releases the Web Lock when fingerprinting stalls after a token is ready", async () => {
   vi.useFakeTimers();
   vi.mocked(getBrowserFingerprint).mockReturnValueOnce(new Promise(() => undefined));
-  let isLocked = false;
-  const request = vi.fn(async (_name: string, _options: unknown, work: () => Promise<unknown>) => {
-    expect(isLocked).toBe(false);
-    isLocked = true;
+  const locked = new Set<string>();
+  const request = vi.fn(async (name: string, _options: unknown, work: () => Promise<unknown>) => {
+    expect(locked.has(name)).toBe(false);
+    locked.add(name);
     try {
       return await work();
     } finally {
-      isLocked = false;
+      locked.delete(name);
     }
   });
   Object.defineProperty(navigator, "locks", { configurable: true, value: { request } });
@@ -145,12 +146,14 @@ it("releases the Web Lock when fingerprinting stalls after a token is ready", as
     const rejected = captureRejection(ensureChatAllowance(hooks));
     await vi.advanceTimersByTimeAsync(120_000);
     expect((await rejected).message).toContain("timed out");
-    expect(isLocked).toBe(false);
+    expect(locked.size).toBe(0);
     expect(fetchMock).not.toHaveBeenCalled();
     await expect(ensureChatAllowance(hooks)).resolves.toMatchObject({
       allowanceToken: "allowance",
     });
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(
+      request.mock.calls.filter(([name]) => name === "hse-chat-browser-token-init"),
+    ).toHaveLength(2);
   } finally {
     Reflect.deleteProperty(navigator, "locks");
   }
@@ -172,11 +175,11 @@ it("does not save a late response from a different session", async () => {
   await vi.waitFor(() => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
-  saveSessionAuth("new-session", "student", { id: 1, name: "User" });
+  seedChatAuth({ sessionToken: "new-session", tier: "student", user: { id: 1, name: "User" } });
   const rejected = captureRejection(pending);
   result.resolve(Response.json(response()));
   expect((await rejected).message).toContain("session changed");
-  expect(localStorage.getItem("hse_chat_allowance_token")).toBeNull();
+  expect(readStoredAuth().allowanceToken).toBeNull();
 });
 
 it("exposes an HTTP failure and releases the shared request for retry", async () => {
@@ -203,7 +206,7 @@ it("gets separate single-use tokens before and after Telegram login and sends th
         }),
       );
     }
-    const isLoggedIn = localStorage.getItem("hse_chat_session_token") !== null;
+    const isLoggedIn = readStoredAuth().sessionToken !== null;
     return Promise.resolve(
       Response.json({
         ...response(),
@@ -256,8 +259,8 @@ it("shows the server's explanation, code and detail instead of a bare status (D1
 });
 
 it("keeps the previous account while Telegram is open and when login is cancelled", async () => {
-  saveBrowserToken("browser");
-  saveSessionAuth("old", "student", { id: 1, name: "Old" });
+  seedChatAuth({ browserToken: "browser" });
+  seedChatAuth({ sessionToken: "old", tier: "student", user: { id: 1, name: "Old" } });
   const popup = Promise.withResolvers<string>();
   vi.mocked(openTelegramLoginPopup).mockReturnValueOnce(popup.promise);
   const login = loginViaTelegram(hooks);
@@ -265,31 +268,130 @@ it("keeps the previous account while Telegram is open and when login is cancelle
   expect(fetchMock).not.toHaveBeenCalled();
   popup.reject(new Error("cancelled"));
   await expect(login).rejects.toThrow("cancelled");
-  expect(localStorage.getItem("hse_chat_session_token")).toBe("old");
+  expect(readStoredAuth().sessionToken).toBe("old");
   expect(fetchMock).not.toHaveBeenCalled();
 });
 
-it("switches by logging out after Telegram answers and before exchanging the token", async () => {
-  saveBrowserToken("browser");
-  saveSessionAuth("old", "student", { id: 1, name: "Old" });
-  const popup = Promise.withResolvers<string>();
-  vi.mocked(openTelegramLoginPopup).mockReturnValueOnce(popup.promise);
-  fetchMock.mockResolvedValueOnce(Response.json({})).mockResolvedValueOnce(
-    Response.json({
-      browserToken: "browser",
-      sessionToken: "new",
-      tier: "student",
-      user: { id: 2, name: "New" },
-    }),
-  );
+const previousAccount = () => {
+  seedChatAuth({
+    browserToken: "browser",
+    sessionToken: "old",
+    tier: "student",
+    user: { id: 1, name: "Old" },
+    allowanceToken: "old-allowance",
+    allowanceExpiresAt: Date.now() + 120_000,
+  });
+  return readStoredAuth();
+};
+
+const replacement = {
+  browserToken: "new-browser",
+  sessionToken: "new",
+  tier: "extended",
+  user: { id: 2, name: "New" },
+};
+
+it("keeps the old credentials until Telegram exchange succeeds, then replaces the whole account", async () => {
+  const previous = previousAccount();
+  vi.mocked(openTelegramLoginPopup).mockResolvedValue("signed");
+  const exchange = Promise.withResolvers<Response>();
+  fetchMock.mockReturnValueOnce(exchange.promise);
   const login = loginViaTelegram(hooks);
-  expect(fetchMock).not.toHaveBeenCalled();
-  popup.resolve("signed");
+  expect(openTelegramLoginPopup).toHaveBeenCalledOnce();
+  await vi.waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      "https://api.test/v1/auth/telegram",
+      expect.anything(),
+    );
+  });
+  const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+  expect(headers.get("X-Browser-Token")).toBe("browser");
+  expect(headers.has("X-Session-Token")).toBe(false);
+  expect(readStoredAuth()).toEqual(previous);
+  exchange.resolve(Response.json(replacement));
   await login;
-  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-    "https://api.test/v1/auth/logout",
-    "https://api.test/v1/auth/telegram",
-  ]);
-  expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).has("X-Session-Token")).toBe(false);
-  expect(localStorage.getItem("hse_chat_session_token")).toBe("new");
+  expect(readStoredAuth()).toEqual({ ...replacement, allowanceToken: null, allowanceExpiresAt: 0 });
+  expect(fetchMock).toHaveBeenCalledOnce();
+});
+
+it.each([401, 503, 200])(
+  "preserves the previous session and cached allowance on an invalid exchange (%i)",
+  async (status) => {
+    const previous = previousAccount();
+    vi.mocked(openTelegramLoginPopup).mockResolvedValue("signed");
+    fetchMock.mockImplementation(() => Promise.resolve(Response.json({}, { status })));
+    await expect(loginViaTelegram(hooks)).rejects.toThrow();
+    expect(readStoredAuth()).toEqual(previous);
+  },
+);
+
+it("ignores a late exchange after another tab has selected an account", async () => {
+  previousAccount();
+  vi.mocked(openTelegramLoginPopup).mockResolvedValue("signed");
+  const pending = Promise.withResolvers<Response>();
+  fetchMock.mockReturnValueOnce(pending.promise);
+  const login = loginViaTelegram(hooks);
+  await vi.waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+  seedChatAuth({ sessionToken: "other", tier: "extended", user: { id: 4, name: "Other tab" } });
+  const other = readStoredAuth();
+  pending.resolve(Response.json(replacement));
+  await expect(login).rejects.toThrow("session changed");
+  expect(readStoredAuth()).toEqual(other);
+});
+
+it("serializes guest login exchanges so both tabs keep the account that claimed guest history", async () => {
+  seedChatAuth({ browserToken: "browser" });
+  const queues = new Map<string, Promise<undefined>>();
+  const request = async (name: string, _options: unknown, work: () => Promise<unknown>) => {
+    const previous = queues.get(name);
+    const done = Promise.withResolvers<undefined>();
+    queues.set(name, done.promise);
+    await previous;
+    try {
+      return await work();
+    } finally {
+      done.resolve(undefined);
+    }
+  };
+  Object.defineProperty(navigator, "locks", { configurable: true, value: { request } });
+  try {
+    vi.mocked(openTelegramLoginPopup)
+      .mockResolvedValueOnce("first")
+      .mockResolvedValueOnce("second");
+    const exchange = Promise.withResolvers<Response>();
+    fetchMock.mockReturnValueOnce(exchange.promise);
+    const first = loginViaTelegram(hooks);
+    const second = captureRejection(loginViaTelegram(hooks));
+    expect(openTelegramLoginPopup).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+    exchange.resolve(Response.json(replacement));
+    await first;
+    expect((await second).message).toContain("session changed");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(readStoredAuth().user).toEqual(replacement.user);
+  } finally {
+    Reflect.deleteProperty(navigator, "locks");
+  }
+});
+
+it("drops an expired account when the server grants guest access and rejects its pending action", async () => {
+  seedChatAuth({
+    browserToken: "browser",
+    sessionToken: "expired",
+    user: { id: 12, name: "Expired" },
+    tier: "extended",
+  });
+  await expect(ensureChatAllowance(hooks)).rejects.toThrow("session changed");
+  expect(readStoredAuth()).toMatchObject({
+    browserToken: "browser",
+    sessionToken: null,
+    user: null,
+    tier: "guest",
+  });
+  await expect(ensureChatAllowance(hooks)).resolves.toMatchObject({ tier: "guest" });
+  expect(fetchMock).toHaveBeenCalledOnce();
 });

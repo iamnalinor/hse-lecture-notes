@@ -1,5 +1,8 @@
-import type { ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
+import { z } from "zod";
 
+import type { ChatDegraded } from "#web/domain/chat/model.ts";
+
+const KEY_AUTH = "hse_chat_auth";
 const KEY_BROWSER = "hse_chat_browser_token";
 const KEY_SESSION = "hse_chat_session_token";
 const KEY_ALLOWANCE = "hse_chat_allowance_token";
@@ -8,14 +11,23 @@ const KEY_USER = "hse_chat_user";
 const KEY_TIER = "hse_chat_tier";
 const KEY_DEGRADED = "hse_chat_degraded:";
 
-export type StoredChatAuth = {
-  readonly allowanceExpiresAt: number;
-  readonly allowanceToken: null | string;
-  readonly browserToken: null | string;
-  readonly sessionToken: null | string;
-  readonly tier: ChatTier;
-  readonly user: ChatUser | null;
-};
+const UserSchema = z.object({ id: z.number(), name: z.string() });
+const TierSchema = z.enum(["default", "extended", "student"]);
+export const TelegramSessionSchema = z.object({
+  browserToken: z.string().min(1),
+  sessionToken: z.string().min(1),
+  tier: TierSchema,
+  user: UserSchema,
+});
+const AuthSchema = z.object({
+  browserToken: z.string().nullable(),
+  sessionToken: z.string().nullable(),
+  tier: z.union([TierSchema, z.literal("guest")]),
+  user: UserSchema.nullable(),
+  allowanceExpiresAt: z.number(),
+  allowanceToken: z.string().nullable(),
+});
+export type StoredChatAuth = z.infer<typeof AuthSchema>;
 
 const safeGet = (key: string): null | string => {
   try {
@@ -42,58 +54,112 @@ export const savePageThread = (key: string, id: null | string): void => {
   safeSet(`hse_chat_thread:${key}`, id);
 };
 
-const parseStoredUser = (raw: null | string): ChatUser | null => {
-  if (raw === null) {
-    return null;
-  }
+const parseJson = (raw: null | string): unknown => {
   try {
-    const parsed = JSON.parse(raw) as { id?: unknown; name?: unknown };
-    return typeof parsed.id === "number" && typeof parsed.name === "string"
-      ? { id: parsed.id, name: parsed.name }
-      : null;
+    return JSON.parse(raw ?? "null") as unknown;
   } catch {
     return null;
   }
 };
 
-const parseStoredTier = (raw: null | string): ChatTier => {
-  return raw === "student" || raw === "default" || raw === "extended" ? raw : "guest";
+// The server handles signature verification. This marker only identifies the retired cache format.
+const isCurrentLegacySession = (token: string): boolean => {
+  try {
+    const payload = token.split(".", 2)[1] ?? "";
+    const claims = JSON.parse(atob(payload.replaceAll("-", "+").replaceAll("_", "/"))) as {
+      typ?: unknown;
+    };
+    return claims.typ === "session_v2";
+  } catch {
+    return false;
+  }
 };
 
-export const readStoredAuth = (): StoredChatAuth => {
+const guestAuth = (browserToken: null | string): StoredChatAuth => ({
+  browserToken,
+  sessionToken: null,
+  tier: "guest",
+  user: null,
+  allowanceToken: null,
+  allowanceExpiresAt: 0,
+});
+
+const readLegacyAuth = (): StoredChatAuth => {
+  const browserToken = safeGet(KEY_BROWSER);
+  const sessionToken = safeGet(KEY_SESSION);
+  if (sessionToken !== null && !isCurrentLegacySession(sessionToken)) {
+    return guestAuth(browserToken);
+  }
   const expRaw = safeGet(KEY_ALLOWANCE_EXP);
-  const exp = expRaw !== null && /^\d+$/.test(expRaw) ? Number(expRaw) : 0;
   return {
-    allowanceExpiresAt: exp,
+    allowanceExpiresAt: expRaw !== null && /^\d+$/.test(expRaw) ? Number(expRaw) : 0,
     allowanceToken: safeGet(KEY_ALLOWANCE),
-    browserToken: safeGet(KEY_BROWSER),
-    sessionToken: safeGet(KEY_SESSION),
-    tier: parseStoredTier(safeGet(KEY_TIER)),
-    user: parseStoredUser(safeGet(KEY_USER)),
+    browserToken,
+    sessionToken,
+    tier: TierSchema.safeParse(safeGet(KEY_TIER)).data ?? "guest",
+    user: UserSchema.safeParse(parseJson(safeGet(KEY_USER))).data ?? null,
   };
 };
 
-export const saveBrowserToken = (token: null | string): void => {
-  safeSet(KEY_BROWSER, token);
+export const readStoredAuth = (): StoredChatAuth => {
+  const raw = safeGet(KEY_AUTH);
+  return raw === null
+    ? readLegacyAuth()
+    : (AuthSchema.safeParse(parseJson(raw)).data ?? guestAuth(null));
 };
 
-export const saveSessionAuth = (
+const writeStoredAuth = (auth: StoredChatAuth): void => {
+  globalThis.localStorage.setItem(KEY_AUTH, JSON.stringify(auth));
+  for (const key of [
+    KEY_SESSION,
+    KEY_BROWSER,
+    KEY_USER,
+    KEY_TIER,
+    KEY_ALLOWANCE,
+    KEY_ALLOWANCE_EXP,
+  ]) {
+    safeSet(key, null);
+  }
+};
+
+export const assertSameSession = (sessionToken: null | string): void => {
+  if (sessionToken !== readStoredAuth().sessionToken) {
+    throw new Error("Chat session changed");
+  }
+};
+
+export const withChatLock = async <T>(
+  scope: "auth-update" | "browser-token-init" | "telegram-login",
+  work: () => Promise<T> | T,
+  signal?: AbortSignal,
+): Promise<T> => {
+  const locks = globalThis.navigator.locks as LockManager | undefined;
+  const options = signal === undefined ? {} : { signal };
+  return locks === undefined
+    ? await work()
+    : await locks.request(`hse-chat-${scope}`, options, work);
+};
+
+export const replaceChatAuth = async (
   sessionToken: null | string,
-  tier: ChatTier,
-  user: ChatUser | null,
-): void => {
-  safeSet(KEY_SESSION, sessionToken);
-  safeSet(KEY_TIER, tier);
-  safeSet(KEY_USER, user === null ? null : JSON.stringify(user));
+  auth: StoredChatAuth,
+): Promise<void> => {
+  await withChatLock("auth-update", () => {
+    assertSameSession(sessionToken);
+    writeStoredAuth(auth);
+    if (sessionToken !== null && auth.sessionToken === null) {
+      globalThis.window.dispatchEvent(new Event("hse-chat-session-expired"));
+    }
+  });
 };
 
-export const saveAllowanceToken = (token: null | string, expiresAt: number): void => {
-  safeSet(KEY_ALLOWANCE, token);
-  safeSet(KEY_ALLOWANCE_EXP, token === null ? null : String(expiresAt));
-};
-
-export const clearAllowanceToken = (): void => {
-  saveAllowanceToken(null, 0);
+export const invalidateAllowance = async (rejectedToken: string): Promise<void> => {
+  await withChatLock("auth-update", () => {
+    const auth = readStoredAuth();
+    if (auth.allowanceToken === rejectedToken) {
+      writeStoredAuth({ ...auth, allowanceToken: null, allowanceExpiresAt: 0 });
+    }
+  });
 };
 
 /** Keeps already known quota information available before the next message is sent. */
@@ -130,28 +196,18 @@ export const saveDegraded = (degraded: ChatDegraded): void => {
   );
 };
 
-/** Serializes first-time browserToken initialization across tabs via Web Locks API. */
-export const withBrowserInitLock = async <T>(
-  work: () => Promise<T>,
-  signal?: AbortSignal,
-): Promise<T> => {
-  const locks = globalThis.navigator.locks as LockManager | undefined;
-  const options = signal === undefined ? {} : { signal };
-  return locks === undefined
-    ? await work()
-    : await locks.request("hse-chat-browser-token-init", options, async () => await work());
-};
-
 /** Subscribes to cross-tab `localStorage` changes so tabs stay synchronized on tokens/auth. */
 export const subscribeAuthStorage = (onChange: () => void): (() => void) => {
-  const watched = new Set([KEY_BROWSER, KEY_SESSION, KEY_USER, KEY_TIER]);
+  const watched = new Set([KEY_AUTH, KEY_BROWSER, KEY_SESSION, KEY_USER, KEY_TIER]);
   const listener = (event: StorageEvent): void => {
     if (event.key === null || watched.has(event.key) || event.key.startsWith(KEY_DEGRADED)) {
       onChange();
     }
   };
   globalThis.window.addEventListener("storage", listener);
+  globalThis.window.addEventListener("hse-chat-session-expired", onChange);
   return () => {
     globalThis.window.removeEventListener("storage", listener);
+    globalThis.window.removeEventListener("hse-chat-session-expired", onChange);
   };
 };

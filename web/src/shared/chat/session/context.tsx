@@ -181,7 +181,8 @@ const useChatSessionValue = ({
   const { draft, setDraft, quote, setQuote, unsent, setUnsent } = composer;
 
   const { pathname } = useLocation();
-  const pageKey = `${auth.user?.id ?? "guest"}:/${pathname.split("/").filter(Boolean).join("/")}`;
+  const userId = auth.user?.id;
+  const pageKey = `${userId ?? "guest"}:/${pathname.split("/").filter(Boolean).join("/")}`;
   const thr = useThreadState({
     isOpen,
     isConfigured,
@@ -190,7 +191,7 @@ const useChatSessionValue = ({
   });
 
   const setters = streamSetters(auth, composer, thr);
-  const stream = useChatStream(setters, turnstileHooks);
+  const stream = useChatStream(setters, turnstileHooks, userId);
   const actions = useChatSendActions({
     docContext,
     draft,
@@ -279,8 +280,7 @@ export const ChatProvider = ({
     onLogin: composer.onLogin,
     setBlock: auth.setBlock,
     setDegraded: auth.setDegraded,
-    setTier: auth.setTier,
-    setUser: auth.setUser,
+    applyLogin: auth.applyLogin,
   });
   return (
     <>

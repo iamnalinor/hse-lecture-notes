@@ -44,12 +44,17 @@ export const mockChat = async (page: Page, isEmptyThread = false) => {
   const sent: Record<string, unknown>[] = [];
   let socket: undefined | WebSocketRoute;
   await page.addInitScript(() => {
-    localStorage.setItem("hse_chat_browser_token", "browser-e2e");
-    localStorage.setItem("hse_chat_session_token", "session-e2e");
-    localStorage.setItem("hse_chat_tier", "default");
-    localStorage.setItem("hse_chat_user", JSON.stringify({ id: 1, name: "Albert" }));
-    localStorage.setItem("hse_chat_allowance_token", "allowance-e2e");
-    localStorage.setItem("hse_chat_allowance_exp", String(Date.now() + 3_600_000));
+    localStorage.setItem(
+      "hse_chat_auth",
+      JSON.stringify({
+        browserToken: "browser-e2e",
+        sessionToken: "session-e2e",
+        tier: "default",
+        user: { id: 1, name: "Albert" },
+        allowanceToken: "allowance-e2e",
+        allowanceExpiresAt: Date.now() + 3_600_000,
+      }),
+    );
     localStorage.setItem("hse_chat_thread:1:/", "t");
   });
   await page.route("http://127.0.0.1:8787/**", async (route) => {

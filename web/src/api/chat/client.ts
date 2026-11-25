@@ -8,12 +8,13 @@ import {
 } from "#web/domain/chat/model.ts";
 
 import { ensureChatAllowance } from "./access.ts";
-import { apiJson, assertSameSession, describeApiFailure, getChatEnvConfig } from "./http.ts";
+import { apiJson, describeApiFailure, getChatEnvConfig } from "./http.ts";
 import {
-  clearAllowanceToken,
+  assertSameSession,
   readStoredAuth,
-  saveBrowserToken,
-  saveSessionAuth,
+  replaceChatAuth,
+  TelegramSessionSchema,
+  withChatLock,
 } from "./storage.ts";
 import { openTelegramLoginPopup, type TurnstileHooks } from "./widgets.ts";
 
@@ -105,52 +106,29 @@ const getLoginToken = async (hooks: TurnstileHooks, requiresBrowser: boolean): P
 
 export const loginViaTelegram = async (
   turnstileHooks: TurnstileHooks,
-  onLogout?: () => void,
 ): Promise<{ readonly user: ChatUser; readonly tier: ChatTier }> => {
   const { browserToken, sessionToken } = readStoredAuth();
   const idToken = await getLoginToken(turnstileHooks, browserToken === null);
-  assertSameSession(sessionToken);
-  if (sessionToken !== null) {
-    await logoutChatSession(sessionToken);
-    onLogout?.();
-  }
-  return await exchangeTelegramToken(idToken);
-};
-
-const exchangeTelegramToken = async (idToken: string) => {
-  assertSameSession(null);
-  const loginRes = await apiJson("/v1/auth/telegram", {
-    body: JSON.stringify({ telegramIdToken: idToken }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
-  assertSameSession(null);
-  if (!loginRes.ok) {
-    throw new Error(describeApiFailure(loginRes));
-  }
-  const loginData = loginRes.data as {
-    readonly browserToken: string;
-    readonly sessionToken: string;
-    readonly tier: ChatTier;
-    readonly user: ChatUser;
-  };
-  saveBrowserToken(loginData.browserToken);
-  saveSessionAuth(loginData.sessionToken, loginData.tier, loginData.user);
-  clearAllowanceToken();
-  return loginData;
-};
-
-const logoutChatSession = async (sessionToken: string): Promise<void> => {
-  try {
-    await apiJson("/v1/auth/logout", {
-      body: JSON.stringify({ sessionToken }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
+  return await withChatLock("telegram-login", async () => {
+    assertSameSession(sessionToken);
+    const res = await apiJson(
+      "/v1/auth/telegram",
+      {
+        body: JSON.stringify({ telegramIdToken: idToken }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      },
+      { shouldSendSession: false },
+    );
+    if (!res.ok) {
+      throw new Error(describeApiFailure(res));
+    }
+    const session = TelegramSessionSchema.parse(res.data);
+    await replaceChatAuth(sessionToken, {
+      ...session,
+      allowanceToken: null,
+      allowanceExpiresAt: 0,
     });
-  } catch {
-    // Clear the local session even when the server is unreachable.
-  }
-  assertSameSession(sessionToken);
-  saveSessionAuth(null, "guest", null);
-  clearAllowanceToken();
+    return session;
+  });
 };

@@ -212,7 +212,9 @@ test("interactive browser verification takes keyboard focus and restores it on E
   );
   const input = await openChat(page);
   await input.evaluate((element) => {
-    element.ownerDocument.defaultView?.localStorage.removeItem("hse_chat_allowance_token");
+    const storage = element.ownerDocument.defaultView?.localStorage;
+    const auth = JSON.parse(storage?.getItem("hse_chat_auth") ?? "{}") as Record<string, unknown>;
+    storage?.setItem("hse_chat_auth", JSON.stringify({ ...auth, allowanceToken: null }));
   });
   await input.fill("Проверка");
   await input.press("Enter");

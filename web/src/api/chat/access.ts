@@ -1,14 +1,13 @@
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
 
 import { awaitWithSignal } from "./abort.ts";
-import { apiJson, assertSameSession, describeApiFailure, getChatEnvConfig } from "./http.ts";
+import { apiJson, describeApiFailure, getChatEnvConfig } from "./http.ts";
 import {
+  assertSameSession,
   readStoredAuth,
-  saveAllowanceToken,
-  saveBrowserToken,
+  replaceChatAuth,
   saveDegraded,
-  saveSessionAuth,
-  withBrowserInitLock,
+  withChatLock,
 } from "./storage.ts";
 import {
   getBrowserFingerprint,
@@ -83,24 +82,34 @@ const postAllowance = async (context: AccessContext) => {
 };
 
 const refreshAllowance = async (context: AccessContext): Promise<ChatAccess> =>
-  await withBrowserInitLock(async () => {
-    context.signal.throwIfAborted();
-    assertSameSession(context.sessionToken);
-    const cached = readCachedAccess();
-    if (cached !== null) {
-      return cached;
-    }
-    const res = await postAllowance(context);
-    if (!res.ok) {
-      throw new Error(describeApiFailure(res));
-    }
-    const data = res.data as AllowanceResponse;
-    saveBrowserToken(data.browserToken);
-    saveAllowanceToken(data.allowanceToken, data.allowanceExpiresAt);
-    saveSessionAuth(context.sessionToken, data.tier, data.user);
-    saveDegraded(data.degraded);
-    return data;
-  }, context.signal);
+  await withChatLock(
+    "browser-token-init",
+    async () => {
+      context.signal.throwIfAborted();
+      assertSameSession(context.sessionToken);
+      const cached = readCachedAccess();
+      if (cached !== null) {
+        return cached;
+      }
+      const res = await postAllowance(context);
+      if (!res.ok) {
+        throw new Error(describeApiFailure(res));
+      }
+      const data = res.data as AllowanceResponse;
+      await replaceChatAuth(context.sessionToken, {
+        sessionToken: data.user === null ? null : context.sessionToken,
+        browserToken: data.browserToken,
+        tier: data.tier,
+        user: data.user,
+        allowanceToken: data.allowanceToken,
+        allowanceExpiresAt: data.allowanceExpiresAt,
+      });
+      assertSameSession(context.sessionToken);
+      saveDegraded(data.degraded);
+      return data;
+    },
+    context.signal,
+  );
 
 type PendingAllowance = {
   readonly controller: AbortController;
