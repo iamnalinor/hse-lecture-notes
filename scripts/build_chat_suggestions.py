@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Собирает стартовые вопросы чата из `chat-suggestions/*.yaml` в JSON для сайта.
 
-На каждой странице ровно 6 вопросов (сайт показывает 3 случайных). Ключи JSON:
+На главной и странице курса ровно 15 вопросов, на остальных страницах (`docs`) ровно 6;
+сайт показывает 3 случайных. Ключи JSON:
 `@home` — главная, `<course>` — страница курса, `<course>/<id>` — остальные страницы.
 Страниц без записи в JSON нет: фронтенд подставляет три универсальных вопроса.
 
@@ -20,7 +21,8 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = "chat-suggestions"
 OUTPUT_PATH = ROOT / "web" / "src" / "domain" / "chat" / "suggestions.json"
-QUESTIONS_PER_PAGE = 6
+HOME_COURSE_QUESTIONS = 15
+DOC_QUESTIONS = 6
 MAX_LENGTH = 110
 HOME_KEY = "@home"
 
@@ -29,12 +31,12 @@ class SuggestionsError(ValueError):
     """Файл с вопросами нарушает правила `chat-suggestions/README.md`."""
 
 
-def _check_list(where: str, value: object) -> list[str]:
+def _check_list(where: str, value: object, expected: int) -> list[str]:
     if not isinstance(value, list) or not all(isinstance(q, str) for q in value):
         raise SuggestionsError(f"{where}: ожидается список строк")
     questions = [q.strip() for q in value]
-    if len(questions) != QUESTIONS_PER_PAGE:
-        raise SuggestionsError(f"{where}: нужно {QUESTIONS_PER_PAGE} вопросов, найдено {len(questions)}")
+    if len(questions) != expected:
+        raise SuggestionsError(f"{where}: нужно {expected} вопросов, найдено {len(questions)}")
     if len(set(questions)) != len(questions):
         raise SuggestionsError(f"{where}: вопросы повторяются")
     for q in questions:
@@ -50,23 +52,23 @@ def _doc_exists(root: Path, course: str, doc_id: str) -> bool:
 
 
 def collect(root: Path = ROOT) -> dict[str, list[str]]:
-    """Читает YAML и возвращает плоский словарь `ключ страницы → 6 вопросов`."""
+    """Читает YAML и возвращает плоский словарь `ключ страницы → вопросы` (15 или 6)."""
     source = root / SOURCE_DIR
     courses = {p.name for p in (root / "notes").iterdir() if p.is_dir()}
     result: dict[str, list[str]] = {}
     for path in sorted(source.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         if path.stem == "home":
-            result[HOME_KEY] = _check_list(f"{path.name}: questions", data.get("questions"))
+            result[HOME_KEY] = _check_list(f"{path.name}: questions", data.get("questions"), HOME_COURSE_QUESTIONS)
             continue
         course = path.stem
         if course not in courses:
             raise SuggestionsError(f"{path.name}: нет курса notes/{course}/")
-        result[course] = _check_list(f"{path.name}: course", data.get("course"))
+        result[course] = _check_list(f"{path.name}: course", data.get("course"), HOME_COURSE_QUESTIONS)
         for doc_id, questions in (data.get("docs") or {}).items():
             if not _doc_exists(root, course, str(doc_id)):
                 raise SuggestionsError(f"{path.name}: нет страницы {doc_id}")
-            result[f"{course}/{doc_id}"] = _check_list(f"{path.name}: {doc_id}", questions)
+            result[f"{course}/{doc_id}"] = _check_list(f"{path.name}: {doc_id}", questions, DOC_QUESTIONS)
     if HOME_KEY not in result:
         raise SuggestionsError(f"нет {SOURCE_DIR}/home.yaml")
     return result

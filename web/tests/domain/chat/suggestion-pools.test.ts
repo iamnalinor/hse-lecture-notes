@@ -9,9 +9,9 @@ import {
 } from "#web/domain/chat/suggestion-pools.ts";
 
 describe("getChatSuggestionPool", () => {
-  it("returns six questions for home, course and a known page", () => {
-    expect(getChatSuggestionPool({ course: "", docId: "" })).toHaveLength(6);
-    expect(getChatSuggestionPool({ course: "algebra", docId: "" })).toHaveLength(6);
+  it("returns 15 questions for home and course, six for a known page", () => {
+    expect(getChatSuggestionPool({ course: "", docId: "" })).toHaveLength(15);
+    expect(getChatSuggestionPool({ course: "algebra", docId: "" })).toHaveLength(15);
     expect(getChatSuggestionPool({ course: "algebra", docId: "01_sep03_matrices" })).toHaveLength(
       6,
     );
