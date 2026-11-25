@@ -59,7 +59,7 @@
 | --- | --- |
 | `prompts/theory.md`, `prompts/prep.md`, `prompts/prep-review.md`, `prompts/cheatsheet.md`, `prompts/program.md` | теория курса, подготовка к КР и коллоквиуму, её ревью, читлист, ПУД |
 | `site.md` | требования к сайту и формат данных сборки |
-| `../chat-suggestions/README.md` | стартовые вопросы чата: по 6 на страницу в YAML, сборка в JSON |
+| `../chat-suggestions/README.md` | стартовые вопросы чата: 15 на главную и курс, 6 на остальные страницы в YAML, сборка в JSON |
 
 ## Инструменты (из корня репозитория)
 

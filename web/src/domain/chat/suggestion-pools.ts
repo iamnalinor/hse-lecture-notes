@@ -25,7 +25,7 @@ const keyOf = ({ course, docId }: ChatDocContext): string => {
   return docId === "" ? course : `${course}/${docId}`;
 };
 
-/** Пул страницы: 6 своих вопросов или три фиксированных универсальных. */
+/** Пул страницы: 15 (главная, курс) или 6 своих вопросов либо три фиксированных универсальных. */
 export const getChatSuggestionPool = (docContext: ChatDocContext): readonly string[] =>
   SUGGESTIONS_MAP[keyOf(docContext)] ?? FALLBACK_CHAT_SUGGESTIONS;
 
@@ -41,7 +41,7 @@ export const pickRandomSuggestions = (
     .slice(0, count)
     .map((item) => item.prompt);
 
-/** Подсказки для текущей страницы: 3 случайных из шести; у запасного набора порядок не меняется. */
+/** Подсказки для текущей страницы: 3 случайных из пула; у запасного набора порядок не меняется. */
 export const getChatSuggestions = (docContext: ChatDocContext): readonly string[] => {
   const pool = getChatSuggestionPool(docContext);
   return pool === FALLBACK_CHAT_SUGGESTIONS ? pool : pickRandomSuggestions(pool);
