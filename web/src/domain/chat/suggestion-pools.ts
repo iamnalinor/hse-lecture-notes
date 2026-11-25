@@ -29,7 +29,7 @@ const keyOf = ({ course, docId }: ChatDocContext): string => {
 export const getChatSuggestionPool = (docContext: ChatDocContext): readonly string[] =>
   SUGGESTIONS_MAP[keyOf(docContext)] ?? FALLBACK_CHAT_SUGGESTIONS;
 
-/** Берёт `count` разных случайных вопросов из пула. */
+/** Берет `count` разных случайных вопросов из пула. */
 export const pickRandomSuggestions = (
   pool: readonly string[],
   count: number = SUGGESTIONS_SHOWN,

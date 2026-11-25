@@ -40,7 +40,7 @@ export const HeaderRow = ({ current }: { readonly current: number | undefined })
           {module} модуль
         </span>
         <span className="mt-1 block text-caption font-normal text-muted">
-          {module === current ? "идёт сейчас" : "\u{A0}"}
+          {module === current ? "идет сейчас" : "\u{A0}"}
         </span>
       </div>
     ))}

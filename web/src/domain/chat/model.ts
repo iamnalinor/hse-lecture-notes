@@ -146,7 +146,7 @@ export const formatDegradedCaption = (degraded: ChatDegraded, nowMs: number): nu
   }
   if (degraded.restoresAt !== undefined && degraded.restoresAt !== null) {
     const dur = formatRemainingDuration(degraded.restoresAt, nowMs);
-    return `Повышенное число запросов. Качество ответов снижено — вернётся через ${dur}`;
+    return `Повышенное число запросов. Качество ответов снижено — вернется через ${dur}`;
   }
   return "Повышенное число запросов. Качество ответов временно снижено";
 };
@@ -282,13 +282,13 @@ export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number):
       return {
         body: "Дождись завершения текущего ответа, прежде чем отправлять новый вопрос.",
         showLogin: false,
-        title: "Ответ ещё готовится",
+        title: "Ответ еще готовится",
       };
     }
     case "oauth_unavailable":
     case "service_unavailable": {
       return {
-        body: "ИИ-сервис сейчас недоступен. Черновик сохранён — попробуй чуть позже.",
+        body: "ИИ-сервис сейчас недоступен. Черновик сохранен — попробуй чуть позже.",
         showLogin: false,
         title: "Сервис временно недоступен",
       };

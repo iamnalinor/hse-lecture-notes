@@ -406,7 +406,7 @@ export class ChatRunner extends DurableObject<Env> {
         type: "error",
         code: failure?.code ?? "context_too_large",
         message: failure
-          ? `${failure.message} Попробуй ещё раз. Код: ${failure.code}${failure.detail ? ` (${failure.detail})` : ""}.`
+          ? `${failure.message} Попробуй еще раз. Код: ${failure.code}${failure.detail ? ` (${failure.detail})` : ""}.`
           : "Вопрос с цитатой слишком длинный. Сократи его и попробуй снова.",
       });
       safeClose(1011, "internal_error");

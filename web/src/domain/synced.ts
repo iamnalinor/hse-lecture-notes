@@ -12,7 +12,7 @@ export const syncedLabel = (synced: readonly SyncedPart[]): null | string => {
 };
 
 const LECTURE_NOTE = "содержание и темп совпадают с реальной лекцией этого года";
-const SEMINARS_NOTE = "в конспект включён материал семинаров этого года";
+const SEMINARS_NOTE = "в конспект включен материал семинаров этого года";
 
 /** The label with a short explanation, for a tooltip; `null` when the note is not synced. */
 export const syncedHint = (synced: readonly SyncedPart[]): null | string => {

@@ -118,7 +118,7 @@ export const BottomPlate = ({
             {isLoginBusy ? (
               <>
                 <span className="ai-spin" />
-                Ждём Telegram…
+                Ждем Telegram…
               </>
             ) : (
               <>

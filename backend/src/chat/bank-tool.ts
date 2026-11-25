@@ -53,7 +53,7 @@ export const SAMPLE_PROBLEMS_TOOL: CodexFunctionTool = {
       },
       kind: {
         type: "string",
-        description: "Тип задачи (номер варианта): kind из ticket банка. Неизвестный kind вернёт список доступных.",
+        description: "Тип задачи (номер варианта): kind из ticket банка. Неизвестный kind вернет список доступных.",
       },
       topic: { type: "string", description: "Тема (topic) задач банка." },
       count: {

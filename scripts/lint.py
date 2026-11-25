@@ -64,10 +64,10 @@ PIPELINE_WORDS = re.compile(
 SOFT_WORDS = re.compile(r"(очевидно|несложно|нетрудно|как известно|легко видеть|легко показать)", re.I)
 FORBIDDEN_MATH = [
     (re.compile(r"\\boxed"), r"\boxed не рендерится в html-версии"),
-    (re.compile(r"\\xrightarrow"), r"\xrightarrow запрещён (html, мобильные)"),
+    (re.compile(r"\\xrightarrow"), r"\xrightarrow запрещен (html, мобильные)"),
     (
         re.compile(r"\\begin\{array\}\{[^}]*\|"),
-        "array с чертой запрещён: расширенная матрица — pmatrix с | отдельным столбцом",
+        "array с чертой запрещен: расширенная матрица — pmatrix с | отдельным столбцом",
     ),
     (re.compile(r"\\left\s*\(\s*\\begin\{array\}"), r"\left( вокруг array запрещено: используй pmatrix"),
     (
@@ -204,7 +204,7 @@ def check_math(rep: Report, rel: str, tex: str) -> None:
 def check_cite(rep: Report, rel: str, cite: dict, course_labels: dict) -> None:
     for c in cite["c"][0]:
         if c["citationId"] not in course_labels:
-            rep.err(rel, f"ссылка @{c['citationId']} никуда не ведёт")
+            rep.err(rel, f"ссылка @{c['citationId']} никуда не ведет")
 
 
 def check_name_and_date(rep: Report, rel: str, path: Path, meta: dict, cfg: dict, course: str) -> None:
@@ -301,7 +301,7 @@ def check_texts(rep: Report, rel: str, blocks: list) -> None:
 
 
 def check_practice(rep: Report, rel: str, body: list) -> None:
-    """В практике за каждой задачей идёт ::: solution (ответ — в его конце)."""
+    """В практике за каждой задачей идет ::: solution (ответ — в его конце)."""
     flat = [n for n in iter_nodes(body) if n["t"] == "Div"]
     for i, d in enumerate(flat):
         if "problem" in d["c"][0][1]:
@@ -475,13 +475,13 @@ def lint_theory(path: Path, rel: str, labels: dict, rep: Report) -> None:
 
 
 PROGRAM_META = {"course", "title"}
-PROGRAM_BLOCKS = {"remark"}  # без примеров расчёта: страница — справочник (решение владельца)
+PROGRAM_BLOCKS = {"remark"}  # без примеров расчета: страница — справочник (решение владельца)
 PROGRAM_FIRST, PROGRAM_LAST, PROGRAM_SOURCES = "О курсе", "Содержание курса", "Источники"
 # Страница программы — справочник, а не реферат о ПУД: без пометок источников, комментариев о самой
 # программе и советов «уточнить у лектора» (context/prompts/program.md → «Как писать»)
 PROGRAM_META_WORDS = re.compile(
     r"(уточн[а-я]* у лектора|в программе (?:прямо )?не|в программе сказано|по программе|судя по|"
-    r"по wiki|на wiki|по каналу|по календарю|по таблице планирования|сумм[а-я]* весов|сноск|звёздочк)",
+    r"по wiki|на wiki|по каналу|по календарю|по таблице планирования|сумм[а-я]* весов|сноск|звездочк)",
     re.I,
 )
 
@@ -554,7 +554,7 @@ def lint_program(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> 
     if not h1 or h1[0] != PROGRAM_FIRST:
         rep.err(rel, f"первый раздел — «# {PROGRAM_FIRST}»")
     else:
-        # «О курсе» — сводная таблица «параметр · значение» (лектор, объём, экзамен, порог, итог)
+        # «О курсе» — сводная таблица «параметр · значение» (лектор, объем, экзамен, порог, итог)
         first = next(i for i, b in enumerate(blocks) if b["t"] == "Header" and b["c"][0] == 1)
         nxt = next((b for b in blocks[first + 1 :] if b["t"] != "Para" or text_of_block(b).strip()), None)
         if nxt is None or nxt["t"] != "Table":
@@ -591,7 +591,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
     """
     meta = build.read_front_matter(path)
     course, exam = path.parent.name, path.stem
-    # date можно не ставить: событие ещё не объявлено — страница есть, но неактивна (сайт: без дня,
+    # date можно не ставить: событие еще не объявлено — страница есть, но неактивна (сайт: без дня,
     # без цвета, не на главной); тогда active_until и highlight_from не к чему привязать
     for k in ("course", "title"):
         if meta.get(k) in (None, ""):
@@ -638,7 +638,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
                 rep.err(rel, f"{k} без date: у неактивной подготовки (без даты) дней активности нет")
     if "date" in dates and "active_until" in dates and dates["active_until"] < dates["date"]:
         rep.err(rel, f"active_until={dates['active_until']} раньше даты {event} {dates['date']}")
-    # выделение цветом на сайте идёт с highlight_from до последнего активного дня включительно
+    # выделение цветом на сайте идет с highlight_from до последнего активного дня включительно
     last_day = dates.get("active_until") or dates.get("date")
     if "highlight_from" in dates and last_day is not None and dates["highlight_from"] > last_day:
         rep.err(
@@ -747,7 +747,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
         if not has_ticket_h2:
             rep.err(rel, "в разделе «# Билеты» нет ни одного билета уровня «## »")
     lint_bank(path, course, exam, labels, own, rep)
-    # на сайте генератор встаёт в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
+    # на сайте генератор встает в раздел {#sec:<prep>:generator}; в PDF этот раздел — ссылка на сайт
     generator = f"sec:{exam}:{ticket_bank.GENERATOR_SECTION}"
     has_bank = ticket_bank.bank_path(path).exists()
     if has_bank and generator not in own:
@@ -769,7 +769,7 @@ def lint_prep(path: Path, rel: str, cfg: dict, labels: dict, rep: Report) -> Non
 
 
 class NotesProofs:
-    """Идёт ли за блоком конспекта `::: proof` — сайт покажет его в ответе генератора билетов.
+    """Идет ли за блоком конспекта `::: proof` — сайт покажет его в ответе генератора билетов.
 
     Как `extractBlock` на сайте: после блока пропускаются абзацы, поиск останавливается на следующем
     нумерованном блоке или заголовке.

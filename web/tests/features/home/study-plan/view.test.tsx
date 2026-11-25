@@ -80,9 +80,9 @@ describe("StudyPlan", () => {
 
   it("marks the current module by its header only when its dates are known", () => {
     const { unmount } = renderWithApp(<StudyPlan curriculum={SAMPLE} today="2026-11-22" />, "/");
-    expect(screen.getByText("идёт сейчас")).toBeInTheDocument();
+    expect(screen.getByText("идет сейчас")).toBeInTheDocument();
     unmount();
     renderWithApp(<StudyPlan curriculum={SAMPLE} today="2027-01-05" />, "/");
-    expect(screen.queryByText("идёт сейчас")).not.toBeInTheDocument();
+    expect(screen.queryByText("идет сейчас")).not.toBeInTheDocument();
   });
 });

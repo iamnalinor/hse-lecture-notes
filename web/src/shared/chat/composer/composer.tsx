@@ -33,7 +33,7 @@ const resolvePlaceholder = (hasQuote: boolean, hasMessages: boolean): string => 
     return "Что непонятно в этом фрагменте?";
   }
   if (hasMessages) {
-    return "Уточни или спроси ещё";
+    return "Уточни или спроси еще";
   }
   return "Задай вопрос";
 };

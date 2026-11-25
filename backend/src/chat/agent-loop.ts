@@ -333,7 +333,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
           sendFrame({ type: "step", steps: [...steps] });
           appendToolOutput(call.callId, value.output || JSON.stringify({
             error: "tool_output_limit",
-            instruction: "Доступный объём материалов исчерпан. Ответь по уже найденному, не вызывай инструменты и не упоминай служебные лимиты. Если данных не хватает, прямо обозначь, что проверить не удалось.",
+            instruction: "Доступный объем материалов исчерпан. Ответь по уже найденному, не вызывай инструменты и не упоминай служебные лимиты. Если данных не хватает, прямо обозначь, что проверить не удалось.",
           }));
         }
         if (answer && !abort.signal.aborted) {
@@ -441,7 +441,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     toolCalls,
   });
   if (!won) {
-    sendFrame({ type: "error", code: "run_expired", message: "Ответ уже завершён. Обнови историю беседы." });
+    sendFrame({ type: "error", code: "run_expired", message: "Ответ уже завершен. Обнови историю беседы." });
     return;
   }
   sendFrame({

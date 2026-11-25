@@ -28,7 +28,7 @@ describe("chat domain helpers", () => {
     const plus12h37m = now + (12 * 60 + 37) * 60_000;
     expect(formatRemainingDuration(plus12h37m, now)).toBe("12 часов 37 минут");
     expect(formatDegradedCaption({ active: true, restoresAt: plus12h37m }, now)).toBe(
-      "Повышенное число запросов. Качество ответов снижено — вернётся через 12 часов 37 минут",
+      "Повышенное число запросов. Качество ответов снижено — вернется через 12 часов 37 минут",
     );
     expect(formatDegradedCaption({ active: false }, now)).toBeNull();
     expect(formatDegradedCaption({ active: true, restoresAt: now }, now)).toBeNull();

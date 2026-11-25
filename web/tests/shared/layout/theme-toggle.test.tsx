@@ -16,7 +16,7 @@ test("reduced motion changes and persists the theme without starting an animatio
   const start = vi.fn();
   Object.defineProperty(document, "startViewTransition", { value: start, configurable: true });
   render(<ThemeToggle />);
-  fireEvent.click(screen.getByRole("button", { name: "Тёмная тема" }));
+  fireEvent.click(screen.getByRole("button", { name: "Темная тема" }));
   expect(document.documentElement.dataset["theme"]).toBe("dark");
   expect(localStorage.getItem("theme")).toBe("dark");
   expect(start).not.toHaveBeenCalled();
@@ -30,7 +30,7 @@ test("animated switch updates the theme and unlocks the button when it finishes"
   });
   Object.defineProperty(document, "startViewTransition", { value: start, configurable: true });
   render(<ThemeToggle />);
-  fireEvent.click(screen.getByRole("button", { name: "Тёмная тема" }));
+  fireEvent.click(screen.getByRole("button", { name: "Темная тема" }));
   expect(start).toHaveBeenCalledOnce();
   expect(localStorage.getItem("theme")).toBe("dark");
   await waitFor(() => {
@@ -40,7 +40,7 @@ test("animated switch updates the theme and unlocks the button when it finishes"
 
 test("browsers without View Transitions still switch themes", async () => {
   render(<ThemeToggle />);
-  fireEvent.click(screen.getByRole("button", { name: "Тёмная тема" }));
+  fireEvent.click(screen.getByRole("button", { name: "Темная тема" }));
   expect(document.documentElement.dataset["theme"]).toBe("dark");
   await waitFor(() => {
     expect(screen.getByRole("button", { name: "Светлая тема" })).toBeEnabled();
@@ -55,7 +55,7 @@ test("a skipped snapshot still saves the theme and unlocks its button", async ()
   });
   Object.defineProperty(document, "startViewTransition", { value: start, configurable: true });
   render(<ThemeToggle />);
-  fireEvent.click(screen.getByRole("button", { name: "Тёмная тема" }));
+  fireEvent.click(screen.getByRole("button", { name: "Темная тема" }));
   await waitFor(() => {
     expect(screen.getByRole("button", { name: "Светлая тема" })).toBeEnabled();
   });
@@ -85,7 +85,7 @@ const firstAnimation = (animate: ReturnType<typeof stubReveal>) => {
 test("to dark, the new theme grows from the button as a soft circle (Telegram Android)", async () => {
   const animate = stubReveal();
   render(<ThemeToggle />);
-  const button = screen.getByRole("button", { name: "Тёмная тема" });
+  const button = screen.getByRole("button", { name: "Темная тема" });
   vi.spyOn(button, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 20, 40, 40));
   fireEvent.click(button);
   await waitFor(() => {

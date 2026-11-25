@@ -72,7 +72,7 @@ export const ThemeToggle = () => {
   const theme = useTheme();
   const [isSwitching, setIsSwitching] = useState(false);
   const isDark = theme === "dark";
-  const label = isDark ? "Светлая тема" : "Тёмная тема";
+  const label = isDark ? "Светлая тема" : "Темная тема";
   return (
     <button
       aria-label={label}

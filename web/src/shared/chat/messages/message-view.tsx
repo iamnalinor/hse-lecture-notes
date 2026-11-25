@@ -125,7 +125,7 @@ const MessageError = ({
       <div>
         Не удалось получить ответ
         <div className="ai-error-detail">
-          {message.errorMessage ?? "Не удалось завершить запрос. Попробуй ещё раз."}
+          {message.errorMessage ?? "Не удалось завершить запрос. Попробуй еще раз."}
         </div>
       </div>
     </div>
@@ -146,7 +146,7 @@ const MessageError = ({
 );
 
 const incompleteCaption = (status: ChatMessage["status"]): string =>
-  status === "stopped" ? "Ответ остановлен" : "Ответ не завершён";
+  status === "stopped" ? "Ответ остановлен" : "Ответ не завершен";
 
 const AssistantContent = ({
   message,

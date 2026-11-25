@@ -37,7 +37,7 @@ $(AB)C = A(BC)$.
 *Ответ:* $\begin{pmatrix} 1 & 2 \\ 0 & 1 \end{pmatrix}$.
 :::
 
-Ещё задачи: [-@prob:lec01:product]; к теме «@sec:kr1:product» вернёмся в @prob:kr1:square.
+Еще задачи: [-@prob:lec01:product]; к теме «@sec:kr1:product» вернемся в @prob:kr1:square.
 
 ::: {.theorem ref="thm:lec01:assoc"}
 :::

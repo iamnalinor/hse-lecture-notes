@@ -10,7 +10,7 @@ import { unstable_splitSqlQuery } from "wrangler";
 
 const origin = "https://site.test";
 const api = "https://api.test";
-const text = "Сумма равна четырём.";
+const text = "Сумма равна четырем.";
 const directory = await mkdtemp(join(tmpdir(), "hse-chat-workerd-"));
 execFileSync("bunx", ["wrangler", "deploy", "--dry-run", "--outdir", directory], {
   env: { ...process.env, WRANGLER_SEND_METRICS: "false" },

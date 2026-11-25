@@ -51,7 +51,7 @@ def bank_path(prep_md: Path) -> Path:
 
 
 def _double_quoted_backslashes(text: str) -> list[str]:
-    """Строки в "…" с обратной косой чертой: `"\\varepsilon"` даёт вертикальную табуляцию, `"\\neq"` — перевод строки."""
+    """Строки в "…" с обратной косой чертой: `"\\varepsilon"` дает вертикальную табуляцию, `"\\neq"` — перевод строки."""
     bad = []
     for node in _scalars(yaml.compose(text)):
         if node.style == '"' and "\\" in text[node.start_mark.index : node.end_mark.index]:
@@ -133,7 +133,7 @@ class Labels:
 
 
 def ticket_parts(ticket: list) -> tuple[list[tuple[str, object]], list[str]]:
-    """Все пункты билета с местом для сообщений; `one_of` — варианты пункта, из них сайт берёт один."""
+    """Все пункты билета с местом для сообщений; `one_of` — варианты пункта, из них сайт берет один."""
     parts: list[tuple[str, object]] = []
     errors: list[str] = []
     for i, entry in enumerate(ticket, 1):
@@ -313,7 +313,7 @@ def missing_proofs(bank: dict, exam: str, has_proof) -> list[str]:
     """Вопросы видов с `proofs: true` без доказательства в ответе.
 
     Доказательство есть, если есть свой `answer`, ход доказательства `rem:<exam>:proof-…`, задача (с
-    решением) или блок конспекта, за которым идёт `::: proof` (`has_proof(метка)`; сайт покажет его).
+    решением) или блок конспекта, за которым идет `::: proof` (`has_proof(метка)`; сайт покажет его).
     """
     kinds = {t["kind"] for _, t in ticket_parts(bank["ticket"])[0] if t.get("proofs")}
     errors = []

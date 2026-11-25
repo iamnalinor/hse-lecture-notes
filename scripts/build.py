@@ -218,7 +218,7 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
     def one(doc: Doc) -> Path:
         out = idx_dir / doc.course / f"{doc.out_name}.json"
         # вывод pandoc не нужен; файл вместо os.devnull — pandoc на Windows не пишет в «nul».
-        # run_pandoc создаёт папку sink, и фильтр пишет out туда же
+        # run_pandoc создает папку sink, и фильтр пишет out туда же
         sink = out.with_suffix(".native")
         run_pandoc(doc, "native", sink, ["-M", "notes_mode=index", "-M", f"notes_out={out}"])
         return out
@@ -323,7 +323,7 @@ def build_pdf(doc: Doc) -> list[str]:
         tail = "\n".join(errs[:30]) or res.stdout[-3000:]
         raise BuildError(f"xelatex упал на {doc.rel}:\n{tail}\n(полный лог: {log})")
     if "There were undefined references" in log_text or "Hyper reference" in log_text:
-        warnings.append(f"{doc.rel}: в PDF есть неразрешённые ссылки (см. {log.name})")
+        warnings.append(f"{doc.rel}: в PDF есть неразрешенные ссылки (см. {log.name})")
     for m in OVERFULL_RE.finditer(log_text):
         pt = float(m.group(1))
         if pt > 1.0:

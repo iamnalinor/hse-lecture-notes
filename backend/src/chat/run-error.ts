@@ -18,5 +18,5 @@ export function runErrorMessage(code: string | null, hasText: boolean): string {
     search_unavailable: PUBLIC_ERROR_MESSAGES.search_unavailable!,
   };
   const reason = reasons[code ?? ""] ?? "Ответ не удалось завершить.";
-  return `${reason} ${hasText ? "Полученный текст сохранён. " : ""}Попробуй ещё раз.${code && code in reasons ? ` Код: ${code}.` : ""}`;
+  return `${reason} ${hasText ? "Полученный текст сохранен. " : ""}Попробуй еще раз.${code && code in reasons ? ` Код: ${code}.` : ""}`;
 }

@@ -1,4 +1,4 @@
-"""Рендер страниц PDF в PNG, чтобы агент мог посмотреть вёрстку глазами.
+"""Рендер страниц PDF в PNG, чтобы агент мог посмотреть верстку глазами.
 
     uv run scripts/render_pages.py build/pdf/algebra/04_sep23_determinant_properties.pdf
     uv run scripts/render_pages.py <pdf> --pages 1-3 --dpi 110 --out /tmp/pages

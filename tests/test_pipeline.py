@@ -50,7 +50,7 @@ def test_index_single_counter(demo: Path):
     assert res.returncode == 0, res.stderr
     idx = json.loads((demo / "build" / "index.json").read_text(encoding="utf-8"))
     labels = idx["labels"]["algebra"]
-    # один сквозной счётчик на все блоки, рисунки и формулы, в порядке появления
+    # один сквозной счетчик на все блоки, рисунки и формулы, в порядке появления
     assert labels["def:lec01:matrix"]["number"] == "1.1"
     assert labels["ex:lec01:matrix"]["number"] == "1.2"
     assert labels["thm:lec01:assoc"]["number"] == "1.3"
@@ -74,7 +74,7 @@ $$a = a.$$ {#eq:lec02:inside}
 :::
 
 ::: {.remark .unnumbered}
-Ненумерованный блок счётчик не двигает.
+Ненумерованный блок счетчик не двигает.
 :::
 
 ```{.tikz #fig:lec02:after caption="после ненумерованного блока"}
@@ -145,7 +145,7 @@ def test_html_blocks_and_refs(demo: Path):
     # ссылка на раздел с формулой в заголовке: формула в ссылке тоже формула
     ref = frag2.split('href="#sec:lec02:rank"', 1)[1].split("</a>", 1)[0]
     assert "$A^T$" not in ref and "A^T" in ref and "math" in ref
-    # теория курса берёт номера из конспектов
+    # теория курса берет номера из конспектов
     reg = (site / "algebra" / "theory" / "fragment.html").read_text(encoding="utf-8")
     assert 'data-number="1.3"' in reg and "черновик" not in reg
     # теория — справочник: определения без плашек, у теорем нет ссылки «Лекция N» в конспект
@@ -616,7 +616,7 @@ def test_program_optional(demo: Path):
             "::: {.remark #rem:program:wiki}",
             "в программе блоки без меток",
         ),
-        ("[-@def:lec01:matrix]", "[-@def:lec01:nope]", "ссылка @def:lec01:nope никуда не ведёт"),
+        ("[-@def:lec01:matrix]", "[-@def:lec01:nope]", "ссылка @def:lec01:nope никуда не ведет"),
         (
             "# Первый семестр",
             "# Первый семестр {#sec:program:first}",
@@ -906,7 +906,7 @@ questions:
   - id: assoc-proof
     kind: proof
     topic: product
-    text: Ассоциативность ещё раз.
+    text: Ассоциативность еще раз.
     refs: [thm:lec01:assoc]
   - id: matrix
     kind: definition
@@ -918,7 +918,7 @@ questions:
     topic: product
     text: Элементарное преобразование.
     answer: >-
-      Своё: $\lambda \ne 0$, как в @rem:colloq1:order.
+      Свое: $\lambda \ne 0$, как в @rem:colloq1:order.
     refs: [def:lec02:elem, prob:colloq1:square]
 """
 
@@ -1016,7 +1016,7 @@ def test_bank_builds(demo: Path):
         (
             "Что такое матрица?",
             "Что такое матрица, см. [-@def:lec09:x]?",
-            "ссылка @def:lec09:x никуда не ведёт",
+            "ссылка @def:lec09:x никуда не ведет",
         ),
         (
             "    text: Что такое матрица?",
@@ -1045,7 +1045,7 @@ def test_lint_bank_catches(demo: Path, old: str, new: str, expected: str):
     # сломанный банк валит и сборку: на сайт он не уедет
     if (
         "двойных кавычках" not in expected
-        and "никуда не ведёт" not in expected
+        and "никуда не ведет" not in expected
         and "$" not in expected
         and "boxed" not in expected
         and "нет доказательства" not in expected
@@ -1085,7 +1085,7 @@ def test_bank_only_by_bank_path(demo: Path):
 
 
 def test_lint_bank_generator_section(demo: Path):
-    """Банк и раздел {#sec:colloq1:generator} — только вместе: генератор встаёт в этот раздел."""
+    """Банк и раздел {#sec:colloq1:generator} — только вместе: генератор встает в этот раздел."""
     bank = make_bank(demo)
     page = bank.with_name("colloq1.md")
     text = page.read_text(encoding="utf-8")

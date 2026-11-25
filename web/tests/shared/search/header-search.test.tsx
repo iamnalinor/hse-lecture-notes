@@ -141,7 +141,7 @@ describe("HeaderSearch", () => {
   it("draws the first dozen hits and the rest on request", async () => {
     await userEvent.type(mount(), "ряд");
     expect(await screen.findAllByRole("option")).toHaveLength(12);
-    await userEvent.click(screen.getByRole("button", { name: /Показать ещё 8/u }));
+    await userEvent.click(screen.getByRole("button", { name: /Показать еще 8/u }));
     expect(screen.getAllByRole("option")).toHaveLength(20);
   });
 
@@ -173,7 +173,7 @@ describe("HeaderSearch", () => {
   it("folds on Esc from a button of the panel too", async () => {
     await userEvent.type(mount(), "ряд");
     await screen.findAllByRole("option");
-    screen.getByRole("button", { name: /Показать ещё/u }).focus();
+    screen.getByRole("button", { name: /Показать еще/u }).focus();
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(field()).toHaveFocus();

@@ -69,7 +69,7 @@ test("server errors show their reason instead of an invented timeout", async ({ 
   await input.fill("Вопрос");
   await input.press("Enter");
   await expect(page.locator(".ai-title")).toHaveText("Новая тема");
-  const reason = "Внутренняя ошибка сервера. Попробуй ещё раз. Код: internal_error.";
+  const reason = "Внутренняя ошибка сервера. Попробуй еще раз. Код: internal_error.";
   mock.complete(reason);
   await expect(page.getByText(reason)).toBeVisible();
   await expect(page.getByRole("button", { name: "Повторить", exact: true })).toBeEnabled();

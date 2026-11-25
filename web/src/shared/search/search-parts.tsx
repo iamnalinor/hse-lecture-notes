@@ -137,7 +137,7 @@ export const SearchPanel = ({
         onClick={onMore}
         type="button"
       >
-        Показать ещё {hits.length - limit}
+        Показать еще {hits.length - limit}
       </button>
     )}
   </div>

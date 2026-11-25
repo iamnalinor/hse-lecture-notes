@@ -676,7 +676,7 @@ export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<nu
       finalStatus: "error",
       messageStatus: "incomplete",
       errorCode: "run_expired",
-      errorMessage: "Ответ не завершился вовремя. Попробуй задать вопрос ещё раз.",
+      errorMessage: "Ответ не завершился вовремя. Попробуй задать вопрос еще раз.",
       actualCostMicros: row.actual_cost_micros,
       isCostUncertain: true,
       nowMs,
@@ -899,7 +899,7 @@ export async function admitRunAtomic(
   }
   return {
     kind: "conflict",
-    message: "История чата изменилась. Попробуй отправить вопрос ещё раз.",
+    message: "История чата изменилась. Попробуй отправить вопрос еще раз.",
   };
 }
 

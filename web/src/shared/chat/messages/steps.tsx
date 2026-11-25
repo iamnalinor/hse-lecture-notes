@@ -108,7 +108,7 @@ const StepResult = ({ onJumpToBlock, step }: StepResProps): JSX.Element | null =
           <ResultLink href={step.links?.[idx]} label={refId} onJumpToBlock={onJumpToBlock} />
         </span>
       ))}
-      {more > 0 && ` и ещё ${more}`}
+      {more > 0 && ` и еще ${more}`}
     </span>
   );
 };

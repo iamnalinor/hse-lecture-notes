@@ -132,7 +132,7 @@ const deliverError = (parsed: Record<string, unknown>, callbacks: WsStreamCallba
     message:
       typeof parsed["message"] === "string" && parsed["message"].trim() !== ""
         ? parsed["message"]
-        : "Не удалось прочитать ответ сервера. Попробуй ещё раз.",
+        : "Не удалось прочитать ответ сервера. Попробуй еще раз.",
     ...(parsed["block"] !== null &&
       typeof parsed["block"] === "object" &&
       "code" in parsed["block"] &&
@@ -201,7 +201,7 @@ export const openChatMessageStream = (
       isFinished = true;
       callbacks.onError({
         code: "invalid_frame",
-        message: "Не удалось прочитать ответ сервера. Попробуй ещё раз.",
+        message: "Не удалось прочитать ответ сервера. Попробуй еще раз.",
       });
       ws.close();
       return;

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ставит тулчейн сборки: TinyTeX (закреплённая версия) + нужные пакеты TeX Live,
+# Ставит тулчейн сборки: TinyTeX (закрепленная версия) + нужные пакеты TeX Live,
 # Python-зависимости (в т.ч. pandoc из pypandoc_binary). Идемпотентен.
 # Используется локально, агентами и в CI.
 set -euo pipefail
@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PACKAGES=(
   # кириллица и шрифты
   collection-langcyrillic babel-russian hyphen-russian cm-unicode fontspec
-  # вёрстка
+  # верстка
   tcolorbox tikzfill pdfcol environ etoolbox pgf pgfplots tikz-cd fancyhdr geometry hyperref xcolor
   enumitem booktabs caption float titlesec amsmath amsfonts tools mathtools
   bookmark zref needspace setspace parskip microtype
@@ -40,8 +40,8 @@ for p in "${PACKAGES[@]}"; do
 done
 if (( ${#missing[@]} )); then
   tlmgr update --self
-  # fmtutil живёт в texlive-scripts, а не в texlive.infra: без этого свежий tlmgr
-  # зовёт старый fmtutil с несовместимыми флагами («multiple commands found»).
+  # fmtutil живет в texlive-scripts, а не в texlive.infra: без этого свежий tlmgr
+  # зовет старый fmtutil с несовместимыми флагами («multiple commands found»).
   tlmgr update texlive-scripts
   echo ">> tlmgr install ${missing[*]}"
   tlmgr install "${missing[@]}"

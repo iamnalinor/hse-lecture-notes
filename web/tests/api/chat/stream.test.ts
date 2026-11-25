@@ -81,7 +81,7 @@ it.each([
     '{"type":"error","code":"invalid_frame","message":"Не удалось прочитать цитату."}',
     "Не удалось прочитать цитату.",
   ],
-  ["null", "Не удалось прочитать ответ сервера. Попробуй ещё раз."],
+  ["null", "Не удалось прочитать ответ сервера. Попробуй еще раз."],
 ])("reports an unreadable message once, without a second connection error", (data, message) => {
   const socket = Object.assign(new EventTarget(), { close: vi.fn() });
   vi.stubGlobal(

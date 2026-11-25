@@ -100,7 +100,7 @@ test("light/dark themes persist, animate and respect reduced motion", async ({ p
   const root = page.locator("html");
   await expect(root).toHaveAttribute("data-theme", "light");
   const animated = observeTransition(page);
-  await page.getByRole("button", { name: "Тёмная тема", exact: true }).first().click();
+  await page.getByRole("button", { name: "Темная тема", exact: true }).first().click();
   expect(await animated).toContain(280);
   await expect(root).toHaveAttribute("data-theme", "dark");
   await expect(
@@ -115,7 +115,7 @@ test("light/dark themes persist, animate and respect reduced motion", async ({ p
   expect(await reduced).toEqual([]);
   await expect(root).toHaveAttribute("data-theme", "light");
   await expect(
-    page.getByRole("button", { name: "Тёмная тема", exact: true }).first(),
+    page.getByRole("button", { name: "Темная тема", exact: true }).first(),
   ).toBeEnabled();
   await page.screenshot({ path: info.outputPath("theme-light.png") });
 });

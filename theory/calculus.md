@@ -30,7 +30,7 @@ title: "Теория: математический анализ"
 :::
 
 ::: {.proposition ref="prop:lec01:order"}
-Одноимённые кванторы перестановочны; $\exists y\, \forall x\ P \Rightarrow \forall x\, \exists y\ P$; обратное неверно. *Идея:* одно $y_0$ из левой части годится для всех $x$; контрпример к обратному — предикат $y \ge x^2$: $\forall x\, \exists y$ истинно, $\exists y\, \forall x$ ложно.
+Одноименные кванторы перестановочны; $\exists y\, \forall x\ P \Rightarrow \forall x\, \exists y\ P$; обратное неверно. *Идея:* одно $y_0$ из левой части годится для всех $x$; контрпример к обратному — предикат $y \ge x^2$: $\forall x\, \exists y$ истинно, $\exists y\, \forall x$ ложно.
 :::
 
 ::: {.definition ref="def:lec01:operations"}
@@ -100,11 +100,11 @@ $C_n^k = C_n^{n-k}$; $C_n^k = C_{n-1}^k + C_{n-1}^{k-1}$ при $1 \le k \le n -
 :::
 
 ::: {.proposition ref="prop:lec02:repetitions"}
-$\overline{A}_n^k = n^k$; $P(n; m_1, \dots, m_s) = \frac{n!}{m_1! \cdots m_s!}$; $\overline{C}_n^k = C_{n+k-1}^k$. *Идея:* правило произведения; деление на перестановки одинаковых букв; кодирование звёздочками и перегородками.
+$\overline{A}_n^k = n^k$; $P(n; m_1, \dots, m_s) = \frac{n!}{m_1! \cdots m_s!}$; $\overline{C}_n^k = C_{n+k-1}^k$. *Идея:* правило произведения; деление на перестановки одинаковых букв; кодирование звездочками и перегородками.
 :::
 
 ::: {.theorem ref="thm:lec02:binomial"}
-$(a + b)^n = \sum_{k=0}^{n} C_n^k a^k b^{n-k}$ (здесь $0^0 = 1$). *Идея:* при раскрытии $n$ скобок одночлен $a^k b^{n-k}$ получается столько раз, сколькими способами можно выбрать $k$ скобок, из которых берётся $a$.
+$(a + b)^n = \sum_{k=0}^{n} C_n^k a^k b^{n-k}$ (здесь $0^0 = 1$). *Идея:* при раскрытии $n$ скобок одночлен $a^k b^{n-k}$ получается столько раз, сколькими способами можно выбрать $k$ скобок, из которых берется $a$.
 :::
 
 ::: {.corollary ref="cor:lec02:sum"}
@@ -120,7 +120,7 @@ $(x_1 + \dots + x_s)^n = \sum_{m_1 + \dots + m_s = n} P(n; m_1, \dots, m_s) x_1^
 :::
 
 ::: {.definition ref="def:lec02:monotone"}
-**Монотонная последовательность** — любого из четырёх типов: возрастающая $a_n < a_{n+1}$, убывающая $a_n > a_{n+1}$, неубывающая $a_n \le a_{n+1}$, невозрастающая $a_n \ge a_{n+1}$ (при всех $n \in \N$).
+**Монотонная последовательность** — любого из четырех типов: возрастающая $a_n < a_{n+1}$, убывающая $a_n > a_{n+1}$, неубывающая $a_n \le a_{n+1}$, невозрастающая $a_n \ge a_{n+1}$ (при всех $n \in \N$).
 :::
 
 ::: {.definition ref="def:lec02:bounded-above"}
@@ -232,7 +232,7 @@ $\frac{1}{\text{отделимая}}$ — ограниченная ($C = \frac1\
 :::
 
 ::: {.definition ref="def:lec04:indeterminate"}
-**Неопределённость** — частное, произведение, сумма или разность б.м. и/или б.б., предел которых не определён типами частей: $\frac00$, $\frac\infty\infty$, $\infty - \infty$, $0 \cdot \infty$.
+**Неопределенность** — частное, произведение, сумма или разность б.м. и/или б.б., предел которых не определен типами частей: $\frac00$, $\frac\infty\infty$, $\infty - \infty$, $0 \cdot \infty$.
 :::
 
 ::: {.proposition ref="prop:lec04:standard"}
@@ -344,7 +344,7 @@ $\left(1 + \frac kn\right)^n \to e^k$, $\left(1 - \frac kn\right)^n \to e^{-k}$,
 :::
 
 ::: {.theorem ref="thm:lec06:cauchy"}
-Последовательность сходится $\Leftrightarrow$ она фундаментальна. *Идея:* «$\Rightarrow$» — $\frac\varepsilon2$ и неравенство треугольника; «$\Leftarrow$» — ограниченность, Больцано–Вейерштрасс даёт $a_{n_k} \to a$, затем $|a_n - a| \le |a_n - a_{n_k}| + |a_{n_k} - a|$.
+Последовательность сходится $\Leftrightarrow$ она фундаментальна. *Идея:* «$\Rightarrow$» — $\frac\varepsilon2$ и неравенство треугольника; «$\Leftarrow$» — ограниченность, Больцано–Вейерштрасс дает $a_{n_k} \to a$, затем $|a_n - a| \le |a_n - a_{n_k}| + |a_{n_k} - a|$.
 :::
 
 ::: {.definition ref="def:lec06:partial-limit"}
@@ -394,7 +394,7 @@ $\left(1 + \frac kn\right)^n \to e^k$, $\left(1 - \frac kn\right)^n \to e^{-k}$,
 :::
 
 ::: {.theorem ref="thm:lec07:cauchy-heine"}
-Определения по Коши и по Гейне равносильны. *Идея:* «$\Rightarrow$» — номер $N(\delta(\varepsilon))$; «$\Leftarrow$» — от противного: в $\mathring{U}_{1/k}(x_0)$ берём $x_k$ с $|f(x_k) - A| \ge \varepsilon_0$, по теореме о двух милиционерах $x_k \to x_0$, противоречие с определением Гейне.
+Определения по Коши и по Гейне равносильны. *Идея:* «$\Rightarrow$» — номер $N(\delta(\varepsilon))$; «$\Leftarrow$» — от противного: в $\mathring{U}_{1/k}(x_0)$ берем $x_k$ с $|f(x_k) - A| \ge \varepsilon_0$, по теореме о двух милиционерах $x_k \to x_0$, противоречие с определением Гейне.
 :::
 
 ::: {.corollary ref="cor:lec07:uniqueness"}
@@ -424,7 +424,7 @@ $\sin x < x < \operatorname{tg} x$ при $0 < x < \frac\pi2$; $|\sin x| \le |x|
 :::
 
 ::: {.theorem ref="thm:lec08:first-remarkable"}
-$\lim\limits_{x \to 0} \dfrac{\sin x}{x} = 1$ (угол в радианах). *Идея:* $\cos x < \frac{\sin x}{x} < 1$ в $\mathring{U}_{\pi/2}(0)$ (лемма, чётность), $\cos x \to 1$ (не значение, а предел — отдельно), теорема о двух милиционерах.
+$\lim\limits_{x \to 0} \dfrac{\sin x}{x} = 1$ (угол в радианах). *Идея:* $\cos x < \frac{\sin x}{x} < 1$ в $\mathring{U}_{\pi/2}(0)$ (лемма, четность), $\cos x \to 1$ (не значение, а предел — отдельно), теорема о двух милиционерах.
 :::
 
 ::: {.proposition ref="prop:lec08:sin-cos" status="на лекции не доказывалось"}
@@ -452,7 +452,7 @@ $\frac{\sin kx}{x} \to k$, $\frac{\operatorname{tg} x}{x} \to 1$, $\frac{1 - \co
 :::
 
 ::: {.definition ref="def:lec08:general-limit"}
-**Предел в общем виде:** $\lim_{x \to a} f(x) = b$ ($a \in \{x_0, +\infty, -\infty, \infty\}$, $b \in \{A, +\infty, -\infty, \infty\}$, всего 16 определений), если для любой окрестности $b$ найдётся окрестность $a$ (для $x_0$ — проколотая), при всех $x$ из которой $f(x)$ лежит в окрестности $b$. Например, $\lim_{x \to \infty} f(x) = A$: $\forall \varepsilon > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow |f(x) - A| < \varepsilon$; $\lim_{x \to x_0} f(x) = \infty$: $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$. Определение Гейне, арифметика конечных пределов, неравенства и теорема о сложной функции переносятся; условия 1–2 теоремы о сложной функции нужны только при конечном $A$. Предел при $x \to \infty$ есть $\Leftrightarrow$ равны пределы при $x \to +\infty$ и $x \to -\infty$.
+**Предел в общем виде:** $\lim_{x \to a} f(x) = b$ ($a \in \{x_0, +\infty, -\infty, \infty\}$, $b \in \{A, +\infty, -\infty, \infty\}$, всего 16 определений), если для любой окрестности $b$ найдется окрестность $a$ (для $x_0$ — проколотая), при всех $x$ из которой $f(x)$ лежит в окрестности $b$. Например, $\lim_{x \to \infty} f(x) = A$: $\forall \varepsilon > 0\ \exists C > 0\ \forall x\colon |x| > C \Rightarrow |f(x) - A| < \varepsilon$; $\lim_{x \to x_0} f(x) = \infty$: $\forall M > 0\ \exists \delta > 0\ \forall x \in \mathring{U}_\delta(x_0)\colon |f(x)| > M$. Определение Гейне, арифметика конечных пределов, неравенства и теорема о сложной функции переносятся; условия 1–2 теоремы о сложной функции нужны только при конечном $A$. Предел при $x \to \infty$ есть $\Leftrightarrow$ равны пределы при $x \to +\infty$ и $x \to -\infty$.
 :::
 
 ::: {.definition ref="def:lec08:small-large"}
@@ -514,7 +514,7 @@ $\sim$ рефлексивно, симметрично, транзитивно; �
 :::
 
 ::: {.proposition ref="prop:lec09:table"}
-При $x \to 0$: $\sin x \sim x$, $\operatorname{tg} x \sim x$, $1 - \cos x \sim \frac{x^2}{2}$, $\ln(1 + x) \sim x$, $e^x - 1 \sim x$, $(1 + x)^\alpha - 1 \sim \alpha x$ ($\alpha \ne 0$; в частности $\sqrt{1 + x} - 1 \sim \frac x2$, $\sqrt[3]{1 + x} - 1 \sim \frac x3$, $(1 + x)^n - 1 \sim nx$). *Идея:* замечательные и классические пределы лекции 8; для корней и $n$ — сопряжённое, неполный квадрат, бином.
+При $x \to 0$: $\sin x \sim x$, $\operatorname{tg} x \sim x$, $1 - \cos x \sim \frac{x^2}{2}$, $\ln(1 + x) \sim x$, $e^x - 1 \sim x$, $(1 + x)^\alpha - 1 \sim \alpha x$ ($\alpha \ne 0$; в частности $\sqrt{1 + x} - 1 \sim \frac x2$, $\sqrt[3]{1 + x} - 1 \sim \frac x3$, $(1 + x)^n - 1 \sim nx$). *Идея:* замечательные и классические пределы лекции 8; для корней и $n$ — сопряженное, неполный квадрат, бином.
 :::
 
 ::: {.proposition ref="prop:lec09:substitution"}
@@ -534,7 +534,7 @@ $f \sim g \Leftrightarrow f = g + o(g)$. *Идея:* $\frac{f - g}{g} = \frac fg
 :::
 
 ::: {.definition ref="def:lec09:continuous"}
-**Непрерывность в точке:** $f$, определённая в окрестности $x_0$, непрерывна в $x_0$, если $\lim_{x \to x_0} f(x) = f(x_0)$: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon$ (окрестность не проколотая).
+**Непрерывность в точке:** $f$, определенная в окрестности $x_0$, непрерывна в $x_0$, если $\lim_{x \to x_0} f(x) = f(x_0)$: $\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon$ (окрестность не проколотая).
 :::
 
 ::: {.proposition ref="prop:lec09:heine" status="на лекции не доказывалось"}
@@ -600,7 +600,7 @@ $f$ непрерывна на $[a;\ b]$, $f(a) f(b) < 0$ $\Rightarrow$ $\exists 
 :::
 
 ::: {.theorem ref="thm:lec10:weierstrass-bounded"}
-Непрерывная на отрезке функция ограничена на нём. *Идея:* от противного $|f(x_n)| > n$; Больцано–Вейерштрасс даёт $x_{n_k} \to c \in [a;\ b]$, по непрерывности $f(x_{n_k}) \to f(c)$ — сходящаяся, а значит ограниченная последовательность.
+Непрерывная на отрезке функция ограничена на нём. *Идея:* от противного $|f(x_n)| > n$; Больцано–Вейерштрасс дает $x_{n_k} \to c \in [a;\ b]$, по непрерывности $f(x_{n_k}) \to f(c)$ — сходящаяся, а значит ограниченная последовательность.
 :::
 
 ::: {.theorem ref="thm:lec10:weierstrass-max"}
@@ -630,7 +630,7 @@ $f$ непрерывна на $[a;\ b]$, $f(a) f(b) < 0$ $\Rightarrow$ $\exists 
 :::
 
 ::: {.proposition ref="prop:lec11:arc"}
-$\arcsin$ возрастает, $\arccos$ убывает (на $[-1;\ 1]$, значения $\left[-\frac\pi2;\ \frac\pi2\right]$ и $[0;\ \pi]$); $\operatorname{arctg}$ возрастает, $\operatorname{arcctg}$ убывает на $\R$, $\operatorname{arctg} y \to \pm\frac\pi2$ при $y \to \pm\infty$; все четыре непрерывны. $\arcsin$, $\operatorname{arctg}$ нечётны, $\arccos(-y) = \pi - \arccos y$; $\arcsin y + \arccos y = \operatorname{arctg} y + \operatorname{arcctg} y = \frac\pi2$. *Идея:* строгая монотонность сужений через формулы разности; затем теорема о непрерывности обратной.
+$\arcsin$ возрастает, $\arccos$ убывает (на $[-1;\ 1]$, значения $\left[-\frac\pi2;\ \frac\pi2\right]$ и $[0;\ \pi]$); $\operatorname{arctg}$ возрастает, $\operatorname{arcctg}$ убывает на $\R$, $\operatorname{arctg} y \to \pm\frac\pi2$ при $y \to \pm\infty$; все четыре непрерывны. $\arcsin$, $\operatorname{arctg}$ нечетны, $\arccos(-y) = \pi - \arccos y$; $\arcsin y + \arccos y = \operatorname{arctg} y + \operatorname{arcctg} y = \frac\pi2$. *Идея:* строгая монотонность сужений через формулы разности; затем теорема о непрерывности обратной.
 :::
 
 ::: {.corollary ref="cor:lec11:arc-limits" status="на лекции не доказывалось"}
@@ -694,7 +694,7 @@ $(f \pm g)' = f' \pm g'$, $(cf)' = cf'$, $(fg)' = f'g + fg'$, $\left(\frac fg\ri
 :::
 
 ::: {.theorem ref="thm:lec11:chain"}
-Если $g$ дифференцируема в $x_0$, $f$ — в $g(x_0)$, то $(f \circ g)'(x_0) = f'(g(x_0))\, g'(x_0)$. *Идея:* вспомогательная функция $\varphi(y) = \frac{f(y) - f(y_0)}{y - y_0}$, $\varphi(y_0) = f'(y_0)$, непрерывна в $y_0$, и $f(g(x)) - f(y_0) = \varphi(g(x))(g(x) - g(x_0))$ — без деления на $g(x) - g(x_0)$, которое может быть нулём.
+Если $g$ дифференцируема в $x_0$, $f$ — в $g(x_0)$, то $(f \circ g)'(x_0) = f'(g(x_0))\, g'(x_0)$. *Идея:* вспомогательная функция $\varphi(y) = \frac{f(y) - f(y_0)}{y - y_0}$, $\varphi(y_0) = f'(y_0)$, непрерывна в $y_0$, и $f(g(x)) - f(y_0) = \varphi(g(x))(g(x) - g(x_0))$ — без деления на $g(x) - g(x_0)$, которое может быть нулем.
 :::
 
 # 12. Правила дифференцирования
@@ -762,7 +762,7 @@ $|f'| \le M$ на промежутке $\Rightarrow$ $|f(x_2) - f(x_1)| \le M|x_
 :::
 
 ::: {.theorem ref="thm:lec13:cauchy"}
-$f$, $g$ непрерывны на $[a;\ b]$, дифференцируемы на $(a;\ b)$, $g' \ne 0$ $\Rightarrow$ $\frac{f(b) - f(a)}{g(b) - g(a)} = \frac{f'(c)}{g'(c)}$. *Идея:* Ролль для $f - Kg$; точка $c$ общая (Лагранж для $f$ и $g$ по отдельности даёт разные точки).
+$f$, $g$ непрерывны на $[a;\ b]$, дифференцируемы на $(a;\ b)$, $g' \ne 0$ $\Rightarrow$ $\frac{f(b) - f(a)}{g(b) - g(a)} = \frac{f'(c)}{g'(c)}$. *Идея:* Ролль для $f - Kg$; точка $c$ общая (Лагранж для $f$ и $g$ по отдельности дает разные точки).
 :::
 
 ::: {.proposition ref="prop:lec13:parametric"}
@@ -868,7 +868,7 @@ $T_n(x) \to e^x$, $\sin x$, $\cos x$ при любом $x$ и $T_n(x) \to \ln(1 
 :::
 
 ::: {.lemma ref="lem:lec16:sign"}
-Если $f(x) = f(x_0) + a(x - x_0)^m + o((x - x_0)^m)$, $a \ne 0$, то около $x_0$ знак $f(x) - f(x_0)$ равен знаку $a(x - x_0)^m$: при чётном $m$ — строгий минимум ($a > 0$) или максимум ($a < 0$), при нечётном — экстремума нет. *Идея:* $f(x) - f(x_0) = (x - x_0)^m(a + \alpha(x))$, $\alpha \to 0$.
+Если $f(x) = f(x_0) + a(x - x_0)^m + o((x - x_0)^m)$, $a \ne 0$, то около $x_0$ знак $f(x) - f(x_0)$ равен знаку $a(x - x_0)^m$: при четном $m$ — строгий минимум ($a > 0$) или максимум ($a < 0$), при нечетном — экстремума нет. *Идея:* $f(x) - f(x_0) = (x - x_0)^m(a + \alpha(x))$, $\alpha \to 0$.
 :::
 
 ::: {.theorem ref="thm:lec16:extremum-second"}
@@ -876,11 +876,11 @@ $f'(x_0) = 0$, $f''(x_0) > 0$ ($< 0$) $\Rightarrow$ $x_0$ — точка стр�
 :::
 
 ::: {.theorem ref="thm:lec16:extremum-higher"}
-Если $f'(x_0) = \dots = f^{(n-1)}(x_0) = 0$, $f^{(n)}(x_0) \ne 0$, $n \ge 2$: при чётном $n$ — строгий минимум ($f^{(n)}(x_0) > 0$) или максимум ($< 0$), при нечётном — экстремума нет. *Идея:* формула Пеано порядка $n$ и лемма о знаке.
+Если $f'(x_0) = \dots = f^{(n-1)}(x_0) = 0$, $f^{(n)}(x_0) \ne 0$, $n \ge 2$: при четном $n$ — строгий минимум ($f^{(n)}(x_0) > 0$) или максимум ($< 0$), при нечетном — экстремума нет. *Идея:* формула Пеано порядка $n$ и лемма о знаке.
 :::
 
 ::: {.corollary ref="cor:lec16:inflection"}
-Если $n \ge 3$ нечётно, $f''(x_0) = \dots = f^{(n-1)}(x_0) = 0$, $f^{(n)}(x_0) \ne 0$, то $(x_0;\ f(x_0))$ — точка перегиба. *Идея:* лемма о знаке для $f''$: она меняет знак в $x_0$.
+Если $n \ge 3$ нечетно, $f''(x_0) = \dots = f^{(n-1)}(x_0) = 0$, $f^{(n)}(x_0) \ne 0$, то $(x_0;\ f(x_0))$ — точка перегиба. *Идея:* лемма о знаке для $f''$: она меняет знак в $x_0$.
 :::
 
 ::: {.definition ref="def:lec16:antiderivative"}
@@ -896,7 +896,7 @@ $f'(x_0) = 0$, $f''(x_0) > 0$ ($< 0$) $\Rightarrow$ $x_0$ — точка стр�
 :::
 
 ::: {.definition ref="def:lec16:indefinite"}
-**Неопределённый интеграл** $\int f(x)\,dx$ — множество всех первообразных $f$ на интервале: $\int f(x)\,dx = F(x) + C$.
+**Неопределенный интеграл** $\int f(x)\,dx$ — множество всех первообразных $f$ на интервале: $\int f(x)\,dx = F(x) + C$.
 :::
 
 ::: {.proposition ref="prop:lec16:linearity"}
