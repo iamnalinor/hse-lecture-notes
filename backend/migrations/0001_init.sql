@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS chat_threads (
   telegram_id INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  context_limited INTEGER NOT NULL DEFAULT 0,
+  context_revision INTEGER NOT NULL DEFAULT 0,
   CHECK ((browser_id IS NOT NULL AND telegram_id IS NULL) OR (browser_id IS NULL AND telegram_id IS NOT NULL))
 );
 
@@ -105,6 +107,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   run_id TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
+  prompt_context_json TEXT,
+  suggestion TEXT,
   FOREIGN KEY (thread_id) REFERENCES chat_threads(id) ON DELETE CASCADE
 );
 
@@ -142,7 +146,8 @@ CREATE TABLE IF NOT EXISTS usage_runs (
   browser_id TEXT NOT NULL,
   ip_address TEXT NOT NULL,
   fingerprint TEXT NOT NULL,
-  error_code TEXT
+  error_code TEXT,
+  provider TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_runs_idempotency
@@ -206,6 +211,8 @@ CREATE INDEX IF NOT EXISTS idx_course_blocks_doc
   ON course_blocks(course, doc_id, block_order);
 CREATE INDEX IF NOT EXISTS idx_course_blocks_course_kind
   ON course_blocks(course, doc_kind, block_kind);
+CREATE INDEX IF NOT EXISTS idx_course_blocks_anchor
+  ON course_blocks(course, anchor_id);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS course_blocks_fts USING fts5(
   id UNINDEXED,
