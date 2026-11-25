@@ -11,8 +11,10 @@ import {
   intensity,
   loadText,
   maxLoad,
+  moduleDays,
   moduleTotals,
   moduleWeeks,
+  todayInModule,
 } from "#web/domain/curriculum.ts";
 
 import { SAMPLE } from "../support/curriculum-fixture.ts";
@@ -78,6 +80,17 @@ describe("curriculum shaping", () => {
     expect(currentModule(SAMPLE, "2026-11-05")).toBe(2);
     expect(currentModule(SAMPLE, "2026-12-30")).toBe(2);
     expect(currentModule(SAMPLE, "2027-01-05")).toBeUndefined();
+  });
+
+  it("measures modules in calendar days, sessions included, for the column widths", () => {
+    expect(moduleDays(SAMPLE)).toEqual([61, 56, 82, 91]);
+    expect(moduleDays({ ...SAMPLE, moduleSpans: SAMPLE.moduleSpans.slice(1) })).toBeUndefined();
+  });
+
+  it("puts today in the middle of its day inside the module, nowhere between modules", () => {
+    expect(todayInModule(SAMPLE, "2026-11-05")).toEqual({ fraction: 0.5 / 56, module: 2 });
+    expect(todayInModule(SAMPLE, "2026-12-30")).toEqual({ fraction: 55.5 / 56, module: 2 });
+    expect(todayInModule(SAMPLE, "2027-01-05")).toBeUndefined();
   });
 
   it("sums the credits: shown, with the hidden rows of the plan, with English", () => {
