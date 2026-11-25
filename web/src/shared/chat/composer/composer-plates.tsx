@@ -81,7 +81,7 @@ const GuestLimit = ({ block }: { readonly block: ChatBlock | null }) => (
     <p>
       {typeof block?.nextAvailableAt === "number" && (
         <>
-          Следующий будет доступен в{" "}
+          Следующий ответ будет доступен в{" "}
           <time dateTime={new Date(block.nextAvailableAt).toISOString()}>
             {formatClockTime(block.nextAvailableAt)}
           </time>
