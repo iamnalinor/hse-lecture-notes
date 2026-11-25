@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -87,18 +87,37 @@ describe("course page", () => {
     expect(marked[0]).toHaveTextContent(/^Предел функции/);
   });
 
+  it("opens the check hint independently of the lecture link and dismisses it", () => {
+    calculusOn("2026-10-20");
+    const button = screen.getByRole("button", { name: /Содержание совпадает/ });
+    expect(button.closest("a")).toBeNull();
+    fireEvent.click(button);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("лекцией этого года");
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.click(button);
+    fireEvent.keyDown(button, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
   it("makes the whole row open the lecture, keeping the PDF link apart", () => {
     calculusOn("2026-10-20");
     const row = screen.getByRole("row", { name: /Непрерывность/ });
     const title = within(row).getByRole("link", { name: "Непрерывность" });
     expect(row).toHaveClass("relative");
-    // the title's ::after covers the row: the one real link per row
-    expect(title).toHaveClass("after:absolute", "after:inset-0");
+    // The row-sized link and the tooltip button have separate hit areas.
+    expect(title).toHaveClass("absolute", "inset-0");
     expect(title).toHaveAttribute("href", "/calculus/08_oct23_continuity");
     const pdf = within(row).getByRole("link", { name: "PDF" });
     expect(pdf).toHaveAttribute("download");
     expect(pdf.closest("td")).toHaveClass("relative", "z-10");
     expect(within(row).getAllByRole("link")).toHaveLength(2);
+  });
+
+  it("lists course sources directly beneath their heading", () => {
+    page([]);
+    const heading = screen.getByRole("heading", { name: "Источники" });
+    expect(heading.nextElementSibling?.tagName).toBe("UL");
   });
 
   it("links the program page of the course next to the theory", () => {

@@ -65,7 +65,7 @@ it.each(["mousedown", "selectionchange"])(
     globalThis.getSelection()?.addRange(range);
     fireEvent.mouseUp(document);
     const reply = await screen.findByRole("button", { name: "Ответить на выделенный фрагмент" });
-    expect(reply).toHaveStyle({ left: "152px", top: "108px" });
+    expect(reply).toHaveStyle({ left: "220px", top: "108px" });
     fireEvent(paragraph, new Event(event, { bubbles: true }));
     expect(document.querySelector(".ai-sel-btn")).toBeNull();
   },

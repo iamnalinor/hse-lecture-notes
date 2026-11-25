@@ -1,6 +1,8 @@
-import { Component, lazy, type ReactNode, Suspense } from "react";
+import { Component, lazy, type ReactNode, Suspense, useState } from "react";
+import { useLocation } from "react-router";
 
 import { isChatConfigured } from "#web/api/chat/http.ts";
+import { isDocumentPath } from "#web/domain/paths.ts";
 import { useIsChatOpen } from "#web/shared/chat/open-state.ts";
 
 const Loading = () =>
@@ -25,11 +27,20 @@ class ChatBoundary extends Component<{ readonly children: ReactNode }, { failed:
   }
 }
 
-export const LazyChat = ({ general = false }: { readonly general?: boolean }) =>
-  isChatConfigured() ? (
+export const LazyChat = ({ general = false }: { readonly general?: boolean }) => {
+  const isOpen = useIsChatOpen();
+  const { pathname } = useLocation();
+  const shouldMount = isOpen || (!general && isDocumentPath(pathname));
+  // Keep drafts, streams and the session alive after the first use or document visit.
+  const [wasMounted, setWasMounted] = useState(shouldMount);
+  if (shouldMount && !wasMounted) {
+    setWasMounted(true);
+  }
+  return isChatConfigured() && (shouldMount || wasMounted) ? (
     <ChatBoundary>
       <Suspense fallback={<Loading />}>
         <Runtime general={general} />
       </Suspense>
     </ChatBoundary>
   ) : null;
+};

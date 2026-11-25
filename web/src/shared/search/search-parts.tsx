@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import type { SearchHit } from "#web/domain/search.ts";
 
 import { CloseIcon, SearchIcon } from "#web/shared/ui/icons.tsx";
 
-import { resultId, SearchResults } from "./search-results.tsx";
+import { resultId } from "./result-id.ts";
+
+const SearchResults = lazy(async () => {
+  const results = await import("./search-results.tsx");
+  return { default: results.SearchResults };
+});
 
 const isMac = (): boolean => /Mac|iPhone|iPad/u.test(navigator.userAgent);
 
@@ -124,12 +129,14 @@ export const SearchPanel = ({
       {status}
     </p>
     {hits.length > 0 && (
-      <SearchResults
-        active={active}
-        hits={hits.slice(0, limit)}
-        onHover={onHover}
-        onPick={onPick}
-      />
+      <Suspense fallback={null}>
+        <SearchResults
+          active={active}
+          hits={hits.slice(0, limit)}
+          onHover={onHover}
+          onPick={onPick}
+        />
+      </Suspense>
     )}
     {hits.length > limit && (
       <button

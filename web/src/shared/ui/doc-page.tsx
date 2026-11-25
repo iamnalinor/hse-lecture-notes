@@ -12,8 +12,6 @@ type Props = {
   readonly courseName: string;
   /** More PDFs next to the main one (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[] | undefined;
-  /** Line under the title: «120 терминов». */
-  readonly note?: string;
   /** Last crumb and the title: «Теория». */
   readonly pageName: string;
   /** Document id of the PDF; omit when the page has none. */
@@ -29,7 +27,6 @@ export const DocPage = ({
   course,
   courseName,
   downloads = NO_DOWNLOADS,
-  note,
   pageName,
   pdfDoc,
 }: Props) => (
@@ -46,7 +43,6 @@ export const DocPage = ({
           {pageName}: {courseName.toLowerCase()}
         </h1>
         <div className="flex flex-wrap items-center gap-x-5.5 gap-y-2.5 border-b border-rule pb-6 text-footnote text-muted">
-          {note !== undefined && <span>{note}</span>}
           {pdfDoc !== undefined && (
             <span className="ml-auto flex flex-wrap gap-2.5">
               {downloads.map((doc) => (

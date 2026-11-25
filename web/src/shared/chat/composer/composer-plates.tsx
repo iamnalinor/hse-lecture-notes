@@ -98,7 +98,8 @@ export const BottomPlate = ({
 }: {
   readonly mode: Exclude<BottomMode, "composer">;
 }): JSX.Element => {
-  const { block, clearQuote, draft, isLoginBusy, login, quote, tier } = useChat();
+  const { block, clearQuote, draft, isLoginBusy, telegramLoadFailed, login, quote, tier } =
+    useChat();
   const hasDraft = draft.trim() !== "" || quote !== null;
   const keepNote = hasDraft ? " Черновик сохранится." : "";
   const plateQuote =
@@ -147,7 +148,7 @@ export const BottomPlate = ({
             ) : (
               <>
                 <TelegramIcon />
-                Войти через Telegram
+                {telegramLoadFailed ? "Повторить загрузку Telegram" : "Войти через Telegram"}
               </>
             )}
           </button>
@@ -181,7 +182,7 @@ type CaptionProps = {
 };
 
 const AccountCaption = ({ compact }: { readonly compact: boolean }): JSX.Element | null => {
-  const { isLoginBusy, isStreaming, switchAccount, tier, user } = useChat();
+  const { isLoginBusy, isStreaming, switchAccount, telegramLoadFailed, tier, user } = useChat();
   if (tier !== "default" || user === null) {
     return null;
   }
@@ -204,7 +205,7 @@ const AccountCaption = ({ compact }: { readonly compact: boolean }): JSX.Element
           }}
           type="button"
         >
-          Сменить аккаунт
+          {telegramLoadFailed ? "Повторить загрузку Telegram" : "Сменить аккаунт"}
         </button>
       </span>
     </p>

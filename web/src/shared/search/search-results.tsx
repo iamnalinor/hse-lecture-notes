@@ -11,6 +11,8 @@ import { hitPath, type SearchHit, type SnippetPart } from "#web/domain/search.ts
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { TexText } from "#web/shared/reader/tex-text.tsx";
 
+import { resultId } from "./result-id.ts";
+
 type Props = {
   readonly active: number;
   readonly hits: readonly SearchHit[];
@@ -46,8 +48,6 @@ const placeOf = (hit: SearchHit, catalog: Catalog | undefined): string => {
   }
   return `${course} · Лекция ${String(hit.lecture)}`;
 };
-
-export const resultId = (index: number): string => `search-hit-${String(index)}`;
 
 export const SearchResults = ({ active, hits, onHover, onPick }: Props) => {
   // already loaded by the page behind the search; without it a quiz is named without its number

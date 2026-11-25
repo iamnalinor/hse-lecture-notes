@@ -187,14 +187,12 @@ it("exposes an HTTP failure and releases the shared request for retry", async ()
 
 it("gets separate single-use tokens before and after Telegram login and sends the new session explicitly", async () => {
   vi.mocked(openTelegramLoginPopup).mockResolvedValue("telegram-id-token");
+  const verification = Promise.withResolvers<string>();
   vi.mocked(requestTurnstileToken)
-    .mockResolvedValueOnce("first")
+    .mockReturnValueOnce(verification.promise)
     .mockResolvedValueOnce("prepared-next");
   fetchMock.mockImplementation((input) => {
     const path = input instanceof Request ? input.url : input.toString();
-    if (path.endsWith("/v1/auth/nonce")) {
-      return Promise.resolve(Response.json({ nonce: "nonce" }));
-    }
     if (path.endsWith("/v1/auth/telegram")) {
       return Promise.resolve(
         Response.json({
@@ -214,7 +212,14 @@ it("gets separate single-use tokens before and after Telegram login and sends th
       }),
     );
   });
-  await expect(loginViaTelegram(hooks)).resolves.toMatchObject({
+  const login = loginViaTelegram(hooks);
+  expect(openTelegramLoginPopup).toHaveBeenCalledOnce();
+  await vi.waitFor(() => {
+    expect(requestTurnstileToken).toHaveBeenCalledOnce();
+  });
+  expect(fetchMock).not.toHaveBeenCalled();
+  verification.resolve("first");
+  await expect(login).resolves.toMatchObject({
     tier: "student",
     user: { id: 1 },
   });
@@ -248,4 +253,43 @@ it("shows the server's explanation, code and detail instead of a bare status (D1
   expect(error.message).toBe(
     "Хранилище чата исчерпало дневной лимит Cloudflare D1. (storage_quota_exceeded, HTTP 503: D1_ERROR: daily row read limit)",
   );
+});
+
+it("keeps the previous account while Telegram is open and when login is cancelled", async () => {
+  saveBrowserToken("browser");
+  saveSessionAuth("old", "student", { id: 1, name: "Old" });
+  const popup = Promise.withResolvers<string>();
+  vi.mocked(openTelegramLoginPopup).mockReturnValueOnce(popup.promise);
+  const login = loginViaTelegram(hooks);
+  expect(openTelegramLoginPopup).toHaveBeenCalledOnce();
+  expect(fetchMock).not.toHaveBeenCalled();
+  popup.reject(new Error("cancelled"));
+  await expect(login).rejects.toThrow("cancelled");
+  expect(localStorage.getItem("hse_chat_session_token")).toBe("old");
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("switches by logging out after Telegram answers and before exchanging the token", async () => {
+  saveBrowserToken("browser");
+  saveSessionAuth("old", "student", { id: 1, name: "Old" });
+  const popup = Promise.withResolvers<string>();
+  vi.mocked(openTelegramLoginPopup).mockReturnValueOnce(popup.promise);
+  fetchMock.mockResolvedValueOnce(Response.json({})).mockResolvedValueOnce(
+    Response.json({
+      browserToken: "browser",
+      sessionToken: "new",
+      tier: "student",
+      user: { id: 2, name: "New" },
+    }),
+  );
+  const login = loginViaTelegram(hooks);
+  expect(fetchMock).not.toHaveBeenCalled();
+  popup.resolve("signed");
+  await login;
+  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+    "https://api.test/v1/auth/logout",
+    "https://api.test/v1/auth/telegram",
+  ]);
+  expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).has("X-Session-Token")).toBe(false);
+  expect(localStorage.getItem("hse_chat_session_token")).toBe("new");
 });

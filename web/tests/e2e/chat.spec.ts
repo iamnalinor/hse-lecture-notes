@@ -158,11 +158,27 @@ test("a citation opens the other lecture on mobile and contents stay reachable o
   await page.route("**/data/algebra/*/fragment.html", (route) =>
     route.fulfill({
       contentType: "text/html",
-      body: '<section id="section"><h2>Раздел</h2></section>',
+      body: '<section id="section"><h2>Раздел</h2><p style="text-align:right">Правый край</p></section>',
     }),
   );
+  await page.setViewportSize({ width: 320, height: 780 });
   await page.goto("/algebra/01_test");
   await expect(page.locator("[data-page] h1")).toBeVisible();
+  const edge = page.getByText("Правый край");
+  await edge.scrollIntoViewIfNeeded();
+  await edge.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    globalThis.getSelection()?.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
+  const quote = page.getByRole("button", { name: "Спросить в чате о выделенном фрагменте" });
+  await expect(quote).toBeVisible();
+  const bounds = await quote.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(312);
+  await page.evaluate(() => globalThis.getSelection()?.removeAllRanges());
+
   await page.getByTitle("Чат с ИИ").click();
   for (const width of [1280, 1440]) {
     await page.setViewportSize({ width, height: 844 });
@@ -205,4 +221,56 @@ test("interactive browser verification takes keyboard focus and restores it on E
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(input).toBeFocused();
+});
+
+for (const path of ["/calculus", "/"]) {
+  test(`mobile ${path} loads the reader and chat code only when needed`, async ({ page }) => {
+    const requested = new Set<string>();
+    page.on("request", (request) => {
+      requested.add(new URL(request.url()).pathname);
+    });
+    await page.clock.install();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(path);
+    await expect(page.locator("[data-page] h1")).toBeVisible();
+    await page.clock.runFor(2000);
+    expect(
+      [...requested].filter(
+        (path) =>
+          path.includes("/features/lecture/page.tsx") ||
+          path.includes("/shared/chat/runtime.tsx") ||
+          path.includes("/shared/reader/tex-math.tsx"),
+      ),
+    ).toEqual([]);
+  });
+}
+
+test("guest login waits for the SDK, then opens Telegram from the first enabled click", async ({
+  page,
+}) => {
+  const sdk = Promise.withResolvers<boolean>();
+  await page.route("https://oauth.telegram.org/**", async (route) => {
+    await sdk.promise;
+    await route.fulfill({
+      contentType: "application/javascript",
+      body: 'window.Telegram={Login:{auth:()=>{document.body.dataset.telegramActivation=String(navigator.userActivation.isActive); window.open("about:blank", "_blank");}}};',
+    });
+  });
+  await page.route("https://challenges.cloudflare.com/**", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: "window.turnstile={render:()=> 'pending',reset:()=>{}};",
+    }),
+  );
+  await openChat(page);
+  const login = page.getByRole("button", { name: "Войти", exact: true });
+  try {
+    await expect(login).toBeDisabled({ timeout: 1000 });
+  } finally {
+    sdk.resolve(true);
+  }
+  const popup = page.waitForEvent("popup");
+  await login.click();
+  await (await popup).close();
+  await expect(page.locator("body")).toHaveAttribute("data-telegram-activation", "true");
 });

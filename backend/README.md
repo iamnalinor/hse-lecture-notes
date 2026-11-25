@@ -2,10 +2,10 @@
 
 Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
-Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The old `hse-lecture-notes-api.nalinor.workers.dev` stays on (`workers_dev: true` in `wrangler.jsonc`) until every deployed build uses the new address; then set it to `false` and redeploy to retire the old endpoint.
+Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The Worker serves the API exclusively on its custom domain.
 
 ## Architecture
-- **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/nonce`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
+- **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
 - **SQLite-backed Durable Object (`ChatRunner`, `src/chat/runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 8 rounds / 16 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
 - **D1 (`hse-lecture-notes`)**: schema in `migrations/` (sessions, hourly O(1) budget buckets, quotas, threads, messages, FTS5 course materials).
 - **Vectorize (`hse-course-blocks`, 1024 dim cosine) + Workers AI (`@cf/baai/bge-m3`)**: semantic search with automatic fallback to FTS5.
@@ -58,7 +58,7 @@ bunx wrangler secret put OWNER_TELEGRAM_ID
 bun run deploy
 ```
 
-The daily cron cleans expired nonces and sessions. With R2 disabled it logs
+The daily cron cleans expired Telegram token hashes and sessions. With R2 disabled it logs
 `archive_skipped_no_bucket` and keeps conversation history and usage records in D1.
 To enable archiving later, create a private R2 bucket and add it to Wrangler's
 `r2_buckets` with the binding `ARCHIVE_BUCKET`. The cron then copies inactive
@@ -132,4 +132,4 @@ bunx wrangler vectorize create-metadata-index hse-course-blocks --property-name=
 bunx wrangler vectorize list-metadata-index hse-course-blocks
 ```
 
-After the metadata indexes are ready, apply D1 migrations and run `uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow` from the repository root. Migration 0003 marks existing embeddings for refresh. D1 and FTS cover the full corpus. The exporter reconciles the dedicated Vectorize index against the highest-priority 4,800 block IDs and waits for each mutation to be processed. Run one sync at a time. If a run fails, rerun the same command. The main-branch Build notes workflow reports sync failures in its summary and still publishes the notes.
+After the metadata indexes are ready, apply D1 migrations and run `uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow` from the repository root. D1 and FTS cover the full corpus. The exporter reconciles the dedicated Vectorize index against the highest-priority 4,800 block IDs and waits for each mutation to be processed. Run one sync at a time. If a run fails, rerun the same command. The main-branch Build notes workflow reports sync failures in its summary and still publishes the notes.

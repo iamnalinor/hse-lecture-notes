@@ -73,6 +73,7 @@ const sourceOfRange = (range: Range): { readonly blockId?: string; readonly labe
 
 type FloatingPill = {
   readonly left: number;
+  readonly translate: string;
   readonly quote: ChatQuote;
   readonly range: Range;
   readonly top: number;
@@ -90,7 +91,7 @@ const getSelectionRange = (): null | Range => {
 const computePillCoords = (
   rects: readonly DOMRect[],
   isInChat: boolean,
-): null | { readonly left: number; readonly top: number } => {
+): null | Pick<FloatingPill, "left" | "top" | "translate"> => {
   const anchorRect = rects.at(-1);
   if (anchorRect === undefined) {
     return null;
@@ -102,13 +103,16 @@ const computePillCoords = (
     (!isInChat && isChatOpen && !isMobile
       ? (document.querySelector("#ai-panel")?.getBoundingClientRect().left ?? viewportW)
       : viewportW) - 8;
-  const left = Math.max(8, Math.min(anchorRect.right - 68, maxRight - 136));
+  const anchor = anchorRect.right;
+  // Translation percentages are relative to the rendered button, including its icon and text.
+  const translate = `clamp(${8 - anchor}px, -50%, calc(${maxRight - anchor}px - 100%))`;
   let top = anchorRect.bottom + (isMobile ? 34 : 8);
   if (top + 36 > globalThis.window.innerHeight - 8 && rects[0] !== undefined) {
     top = rects[0].top - 40;
   }
   return {
-    left: left + globalThis.window.scrollX,
+    left: anchor + globalThis.window.scrollX,
+    translate,
     top: Math.max(8, top) + globalThis.window.scrollY,
   };
 };
@@ -259,7 +263,7 @@ const SelectionPill = ({
       onMouseDown={(event) => {
         event.preventDefault();
       }}
-      style={{ left: `${pill.left}px`, top: `${pill.top}px` }}
+      style={{ left: `${pill.left}px`, top: `${pill.top}px`, translate: pill.translate }}
       type="button"
     >
       {!isReplying && <SparklesIcon />}

@@ -11,7 +11,6 @@ import {
   isUpcoming,
   pastPreps,
   PREP_IDS,
-  prepContents,
   prepDescription,
   prepGoal,
   prepName,
@@ -44,7 +43,6 @@ describe("test preparation pages", () => {
   it("names a test", () => {
     expect(prepName("kr2")).toBe("КР-2");
     expect(prepGoal("kr2")).toBe("Подготовка к КР-2");
-    expect(prepContents("kr2")).toBe("Темы, методы, задачи с ответами");
     expect(prepDescription("kr2")).toBe("темы, методы и задачи к контрольной");
   });
 
@@ -52,7 +50,6 @@ describe("test preparation pages", () => {
     expect(prepName("colloq1")).toBe("Коллоквиум 1");
     expect(prepGoal("colloq1")).toBe("Подготовка к коллоквиуму 1");
     expect(prepGoal("quiz-o-symbols", 4)).toBe("Подготовка к квизу 4");
-    expect(prepContents("colloq1")).not.toContain("задачи с ответами");
     expect(prepDescription("colloq1")).toContain("коллоквиум");
   });
 
@@ -62,7 +59,6 @@ describe("test preparation pages", () => {
     expect(prepTopicName("КР-1")).toBe("КР-1");
     expect(prepName("quiz-o-symbols")).toBe("Квиз");
     expect(prepGoal("quiz-o-symbols")).toBe("Подготовка к квизу");
-    expect(prepContents("quiz-o-symbols")).toBe("Типы задач, как решать, разобранные примеры");
     expect(prepDescription("quiz-o-symbols")).toBe("типы задач и разобранные примеры к квизу");
     // the quiz number names only a quiz: a test keeps its own
     expect(prepName("kr2", 4)).toBe("КР-2");
@@ -71,7 +67,6 @@ describe("test preparation pages", () => {
   it("names an exam and formats its session window", () => {
     expect(prepName("exam1")).toBe("Экзамен 1");
     expect(prepGoal("exam1")).toBe("Подготовка к экзамену 1");
-    expect(prepContents("exam1")).toContain("Билеты");
     expect(prepDescription("exam1")).toContain("экзамену");
     expect(
       prepWhen({

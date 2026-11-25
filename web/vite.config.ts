@@ -2,7 +2,11 @@ import type { Plugin } from "vite";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { renderToString } from "katex";
 import { defineConfig } from "vitest/config";
+
+import { COURSES } from "./src/domain/courses.ts";
+import { HERO_FORMULAS } from "./src/features/home/formulas.ts";
 
 const GA_ID = "G-0FYSMRT6KK";
 
@@ -32,12 +36,23 @@ addEventListener('load', function () {
   ],
 });
 
+const homeFormulas = [
+  ...Object.entries(HERO_FORMULAS),
+  ...COURSES.map(({ id, symbol }) => [id, symbol] as const),
+];
+const homeMathHtml = Object.fromEntries(
+  homeFormulas.map(([name, tex]) => [name, renderToString(tex)]),
+);
+
 export default defineConfig({
   server: { watch: { ignored: ["**/playwright-report/**", "**/test-results/**"] } },
   // GitHub Pages serves the project site from /<repo>/ (the deploy workflow sets BASE_PATH).
   base: process.env["BASE_PATH"] ?? "/",
   build: { chunkSizeWarningLimit: 700, sourcemap: false },
-  define: { "import.meta.env.BUILD_TIME": JSON.stringify(new Date().toISOString()) },
+  define: {
+    "import.meta.env.BUILD_TIME": JSON.stringify(new Date().toISOString()),
+    HOME_MATH_HTML: JSON.stringify(homeMathHtml),
+  },
   plugins: [react(), tailwindcss(), analytics()],
   resolve: { alias: { "#web": new URL("src", import.meta.url).pathname } },
   test: {

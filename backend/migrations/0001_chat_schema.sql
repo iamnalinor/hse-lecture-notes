@@ -44,14 +44,23 @@ CREATE TABLE IF NOT EXISTS telegram_account_tiers (
   updated_at INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS auth_nonces (
-  nonce TEXT PRIMARY KEY,
-  browser_id TEXT NOT NULL,
-  expires_at INTEGER NOT NULL,
-  consumed_at INTEGER
+DROP TABLE IF EXISTS auth_nonces;
+
+CREATE TABLE IF NOT EXISTS used_telegram_tokens (
+  token_hash TEXT PRIMARY KEY,
+  expires_at INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_auth_nonces_expires ON auth_nonces(expires_at);
+CREATE INDEX IF NOT EXISTS idx_used_telegram_tokens_expires ON used_telegram_tokens(expires_at);
+
+-- Use the database clock when claiming a token. Key lookup and earlier D1 calls
+-- can finish after HTTP request time, even after an expired receipt was purged.
+CREATE TRIGGER IF NOT EXISTS reject_expired_telegram_token
+BEFORE INSERT ON used_telegram_tokens
+WHEN NEW.expires_at <= ROUND((julianday('now') - 2440587.5) * 86400000)
+BEGIN
+  SELECT RAISE(ABORT, 'telegram_token_expired');
+END;
 
 CREATE TABLE IF NOT EXISTS user_sessions (
   id TEXT PRIMARY KEY,

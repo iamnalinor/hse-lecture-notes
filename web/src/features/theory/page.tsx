@@ -14,7 +14,6 @@ export const Component = () => {
       course={info.id}
       courseName={info.name}
       docId="theory"
-      note="Все определения и теоремы курса с идеями доказательств"
       pageName="Теория"
       variant="theory"
     />

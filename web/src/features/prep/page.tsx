@@ -2,15 +2,7 @@ import { useMemo } from "react";
 import { useLocation, useParams } from "react-router";
 
 import { notFound, useCourse } from "#web/api/use-course.ts";
-import {
-  cheatsheetDocs,
-  isDated,
-  prepContents,
-  prepGoal,
-  prepName,
-  prepTopicName,
-  prepWhen,
-} from "#web/domain/preps.ts";
+import { cheatsheetDocs, prepGoal, prepName } from "#web/domain/preps.ts";
 import { CourseDocument } from "#web/shared/reader/course-document.tsx";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
@@ -31,7 +23,6 @@ export const Component = () => {
       .findLast((part) => part !== "") ?? "";
   const prep = preps.find((entry) => entry.id === id) ?? notFound();
   const name = prepName(prep.id, prep.quizNumber);
-  const noteName = prepTopicName(name, prep.topic);
   useDocumentTitle(prep.title); // same title as the page shell (`spa-fallback.ts`)
   const hasBank = prep.bank === true;
   const slots = useMemo(
@@ -55,11 +46,6 @@ export const Component = () => {
       courseName={info.name}
       docId={prep.id}
       downloads={cheatsheetDocs(prep)}
-      note={
-        isDated(prep)
-          ? `${noteName} — ${prepWhen(prep)}. ${prepContents(prep.id)}`
-          : `${noteName}. ${prepContents(prep.id)}`
-      }
       pageName={prepGoal(prep.id, prep.quizNumber)}
       slots={slots}
       tocCaption={name}

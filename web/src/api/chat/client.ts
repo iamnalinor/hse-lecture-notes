@@ -90,31 +90,41 @@ export const fetchChatRunStatus = async (runId: string): Promise<null | RunStatu
   return res.ok ? (res.data as RunStatusResponse) : null;
 };
 
-const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string> => {
-  if (readStoredAuth().browserToken === null) {
-    await ensureChatAllowance(turnstileHooks);
+const getLoginToken = async (hooks: TurnstileHooks, requiresBrowser: boolean): Promise<string> => {
+  const controller = new AbortController();
+  try {
+    const [idToken] = await Promise.all([
+      openTelegramLoginPopup(getChatEnvConfig().telegramClientId),
+      requiresBrowser && ensureChatAllowance(hooks, { signal: controller.signal }),
+    ]);
+    return idToken;
+  } finally {
+    controller.abort();
   }
-  const nonceRes = await apiJson("/v1/auth/nonce", { method: "POST" });
-  const nonceData = nonceRes.data as { readonly nonce?: string };
-  if (!nonceRes.ok || typeof nonceData.nonce !== "string") {
-    throw new Error(describeApiFailure(nonceRes));
-  }
-  return nonceData.nonce;
 };
 
 export const loginViaTelegram = async (
   turnstileHooks: TurnstileHooks,
+  onLogout?: () => void,
 ): Promise<{ readonly user: ChatUser; readonly tier: ChatTier }> => {
-  const { sessionToken } = readStoredAuth();
-  const nonce = await requestLoginNonce(turnstileHooks);
-  const idToken = await openTelegramLoginPopup(getChatEnvConfig().telegramClientId, nonce);
+  const { browserToken, sessionToken } = readStoredAuth();
+  const idToken = await getLoginToken(turnstileHooks, browserToken === null);
   assertSameSession(sessionToken);
+  if (sessionToken !== null) {
+    await logoutChatSession(sessionToken);
+    onLogout?.();
+  }
+  return await exchangeTelegramToken(idToken);
+};
+
+const exchangeTelegramToken = async (idToken: string) => {
+  assertSameSession(null);
   const loginRes = await apiJson("/v1/auth/telegram", {
     body: JSON.stringify({ telegramIdToken: idToken }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
-  assertSameSession(sessionToken);
+  assertSameSession(null);
   if (!loginRes.ok) {
     throw new Error(describeApiFailure(loginRes));
   }
@@ -130,23 +140,17 @@ export const loginViaTelegram = async (
   return loginData;
 };
 
-export const logoutChatSession = async (): Promise<"logged_out" | "session_changed"> => {
-  const auth = readStoredAuth();
-  if (auth.sessionToken !== null) {
-    try {
-      await apiJson("/v1/auth/logout", {
-        body: JSON.stringify({ sessionToken: auth.sessionToken }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-    } catch {
-      // Clear local session regardless of network failure
-    }
+const logoutChatSession = async (sessionToken: string): Promise<void> => {
+  try {
+    await apiJson("/v1/auth/logout", {
+      body: JSON.stringify({ sessionToken }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+  } catch {
+    // Clear the local session even when the server is unreachable.
   }
-  if (auth.sessionToken !== readStoredAuth().sessionToken) {
-    return "session_changed";
-  }
+  assertSameSession(sessionToken);
   saveSessionAuth(null, "guest", null);
   clearAllowanceToken();
-  return "logged_out";
 };

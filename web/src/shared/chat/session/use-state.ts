@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
 
-import { ensureChatAllowance, loginViaTelegram, logoutChatSession } from "#web/api/chat/client.ts";
+import { ensureChatAllowance, loginViaTelegram } from "#web/api/chat/client.ts";
 import {
   readStoredAuth,
   readStoredDegraded,
@@ -111,6 +111,8 @@ export const useChatAuthState = () => {
 };
 
 type LoginDeps = {
+  readonly telegramSdk: "failed" | "loading" | "ready";
+  readonly retryTelegram: () => Promise<void>;
   readonly onLogin: (account: ChatUser | null, canResume: boolean) => void;
   readonly setBlock: (next: ChatBlock | null) => void;
   readonly setDegraded: (next: ChatDegraded) => void;
@@ -140,12 +142,21 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
     }
   }, [deps]);
   const login = useCallback(async (): Promise<void> => {
-    if (isLoginBusy || checkingLogin) {
+    if (isLoginBusy || checkingLogin || deps.telegramSdk === "loading") {
+      return;
+    }
+    if (deps.telegramSdk === "failed") {
+      await deps.retryTelegram();
       return;
     }
     setIsLoginBusy(true);
     try {
-      const res = await loginViaTelegram(deps.turnstileHooks);
+      const res = await loginViaTelegram(deps.turnstileHooks, () => {
+        deps.setTier("guest");
+        deps.setUser(null);
+        deps.setDegraded({ active: false });
+        deps.setBlock(null);
+      });
       deps.onLogin(res.user, true);
       deps.setTier(res.tier);
       deps.setUser(res.user);
@@ -159,26 +170,16 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
     }
   }, [checkingLogin, checkLogin, deps, isLoginBusy]);
 
-  const switchAccount = useCallback(async (): Promise<void> => {
-    if ((await logoutChatSession()) === "session_changed") {
-      return;
-    }
-    deps.setTier("guest");
-    deps.setUser(null);
-    deps.setDegraded({ active: false });
-    deps.setBlock(null);
-    await login();
-  }, [deps, login]);
-
   return {
     checkingLogin,
     verificationError,
     clearVerificationError: () => {
       setVerificationError(false);
     },
-    isLoginBusy,
+    isLoginBusy: isLoginBusy || checkingLogin || deps.telegramSdk === "loading",
+    telegramLoadFailed: deps.telegramSdk === "failed",
     login,
-    switchAccount,
+    switchAccount: login,
   };
 };
 

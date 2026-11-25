@@ -7,8 +7,8 @@ import { canAutoDownload, type ConnectionInfo, isDesktopDevice } from "#web/doma
 import { hitPath, prepareIndex, search, type SearchHit } from "#web/domain/search.ts";
 import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
+import { resultId } from "./result-id.ts";
 import { PhoneFold, Popover, SearchField, SearchPanel } from "./search-parts.tsx";
-import { resultId } from "./search-results.tsx";
 
 /** Hits drawn at once: each one may hold formulas, and KaTeX is the slow part of a keystroke. */
 const FIRST_HITS = 12;

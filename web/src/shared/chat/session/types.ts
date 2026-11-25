@@ -26,6 +26,7 @@ export type ChatContextValue = {
   readonly checkingLogin?: boolean;
   readonly verificationError?: boolean;
   readonly isLoginBusy: boolean;
+  readonly telegramLoadFailed: boolean;
   readonly isOpen: boolean;
   readonly isStreaming: boolean;
   readonly isThreadLoading: boolean;

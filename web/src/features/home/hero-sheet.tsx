@@ -1,11 +1,12 @@
 import { Block } from "#web/shared/reader/block.tsx";
-import { TexMath } from "#web/shared/reader/tex-math.tsx";
+
+import { HomeFormula } from "./home-formula.tsx";
 
 const NAME = {
   label: "Теорема 6.11",
   title: (
     <>
-      деление с остатком в <TexMath display={false} tex={String.raw`\mathbb{N}`} />
+      деление с остатком в <HomeFormula name="naturals" />
     </>
   ),
 };
@@ -24,11 +25,9 @@ export const HeroSheet = () => (
       </div>
       <Block id={undefined} kind="theorem" name={NAME} number={undefined} tag={undefined}>
         <p>
-          Для любых <TexMath display={false} tex={String.raw`a, b \in \mathbb{N}`} /> с{" "}
-          <TexMath display={false} tex={String.raw`b \neq 0`} /> существует единственная пара{" "}
-          <TexMath display={false} tex="(q, r)" />, для которой{" "}
-          <TexMath display={false} tex="a = bq + r," />{" "}
-          <TexMath display={false} tex={String.raw`0 \le r < b`} />.
+          Для любых <HomeFormula name="operands" /> с <HomeFormula name="nonzero" /> существует
+          единственная пара <HomeFormula name="pair" />, для которой <HomeFormula name="division" />{" "}
+          <HomeFormula name="remainder" />.
         </p>
       </Block>
       <p className="mb-0">
@@ -42,9 +41,8 @@ export const HeroSheet = () => (
         <span className="text-muted">принцип наименьшего числа</span>
       </div>
       <p className="m-0 px-4 py-2 text-body/normal">
-        Каждое непустое множество{" "}
-        <TexMath display={false} tex={String.raw`X \subseteq \mathbb{N}`} /> имеет наименьший
-        элемент <TexMath display={false} tex={String.raw`\min X`} />.
+        Каждое непустое множество <HomeFormula name="subset" /> имеет наименьший элемент{" "}
+        <HomeFormula name="minimum" />.
       </p>
       <div className="flex justify-between border-t border-rule px-4 py-2 text-caption text-muted">
         <span>Лекция 5 · Индукция на натуральных</span>
