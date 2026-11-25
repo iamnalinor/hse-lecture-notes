@@ -58,3 +58,14 @@ test("reads the published bank.json and reports a failed fetch", async () => {
   expect(failed.step.state).toBe("error");
   expect(JSON.parse(failed.output).error).toContain("HTTP 503");
 });
+
+test("a variant picks one alternative of a one_of ticket item", () => {
+  const withChoice: Bank = {
+    ...bank,
+    ticket: [{ one_of: [[{ kind: "limits", title: "Пределы", count: 1 }], [{ kind: "rules", title: "Производные", count: 2 }]] }],
+  };
+  const first = sampleFromBank(withChoice, args({ mode: "variant" }), () => 0);
+  expect(problemsOf(first).map((p) => p.kind)).toEqual(["limits"]);
+  const second = sampleFromBank(withChoice, args({ mode: "variant" }), () => 0.9);
+  expect(problemsOf(second).map((p) => p.kind)).toEqual(["rules", "rules"]);
+});
