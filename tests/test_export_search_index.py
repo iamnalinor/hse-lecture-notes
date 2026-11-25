@@ -329,3 +329,20 @@ def test_vectorize_confirmation_reads_at_most_twenty_ids_per_request(monkeypatch
     monkeypatch.setattr(esi.time, "sleep", lambda _: None)
     cf.wait_for_mutation({"action": "upsert", "mutation_id": "m", "blocks": blocks})
     assert sizes == [20, 5]
+
+
+def test_vectorize_confirmation_backs_off_to_spare_the_api_rate_limit(monkeypatch):
+    """Polling every 2 s hit Cloudflare's API rate limit (error 971) on a full sync, 2026-11-25."""
+    cf = esi.CloudflareClient("account", "token", "db", "index")
+    polls = {"n": 0}
+    def request(method, path, body=None):
+        if path.endswith("/info"):
+            polls["n"] += 1
+            return {"result": {"processedUpToMutation": "m" if polls["n"] > 6 else "older"}}
+        return {"result": []}
+    sleeps = []
+    monkeypatch.setattr(cf, "_req", request)
+    monkeypatch.setattr(esi.time, "sleep", sleeps.append)
+    cf.wait_for_mutation({"action": "upsert", "mutation_id": "m", "blocks": [["a", "1"]]})
+    assert sleeps == sorted(sleeps) and sleeps[0] == 2 and max(sleeps) <= 15 and sleeps[-1] > 5
+    assert esi.VECTOR_BATCH >= 50

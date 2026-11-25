@@ -581,6 +581,8 @@ class UnconfirmedMutation(RuntimeError):
 
 # Vectorize get_by_ids rejects more ids per request (error 40007).
 VECTORIZE_GET_MAX_IDS = 20
+# Vectors per embedding call and Vectorize mutation: fewer mutations, fewer confirmation polls.
+VECTOR_BATCH = 50
 
 
 class CloudflareClient:
@@ -665,6 +667,7 @@ class CloudflareClient:
         deadline = time.monotonic() + 180
         expected = dict(pending.get("blocks", []))
         ids = pending["ids"] if pending["action"] == "delete" else list(expected)
+        delay = 2.0
         while time.monotonic() < deadline:
             info = self._req("GET", f"{self.vector_path}/info")["result"]
             if info.get("processedUpToMutation") == mutation_id:
@@ -686,7 +689,9 @@ class CloudflareClient:
                 observed = {row["id"]: (row.get("metadata") or {}).get("content_hash") for row in rows}
                 if observed == expected:
                     return
-            time.sleep(2)
+            # Back off: every poll is two API calls against the account-wide rate limit.
+            time.sleep(delay)
+            delay = min(delay * 1.5, 15.0)
         raise UnconfirmedMutation(f"Vectorize mutation {mutation_id} still unconfirmed; rerun the sync")
 
     def vectorize_upsert(self, vectors: list[dict[str, Any]]) -> str:
@@ -1012,8 +1017,8 @@ def sync_to_cloudflare(
 
     # 5. Embed & upsert Vectorize in batches of 25
     if not skip_vectorize and blocks_needing_vec:
-        for i in range(0, len(blocks_needing_vec), 25):
-            chunk = blocks_needing_vec[i : i + 25]
+        for i in range(0, len(blocks_needing_vec), VECTOR_BATCH):
+            chunk = blocks_needing_vec[i : i + VECTOR_BATCH]
             submit_vector_blocks(cf, chunk)
             stats["vectors_upserted"] += len(chunk)
 
