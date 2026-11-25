@@ -188,7 +188,9 @@ it.each([
     </>,
   );
   expect(screen.getByRole("button", { name: "Чат" })).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Спросить ИИ о выделенном фрагменте" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Спросить в чате о выделенном фрагменте" }),
+  ).toBeNull();
   const range = document.createRange();
   range.selectNodeContents(screen.getByText("Выделенный фрагмент конспекта"));
   Object.defineProperty(range, "getClientRects", { value: () => [new DOMRect(100, 80, 120, 20)] });
@@ -197,7 +199,7 @@ it.each([
   selection?.addRange(range);
   fireEvent.mouseUp(document);
   await waitFor(() => {
-    const ask = screen.queryByRole("button", { name: "Спросить ИИ о выделенном фрагменте" });
+    const ask = screen.queryByRole("button", { name: "Спросить в чате о выделенном фрагменте" });
     expect(ask !== null).toBe(material);
   });
   selection?.removeAllRanges();

@@ -247,7 +247,7 @@ const SelectionPill = ({
   return (
     <button
       aria-label={
-        isReplying ? "Ответить на выделенный фрагмент" : "Спросить ИИ о выделенном фрагменте"
+        isReplying ? "Ответить на выделенный фрагмент" : "Спросить в чате о выделенном фрагменте"
       }
       className="ai-sel-btn is-on"
       onClick={() => {
@@ -263,7 +263,7 @@ const SelectionPill = ({
       type="button"
     >
       {!isReplying && <SparklesIcon />}
-      {isReplying ? "Ответить" : "Спросить ИИ"}
+      {isReplying ? "Ответить" : "Спросить в чате"}
     </button>
   );
 };
