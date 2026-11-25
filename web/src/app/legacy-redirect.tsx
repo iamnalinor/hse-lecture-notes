@@ -22,10 +22,10 @@ export const LegacyGlossaryRedirect = () => {
   return <Navigate replace to={paths.course(course)} />;
 };
 
-const LECTURE_PDF = /^(?<course>[a-z]+)[-_](?<doc>\d{2}_[a-z0-9_]+)\.pdf$/u;
+const LECTURE_PDF = /^(?<course>[a-z]+)_(?<doc>\d{2}_[a-z0-9_]+)\.pdf$/u;
 
 /**
-PDFs are named by `week_id` (`/pdf/<course>_<week_id>.pdf`; before, `<course>-<week_id>.pdf`), and a renamed slug leaves the old file
+PDFs are named by `week_id` (`/pdf/<course>_<week_id>.pdf`), and a renamed slug leaves the old file
 missing: Pages answers with the shell, and this route sends the reader on to the PDF of the lecture
 with the same number. A file that is missing under its current name is a real 404, not a loop.
 */

@@ -14,6 +14,7 @@ source (a shallow clone has no history, then the pages carry no dates rather tha
 */
 import { COURSE_DOC_DESCRIPTIONS, courseDocTitle } from "../src/domain/course-docs.ts";
 import { type CourseInfo, COURSES } from "../src/domain/courses.ts";
+import { pdfFile } from "../src/domain/paths.ts";
 import { prepDescription } from "../src/domain/preps.ts";
 import { CatalogSchema } from "../src/domain/schemas.ts";
 import {
@@ -185,7 +186,7 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
         ...inCourse,
         description: `${name}: ${COURSE_DOC_DESCRIPTIONS[doc]}`,
         name: courseDocTitle(name, doc),
-        pdf: `pdf/${course}_${doc}.pdf`,
+        pdf: `pdf/${pdfFile(course, doc)}`,
         route: `${course}/${doc}`,
         source: `${doc}/${course}.md`,
       });
@@ -195,7 +196,7 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
     ...inCourse,
     description: `${name}: ${prepDescription(id)}`,
     name: title,
-    pdf: `pdf/${course}_${id}.pdf`,
+    pdf: `pdf/${pdfFile(course, id)}`,
     route: `${course}/${id}`,
     source: `prep/${course}/${id}.md`,
   }));
@@ -203,7 +204,7 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
     ...inCourse,
     description: `Конспект лекции ${String(lecture)} по курсу «${name}» (ПИ ФКН ВШЭ): ${title}`,
     name: `${name}, лекция ${String(lecture)}: ${title}`,
-    pdf: `pdf/${course}_${weekId}.pdf`,
+    pdf: `pdf/${pdfFile(course, weekId)}`,
     route: `${course}/${weekId}`,
     source: `notes/${course}/${weekId}.md`,
   }));

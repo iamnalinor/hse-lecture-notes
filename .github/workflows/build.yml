@@ -78,7 +78,8 @@ jobs:
           shopt -s nullglob
           for f in build/pdf/*/*.pdf; do
             course=$(basename "$(dirname "$f")")
-            cp "$f" "dist/${course}_$(basename "$f")"
+            name="${course}_$(basename "$f")"
+            cp "$f" "dist/${name//-/_}"
           done
           ls -la dist
 
@@ -107,8 +108,8 @@ jobs:
             gh release create latest --prerelease --title "Конспекты (последняя сборка main)" \
               --notes "PDF всех конспектов, теории и программ курсов, подготовки к КР и читлистов, собранные из main."
           gh release upload latest dist/*.pdf --clobber
-          # --clobber only adds and replaces: drop PDFs that main no longer builds (e.g. the old
-          # <course>-registry.pdf), so a saved link fails instead of serving a frozen copy.
+          # --clobber only adds and replaces: drop PDFs that main no longer builds (e.g. old
+          # names with "-"), so a saved link fails instead of serving a frozen copy.
           for asset in $(gh release view latest --json assets --jq '.assets[].name'); do
             [[ -f "dist/$asset" ]] || gh release delete-asset latest "$asset" --yes
           done
@@ -192,10 +193,6 @@ jobs:
           VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID }}
         run: |
           find public/data -name index.html -delete
-          shopt -s nullglob
-          # Old links: <course>-<doc>.pdf before the switch to "_", <course>-registry.pdf before the theory rename.
-          for f in public/pdf/*_*.pdf; do d=$(dirname "$f"); b=$(basename "$f"); cp "$f" "$d/${b/_/-}"; done
-          for f in public/pdf/*_theory.pdf; do cp "$f" "${f%_theory.pdf}-registry.pdf"; done
           bun run scripts/validate-chat-config.ts
           bun run build
           # Превью не должно попадать в поиск

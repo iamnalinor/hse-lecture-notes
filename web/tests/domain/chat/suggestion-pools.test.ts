@@ -9,12 +9,15 @@ import {
 } from "#web/domain/chat/suggestion-pools.ts";
 
 describe("getChatSuggestionPool", () => {
-  it("returns 15 questions for home and course, six for a known page", () => {
-    expect(getChatSuggestionPool({ course: "", docId: "" })).toHaveLength(15);
-    expect(getChatSuggestionPool({ course: "algebra", docId: "" })).toHaveLength(15);
-    expect(getChatSuggestionPool({ course: "algebra", docId: "01_sep03_matrices" })).toHaveLength(
-      6,
-    );
+  it("returns the page's own questions for home, a course and a known page", () => {
+    for (const page of [
+      { course: "", docId: "" },
+      { course: "algebra", docId: "" },
+      { course: "algebra", docId: "01_sep03_matrices" },
+    ]) {
+      expect(getChatSuggestionPool(page).length).toBeGreaterThanOrEqual(3);
+      expect(getChatSuggestionPool(page)).not.toBe(FALLBACK_CHAT_SUGGESTIONS);
+    }
   });
 
   it("returns the fixed fallback for a page without questions", () => {

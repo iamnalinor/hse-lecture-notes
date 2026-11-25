@@ -59,9 +59,7 @@ def test_collect_flat_keys(repo: Path) -> None:
 @pytest.mark.parametrize(
     "body",
     [
-        "course:\n" + _fifteen("c")[: -len('  - "c 14"\n')],  # четырнадцать вопросов
-        "course:\n" + _six("c"),  # на курсе нужно 15, а не 6
-        "course:\n" + _fifteen("c") + "docs:\n  kr1:\n" + _fifteen("k").replace("  -", "    -"),  # в docs нужно 6
+        "course:\n" + _qs("c", 2),  # меньше трех: сайт показывает три
         "course:\n" + _fifteen("c").replace('"c 1"', '"c 0"'),  # повтор
         "course:\n" + _fifteen("x" * 120),  # слишком длинный
         "course:\n" + _fifteen("c") + "docs:\n  missing:\n" + _six("m").replace("  -", "    -"),  # нет файла
@@ -86,7 +84,8 @@ def test_repository_json_is_up_to_date() -> None:
     assert "@home" in expected and "algebra" in expected
 
 
-def test_home_requires_fifteen(repo: Path) -> None:
-    _write(repo / "chat-suggestions", "home.yaml", "questions:\n" + _six("home"))
-    with pytest.raises(bcs.SuggestionsError):
-        bcs.collect(repo)
+def test_any_count_from_three(repo: Path) -> None:
+    _write(repo / "chat-suggestions", "home.yaml", "questions:\n" + _qs("home", 4))
+    _write(repo / "chat-suggestions", "algebra.yaml", "course:\n" + _qs("c", 9))
+    data = bcs.collect(repo)
+    assert len(data["@home"]) == 4 and len(data["algebra"]) == 9

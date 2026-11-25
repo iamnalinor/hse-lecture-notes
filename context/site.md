@@ -34,7 +34,7 @@
 | `<course>/theory/…`, `<course>/program/…` | то же для теории и программы курса (`meta.json` → `kind`: `theory`, `program`) |
 | `<course>/<prep>/bank.json` | банк генератора билетов (из `prep/<course>/<prep>-bank.yaml`): `about` — подпись генератора, `ticket` — пункты билета (`kind`, `title`, `points`, `count`, `proofs` — показывать ли доказательства блоков), `topics` — `topic → заголовок раздела` страницы (`sec:<prep>:<topic>`), `questions` — `id`, `kind`, `topic`, `text` и `answer` (HTML как во фрагменте: `span.math`, `a.ref`; `answer` пустой, если своего ответа нет), `refs` — `[{id, doc}]`: метка блока-ответа и документ, где он лежит (`week_id` лекции или id страницы подготовки). Сам блок сайт вырезает из `fragment.html` этого документа |
 
-PDF лежат в `build/pdf/<course>/<week_id>.pdf` (теория — `theory.pdf`, программа — `program.pdf`, подготовка — `krN.pdf`, `colloqN.pdf`, читлисты — `krN-cheatsheet-<вариант>.pdf`). В CI они загружаются как artifact `pdf` и в релиз `latest` под именами `<course>_<имя>.pdf` (курс отделен `_`, внутри имени дефисы остаются); `pages.yml` кладет их в `pdf/` сайта: `/pdf/discrete_kr1-cheatsheet-1side.pdf`. Старые ссылки вида `<course>-<имя>.pdf` работают: `pages.yml` кладет копии и под ними.
+PDF лежат в `build/pdf/<course>/<week_id>.pdf` (теория — `theory.pdf`, программа — `program.pdf`, подготовка — `krN.pdf`, `colloqN.pdf`, читлисты — `krN-cheatsheet-<вариант>.pdf`). В CI они загружаются как artifact `pdf` и в релиз `latest` под именами `<course>_<имя>.pdf`, где все `-` заменены на `_`; `pages.yml` кладет их в `pdf/` сайта: `/pdf/discrete_kr1_cheatsheet_1side.pdf`.
 
 ## Разметка HTML-фрагмента
 

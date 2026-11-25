@@ -1,9 +1,11 @@
+import { pdfFile } from "#web/domain/paths.ts";
+
 import { BUTTON_SECONDARY } from "./button.ts";
 import { DownloadIcon } from "./icons.tsx";
 
 /** A document's PDF as the site serves it (`/pdf/<course>_<doc>.pdf`), with the base path. */
 export const pdfUrl = (course: string, docId: string): string =>
-  `${import.meta.env.BASE_URL}pdf/${course}_${docId}.pdf`;
+  `${import.meta.env.BASE_URL}pdf/${pdfFile(course, docId)}`;
 
 type Props = {
   readonly course: string;

@@ -31,8 +31,11 @@ const formatSampleLabel = (step: ChatStep): string => {
     return "Генерирую задачи…";
   }
   const target = step.target ?? "генератор вариантов";
-  return step.state === "error" || step.count === undefined
-    ? `Генератор задач: ${target}`
+  if (step.state === "error") {
+    return `Не получилось сгенерировать задачи: ${target}`;
+  }
+  return step.count === undefined
+    ? `Сгенерировал задачи: ${target}`
     : `Сгенерировал ${String(step.count)} ${plural(step.count, ["задачу", "задачи", "задач"])}: ${target}`;
 };
 
