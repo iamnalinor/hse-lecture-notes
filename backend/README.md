@@ -48,6 +48,7 @@ bunx wrangler secret put ALLOWANCE_JWT_SECRET
 bunx wrangler secret put BROWSER_TOKEN_SECRET
 bunx wrangler secret put CODEX_CREDENTIALS_ENCRYPTION_KEY
 bunx wrangler secret put CODEX_PROXY_URL
+bunx wrangler secret put OPENAI_API_KEY
 bunx wrangler secret put TURNSTILE_SECRET_KEY
 bunx wrangler secret put TELEGRAM_BOT_TOKEN
 bunx wrangler secret put TELEGRAM_CLIENT_ID
