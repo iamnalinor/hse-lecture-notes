@@ -2,6 +2,8 @@
 
 Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
+Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The old `hse-lecture-notes-api.nalinor.workers.dev` stays on until every deployed build uses the new address.
+
 ## Architecture
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/nonce`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
 - **SQLite-backed Durable Object (`ChatRunner`, `src/chat/runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 8 rounds / 16 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.

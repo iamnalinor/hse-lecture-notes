@@ -3,7 +3,10 @@
   "name": "hse-lecture-notes-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-23",
+  // The API's address: hse-api.nalinor.dev (the site's own zone: WAF rules and Turnstile pre-clearance
+  // can apply). workers.dev stays on while built sites still point there; turn it off after the switch.
   "workers_dev": true,
+  "routes": [{ "pattern": "hse-api.nalinor.dev", "custom_domain": true }],
   "observability": {
     "enabled": true,
     "traces": {

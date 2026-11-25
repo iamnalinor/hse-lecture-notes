@@ -404,7 +404,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     );
 
     // 1. Mint guest browserToken & allowance
-    const allowReq = new Request("https://hse-lecture-notes-api.nalinor.workers.dev/v1/allowance", {
+    const allowReq = new Request("https://hse-api.nalinor.dev/v1/allowance", {
       method: "POST",
       headers: { "CF-Connecting-IP": "10.0.0.1" },
     });
@@ -439,7 +439,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
     if (guestAdmit.kind !== "admitted") throw new Error("expected admitted");
 
     // 3. Issue nonce & login via Telegram while guest run is STILL running!
-    const nonceReq = new Request("https://hse-lecture-notes-api.nalinor.workers.dev/v1/auth/nonce", {
+    const nonceReq = new Request("https://hse-api.nalinor.dev/v1/auth/nonce", {
       method: "POST",
       headers: { "X-Browser-Token": browserToken },
     });
@@ -457,7 +457,7 @@ describe("3. Explicit browserToken, Telegram OIDC + nonce, Session & Guest Migra
       nonce,
     });
 
-    const loginReq = new Request("https://hse-lecture-notes-api.nalinor.workers.dev/v1/auth/telegram", {
+    const loginReq = new Request("https://hse-api.nalinor.dev/v1/auth/telegram", {
       method: "POST",
       headers: { "X-Browser-Token": browserToken },
     });
