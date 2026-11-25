@@ -16,10 +16,9 @@ export const useHistoryDismiss = (isOpen: boolean, onClose: () => void) => {
       }
     };
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape") {
+      if (event.key !== "Escape" || document.querySelector("dialog[open]") !== null) {
         return;
       }
-
       event.preventDefault();
       event.stopPropagation();
       onClose();

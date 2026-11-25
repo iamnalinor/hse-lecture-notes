@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Component, lazy, type ReactNode, Suspense } from "react";
 
 import { isChatConfigured } from "#web/api/chat/http.ts";
 import { useIsChatOpen } from "#web/shared/chat/open-state.ts";
@@ -13,9 +13,23 @@ const Runtime = lazy(async () => {
   const { ChatRuntime } = await import("#web/shared/chat/runtime.tsx");
   return { default: ChatRuntime };
 });
+
+/** The chat is optional: a failed chunk download must not take the notes page down with it. */
+class ChatBoundary extends Component<{ readonly children: ReactNode }, { failed: boolean }> {
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+  override state = { failed: false };
+  override render(): ReactNode {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 export const LazyChat = ({ general = false }: { readonly general?: boolean }) =>
   isChatConfigured() ? (
-    <Suspense fallback={<Loading />}>
-      <Runtime general={general} />
-    </Suspense>
+    <ChatBoundary>
+      <Suspense fallback={<Loading />}>
+        <Runtime general={general} />
+      </Suspense>
+    </ChatBoundary>
   ) : null;
