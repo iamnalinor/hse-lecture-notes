@@ -497,63 +497,59 @@ html.ai-open .ai-panel {
   transform: translateX(2px);
 }
 
-/* «отправьте ссылку агенту»: под подсказками */
+/* ссылка для чужого ИИ: подпись над полем, адрес и квадратная кнопка копирования (как «Поделиться») */
 .ai-agent {
-  margin-top: 56px;
+  margin-top: 32px;
 }
-.ai-empty .ai-agent h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
-  line-height: 22px;
-  font-weight: 400;
-  text-wrap: balance;
-}
-.ai-empty .ai-agent p {
-  margin: 0 0 6px;
-}
-.ai-agent-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  min-height: 32px;
-  margin-left: -4px;
-  padding: 4px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
+.ai-agent-label {
+  display: block;
+  margin-bottom: 6px;
   color: var(--muted);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
+  font-size: 13px;
+  line-height: 18px;
 }
-.ai-agent-link:hover {
-  background: var(--wash);
-  color: var(--ink);
-}
-.ai-agent-link:focus-visible {
-  outline: 2px solid var(--def);
-  outline-offset: 1px;
-}
-.ai-agent-link .ai-copy {
-  flex: none;
-  color: var(--faint);
-}
-.ai-agent-link:hover .ai-copy {
-  color: var(--ink);
-}
-.ai-agent-link .ai-ico-swap svg {
-  width: 16px;
-  height: 16px;
+.ai-agent-field {
+  display: flex;
+  align-items: stretch;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
 }
 .ai-agent-url {
+  align-self: center;
   min-width: 0;
+  padding: 0 12px;
   overflow: hidden;
+  color: var(--muted);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.ai-agent-copy {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+.ai-agent-copy:hover {
+  background: var(--wash);
+}
+.ai-agent-copy:focus-visible {
+  outline: 2px solid var(--def);
+  outline-offset: -2px;
+}
+.ai-agent-copy .ai-ico-swap svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* сообщения */

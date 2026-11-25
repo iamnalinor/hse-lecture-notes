@@ -117,8 +117,12 @@ it("shows and copies the agent link without a trailing slash", () => {
     </MemoryRouter>,
   );
   const url = `${globalThis.location.origin}/calculus/quiz-o-symbols`;
-  expect(screen.getByText(url)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: `Копировать ссылку ${url}` }));
+  // The field shows the address without the scheme; the copy is the full URL.
+  expect(screen.getByText(url.replace(/^https?:\/\//u, ""))).toBeInTheDocument();
+  expect(
+    screen.getByRole("group", { name: "Ссылка для ChatGPT, Claude и других" }),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Копировать ссылку" }));
   expect(writeText).toHaveBeenCalledWith(url);
   vi.unstubAllGlobals();
 });

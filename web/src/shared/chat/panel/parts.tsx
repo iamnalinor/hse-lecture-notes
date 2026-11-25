@@ -184,37 +184,44 @@ export const ChatEmptyView = (): JSX.Element => {
   );
 };
 
-/** «Отправьте ссылку агенту»: адрес открытой страницы, клик копирует. */
+/** Ссылка на открытую страницу для чужого ИИ: подпись над полем и квадратная кнопка копирования, как в «Поделиться». */
 const AgentLinkCard = (): JSX.Element => {
   const { pathname } = useLocation();
   const { copyText, isCopied } = useCopyFeedback();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/u, "");
   const url = `${globalThis.location.origin}${basePath}${pathname}`.replace(/\/$/u, "");
+  // The field shows the address without the scheme, as a browser's address bar does; the copy has it.
+  const shown = url.replace(/^https?:\/\//u, "");
 
   return (
-    <section aria-labelledby="ai-agent-title" className="ai-agent">
-      <h3 id="ai-agent-title">Или отправь ссылку своему агенту</h3>
-      <p>Сайт адаптирован для ИИ: он прочитает эту страницу целиком.</p>
-      <button
-        aria-label={isCopied ? "Ссылка скопирована" : `Копировать ссылку ${url}`}
-        className="ai-agent-link"
-        onClick={() => {
-          void copyText(url);
-        }}
-        title="Копировать ссылку"
-        type="button"
-      >
-        <span className={isCopied ? "ai-copy is-done" : "ai-copy"}>
-          <span className="ai-ico-swap">
-            <CopyIcon />
-            <CheckIcon />
-          </span>
-          <span aria-hidden="true" className="ai-tip">
-            Скопировано
-          </span>
+    <section className="ai-agent">
+      <span className="ai-agent-label" id="ai-agent-label">
+        Ссылка для ChatGPT, Claude и других
+      </span>
+      <div aria-labelledby="ai-agent-label" className="ai-agent-field" role="group">
+        <span className="ai-agent-url" title={url}>
+          {shown}
         </span>
-        <span className="ai-agent-url">{url}</span>
-      </button>
+        <button
+          aria-label={isCopied ? "Ссылка скопирована" : "Копировать ссылку"}
+          className="ai-agent-copy"
+          onClick={() => {
+            void copyText(url);
+          }}
+          title="Копировать ссылку"
+          type="button"
+        >
+          <span className={isCopied ? "ai-copy is-done" : "ai-copy"}>
+            <span className="ai-ico-swap">
+              <CopyIcon />
+              <CheckIcon />
+            </span>
+            <span aria-hidden="true" className="ai-tip">
+              Скопировано
+            </span>
+          </span>
+        </button>
+      </div>
     </section>
   );
 };
