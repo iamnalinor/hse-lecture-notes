@@ -24,25 +24,32 @@ export const ModuleEdges = () => (
   </div>
 );
 
-/** Today: a thin line with an arrow at the top, at today's place inside the current module. */
+/**
+Today: a thin line with an arrow at the top, at today's place inside the current module. Group labels
+(`z-6`) cover the line; `ghost` draws it again, faint, over them, so it dims there instead of breaking.
+*/
 export const TodayMark = ({
+  ghost = false,
   today,
 }: {
+  readonly ghost?: boolean;
   readonly today: undefined | { readonly fraction: number; readonly module: number };
 }) =>
   today === undefined ? null : (
     <div
       aria-hidden="true"
-      className={`${GRID} pointer-events-none absolute inset-0 z-5`}
+      className={`${GRID} pointer-events-none absolute inset-0 ${ghost ? "z-7" : "z-5"}`}
       style={CLIP}
     >
       <div className="relative" style={{ gridColumn: today.module + 1, gridRow: 1 }}>
         <div
-          className="absolute inset-y-0 w-px -translate-x-1/2 bg-ink/70"
-          data-today-mark=""
+          className={`absolute inset-y-0 w-px -translate-x-1/2 ${ghost ? "bg-ink/25" : "bg-ink/70"}`}
+          data-today-mark={ghost ? undefined : ""}
           style={{ left: `${String(today.fraction * 100)}%` }}
         >
-          <span className="absolute -top-px left-1/2 size-0 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent border-t-ink/70" />
+          {ghost ? null : (
+            <span className="absolute -top-px left-1/2 size-0 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent border-t-ink/70" />
+          )}
         </div>
       </div>
     </div>

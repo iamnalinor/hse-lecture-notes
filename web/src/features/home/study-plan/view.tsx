@@ -58,6 +58,7 @@ export const StudyPlan = ({
   const weeks = moduleWeeks(curriculum);
   const chartRef = useRef<HTMLDivElement>(null);
   const days = moduleDays(curriculum);
+  const todayMark = todayInModule(curriculum, today);
   const scale: PlanScale = {
     current: currentModule(curriculum, today),
     days,
@@ -93,7 +94,8 @@ export const StudyPlan = ({
           <ModuleEdges />
           <HeaderRow current={scale.current} />
           <div className="relative">
-            <TodayMark today={todayInModule(curriculum, today)} />
+            <TodayMark today={todayMark} />
+            <TodayMark ghost today={todayMark} />
             <TotalRow scale={scale} />
             {groups.map((group) => (
               <GroupRows group={group} key={group.category.id} scale={scale} />
