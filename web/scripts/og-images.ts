@@ -40,8 +40,7 @@ body {
   display: grid; place-items: center;
 }
 .symbol { position: absolute; top: 58px; right: 72px; color: #727276; }
-.kicker { margin-top: auto; font-size: 30px; font-weight: 600; color: #2a58a6; }
-.kicker + h1 { margin-top: 18px; }
+.brand small { font-size: inherit; font-weight: 400; color: #727276; }
 h1 { margin-top: auto; max-width: 900px; line-height: 1; font-weight: 900; }
 .note { margin-top: 26px; font-size: 34px; color: #5f5f63; }
 footer {
@@ -54,8 +53,8 @@ footer b { color: #0f2d69; font-weight: 600; }
 const tex = (source: string): string => renderToString(source, { throwOnError: true });
 
 type Card = {
-  /** A line over the title; the course cards have none (the brand line already names the site). */
-  readonly kicker?: string;
+  /** Said after the site's name in the brand line, in brackets (the site card: the year of study). */
+  readonly brandNote?: string;
   readonly note: string;
   /** What the site has for the card's course (or for all of them): the footer line. */
   readonly offer: string;
@@ -71,7 +70,7 @@ const symbolHtml = (symbol: string, size: number): string =>
   symbol === "" ? "" : `<div class="symbol" style="font-size: ${String(size)}px">${symbol}</div>`;
 
 const html = ({
-  kicker,
+  brandNote,
   note,
   offer,
   symbol,
@@ -83,9 +82,8 @@ const html = ({
 <link rel="stylesheet" href="${fileUrl("../node_modules/katex/dist/katex.min.css")}">
 <style>${STYLE}</style></head>
 <body>
-  <div class="brand"><span class="logo"><svg viewBox="0 0 32 32" width="64" height="64"><path fill="#fff" d="M9.01 6.25H23.49V11.07H17.99L23.45 14.75V17.25L17.99 20.93H23.49V25.75H9.01V21.62L17.33 16L9.01 10.38Z"/></svg></span>${SITE_NAME} ВШЭ</div>
+  <div class="brand"><span class="logo"><svg viewBox="0 0 32 32" width="64" height="64"><path fill="#fff" d="M9.01 6.25H23.49V11.07H17.99L23.45 14.75V17.25L17.99 20.93H23.49V25.75H9.01V21.62L17.33 16L9.01 10.38Z"/></svg></span><span>${SITE_NAME} ВШЭ${brandNote === undefined ? "" : ` <small>(${brandNote})</small>`}</span></div>
   ${symbolHtml(symbol, symbolSize)}
-  ${kicker === undefined ? "" : `<div class="kicker">${kicker}</div>`}
   <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
   <p class="note">${note}</p>
   <footer><b>hse.nalinor.dev</b><span>${offer}</span></footer>
@@ -113,7 +111,7 @@ const courseCard = (course: CourseInfo): Card => ({
 });
 
 const siteCard: Card = {
-  kicker: "1 курс · 2026/27",
+  brandNote: "1 курс 2026/27",
   note: COURSES.map((course) => course.name).join(" · "),
   offer: "Теория · ПУД · подготовка к КР и коллоквиумам",
   symbol: "",
