@@ -25,7 +25,7 @@ export const TopBar = () => (
           </svg>
         </span>
         <span className="sr-only whitespace-nowrap @min-[76rem]:not-sr-only">
-          Конспекты ФКН <span className="font-normal text-faint">2026/27</span>
+          Конспекты ПИ ФКН <span className="font-normal text-faint">2026/27</span>
         </span>
       </Link>
       <nav aria-label="Курсы" className="hidden shrink-0 gap-1 @4xl:flex" data-course-nav="">
