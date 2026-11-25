@@ -199,8 +199,9 @@ const AgentLinkCard = (): JSX.Element => {
         Ссылка для ChatGPT, Claude и других
       </span>
       <div aria-labelledby="ai-agent-label" className="ai-agent-field" role="group">
-        <span className="ai-agent-url" title={url}>
-          {shown}
+        {/* The feedback takes the address's place: a tip over the button would be cut by the field. */}
+        <span className={isCopied ? "ai-agent-url is-done" : "ai-agent-url"} title={url}>
+          {isCopied ? "Скопировано" : shown}
         </span>
         <button
           aria-label={isCopied ? "Ссылка скопирована" : "Копировать ссылку"}
@@ -215,9 +216,6 @@ const AgentLinkCard = (): JSX.Element => {
             <span className="ai-ico-swap">
               <CopyIcon />
               <CheckIcon />
-            </span>
-            <span aria-hidden="true" className="ai-tip">
-              Скопировано
             </span>
           </span>
         </button>

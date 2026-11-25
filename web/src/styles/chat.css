@@ -525,6 +525,9 @@ html.ai-open .ai-panel {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.ai-agent-url.is-done {
+  color: var(--ex);
+}
 .ai-agent-copy {
   display: flex;
   flex: none;
