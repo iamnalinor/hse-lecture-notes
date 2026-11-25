@@ -41,7 +41,8 @@ body {
 }
 .symbol { position: absolute; top: 58px; right: 72px; color: #727276; }
 .kicker { margin-top: auto; font-size: 30px; font-weight: 600; color: #2a58a6; }
-h1 { margin-top: 18px; max-width: 900px; line-height: 1; font-weight: 900; }
+.kicker + h1 { margin-top: 18px; }
+h1 { margin-top: auto; max-width: 900px; line-height: 1; font-weight: 900; }
 .note { margin-top: 26px; font-size: 34px; color: #5f5f63; }
 footer {
   margin-top: 48px; padding-top: 26px; border-top: 2px solid #e4e4e1;
@@ -53,7 +54,8 @@ footer b { color: #0f2d69; font-weight: 600; }
 const tex = (source: string): string => renderToString(source, { throwOnError: true });
 
 type Card = {
-  readonly kicker: string;
+  /** A line over the title; the course cards have none (the brand line already names the site). */
+  readonly kicker?: string;
   readonly note: string;
   /** What the site has for the card's course (or for all of them): the footer line. */
   readonly offer: string;
@@ -83,7 +85,7 @@ const html = ({
 <body>
   <div class="brand"><span class="logo"><svg viewBox="0 0 32 32" width="64" height="64"><path fill="#fff" d="M9.01 6.25H23.49V11.07H17.99L23.45 14.75V17.25L17.99 20.93H23.49V25.75H9.01V21.62L17.33 16L9.01 10.38Z"/></svg></span>${SITE_NAME} ВШЭ</div>
   ${symbolHtml(symbol, symbolSize)}
-  <div class="kicker">${kicker}</div>
+  ${kicker === undefined ? "" : `<div class="kicker">${kicker}</div>`}
   <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
   <p class="note">${note}</p>
   <footer><b>hse.nalinor.dev</b><span>${offer}</span></footer>
@@ -102,7 +104,6 @@ const OFFER: Readonly<Record<CourseId, string>> = {
 };
 
 const courseCard = (course: CourseInfo): Card => ({
-  kicker: "Конспекты лекций · 2026/27",
   note: `Лектор — ${course.lecturer}`,
   offer: OFFER[course.id],
   symbol: tex(course.symbol),
