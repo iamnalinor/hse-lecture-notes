@@ -1,7 +1,6 @@
 import {
   mintBrowserToken,
   bytesToBase64Url,
-  sha256Hex,
   decodeJwtUnverified,
   normalizeIpAddress,
   randomToken,
@@ -238,7 +237,7 @@ export async function verifyTelegramIdToken(
         : NaN;
   if (!Number.isSafeInteger(telegramId) || telegramId <= 0) return null;
 
-  // The receipt hashes the compact JWT. Accept only the canonical signature encoding.
+  // JWT signatures use unpadded base64url.
   if (idToken !== `${parsed.signingInput}.${bytesToBase64Url(parsed.signature)}`) return null;
 
   // Reject malformed claims locally. Only a verified signature can authorize login.
@@ -311,54 +310,42 @@ export async function handleTelegramLogin(
   // 4. Migrate recent owner_key (last 10 min) so clientRequestId retries stay idempotent
   const tgOwnerKey = `tg:${verified.telegramId}`;
   const brOwnerKey = `br:${btCheck.browserId}`;
-  const tokenHash = await sha256Hex(body.telegramIdToken);
-  try {
-    await db.batch([
-      db.prepare("DELETE FROM used_telegram_tokens WHERE rowid IN (SELECT rowid FROM used_telegram_tokens WHERE expires_at <= ? LIMIT 50)")
-        .bind(nowMs),
-      db.prepare("INSERT INTO used_telegram_tokens (token_hash, expires_at) VALUES (?, ?)")
-        .bind(tokenHash, verified.expiresAt),
-      db
-        .prepare(
-          `INSERT INTO user_sessions (id, telegram_id, telegram_name, browser_id, created_at, expires_at)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-        )
-        .bind(sessionId, verified.telegramId, verified.telegramName, btCheck.browserId, nowMs, expiresAt),
-      db
-        .prepare(
-          `UPDATE chat_threads
-           SET telegram_id = ?, browser_id = NULL, updated_at = ?
-           WHERE browser_id = ? AND telegram_id IS NULL`,
-        )
-        .bind(verified.telegramId, nowMs, btCheck.browserId),
-      db
-        .prepare(
-          `UPDATE usage_runs
-           SET telegram_id = ?, updated_at = ?
-           WHERE browser_id = ? AND telegram_id IS NULL AND status = 'running'`,
-        )
-        .bind(verified.telegramId, nowMs, btCheck.browserId),
-      db
-        .prepare(
-          `UPDATE usage_runs
-           SET owner_key = ?, updated_at = ?
-           WHERE owner_key = ? AND created_at >= ?
-             AND NOT EXISTS (
-               SELECT 1 FROM usage_runs u2
-               WHERE u2.owner_key = ? AND u2.client_request_id = usage_runs.client_request_id
-             )`,
-        )
-        .bind(tgOwnerKey, nowMs, brOwnerKey, nowMs - MIGRATION_IDEMPOTENCY_WINDOW_MS, tgOwnerKey),
-    ]);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("telegram_token_expired")) {
-      return { status: 401, body: { code: "invalid_telegram_token", message: "Expired Telegram ID token" } };
-    }
-    if (error instanceof Error && error.message.includes("UNIQUE constraint failed: used_telegram_tokens.token_hash")) {
-      return { status: 401, body: { code: "reused_telegram_token", message: "Telegram ID token already used" } };
-    }
-    throw error;
+  if (verified.expiresAt <= Date.now()) {
+    return { status: 401, body: { code: "invalid_telegram_token", message: "Expired Telegram ID token" } };
   }
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO user_sessions (id, telegram_id, telegram_name, browser_id, created_at, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(sessionId, verified.telegramId, verified.telegramName, btCheck.browserId, nowMs, expiresAt),
+    db
+      .prepare(
+        `UPDATE chat_threads
+         SET telegram_id = ?, browser_id = NULL, updated_at = ?
+         WHERE browser_id = ? AND telegram_id IS NULL`,
+      )
+      .bind(verified.telegramId, nowMs, btCheck.browserId),
+    db
+      .prepare(
+        `UPDATE usage_runs
+         SET telegram_id = ?, updated_at = ?
+         WHERE browser_id = ? AND telegram_id IS NULL AND status = 'running'`,
+      )
+      .bind(verified.telegramId, nowMs, btCheck.browserId),
+    db
+      .prepare(
+        `UPDATE usage_runs
+         SET owner_key = ?, updated_at = ?
+         WHERE owner_key = ? AND created_at >= ?
+           AND NOT EXISTS (
+             SELECT 1 FROM usage_runs u2
+             WHERE u2.owner_key = ? AND u2.client_request_id = usage_runs.client_request_id
+           )`,
+      )
+      .bind(tgOwnerKey, nowMs, brOwnerKey, nowMs - MIGRATION_IDEMPOTENCY_WINDOW_MS, tgOwnerKey),
+  ]);
 
   return {
     status: 200,

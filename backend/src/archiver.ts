@@ -56,7 +56,6 @@ export interface ArchiveBatchStats {
   runsFound: number;
   runsDeleted: number;
   archivesWritten: number;
-  telegramTokensCleaned: number;
   sessionsCleaned: number;
 }
 
@@ -82,25 +81,14 @@ export async function runArchiveBatch(
     runsFound: 0,
     runsDeleted: 0,
     archivesWritten: 0,
-    telegramTokensCleaned: 0,
     sessionsCleaned: 0,
   };
 
-  // Always prune expired Telegram token hashes & expired sessions in bounded chunks
-  const [tokenRes, sessRes] = await db.batch([
-    db
-      .prepare(
-        "DELETE FROM used_telegram_tokens WHERE rowid IN (SELECT rowid FROM used_telegram_tokens WHERE expires_at < ? LIMIT 200)",
-      )
+  const sessions = await db.run(
+    db.prepare("DELETE FROM user_sessions WHERE rowid IN (SELECT rowid FROM user_sessions WHERE expires_at < ? LIMIT 200)")
       .bind(now),
-    db
-      .prepare(
-        "DELETE FROM user_sessions WHERE rowid IN (SELECT rowid FROM user_sessions WHERE expires_at < ? LIMIT 200)",
-      )
-      .bind(now),
-  ]);
-  stats.telegramTokensCleaned = tokenRes?.meta?.changes ?? 0;
-  stats.sessionsCleaned = sessRes?.meta?.changes ?? 0;
+  );
+  stats.sessionsCleaned = sessions.meta.changes;
 
   if (!storage) {
     logEvent("warn", "archive_skipped_no_bucket", { ...stats });

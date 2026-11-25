@@ -385,7 +385,7 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
 
   });
 
-  test("Telegram login consumes each verified token once, migrates threads + running runs, and logout revokes allowance", async () => {
+  test("Telegram login migrates guest threads and running requests, and logout revokes allowance", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
     const env = makeTestEnv(shim.asD1());
@@ -467,20 +467,6 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.tier).toBe("student");
     const sessionToken = String(loginRes.body.sessionToken);
-
-    // Replaying the same telegramIdToken MUST fail (token already consumed)
-    const replayRes = await handleTelegramLogin(
-      env,
-      db,
-      loginReq,
-      { telegramIdToken: tgIdToken },
-      { nowMs: now + 3000, jwksOverride: jwks },
-    );
-    expect(replayRes.status).toBe(401);
-    expect(replayRes.body.code).toBe("reused_telegram_token");
-
-    expect(shim.sqlite.query("SELECT length(token_hash) AS size, expires_at FROM used_telegram_tokens").all())
-      .toEqual([{ size: 64, expires_at: now + 60_000 }]);
 
     // Second browser (device B) for the SAME Telegram user CANNOT start a second parallel run in the migrated thread!
     const secondBrowser = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
@@ -1146,13 +1132,15 @@ test("Turnstile gets the visitor IPv6 address while allowance retains the quota 
     .toBe("2001:0db8:abcd:0012::/64");
 });
 
-test("optional archive skips history and cleans expired Telegram token hashes without R2", async () => {
+test("optional archive skips history and cleans expired sessions without R2", async () => {
   const shim = new SqliteD1Shim();
   const db = new TrackedD1(shim.asD1());
   const expiresAt = Date.now() + 60_000;
-  shim.sqlite.query("INSERT INTO used_telegram_tokens(token_hash,expires_at) VALUES ('hash',?)").run(expiresAt);
+  const insertSession = shim.sqlite.query("INSERT INTO user_sessions(id,telegram_id,telegram_name,browser_id,created_at,expires_at) VALUES (?,1,'test','b',1,?)");
+  insertSession.run("expired", expiresAt);
+  insertSession.run("active", expiresAt + 60_000);
   shim.sqlite.query("INSERT INTO chat_threads(id,title,browser_id,created_at,updated_at) VALUES ('old','old thread','b',1,1)").run();
-  expect(await runArchiveBatch(db, null, { nowMs: expiresAt + 1 })).toMatchObject({ telegramTokensCleaned: 1, threadsDeleted: 0, runsDeleted: 0 });
-  expect(shim.sqlite.query("SELECT token_hash FROM used_telegram_tokens").all()).toEqual([]);
+  expect(await runArchiveBatch(db, null, { nowMs: expiresAt + 1 })).toMatchObject({ sessionsCleaned: 1, threadsDeleted: 0, runsDeleted: 0 });
+  expect(shim.sqlite.query("SELECT id FROM user_sessions").all()).toEqual([{ id: "active" }]);
   expect(shim.sqlite.query("SELECT id FROM chat_threads").get()).toEqual({ id: "old" });
 });

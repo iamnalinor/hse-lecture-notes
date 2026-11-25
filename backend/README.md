@@ -58,7 +58,7 @@ bunx wrangler secret put OWNER_TELEGRAM_ID
 bun run deploy
 ```
 
-The daily cron cleans expired Telegram token hashes and sessions. With R2 disabled it logs
+The daily cron cleans expired sessions. With R2 disabled it logs
 `archive_skipped_no_bucket` and keeps conversation history and usage records in D1.
 To enable archiving later, create a private R2 bucket and add it to Wrangler's
 `r2_buckets` with the binding `ARCHIVE_BUCKET`. The cron then copies inactive
