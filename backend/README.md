@@ -26,7 +26,7 @@ OPENAI_API_KEY=your-api-key
 OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-`OPENAI_API_KEY` is a secret. `OPENAI_BASE_URL` is optional and defaults to `https://api.openai.com/v1`; the provider appends `/responses`, preserving custom path prefixes and accepting trailing slashes. A custom endpoint must support the Responses API, SSE streaming and function calling; a gateway that only implements `/chat/completions` is insufficient. For a local mock, an HTTP URL is supported. OpenAI requests use direct fetch and do not use `CODEX_PROXY_URL`, OAuth refresh tokens or Codex-specific headers.
+`OPENAI_API_KEY` is a secret. `OPENAI_BASE_URL` is optional and defaults to `https://api.openai.com/v1`; the provider appends `/responses`, preserving custom path prefixes and accepting trailing slashes. A custom endpoint must support the Responses API, SSE streaming and function calling; a gateway that only implements `/chat/completions` is insufficient. Plain HTTP is accepted only for loopback hosts (local mocks). OpenAI requests use direct fetch and do not use `CODEX_PROXY_URL`, OAuth refresh tokens or Codex-specific headers.
 
 Models, reasoning effort, pricing versions, quotas and budgets remain in the existing D1 policy. The selected endpoint must accept the configured model names and reasoning effort, and the policy must select a published tariff for those models. Switching provider does not rewrite the policy or tariff table.
 
