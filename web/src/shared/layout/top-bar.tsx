@@ -15,8 +15,14 @@ export const TopBar = () => (
         to={paths.home()}
       >
         {/* Phones: the same 44 px as the search field and the buttons beside it; 28 px from 640 px. */}
-        <span className="flex size-11 items-center justify-center rounded-lg bg-brand text-subhead font-black text-white sm:size-7 sm:rounded-md sm:text-caption">
-          ПИ
+        <span className="flex size-11 items-center justify-center rounded-[22%] bg-brand text-white sm:size-7">
+          {/* Σ drawn to HSE Sans proportions (the same path as public/favicon.svg). */}
+          <svg aria-hidden="true" className="size-full" viewBox="0 0 32 32">
+            <path
+              d="M9.01 6.25H23.49V11.07H17.99L23.45 14.75V17.25L17.99 20.93H23.49V25.75H9.01V21.62L17.33 16L9.01 10.38Z"
+              fill="currentColor"
+            />
+          </svg>
         </span>
         <span className="sr-only whitespace-nowrap @min-[76rem]:not-sr-only">
           Конспекты ФКН <span className="font-normal text-faint">2026/27</span>

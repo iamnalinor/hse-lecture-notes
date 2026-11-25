@@ -36,8 +36,8 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 20px; font-size: 30px; font-weight: 600; color: #5f5f63; }
 .logo {
-  width: 64px; height: 64px; border-radius: 14px; background: #0f2d69; color: #fff;
-  display: grid; place-items: center; font-size: 28px; font-weight: 900;
+  width: 64px; height: 64px; border-radius: 14px; background: #0f2d69;
+  display: grid; place-items: center;
 }
 .symbol { position: absolute; top: 58px; right: 72px; color: #727276; }
 .kicker { margin-top: auto; font-size: 30px; font-weight: 600; color: #2a58a6; }
@@ -81,7 +81,7 @@ const html = ({
 <link rel="stylesheet" href="${fileUrl("../node_modules/katex/dist/katex.min.css")}">
 <style>${STYLE}</style></head>
 <body>
-  <div class="brand"><span class="logo">ПИ</span>${SITE_NAME} ВШЭ</div>
+  <div class="brand"><span class="logo"><svg viewBox="0 0 32 32" width="64" height="64"><path fill="#fff" d="M9.01 6.25H23.49V11.07H17.99L23.45 14.75V17.25L17.99 20.93H23.49V25.75H9.01V21.62L17.33 16L9.01 10.38Z"/></svg></span>${SITE_NAME} ВШЭ</div>
   ${symbolHtml(symbol, symbolSize)}
   <div class="kicker">${kicker}</div>
   <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
@@ -125,7 +125,9 @@ const cards = new Map<OgImageId, Card>([
 ]);
 
 const workDir = await mkdtemp(path.join(tmpdir(), "og-images-"));
-const browser = await chromium.launch();
+// PLAYWRIGHT_CHROMIUM: a Chromium of another Playwright version (e.g. a preinstalled one).
+const executablePath = process.env["PLAYWRIGHT_CHROMIUM"];
+const browser = await chromium.launch(executablePath === undefined ? {} : { executablePath });
 try {
   const page = await browser.newPage({ viewport: OG_IMAGE_SIZE });
   for (const [id, card] of cards) {
