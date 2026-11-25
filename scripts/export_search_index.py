@@ -92,6 +92,7 @@ _TOKEN_RE = re.compile(r"[a-zа-я0-9_]+")
 
 
 def _find_r2(rv: str) -> int:
+    # Snowball defines R1/R2 on the whole word; callers pass the full word.
     seen_vowel = False
     r1 = len(rv)
     for i, ch in enumerate(rv):
@@ -122,7 +123,7 @@ def stem_russian_word(raw: str) -> str:
     if not rv:
         return word
 
-    r2_start = _find_r2(rv)
+    r2_start = max(0, _find_r2(word) - len(head))
 
     if _PERFECTIVE_GERUND_1.search(rv):
         rv = _PERFECTIVE_GERUND_1.sub(r"\1", rv)
