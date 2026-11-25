@@ -29,16 +29,15 @@ export const useLoginResume = ({
     }
     claimedRef.current = pending.id;
     clear();
-    if (
-      draft !== pending.contentTex ||
-      quote !== pending.quote ||
-      activeThreadId !== pending.threadId
-    ) {
+    // The pending question waits as «Не отправлено» with an empty composer; anything typed since means
+    // the reader moved on, so it is not sent behind their back.
+    if (quote !== null || draft.trim() !== "" || activeThreadId !== pending.threadId) {
       return;
     }
     void send({
       activeThreadId: pending.threadId,
       docContext: pending.page,
+      keepDraft: true,
       text: pending.contentTex,
       quote: pending.quote,
     });

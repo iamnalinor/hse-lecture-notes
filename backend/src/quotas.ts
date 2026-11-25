@@ -43,6 +43,46 @@ function highQuotaLimit(policy: ServicePolicy, tier: Tier): number {
   return tier === "student" || tier === "extended" ? policy.buckets.high.limits[tier] : 0;
 }
 
+/**
+A day-window count and the moment it drops below `limit`: the `limit`-th newest run leaves the window.
+The oldest run is not enough: after the limit is lowered, or when another axis (IP, fingerprint) counts
+the same browser's older runs, more than `limit` runs sit in the window, and the block outlives the
+oldest one. `oldest` keeps its name for the callers: it is that run's time, or null under the limit.
+*/
+function windowCount(
+  db: TrackedD1,
+  column: "browser_id" | "fingerprint" | "ip_address" | "telegram_id",
+  value: number | string,
+  filter: string,
+  cutoff: number,
+  limit: number,
+): D1PreparedStatement {
+  const where = `${column} = ?${filter} AND created_at >= ?`;
+  return db
+    .prepare(
+      `SELECT COUNT(*) AS cnt, (SELECT created_at FROM usage_runs WHERE ${where} ORDER BY created_at DESC LIMIT 1 OFFSET ?) AS oldest FROM usage_runs WHERE ${where}`,
+    )
+    .bind(value, cutoff, Math.max(0, limit - 1), value, cutoff);
+}
+
+const ANY_BUCKET = " AND quota_bucket IN ('high', 'low')";
+const dayWindow = (
+  db: TrackedD1,
+  column: Parameters<typeof windowCount>[1],
+  value: number | string,
+  bucket: "high" | "low" | null,
+  dayCutoff: number,
+  limit: number,
+): D1PreparedStatement =>
+  windowCount(
+    db,
+    column,
+    value,
+    `${bucket === null ? "" : ` AND quota_bucket = '${bucket}'`} AND status != 'error'`,
+    dayCutoff,
+    limit,
+  );
+
 export interface BudgetSnapshot {
   globalActual7d: number;
   guestActual24h: number;
@@ -125,6 +165,8 @@ export async function evaluateQuotasAndBudgets(
 
   const isGuest = axes.tier === "guest" || axes.telegramId === null;
   const useFp = isGuest && axes.fingerprint.length > 0;
+  const lowLimit = policy.buckets.low.limits[isGuest ? "guest" : axes.tier];
+  const highLimit = highQuotaLimit(policy, axes.tier);
 
   if (isGuest && policy.requireLoginWithoutFingerprint && !axes.fingerprint) {
     const budget = await readBudgetSnapshot(db, nowMs);
@@ -171,28 +213,16 @@ export async function evaluateQuotasAndBudgets(
     if (checkRateLimit) {
       add(
         "rate_br",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE browser_id = ? AND quota_bucket IN ('high', 'low') AND created_at >= ?",
-          )
-          .bind(axes.browserId, minCutoff),
+        windowCount(db, "browser_id", axes.browserId, ANY_BUCKET, minCutoff, policy.rateLimitPerMinute),
       );
       add(
         "rate_ip",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE ip_address = ? AND created_at >= ?",
-          )
-          .bind(axes.ipAddress, minCutoff),
+        windowCount(db, "ip_address", axes.ipAddress, "", minCutoff, policy.rateLimitPerMinute),
       );
       if (useFp) {
         add(
           "rate_fp",
-          db
-            .prepare(
-              "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE fingerprint = ? AND created_at >= ?",
-            )
-            .bind(axes.fingerprint, minCutoff),
+          windowCount(db, "fingerprint", axes.fingerprint, "", minCutoff, policy.rateLimitPerMinute),
         );
       }
     }
@@ -229,28 +259,16 @@ export async function evaluateQuotasAndBudgets(
     // 24h guest quota (low bucket) — failed runs (status = 'error') never consume user quota
     add(
       "low_br",
-      db
-        .prepare(
-          "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE browser_id = ? AND quota_bucket = 'low' AND created_at >= ? AND status != 'error'",
-        )
-        .bind(axes.browserId, dayCutoff),
+      dayWindow(db, "browser_id", axes.browserId, "low", dayCutoff, lowLimit),
     );
     add(
       "low_ip",
-      db
-        .prepare(
-          "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE ip_address = ? AND created_at >= ? AND status != 'error'",
-        )
-        .bind(axes.ipAddress, dayCutoff),
+      dayWindow(db, "ip_address", axes.ipAddress, null, dayCutoff, lowLimit),
     );
     if (useFp) {
       add(
         "low_fp",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE fingerprint = ? AND created_at >= ? AND status != 'error'",
-          )
-          .bind(axes.fingerprint, dayCutoff),
+        dayWindow(db, "fingerprint", axes.fingerprint, null, dayCutoff, lowLimit),
       );
     }
   } else {
@@ -258,19 +276,11 @@ export async function evaluateQuotasAndBudgets(
     if (checkRateLimit) {
       add(
         "rate_tg",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE telegram_id = ? AND quota_bucket IN ('high', 'low') AND created_at >= ?",
-          )
-          .bind(tgId, minCutoff),
+        windowCount(db, "telegram_id", tgId, ANY_BUCKET, minCutoff, policy.rateLimitPerMinute),
       );
       add(
         "rate_br",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE browser_id = ? AND quota_bucket IN ('high', 'low') AND created_at >= ?",
-          )
-          .bind(axes.browserId, minCutoff),
+        windowCount(db, "browser_id", axes.browserId, ANY_BUCKET, minCutoff, policy.rateLimitPerMinute),
       );
     }
 
@@ -295,37 +305,21 @@ export async function evaluateQuotasAndBudgets(
 
     add(
       "low_tg",
-      db
-        .prepare(
-          "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE telegram_id = ? AND quota_bucket = 'low' AND created_at >= ? AND status != 'error'",
-        )
-        .bind(tgId, dayCutoff),
+      dayWindow(db, "telegram_id", tgId, "low", dayCutoff, lowLimit),
     );
     add(
       "low_br",
-      db
-        .prepare(
-          "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE browser_id = ? AND quota_bucket = 'low' AND created_at >= ? AND status != 'error'",
-        )
-        .bind(axes.browserId, dayCutoff),
+      dayWindow(db, "browser_id", axes.browserId, "low", dayCutoff, lowLimit),
     );
 
     if (axes.tier === "student" || axes.tier === "extended") {
       add(
         "high_tg",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE telegram_id = ? AND quota_bucket = 'high' AND created_at >= ? AND status != 'error'",
-          )
-          .bind(tgId, dayCutoff),
+        dayWindow(db, "telegram_id", tgId, "high", dayCutoff, highLimit),
       );
       add(
         "high_br",
-        db
-          .prepare(
-            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest FROM usage_runs WHERE browser_id = ? AND quota_bucket = 'high' AND created_at >= ? AND status != 'error'",
-          )
-          .bind(axes.browserId, dayCutoff),
+        dayWindow(db, "browser_id", axes.browserId, "high", dayCutoff, highLimit),
       );
     }
   }
@@ -349,17 +343,14 @@ export async function evaluateQuotasAndBudgets(
     };
   };
 
+  /** The busiest axis; `oldest` is when every axis over its limit is back under it (the latest release). */
   const maxAxis = (keys: string[]): { count: number; oldest: number | null } => {
     let count = 0;
     let oldest: number | null = null;
     for (const k of keys) {
       const r = getCount(k);
-      if (r.cnt > count) {
-        count = r.cnt;
-        oldest = r.oldest;
-      } else if (r.cnt === count && r.cnt > 0 && r.oldest !== null) {
-        oldest = oldest === null ? r.oldest : Math.min(oldest, r.oldest);
-      }
+      count = Math.max(count, r.cnt);
+      if (r.oldest !== null) oldest = oldest === null ? r.oldest : Math.max(oldest, r.oldest);
     }
     return { count, oldest };
   };

@@ -50,22 +50,25 @@ const guestLimitTitle = (block: ChatBlock | null): string => {
     return "Общий бюджет гостевых ответов исчерпан";
   }
   return typeof block?.nextAvailableAt === "number"
-    ? "Твой лимит гостевых ответов исчерпан"
+    ? "Лимит гостевых ответов исчерпан"
     : "Для отправки вопроса нужен вход";
 };
 
 const GuestLimit = ({ block }: { readonly block: ChatBlock | null }) => (
   <>
     <b>{guestLimitTitle(block)}</b>
-    {typeof block?.nextAvailableAt === "number" && (
-      <p>
-        Следующий гостевой ответ будет доступен в{" "}
-        <time dateTime={new Date(block.nextAvailableAt).toISOString()}>
-          {formatClockTime(block.nextAvailableAt)}
-        </time>
-        .
-      </p>
-    )}
+    <p>
+      {typeof block?.nextAvailableAt === "number" && (
+        <>
+          Следующий будет доступен в{" "}
+          <time dateTime={new Date(block.nextAvailableAt).toISOString()}>
+            {formatClockTime(block.nextAvailableAt)}
+          </time>
+          .{" "}
+        </>
+      )}
+      Войди через Telegram, чтобы продолжить
+    </p>
   </>
 );
 
@@ -105,7 +108,6 @@ export const BottomPlate = ({
       <div className="ai-plate ai-fade" role="status">
         {plateQuote}
         <GuestLimit block={block} />
-        <p>Войди через Telegram, чтобы продолжить.</p>
         <div className="ai-plate-actions">
           <button
             className="ai-btn"

@@ -65,7 +65,7 @@ it("hides internal notes and excludes them from the material step count", () => 
       ]}
     />,
   );
-  fireEvent.click(screen.getByRole("button", { name: "Посмотрел конспекты: 1 шаг" }));
+  fireEvent.click(screen.getByRole("button", { name: "Подготовил ответ за 1 шаг" }));
   expect(screen.queryByText("Лимит инструментов")).not.toBeInTheDocument();
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
 });

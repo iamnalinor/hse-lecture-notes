@@ -113,7 +113,11 @@ export const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs)
   setters.setMessages((prev) => [...prev, ...turn]);
 };
 
-export const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
+export const rollbackOptimisticTurn = (
+  setters: StreamStateSetters,
+  args: SendArgs,
+  { restoreDraft = true }: { readonly restoreDraft?: boolean } = {},
+): void => {
   setters.setIsStreaming(false);
   const original = args.retryMessage;
   if (original !== undefined) {
@@ -121,11 +125,14 @@ export const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendAr
     return;
   }
   setters.setMessages((prev) => prev.slice(0, -2));
-  setters.restoreRejectedDraft(args.text, args.quote);
+  if (restoreDraft) {
+    setters.restoreRejectedDraft(args.text, args.quote);
+  }
 };
 
+/** The rejected question stays as «Не отправлено» with a retry; a copy in the composer would be a duplicate. */
 export const rejectOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {
-  rollbackOptimisticTurn(setters, args);
+  rollbackOptimisticTurn(setters, args, { restoreDraft: false });
   if (args.retryMessage === undefined) {
     setters.setUnsent({
       ...makeUserMsg(args.text, args.quote, args.docContext),

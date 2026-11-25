@@ -95,10 +95,10 @@ const UserMessageView = ({
       </div>
       {message.status === "error" && (
         <div className="ai-unsent" role="status">
-          Не отправлено{" "}
+          Не отправлено
           {canRetry && (
             <button
-              className="ai-btn ai-btn-2"
+              className="ai-unsent-retry"
               onClick={() => {
                 onRetry(message.id);
               }}

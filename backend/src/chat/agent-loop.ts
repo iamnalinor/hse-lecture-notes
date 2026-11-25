@@ -316,15 +316,17 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
           const step: ChatStep =
             call.name === "search_materials"
               ? { kind: "search", q: preview(call.arguments, "query"), state: "running" }
-              : {
-                  kind: "read",
-                  target:
-                    preview(call.arguments, "id") ||
-                    preview(call.arguments, "doc_id") ||
-                    preview(call.arguments, "prep_id") ||
-                    preview(call.arguments, "course"),
-                  state: "running",
-                };
+              : call.name === "sample_problems"
+                ? { kind: "sample", target: "генератор вариантов", state: "running" }
+                : {
+                    kind: "read",
+                    target:
+                      preview(call.arguments, "id") ||
+                      preview(call.arguments, "doc_id") ||
+                      preview(call.arguments, "prep_id") ||
+                      preview(call.arguments, "course"),
+                    state: "running",
+                  };
           const index = steps.push(step) - 1;
           sendFrame({ type: "step", steps: [...steps] });
           const value = await waitForTool(abort.signal, () => runner.execute(call.name, call.arguments));

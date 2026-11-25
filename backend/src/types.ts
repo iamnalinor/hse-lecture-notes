@@ -88,7 +88,9 @@ export interface QuotePayload {
 }
 
 export interface ChatStep {
-  kind: "search" | "read" | "note";
+  kind: "search" | "read" | "note" | "sample";
+  /** `sample`: how many problems the generator gave. */
+  count?: number;
   q?: string;
   target?: string;
   note?: string;

@@ -621,9 +621,24 @@ html.ai-open .ai-panel {
 }
 
 .ai-unsent {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   color: var(--faint);
   font-size: 13px;
   line-height: 18px;
+}
+/* A text link on the status line: a full button beside 13px text looked like a stray box. */
+.ai-unsent-retry {
+  color: var(--def);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.ai-unsent-retry:hover {
+  text-decoration: underline;
 }
 
 .ai-quote {

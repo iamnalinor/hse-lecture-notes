@@ -322,7 +322,7 @@ it("retains the degraded caption while a cached allowance starts the next turn",
   expect(chat.current.degraded).toEqual(degraded);
 });
 
-it("restores the draft and unlocks a quota block at its deadline", async () => {
+it("keeps a refused question as unsent and unlocks a quota block at its deadline", async () => {
   vi.useFakeTimers();
   vi.mocked(ensureChatAllowance).mockResolvedValueOnce({
     ...allowance,
@@ -330,11 +330,13 @@ it("restores the draft and unlocks a quota block at its deadline", async () => {
   });
   const chat = mount();
   await act(() => chat.current.send("draft"));
-  expect(chat.current.draft).toBe("draft");
+  // The question waits as «Не отправлено», not as a second copy in the composer.
+  expect(chat.current.draft).toBe("");
+  expect(chat.current.messages.at(-1)).toMatchObject({ contentTex: "draft", status: "error" });
   expect(chat.current.block?.code).toBe("tier_quota_exceeded");
   await act(() => vi.advanceTimersByTimeAsync(1000));
   expect(chat.current.block).toBeNull();
-  expect(chat.current.draft).toBe("draft");
+  expect(chat.current.messages.at(-1)).toMatchObject({ contentTex: "draft", status: "error" });
 });
 
 it.each(["allowance", "websocket"])(
@@ -363,7 +365,7 @@ it.each(["allowance", "websocket"])(
       status: "error",
     });
     expect(chat.current.isStreaming).toBe(false);
-    expect(chat.current.draft).toBe("Мой вопрос");
+    expect(chat.current.draft).toBe("");
     const signedIn = { ...allowance, tier: "student" as const, user: { id: 1, name: "one" } };
     vi.mocked(loginViaTelegram).mockResolvedValueOnce(signedIn);
     vi.mocked(ensureChatAllowance).mockResolvedValue(signedIn);

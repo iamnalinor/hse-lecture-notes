@@ -169,31 +169,53 @@ export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number =
   };
 }
 
+const COURSE_DATIVE: Readonly<Record<string, string>> = {
+  algebra: "алгебре",
+  calculus: "матанализу",
+  discrete: "дискретке",
+};
+const PREP_GENITIVE: Readonly<Record<string, string>> = { kr: "КР", colloq: "коллоквиума", exam: "экзамена" };
+
+/** «КР 1 по алгебре»: what the chat shows next to the generated problems. */
+export function bankTitle(course: string, prepId: string): string {
+  const match = /^([a-z]+)(\d*)$/.exec(prepId);
+  const kind = match === null ? undefined : PREP_GENITIVE[match[1] ?? ""];
+  const prep = kind === undefined ? prepId : `${kind}${match?.[2] ? ` ${match[2]}` : ""}`;
+  const subject = COURSE_DATIVE[course];
+  return subject === undefined ? prep : `${prep} по ${subject}`;
+}
+
 export async function runSampleProblems(
   args: Record<string, unknown>,
   fetcher: typeof fetch = fetch,
 ): Promise<{ output: string; step: ChatStep }> {
   const parsed = parseSampleArgs(args);
   if ("error" in parsed) {
-    return { output: JSON.stringify(parsed), step: { kind: "read", target: "банк задач", state: "error" } };
+    return { output: JSON.stringify(parsed), step: { kind: "sample", target: "генератор вариантов", state: "error" } };
   }
-  const target = `банк задач ${parsed.course}/${parsed.prepId}`;
+  const target = bankTitle(parsed.course, parsed.prepId);
   try {
     const res = await fetcher(`${BANK_DATA_URL}${parsed.course}/${parsed.prepId}/bank.json`, {
       cf: { cacheTtl: 300, cacheEverything: true },
     } as RequestInit);
     if (!res.ok) throw new Error(`HTTP ${String(res.status)}`);
     const bank = (await res.json()) as Bank;
+    const sample = sampleFromBank(bank, parsed);
     return {
-      output: JSON.stringify(sampleFromBank(bank, parsed)),
-      step: { kind: "read", target, state: "done" },
+      output: JSON.stringify(sample),
+      step: {
+        kind: "sample",
+        target,
+        state: "done",
+        ...(sample.problems === undefined ? {} : { count: sample.problems.length }),
+      },
     };
   } catch (error) {
     return {
       output: JSON.stringify({
         error: `Банк задач недоступен: ${error instanceof Error ? error.message : String(error)}`,
       }),
-      step: { kind: "read", target, state: "error" },
+      step: { kind: "sample", target, state: "error" },
     };
   }
 }

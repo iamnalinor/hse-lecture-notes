@@ -73,8 +73,8 @@ export const useComposerDraft = (docKey: string, user: ChatUser | null) => {
                   canResume &&
                   prev.docKey === docKey &&
                   prev.unsent !== null &&
-                  prev.text === prev.unsent.contentTex &&
-                  prev.quote === prev.unsent.quote &&
+                  prev.text.trim() === "" &&
+                  prev.quote === null &&
                   `${prev.unsent.page.course}:${prev.unsent.page.docId}` === docKey
                     ? prev.unsent
                     : null,
@@ -162,7 +162,7 @@ export const useChatSendActions = ({
         docContext: unsent.page,
         quote: unsent.quote,
         text: unsent.contentTex,
-        keepDraft: draft !== unsent.contentTex || quote !== unsent.quote,
+        keepDraft: true,
       });
     },
     send: async (text?: string) => {

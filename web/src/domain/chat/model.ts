@@ -37,7 +37,8 @@ export type ChatQuote = {
 };
 
 export type ChatStep = {
-  readonly kind: "note" | "read" | "search";
+  readonly count?: number;
+  readonly kind: "note" | "read" | "sample" | "search";
   readonly more?: number;
   readonly note?: string;
   readonly q?: string;
@@ -240,7 +241,7 @@ const quotaPlate = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateC
 
 const guestLoginBody = (block: ChatBlock, nowMs: number): string =>
   typeof block.nextAvailableAt === "number"
-    ? `Твой лимит гостевых ответов исчерпан. ${waitCopy(block, nowMs)}`
+    ? `Лимит гостевых ответов исчерпан. ${waitCopy(block, nowMs)}`
     : "Войди через Telegram, чтобы отправить вопрос.";
 
 /** Returns user-facing plate text for every limit / service block code. */

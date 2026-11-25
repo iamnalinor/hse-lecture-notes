@@ -170,6 +170,12 @@ export const ChatEmptyView = (): JSX.Element => {
               key={prompt}
               onClick={() => {
                 void send(prompt);
+                // The button goes away with the empty view: keep typing in the composer, as after opening.
+                globalThis.requestAnimationFrame(() => {
+                  document
+                    .querySelector<HTMLTextAreaElement>("#ai-input")
+                    ?.focus({ preventScroll: true });
+                });
               }}
               type="button"
             >

@@ -8,19 +8,32 @@ import { ChevronIcon, ReadStepIcon, SearchStepIcon } from "../icons.tsx";
 import { isMaterialLink } from "./markdown-parse.ts";
 import { ChatResponseStatus } from "./response-status.tsx";
 
-const pluralSteps = (n: number): string => {
+const plural = (n: number, [one, few, many]: readonly [string, string, string]): string => {
   const abs = Math.abs(n) % 100;
   if (abs >= 11 && abs <= 19) {
-    return "шагов";
+    return many;
   }
   const last = abs % 10;
   if (last === 1) {
-    return "шаг";
+    return one;
   }
   if (last >= 2 && last <= 4) {
-    return "шага";
+    return few;
   }
-  return "шагов";
+  return many;
+};
+
+const pluralSteps = (n: number): string => plural(n, ["шаг", "шага", "шагов"]);
+
+/** `sample_problems` picks problems at random, like the variant generator on prep pages. */
+const formatSampleLabel = (step: ChatStep): string => {
+  if (step.state === "running") {
+    return "Генерирую задачи…";
+  }
+  const target = step.target ?? "генератор вариантов";
+  return step.state === "error" || step.count === undefined
+    ? `Генератор задач: ${target}`
+    : `Сгенерировал ${String(step.count)} ${plural(step.count, ["задачу", "задачи", "задач"])}: ${target}`;
 };
 
 const StepIcon = ({ step }: { readonly step: ChatStep }): JSX.Element => {
@@ -48,6 +61,9 @@ const StepLabel = ({ step }: { readonly step: ChatStep }): JSX.Element => {
         </span>
       </span>
     );
+  }
+  if (step.kind === "sample") {
+    return <span className="ai-step-label">{formatSampleLabel(step)}</span>;
   }
   return step.kind === "read" ? (
     <span className="ai-step-label">
@@ -157,7 +173,7 @@ export const ChatStepsBlock = ({
       isCheckingBrowser={isCheckingBrowser}
     />
   ) : (
-    `Посмотрел конспекты: ${count} ${pluralSteps(count)}`
+    `Подготовил ответ за ${String(count)} ${pluralSteps(count)}`
   );
   const boxClass = `ai-steps ai-fade${isOpen ? " is-open" : ""}${isRunningSteps ? " is-run" : ""}`;
 

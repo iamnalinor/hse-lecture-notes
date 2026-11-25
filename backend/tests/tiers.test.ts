@@ -128,3 +128,46 @@ test("manual tier changes apply to existing sessions and allowance tokens", asyn
     ).toBe(tier);
   }
 });
+
+test("a guest over the limit is told when the window really drops below it, not when the oldest run leaves", async () => {
+  const shim = new SqliteD1Shim();
+  const db = new TrackedD1(shim.asD1());
+  const policy = await loadPolicy(db);
+  Object.assign(policy.buckets.low.limits, { guest: 5 });
+  policy.rateLimitPerMinute = 100;
+  const axes = { tier: "guest" as const, telegramId: null, browserId: "br", ipAddress: "ip", fingerprint: "" };
+  const hour = 3_600_000;
+  for (let i = 0; i < 5; i++) {
+    const at = now + i * hour;
+    const result = await admitRunAtomic(db, policy, {
+      env: {},
+      axes,
+      clientRequestId: `g${i}`,
+      payloadHash: `g${i}`,
+      threadId: null,
+      questionText: `Q${i}`,
+      quote: null,
+      course: "",
+      docId: "",
+      nowMs: at,
+    });
+    if (result.kind !== "admitted") throw new Error(`Unexpected ${result.kind}`);
+    await finalizeRunAtomic(db, {
+      runId: result.runId,
+      nowMs: at + 1,
+      finalStatus: "done",
+      messageStatus: "done",
+      actualCostMicros: 0,
+      isCostUncertain: false,
+      contentTex: "Answer",
+    });
+  }
+  // The limit drops to 3 with 5 runs in the window: two must leave before a slot is free,
+  // so the third newest run (made at +2h) is the one that frees it.
+  Object.assign(policy.buckets.low.limits, { guest: 3 });
+  const blocked = await evaluateQuotasAndBudgets(db, policy, axes, now + 5 * hour);
+  expect(blocked.block?.code).toBe("auth_required");
+  expect(blocked.block?.nextAvailableAt).toBe(now + 2 * hour + 24 * hour);
+  const atRelease = await evaluateQuotasAndBudgets(db, policy, axes, now + 26 * hour + 1);
+  expect(atRelease.block).toBeNull();
+});
