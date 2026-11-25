@@ -137,9 +137,10 @@ jobs:
 
   # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска.
   # Загружается новой версией (не деплоем) в Cloudflare Worker со статическими ассетами
-  # (Worker создан вручную) с одним общим алиасом preview: preview-<worker>.<поддомен>.workers.dev.
-  # Один адрес на все PR: его можно один раз прописать в Telegram Login, Turnstile и ALLOWED_ORIGINS
-  # API чата; показывает последний запушенный PR. Продакшен Worker'а не меняется. Ссылка — комментарием в PR.
+  # (Worker создан вручную) с алиасом pr-<N>, собранной с BASE_PATH=/pr-<N>/. Открывается по адресу
+  # https://hse-preview.nalinor.dev/pr-<N>/: маршрутизатор preview/ проксирует путь в алиас. Один домен на все
+  # PR — его один раз прописывают в Telegram Login, Turnstile и ALLOWED_ORIGINS API чата.
+  # Продакшен Worker'а не меняется. Ссылка — комментарием в PR, обновляется на каждый пуш.
   # PR из форков не деплоятся: им не положены секреты.
   preview:
     name: Site preview
@@ -151,12 +152,12 @@ jobs:
       contents: read
       pull-requests: write
     concurrency:
-      # Алиас общий: последний пуш любого PR занимает превью, предыдущая выкладка отменяется.
-      group: site-preview
+      group: preview-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     env:
       WORKER: hse-lecture-notes
-      ALIAS: preview
+      ALIAS: pr-${{ github.event.pull_request.number }}
+      PREVIEW_URL: https://hse-preview.nalinor.dev/pr-${{ github.event.pull_request.number }}/
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
       - name: Skip without Cloudflare secrets
@@ -185,7 +186,7 @@ jobs:
         if: env.HAS_TOKEN == 'true'
         working-directory: web
         env:
-          BASE_PATH: /
+          BASE_PATH: /pr-${{ github.event.pull_request.number }}/
           VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL }}
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID }}
@@ -234,19 +235,17 @@ jobs:
           OUT: ${{ steps.upload.outputs.out }}
         run: |
           alias=$(grep -oE 'https://'"$ALIAS"'-[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | head -n1)
-          version=$(grep -oE 'https://[a-z0-9-]+-'"$WORKER"'\.[a-z0-9.-]+\.workers\.dev' <<<"$OUT" | grep -v "^https://$ALIAS-" | head -n1)
           if [ -z "$alias" ]; then
             echo "$OUT"
             echo "::error::в выводе wrangler нет ссылки превью — включены ли workers.dev и Preview URLs у Worker'а?"
             exit 1
           fi
           echo "alias=$alias/" >> "$GITHUB_OUTPUT"
-          echo "version=${version:-$alias}/" >> "$GITHUB_OUTPUT"
 
       - name: Smoke test
         if: env.HAS_TOKEN == 'true'
         env:
-          URL: ${{ steps.urls.outputs.alias }}
+          URL: ${{ env.PREVIEW_URL }}
         run: |
           for i in 1 2 3 4 5 6; do
             curl --fail --silent "${URL}data/courses.json" >/dev/null && break
@@ -254,13 +253,14 @@ jobs:
           done
           curl --fail --silent "${URL}" | grep -q '<div id="root">'
           curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория'
+          # Ассеты собраны под /pr-<N>/: оболочка должна ссылаться на них с этим префиксом
+          curl --fail --silent "${URL}" | grep -q "src=\"/pr-${{ github.event.pull_request.number }}/assets/"
 
       - name: Comment the preview link on the PR
         if: env.HAS_TOKEN == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          LINK: ${{ steps.urls.outputs.alias }}
-          VERSION: ${{ steps.urls.outputs.version }}
+          LINK: ${{ env.PREVIEW_URL }}
           SHA: ${{ github.event.pull_request.head.sha }}
           PR: ${{ github.event.pull_request.number }}
         run: |
@@ -268,7 +268,7 @@ jobs:
           BODY="$MARKER
           **Превью сайта:** $LINK
 
-          Эта сборка (коммит \`${SHA:0:7}\`, слитый с main): $VERSION. Превью общее для всех PR: по ссылке выше — последний запушенный PR."
+          Сборка коммита \`${SHA:0:7}\` (слитого с main), обновляется на каждый пуш. Чат и вход через Telegram работают: домен один на все PR."
           ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$MARKER\"))) | .id" | head -n1)
           if [ -n "$ID" ]; then

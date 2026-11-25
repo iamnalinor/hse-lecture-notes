@@ -50,8 +50,8 @@
   "vars": {
     "LLM_PROVIDER": "openai",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
-    "ALLOWED_ORIGINS": "https://hse.nalinor.dev,https://preview-hse-lecture-notes.nalinor.workers.dev,http://localhost:5173,http://127.0.0.1:5173",
-    "TURNSTILE_EXPECTED_HOSTNAMES": "hse.nalinor.dev,preview-hse-lecture-notes.nalinor.workers.dev,localhost,127.0.0.1",
+    "ALLOWED_ORIGINS": "https://hse.nalinor.dev,https://hse-preview.nalinor.dev,http://localhost:5173,http://127.0.0.1:5173",
+    "TURNSTILE_EXPECTED_HOSTNAMES": "hse.nalinor.dev,hse-preview.nalinor.dev,localhost,127.0.0.1",
     "CODEX_OAUTH_CLIENT_ID": "app_EMoamEEZ73f0CkXaXp7hrann",
     "CODEX_RESPONSES_URL": "https://chatgpt.com/backend-api/codex/responses",
     "CODEX_TOKEN_URL": "https://auth.openai.com/oauth/token",
