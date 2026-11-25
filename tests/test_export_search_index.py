@@ -311,3 +311,21 @@ def test_misaligned_legacy_fts_is_rebuilt_before_rowid_deletes(tmp_path: Path) -
         "SELECT f.rowid = b.rowid, f.statement_tex FROM course_blocks_fts f JOIN course_blocks b ON b.id = f.id ORDER BY b.id"
     ).fetchall()
     assert [tuple(r) for r in rows] == [(1, "А изменено."), (1, "Б.")]
+
+
+def test_vectorize_confirmation_reads_at_most_twenty_ids_per_request(monkeypatch):
+    """Vectorize get_by_ids rejects more than 20 ids (error 40007, 2026-11-25)."""
+    cf = esi.CloudflareClient("account", "token", "db", "index")
+    blocks = [[f"b{i}", str(i)] for i in range(25)]
+    sizes = []
+    def request(method, path, body=None):
+        if path.endswith("/info"):
+            return {"result": {"processedUpToMutation": "unrelated"}}
+        assert path.endswith("/get_by_ids")
+        sizes.append(len(body["ids"]))
+        assert len(body["ids"]) <= 20
+        return {"result": [{"id": i, "metadata": {"content_hash": dict(blocks)[i]}} for i in body["ids"]]}
+    monkeypatch.setattr(cf, "_req", request)
+    monkeypatch.setattr(esi.time, "sleep", lambda _: None)
+    cf.wait_for_mutation({"action": "upsert", "mutation_id": "m", "blocks": blocks})
+    assert sizes == [20, 5]

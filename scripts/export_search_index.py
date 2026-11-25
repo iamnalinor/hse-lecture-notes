@@ -579,6 +579,10 @@ class UnconfirmedMutation(RuntimeError):
     pass
 
 
+# Vectorize get_by_ids rejects more ids per request (error 40007).
+VECTORIZE_GET_MAX_IDS = 20
+
+
 class CloudflareClient:
     def __init__(self, account_id: str, api_token: str, d1_id: str, vec_index: str) -> None:
         self.account_id = account_id
@@ -667,9 +671,14 @@ class CloudflareClient:
                 return
             # The index only exposes its latest processed mutation. Compare the actual
             # postcondition if unrelated work has already advanced the marker.
-            rows = self._req("POST", f"{self.vector_path}/get_by_ids", {"ids": ids})["result"]
-            if not isinstance(rows, list):
-                raise RuntimeError("Invalid Vectorize get_by_ids response")
+            rows = []
+            for start in range(0, len(ids), VECTORIZE_GET_MAX_IDS):
+                part = self._req(
+                    "POST", f"{self.vector_path}/get_by_ids", {"ids": ids[start : start + VECTORIZE_GET_MAX_IDS]}
+                )["result"]
+                if not isinstance(part, list):
+                    raise RuntimeError("Invalid Vectorize get_by_ids response")
+                rows.extend(part)
             if pending["action"] == "delete":
                 if not rows:
                     return
