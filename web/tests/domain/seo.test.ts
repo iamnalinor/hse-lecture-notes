@@ -24,7 +24,7 @@ const lecture: SitePage = {
   description: "Конспект лекции 1: матрицы <и> «операции»",
   image: "algebra",
   name: "Алгебра, лекция 1: матрицы",
-  pdf: "pdf/algebra-01_sep03_matrices.pdf",
+  pdf: "pdf/algebra_01_sep03_matrices.pdf",
   route: "algebra/01_sep03_matrices",
   source: "notes/algebra/01_sep03_matrices.md",
 };

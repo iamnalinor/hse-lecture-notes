@@ -24,15 +24,15 @@ describe("DocPage downloads", () => {
     );
     expect(screen.getByRole("link", { name: "Шпаргалка, 1 сторона" })).toHaveAttribute(
       "href",
-      "/pdf/discrete-kr1-cheatsheet-1side.pdf",
+      "/pdf/discrete_kr1-cheatsheet-1side.pdf",
     );
     expect(screen.getByRole("link", { name: "Шпаргалка, 2 стороны" })).toHaveAttribute(
       "href",
-      "/pdf/discrete-kr1-cheatsheet-2side.pdf",
+      "/pdf/discrete_kr1-cheatsheet-2side.pdf",
     );
     expect(screen.getByRole("link", { name: "PDF" })).toHaveAttribute(
       "href",
-      "/pdf/discrete-kr1.pdf",
+      "/pdf/discrete_kr1.pdf",
     );
   });
 });

@@ -156,7 +156,7 @@ const CHEATSHEET_LABELS: Readonly<Record<string, string>> = {
   "2side": "Шпаргалка, 2 стороны",
 };
 
-/** A downloadable PDF next to a document: `docId` names the file (`pdf/<course>-<docId>.pdf`). */
+/** A downloadable PDF next to a document: `docId` names the file (`pdf/<course>_<docId>.pdf`). */
 export type PdfDoc = { readonly docId: string; readonly label: string };
 
 /** Cheatsheet PDFs of a test (`prep/<course>/cheatsheet/krN-cheatsheet-<variant>.tex`), one per print variant. */

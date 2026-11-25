@@ -46,7 +46,7 @@ export type SitePage = Crumb & {
   readonly crumbs: readonly Crumb[];
   readonly description: string;
   readonly image: OgImageId;
-  /** `pdf/algebra-theory.pdf`. */
+  /** `pdf/algebra_theory.pdf`. */
   readonly pdf: string | undefined;
   /** Path of the Markdown source in the repository: `notes/algebra/01_sep03_matrices.md`. */
   readonly source: string | undefined;

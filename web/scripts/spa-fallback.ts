@@ -185,7 +185,7 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
         ...inCourse,
         description: `${name}: ${COURSE_DOC_DESCRIPTIONS[doc]}`,
         name: courseDocTitle(name, doc),
-        pdf: `pdf/${course}-${doc}.pdf`,
+        pdf: `pdf/${course}_${doc}.pdf`,
         route: `${course}/${doc}`,
         source: `${doc}/${course}.md`,
       });
@@ -195,7 +195,7 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
     ...inCourse,
     description: `${name}: ${prepDescription(id)}`,
     name: title,
-    pdf: `pdf/${course}-${id}.pdf`,
+    pdf: `pdf/${course}_${id}.pdf`,
     route: `${course}/${id}`,
     source: `prep/${course}/${id}.md`,
   }));
@@ -203,7 +203,7 @@ const coursePages = async ({ id: course, name, summary }: CourseInfo): Promise<S
     ...inCourse,
     description: `Конспект лекции ${String(lecture)} по курсу «${name}» (ПИ ФКН ВШЭ): ${title}`,
     name: `${name}, лекция ${String(lecture)}: ${title}`,
-    pdf: `pdf/${course}-${weekId}.pdf`,
+    pdf: `pdf/${course}_${weekId}.pdf`,
     route: `${course}/${weekId}`,
     source: `notes/${course}/${weekId}.md`,
   }));

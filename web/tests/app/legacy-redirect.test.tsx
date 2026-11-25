@@ -79,18 +79,18 @@ describe("LegacyPdfRedirect", () => {
     openPdf("/pdf/algebra-03_sep16_permutations.pdf");
     await waitFor(() => {
       expect(replace).toHaveBeenCalledWith(
-        "/pdf/algebra-03_sep16_permutations_determinant.pdf#page=3",
+        "/pdf/algebra_03_sep16_permutations_determinant.pdf#page=3",
       );
     });
   });
 
   it("answers 404 when the file is missing under its current name or matches no lecture", async () => {
-    openPdf("/pdf/algebra-03_sep16_permutations_determinant.pdf");
+    openPdf("/pdf/algebra_03_sep16_permutations_determinant.pdf");
     expect(await screen.findByText("нет файла")).toBeInTheDocument();
   });
 
   it("answers 404 for PDFs that are not lectures", async () => {
-    openPdf("/pdf/algebra-theory.pdf");
+    openPdf("/pdf/algebra_theory.pdf");
     expect(await screen.findByText("нет файла")).toBeInTheDocument();
   });
 });

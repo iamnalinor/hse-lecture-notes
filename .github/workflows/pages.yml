@@ -67,10 +67,12 @@ jobs:
       - name: Drop the review pages of the notes build (the site renders the fragments itself)
         run: find web/public/data -name index.html -delete
 
-      - name: Keep old PDF links of the theory working (<course>-registry.pdf before the rename)
+      - name: Keep old PDF links working (<course>-<doc>.pdf and <course>-registry.pdf)
         run: |
           shopt -s nullglob
-          for f in web/public/pdf/*-theory.pdf; do cp "$f" "${f%-theory.pdf}-registry.pdf"; done
+          # Old links: <course>-<doc>.pdf before the switch to "_", <course>-registry.pdf before the theory rename.
+          for f in web/public/pdf/*_*.pdf; do d=$(dirname "$f"); b=$(basename "$f"); cp "$f" "$d/${b/_/-}"; done
+          for f in web/public/pdf/*_theory.pdf; do cp "$f" "${f%_theory.pdf}-registry.pdf"; done
 
       - uses: actions/configure-pages@v6
         id: pages
@@ -111,16 +113,16 @@ jobs:
           curl --fail --silent "${URL}" | grep -q '<div id="root">'
           # A page copy of the shell (served with 200 and its own title), not the 404.html fallback
           curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория'
-          curl --fail --silent --head "${URL}pdf/algebra-theory.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/algebra_theory.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/kr1/" | grep -q '<title>Подготовка к КР-1'
-          curl --fail --silent --head "${URL}pdf/calculus-kr1.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/calculus_kr1.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/colloq1/" | grep -q '<title>Подготовка к коллоквиуму 1'
-          curl --fail --silent --head "${URL}pdf/calculus-colloq1.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/calculus_colloq1.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/program/" | grep -q '<title>План учебной дисциплины: математический анализ'
-          curl --fail --silent --head "${URL}pdf/calculus-program.pdf" >/dev/null
-          curl --fail --silent --head "${URL}pdf/discrete-program.pdf" >/dev/null
-          curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-1side.pdf" >/dev/null
-          curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-2side.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/calculus_program.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete_program.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete_kr1-cheatsheet-1side.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete_kr1-cheatsheet-2side.pdf" >/dev/null
           curl --fail --silent "${URL}algebra/theory/" | grep -q '<link rel="canonical" href="https://hse.nalinor.dev/algebra/theory/"'
           curl --fail --silent "${URL}calculus/kr1/" | grep -q '<meta property="og:image" content="https://hse.nalinor.dev/og/calculus.png"'
           curl --fail --silent --head "${URL}og/calculus.png" >/dev/null

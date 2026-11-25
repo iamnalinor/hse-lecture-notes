@@ -78,7 +78,7 @@ jobs:
           shopt -s nullglob
           for f in build/pdf/*/*.pdf; do
             course=$(basename "$(dirname "$f")")
-            cp "$f" "dist/${course}-$(basename "$f")"
+            cp "$f" "dist/${course}_$(basename "$f")"
           done
           ls -la dist
 
@@ -193,7 +193,9 @@ jobs:
         run: |
           find public/data -name index.html -delete
           shopt -s nullglob
-          for f in public/pdf/*-theory.pdf; do cp "$f" "${f%-theory.pdf}-registry.pdf"; done
+          # Old links: <course>-<doc>.pdf before the switch to "_", <course>-registry.pdf before the theory rename.
+          for f in public/pdf/*_*.pdf; do d=$(dirname "$f"); b=$(basename "$f"); cp "$f" "$d/${b/_/-}"; done
+          for f in public/pdf/*_theory.pdf; do cp "$f" "${f%_theory.pdf}-registry.pdf"; done
           bun run scripts/validate-chat-config.ts
           bun run build
           # Превью не должно попадать в поиск
