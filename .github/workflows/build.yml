@@ -137,8 +137,9 @@ jobs:
 
   # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска.
   # Загружается новой версией (не деплоем) в Cloudflare Worker со статическими ассетами
-  # (Worker создан вручную) с алиасом pr-<N>: pr-<N>-<worker>.<поддомен>.workers.dev.
-  # Продакшен Worker'а не меняется. Ссылка — комментарием в PR, обновляется на каждый пуш.
+  # (Worker создан вручную) с одним общим алиасом preview: preview-<worker>.<поддомен>.workers.dev.
+  # Один адрес на все PR: его можно один раз прописать в Telegram Login, Turnstile и ALLOWED_ORIGINS
+  # API чата; показывает последний запушенный PR. Продакшен Worker'а не меняется. Ссылка — комментарием в PR.
   # PR из форков не деплоятся: им не положены секреты.
   preview:
     name: Site preview
@@ -150,11 +151,12 @@ jobs:
       contents: read
       pull-requests: write
     concurrency:
-      group: preview-${{ github.event.pull_request.number }}
+      # Алиас общий: последний пуш любого PR занимает превью, предыдущая выкладка отменяется.
+      group: site-preview
       cancel-in-progress: true
     env:
       WORKER: hse-lecture-notes
-      ALIAS: pr-${{ github.event.pull_request.number }}
+      ALIAS: preview
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
       - name: Skip without Cloudflare secrets

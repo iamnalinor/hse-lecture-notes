@@ -321,6 +321,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
                   target:
                     preview(call.arguments, "id") ||
                     preview(call.arguments, "doc_id") ||
+                    preview(call.arguments, "prep_id") ||
                     preview(call.arguments, "course"),
                   state: "running",
                 };

@@ -1,6 +1,5 @@
 import { readBoundedJson } from "./request-json";
 import { classifyError } from "./public-error";
-import { isPreviewOrigin } from "./preview-origin";
 import {
   handleAllowance,
   handleCreateNonce,
@@ -25,9 +24,7 @@ function getAllowedOrigin(request: Request, env: Env): string | null {
   const allowed = env.ALLOWED_ORIGINS.split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return allowed.includes(origin) || isPreviewOrigin(origin, env.PREVIEW_HOST_SUFFIX)
-    ? origin
-    : null;
+  return allowed.includes(origin) ? origin : null;
 }
 
 function withCorsHeaders(

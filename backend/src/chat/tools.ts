@@ -1,4 +1,5 @@
 import { SYSTEM_PROMPT } from "./system-prompt";
+import { runSampleProblems, SAMPLE_PROBLEMS_TOOL } from "./bank-tool";
 import type { TrackedD1 } from "../db";
 import { buildFtsMatchQuery, tokenizeAndStem } from "../stemmer";
 import type {
@@ -214,7 +215,7 @@ export async function buildSystemPrompt(
 }
 
 // =============================================================================
-// 3 Agent Tools: search_materials, read_block, read_document
+// 4 Agent Tools: search_materials, read_block, read_document, sample_problems
 // =============================================================================
 
 export const AGENT_TOOLS: CodexFunctionTool[] = [
@@ -295,6 +296,7 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
       additionalProperties: false,
     },
   },
+  SAMPLE_PROBLEMS_TOOL,
 ];
 
 export interface ToolExecutionContext {
@@ -433,6 +435,8 @@ export class AgentToolRunner {
       result = await this.runReadBlock(args);
     } else if (name === "read_document") {
       result = await this.runReadDocument(args);
+    } else if (name === "sample_problems") {
+      result = await runSampleProblems(args);
     } else {
       result = {
         output: JSON.stringify({ error: `Unknown tool: ${name}` }),

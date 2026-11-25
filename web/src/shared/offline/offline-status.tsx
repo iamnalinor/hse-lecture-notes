@@ -31,7 +31,7 @@ type DownloadButtonProps = {
 
 const DownloadButton = ({ missingBytes, onClick }: DownloadButtonProps) => (
   <button
-    className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2.5 py-1 text-subhead font-semibold text-ink hover:bg-wash"
+    className="inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2.5 py-1 text-subhead font-semibold whitespace-nowrap text-ink hover:bg-wash"
     onClick={onClick}
     type="button"
   >
@@ -62,10 +62,14 @@ export const OfflineStatus = () => {
   const canRetry =
     canDownload && !isEverything && (progress === undefined || download.kind === "failed");
   return (
-    <span className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 sm:inline-flex sm:w-auto sm:justify-start">
-      <span>
-        Офлайн: {count.saved} из {count.total}{" "}
-        {plural(count.total, ["конспекта", "конспектов", "конспектов"])}
+    // One line on every width: on phones the word «конспектов» goes to screen readers only.
+    <span className="flex min-h-11 w-full flex-nowrap items-center justify-between gap-x-3 sm:inline-flex sm:w-auto sm:justify-start">
+      <span className="min-w-0 whitespace-nowrap">
+        Офлайн: {count.saved} из {count.total}
+        <span className="max-sm:sr-only">
+          {" "}
+          {plural(count.total, ["конспекта", "конспектов", "конспектов"])}
+        </span>
       </span>
       {progress !== undefined && (
         // In the button's place while saving, so the footer keeps its lines.

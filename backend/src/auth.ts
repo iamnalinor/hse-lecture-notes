@@ -1,4 +1,3 @@
-import { isPreviewHost } from "./preview-origin";
 import {
   mintBrowserToken,
   decodeJwtUnverified,
@@ -126,7 +125,7 @@ export interface TurnstileVerifyResult {
 }
 
 export async function verifyTurnstileToken(
-  env: Pick<Env, "TURNSTILE_SECRET_KEY" | "TURNSTILE_EXPECTED_HOSTNAMES" | "PREVIEW_HOST_SUFFIX">,
+  env: Pick<Env, "TURNSTILE_SECRET_KEY" | "TURNSTILE_EXPECTED_HOSTNAMES">,
   token: string,
   remoteIp: string,
   fetchImpl: typeof fetch = fetch,
@@ -169,12 +168,7 @@ export async function verifyTurnstileToken(
   );
 
   // Cloudflare dummy test keys return hostname "example.com" — only check when non-empty
-  if (
-    data.hostname &&
-    allowedHosts.size > 0 &&
-    !allowedHosts.has(data.hostname.toLowerCase()) &&
-    !isPreviewHost(data.hostname, env.PREVIEW_HOST_SUFFIX)
-  ) {
+  if (data.hostname && allowedHosts.size > 0 && !allowedHosts.has(data.hostname.toLowerCase())) {
     return { ok: false, reason: `unexpected_hostname:${data.hostname}` };
   }
 
