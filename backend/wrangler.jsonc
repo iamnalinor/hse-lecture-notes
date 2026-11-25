@@ -52,6 +52,7 @@
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "ALLOWED_ORIGINS": "https://hse.nalinor.dev,http://localhost:5173,http://127.0.0.1:5173",
     "TURNSTILE_EXPECTED_HOSTNAMES": "hse.nalinor.dev,localhost,127.0.0.1",
+    "PREVIEW_HOST_SUFFIX": "-hse-lecture-notes.nalinor.workers.dev",
     "CODEX_OAUTH_CLIENT_ID": "app_EMoamEEZ73f0CkXaXp7hrann",
     "CODEX_RESPONSES_URL": "https://chatgpt.com/backend-api/codex/responses",
     "CODEX_TOKEN_URL": "https://auth.openai.com/oauth/token",

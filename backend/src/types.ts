@@ -23,6 +23,8 @@ export interface Env {
   OPENAI_BASE_URL?: string;
   ALLOWED_ORIGINS: string;
   TURNSTILE_EXPECTED_HOSTNAMES: string;
+  /** `-hse-lecture-notes.nalinor.workers.dev`: PR previews `pr-<N>` + this are allowed origins. */
+  PREVIEW_HOST_SUFFIX?: string;
   CODEX_OAUTH_CLIENT_ID: string;
   CODEX_RESPONSES_URL: string;
   CODEX_TOKEN_URL: string;
