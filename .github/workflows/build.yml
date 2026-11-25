@@ -247,14 +247,20 @@ jobs:
         env:
           URL: ${{ env.PREVIEW_URL }}
         run: |
-          for i in 1 2 3 4 5 6; do
-            curl --fail --silent "${URL}data/courses.json" >/dev/null && break
+          # Новая версия раскатывается по Cloudflare не сразу: все проверки повторяются вместе до ~3 минут
+          check() {
+            curl --fail --silent "${URL}data/courses.json" >/dev/null || { echo "нет data/courses.json"; return 1; }
+            curl --fail --silent "${URL}" | grep -q '<div id="root">' || { echo "нет оболочки"; return 1; }
+            curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория' || { echo "нет страницы теории"; return 1; }
+            # Ассеты собраны под /pr-<N>/: оболочка должна ссылаться на них с этим префиксом
+            curl --fail --silent "${URL}" | grep -q "src=\"/pr-${{ github.event.pull_request.number }}/assets/" || { echo "ассеты не под /pr-N/"; return 1; }
+          }
+          for i in $(seq 18); do
+            check && exit 0
             sleep 10
           done
-          curl --fail --silent "${URL}" | grep -q '<div id="root">'
-          curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория'
-          # Ассеты собраны под /pr-<N>/: оболочка должна ссылаться на них с этим префиксом
-          curl --fail --silent "${URL}" | grep -q "src=\"/pr-${{ github.event.pull_request.number }}/assets/"
+          echo "::error::превью ${URL} не прошло проверки"
+          exit 1
 
       - name: Comment the preview link on the PR
         if: env.HAS_TOKEN == 'true'
