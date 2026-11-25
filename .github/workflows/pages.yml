@@ -35,6 +35,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Full history, file contents on demand: sitemap lastmod and page dates come from git log.
+          fetch-depth: 0
+          filter: blob:none
       - uses: ./.github/actions/setup-web
 
       - name: Find the notes build to publish
@@ -126,8 +129,16 @@ jobs:
           curl --fail --silent "${URL}aiya/program/" | grep -q '<title>План учебной дисциплины: алгоритмы и алгоритмические языки'
           curl --fail --silent "${URL}sitemap.xml" | grep -q '<loc>https://hse.nalinor.dev/calculus/kr1/</loc>'
           curl --fail --silent "${URL}robots.txt" | grep -q 'Sitemap: https://hse.nalinor.dev/sitemap.xml'
-          curl --fail --silent "${URL}llms.txt" | grep -q 'raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/'
+          curl --fail --silent "${URL}llms.txt" | grep -q '(https://hse.nalinor.dev/algebra/theory.md)'
+          # Every page has its Markdown at <path>.md; the home page at index.md
+          curl --fail --silent "${URL}algebra/theory.md" | grep -q '^course: algebra'
+          curl --fail --silent "${URL}calculus.md" | grep -q 'https://hse.nalinor.dev/calculus/kr1.md'
+          curl --fail --silent "${URL}index.md" | grep -q '^# Конспекты ПИ ФКН'
+          # Dates from git history: a shallow checkout would leave the sitemap without lastmod
+          curl --fail --silent "${URL}sitemap.xml" | grep -q '<loc>https://hse.nalinor.dev/calculus/kr1/</loc><lastmod>'
+          curl --fail --silent --head "${URL}favicon.ico" >/dev/null
+          curl --fail --silent --head "${URL}favicon-120.png" >/dev/null
           # Clients without JS get the Markdown link inside #root (converters drop <noscript>)
-          curl --fail --silent "${URL}algebra/theory/" | grep -q '<div id="root"><div class="static-fallback">.*raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/theory/algebra.md'
+          curl --fail --silent "${URL}algebra/theory/" | grep -q '<div id="root"><div class="static-fallback">.*https://hse.nalinor.dev/algebra/theory.md'
           curl --fail --silent "${URL}sw.js" >/dev/null
           curl --fail --silent "${URL}offline-manifest.json" | grep -q '"precache"'

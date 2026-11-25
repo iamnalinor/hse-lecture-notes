@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DESCRIPTION_MAX,
   FALLBACK_CLASS,
   fallbackArticle,
   fallbackBody,
   headTags,
   llmsTxt,
+  markdownUrl,
   pageUrl,
   robotsTxt,
   routeOf,
   SITE_DESCRIPTION,
   sitemapXml,
   type SitePage,
+  snippet,
 } from "#web/domain/seo.ts";
 
 import shell from "../../index.html?raw";
@@ -49,7 +52,7 @@ describe("seo", () => {
       '<link rel="canonical" href="https://hse.nalinor.dev/algebra/01_sep03_matrices/" />',
     );
     expect(tags).toContain(
-      "https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md",
+      '<link rel="alternate" type="text/markdown" href="https://hse.nalinor.dev/algebra/01_sep03_matrices.md" />',
     );
     const json = /<script type="application\/ld\+json">(?<data>.*)<\/script>/u.exec(tags)?.groups?.[
       "data"
@@ -81,7 +84,8 @@ describe("seo", () => {
   it("escapes the text it puts into HTML, also inside JSON-LD", () => {
     expect(fallbackBody(lecture)).toContain("матрицы &lt;и&gt; «операции»");
     const tags = headTags({ ...lecture, name: "</script><b>" });
-    expect(tags.split("</script>")).toHaveLength(2);
+    // Two JSON-LD scripts (the page, its crumbs): the name closes neither.
+    expect(tags.split("</script>")).toHaveLength(3);
     expect(tags).toContain(String.raw`\u003c/script>\u003cb>`);
   });
 
@@ -109,15 +113,13 @@ describe("seo", () => {
   it("points clients without scripts to the Markdown of this very page, outside <noscript>", () => {
     const body = fallbackBody(lecture);
     expect(body).not.toContain("noscript");
-    expect(body).toContain(
-      'href="https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md"',
-    );
+    expect(body).toContain('href="https://hse.nalinor.dev/algebra/01_sep03_matrices.md"');
     expect(body).toContain('href="https://hse.nalinor.dev/llms.txt"');
     expect(fallbackBody(home)).toContain('href="https://hse.nalinor.dev/llms.txt"');
     expect(fallbackBody(home, { children: [lecture] })).toContain(
-      '<a href="https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md">Алгебра, лекция 1: матрицы</a>',
+      '<a href="https://hse.nalinor.dev/algebra/01_sep03_matrices/">Алгебра, лекция 1: матрицы</a> (<a href="https://hse.nalinor.dev/algebra/01_sep03_matrices.md">Markdown</a>)',
     );
-    expect(fallbackBody(home)).not.toContain("Markdown страниц раздела");
+    expect(fallbackBody(home)).not.toContain("Страницы раздела");
     expect(headTags(lecture)).toContain(
       '<link rel="alternate" type="text/plain" href="https://hse.nalinor.dev/llms.txt" title="llms.txt" />',
     );
@@ -137,9 +139,37 @@ describe("seo", () => {
     const llms = llmsTxt("Конспекты", [{ pages: [lecture], title: "Алгебра" }]);
     expect(llms).toMatch(/^# Конспекты ПИ ФКН\n\n> Конспекты\n/u);
     expect(llms).toContain(
-      "## Алгебра\n\n- [Алгебра, лекция 1: матрицы](https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/algebra/01_sep03_matrices.md)",
+      "## Алгебра\n\n- [Алгебра, лекция 1: матрицы](https://hse.nalinor.dev/algebra/01_sep03_matrices.md)",
     );
     expect(llms).toContain("https://github.com/iamnalinor/hse-lecture-notes");
+  });
+
+  it("dates pages from git in the sitemap and structured data, and skips unknown dates", () => {
+    const dated = {
+      ...lecture,
+      created: "2026-09-03T10:00:00+03:00",
+      modified: "2026-11-24T17:03:39+00:00",
+    };
+    expect(sitemapXml([dated])).toContain("<lastmod>2026-11-24T17:03:39+00:00</lastmod>");
+    expect(sitemapXml([lecture])).not.toContain("lastmod");
+    const tags = headTags(dated);
+    expect(tags).toContain('"datePublished":"2026-09-03T10:00:00+03:00"');
+    expect(tags).toContain('"dateModified":"2026-11-24T17:03:39+00:00"');
+    expect(headTags(lecture)).not.toContain("dateModified");
+  });
+
+  it("gives every page and the home page a Markdown address", () => {
+    expect(markdownUrl("")).toBe("https://hse.nalinor.dev/index.md");
+    expect(markdownUrl("algebra/theory")).toBe("https://hse.nalinor.dev/algebra/theory.md");
+  });
+
+  it("keeps descriptions within a search snippet", () => {
+    expect(SITE_DESCRIPTION.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    const long = "слово ".repeat(60).trim();
+    const cut = snippet(long);
+    expect(cut.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    expect(cut.endsWith("слово…")).toBe(true);
+    expect(snippet("коротко")).toBe("коротко");
   });
 
   it("describes the home page as its shell does", () => {
