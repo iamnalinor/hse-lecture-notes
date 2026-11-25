@@ -62,7 +62,7 @@ export const OfflineStatus = () => {
   const canRetry =
     canDownload && !isEverything && (progress === undefined || download.kind === "failed");
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+    <span className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 sm:inline-flex sm:w-auto sm:justify-start">
       <span>
         Офлайн: {count.saved} из {count.total}{" "}
         {plural(count.total, ["конспекта", "конспектов", "конспектов"])}

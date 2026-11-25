@@ -14,7 +14,8 @@ export const TopBar = () => (
         className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
         to={paths.home()}
       >
-        <span className="flex size-7 items-center justify-center rounded-md bg-brand text-caption font-black text-white">
+        {/* Phones: the same 44 px as the search field and the buttons beside it; 28 px from 640 px. */}
+        <span className="flex size-11 items-center justify-center rounded-lg bg-brand text-subhead font-black text-white sm:size-7 sm:rounded-md sm:text-caption">
           ПИ
         </span>
         <span className="sr-only whitespace-nowrap @min-[76rem]:not-sr-only">

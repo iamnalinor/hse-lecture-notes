@@ -76,7 +76,7 @@ export const ThemeToggle = () => {
   return (
     <button
       aria-label={label}
-      className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-ink hover:bg-wash"
+      className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-ink hover:bg-wash sm:size-10"
       disabled={isSwitching}
       onClick={async (event) => {
         setIsSwitching(true);

@@ -124,11 +124,13 @@
   cursor: pointer;
   transition: background-color 150ms ease-out;
 }
-/* Phones: the chat and theme buttons are the same 40 × 40 square; the word returns from 640 px. */
+/* Phones: the chat and theme buttons are the same 44 × 44 square as the logo and the search field;
+the word returns from 640 px. */
 @media (width < 640px) {
   .ai-head-btn {
     justify-content: center;
-    width: 40px;
+    width: 44px;
+    height: 44px;
     padding: 0;
   }
   .ai-head-btn span {
