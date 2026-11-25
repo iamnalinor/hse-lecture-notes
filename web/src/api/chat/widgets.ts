@@ -23,6 +23,9 @@ const getWindow = (): Window & {
 
 const scripts = new Map<string, Promise<void>>();
 
+const TELEGRAM_SDK_URL = "https://oauth.telegram.org/js/telegram-login.js";
+const TELEGRAM_SDK_ID = "hse-telegram-login-script";
+
 const loadExternalScript = (src: string, id: string): Promise<void> => {
   const existing = scripts.get(id);
   if (existing !== undefined) {
@@ -142,6 +145,16 @@ const ensureTurnstile = async (
 export const warmupChatWidgets = (siteKey: string, hooks: TurnstileHooks): void => {
   void getBrowserFingerprint();
   void warmupTurnstile(siteKey, hooks);
+  // Preloaded so the login popup is not delayed by the SDK download after the click.
+  void preloadTelegramSdk();
+};
+
+const preloadTelegramSdk = async (): Promise<void> => {
+  try {
+    await loadExternalScript(TELEGRAM_SDK_URL, TELEGRAM_SDK_ID);
+  } catch {
+    // Retried when the user starts the login.
+  }
 };
 
 const warmupTurnstile = async (siteKey: string, hooks: TurnstileHooks): Promise<void> => {
@@ -166,10 +179,7 @@ export const openTelegramLoginPopup = async (clientId: string, nonce: string): P
   if (clientId === "") {
     throw new Error("Telegram client ID is not configured");
   }
-  await loadExternalScript(
-    "https://oauth.telegram.org/js/telegram-login.js",
-    "hse-telegram-login-script",
-  );
+  await loadExternalScript(TELEGRAM_SDK_URL, TELEGRAM_SDK_ID);
   const sdk = getWindow().Telegram?.Login;
   if (sdk === undefined) {
     throw new Error("Telegram Login SDK unavailable");
