@@ -114,24 +114,37 @@ jobs:
             [[ -f "dist/$asset" ]] || gh release delete-asset latest "$asset" --yes
           done
 
-      - name: Sync chat search index (D1 + Vectorize)
-        id: chat_index
-        continue-on-error: true
-        timeout-minutes: 120
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  # The chat search index lives in D1 next to the chat tables. The job holds the same `cloudflare-d1`
+  # lock as the Worker deploy in backend.yml and applies the migrations itself before writing, so a
+  # push that changes both the schema and the notes never syncs into the old schema.
+  chat-index:
+    name: Sync chat search index (D1 + Vectorize)
+    needs: build
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    concurrency:
+      group: cloudflare-d1
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Apply D1 migrations
+        working-directory: backend
         run: |
-          if [[ -n "$CLOUDFLARE_ACCOUNT_ID" && -n "$CLOUDFLARE_API_TOKEN" ]]; then
-            uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow
-          else
-            echo "Missing Cloudflare credentials for chat search index sync." >&2
-            exit 1
-          fi
-
+          bun install --frozen-lockfile
+          bun run scripts/admin.ts init-db --remote
+      - name: Sync the index
+        id: chat_index
+        timeout-minutes: 120
+        run: uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow
       - name: Report stale chat search index
-        if: steps.chat_index.outcome == 'failure'
+        if: failure()
         run: |
           echo "::warning::Chat search index sync failed. Check the sync logs and rerun Build notes on main."
           echo "Chat search index sync failed. Check the sync logs and rerun Build notes on main." >> "$GITHUB_STEP_SUMMARY"

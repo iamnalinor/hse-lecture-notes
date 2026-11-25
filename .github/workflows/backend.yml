@@ -51,6 +51,10 @@ jobs:
     needs: verify
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    # One writer to D1 at a time: the search index sync in build.yml holds the same lock.
+    concurrency:
+      group: cloudflare-d1
+      cancel-in-progress: false
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
