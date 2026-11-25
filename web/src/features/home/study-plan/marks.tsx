@@ -24,9 +24,14 @@ export const ModuleEdges = () => (
   </div>
 );
 
+/** Today's line: opaque, so the dashed copy over the group labels matches it exactly where both lie. */
+const LINE = "color-mix(in srgb, var(--ink) 70%, var(--card))";
+const DASHES = `repeating-linear-gradient(to bottom, ${LINE} 0 3px, transparent 3px 6px)`;
+
 /**
 Today: a thin line with an arrow at the top, at today's place inside the current module. Group labels
-(`z-6`) cover the line; `ghost` draws it again, faint, over them, so it dims there instead of breaking.
+(`z-6`) cover the line; `ghost` draws it again over them, dashed, so it runs on under them in the same
+colour and width. No transform on the line: a half-pixel shift would blur it into two lighter pixels.
 */
 export const TodayMark = ({
   ghost = false,
@@ -43,12 +48,15 @@ export const TodayMark = ({
     >
       <div className="relative" style={{ gridColumn: today.module + 1, gridRow: 1 }}>
         <div
-          className={`absolute inset-y-0 w-px -translate-x-1/2 ${ghost ? "bg-ink/25" : "bg-ink/70"}`}
+          className="absolute inset-y-0 w-px"
           data-today-mark={ghost ? undefined : ""}
-          style={{ left: `${String(today.fraction * 100)}%` }}
+          style={{ background: ghost ? DASHES : LINE, left: `${String(today.fraction * 100)}%` }}
         >
           {ghost ? null : (
-            <span className="absolute -top-px left-1/2 size-0 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent border-t-ink/70" />
+            <span
+              className="absolute -top-px left-1/2 size-0 -translate-x-1/2 border-x-[5px] border-t-[6px] border-x-transparent"
+              style={{ borderTopColor: LINE }}
+            />
           )}
         </div>
       </div>
