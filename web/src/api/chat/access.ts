@@ -1,7 +1,7 @@
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
 
 import { awaitWithSignal } from "./abort.ts";
-import { apiJson, assertSameSession, getChatEnvConfig } from "./http.ts";
+import { apiJson, assertSameSession, describeApiFailure, getChatEnvConfig } from "./http.ts";
 import {
   readStoredAuth,
   saveAllowanceToken,
@@ -92,7 +92,7 @@ const refreshAllowance = async (context: AccessContext): Promise<ChatAccess> =>
     }
     const res = await postAllowance(context);
     if (!res.ok) {
-      throw new Error(`Allowance error (${res.status})`);
+      throw new Error(describeApiFailure(res));
     }
     const data = res.data as AllowanceResponse;
     saveBrowserToken(data.browserToken);

@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { classifyError } from "../public-error";
 import { parseClientFrame } from "./client-frame";
 import { ContextSizeError } from "./history";
 import { executeAgentRun } from "./agent-loop";
@@ -400,10 +401,13 @@ export class ChatRunner extends DurableObject<Env> {
 
       safeClose(1000, "done");
     } catch (err) {
+      const failure = err instanceof ContextSizeError ? null : classifyError(err);
       safeSend({
         type: "error",
-        code: err instanceof ContextSizeError ? "context_too_large" : "internal_error",
-        message: err instanceof ContextSizeError ? "Вопрос с цитатой слишком длинный. Сократи его и попробуй снова." : "Не удалось обработать запрос. Попробуй ещё раз.",
+        code: failure?.code ?? "context_too_large",
+        message: failure
+          ? `${failure.message} Попробуй ещё раз. Код: ${failure.code}${failure.detail ? ` (${failure.detail})` : ""}.`
+          : "Вопрос с цитатой слишком длинный. Сократи его и попробуй снова.",
       });
       safeClose(1011, "internal_error");
     } finally {

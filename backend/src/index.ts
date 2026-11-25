@@ -1,4 +1,5 @@
 import { readBoundedJson } from "./request-json";
+import { classifyError } from "./public-error";
 import {
   handleAllowance,
   handleCreateNonce,
@@ -290,7 +291,12 @@ export default {
         stack: err instanceof Error ? err.stack?.slice(0, 600) : undefined,
         ...db.telemetry.snapshot(),
       });
-      return jsonResponse(500, { code: "internal_error", message: "Internal server error" }, allowedOrigin);
+      const failure = classifyError(err);
+      return jsonResponse(
+        failure.status,
+        { code: failure.code, message: failure.message, detail: failure.detail },
+        allowedOrigin,
+      );
     }
   },
 };

@@ -56,3 +56,24 @@ export const assertSameSession = (sessionToken: null | string): void => {
     throw new Error("Chat session changed");
   }
 };
+
+/**
+The server's own explanation of a failed call: message, then code, HTTP status and detail. A body
+without a message (a proxy page, an old Worker) still names the status, so nothing is a bare "500".
+*/
+export const describeApiFailure = (res: {
+  readonly data: unknown;
+  readonly status: number;
+}): string => {
+  const body = (typeof res.data === "object" && res.data !== null ? res.data : {}) as Record<
+    string,
+    unknown
+  >;
+  const text = (key: string): string | undefined =>
+    typeof body[key] === "string" && body[key] !== "" ? body[key] : undefined;
+  const code = text("code");
+  const detail = text("detail");
+  const meta = `${code === undefined ? "" : `${code}, `}HTTP ${String(res.status)}${detail === undefined ? "" : `: ${detail}`}`;
+  const message = text("message");
+  return message === undefined ? `Сервер ответил ошибкой (${meta})` : `${message} (${meta})`;
+};

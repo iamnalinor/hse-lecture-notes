@@ -1,4 +1,5 @@
 import { METADATA_PROMPT, SYSTEM_PROMPT } from "./system-prompt";
+import { classifyError } from "../public-error";
 import {
   buildMetadataTools,
   METADATA_TOOL_NAMES,
@@ -382,11 +383,12 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
           ? "upstream_error"
           : error instanceof ResponseEofError
             ? "upstream_eof"
-            : "internal_error";
+            : classifyError(error).code;
     if (!abort.signal.aborted) logEvent("error", "agent_run_exception", {
       runId,
       code: errorCode,
       upstreamStatus: error instanceof LlmUpstreamError ? error.status : undefined,
+      detail: classifyError(error).detail,
     });
     finalStatus = text.trim() ? "incomplete" : "error";
   } finally {

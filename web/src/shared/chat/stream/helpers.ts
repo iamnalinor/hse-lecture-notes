@@ -100,11 +100,9 @@ export const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs)
   setters.setUnsent(null);
   setters.setBlock(null);
   setters.setIsStreaming(true);
-  const retryId = args.retryMessage?.id;
-  if (retryId !== undefined) {
-    setters.setMessages((prev) => {
-      return resetRetryAssistant(prev, retryId);
-    });
+  if (args.retryMessage !== undefined) {
+    // The failed answer stays on screen until the server accepts the run (`onMeta` resets it):
+    // a retry that fails again early must not flash the running state.
     return;
   }
   if (args.keepDraft !== true) {

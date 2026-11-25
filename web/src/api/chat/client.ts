@@ -8,7 +8,7 @@ import {
 } from "#web/domain/chat/model.ts";
 
 import { ensureChatAllowance } from "./access.ts";
-import { apiJson, assertSameSession, getChatEnvConfig } from "./http.ts";
+import { apiJson, assertSameSession, describeApiFailure, getChatEnvConfig } from "./http.ts";
 import {
   clearAllowanceToken,
   readStoredAuth,
@@ -97,7 +97,7 @@ const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string
   const nonceRes = await apiJson("/v1/auth/nonce", { method: "POST" });
   const nonceData = nonceRes.data as { readonly nonce?: string };
   if (!nonceRes.ok || typeof nonceData.nonce !== "string") {
-    throw new Error("Failed to obtain login nonce");
+    throw new Error(describeApiFailure(nonceRes));
   }
   return nonceData.nonce;
 };
@@ -116,7 +116,7 @@ export const loginViaTelegram = async (
   });
   assertSameSession(sessionToken);
   if (!loginRes.ok) {
-    throw new Error("Telegram login rejected by server");
+    throw new Error(describeApiFailure(loginRes));
   }
   const loginData = loginRes.data as {
     readonly browserToken: string;

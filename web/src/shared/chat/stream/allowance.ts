@@ -53,7 +53,7 @@ export const fetchAllowanceOutcome = async (
       return { kind: "cancelled" };
     }
     const detail = error instanceof Error ? error.message : String(error);
-    return { kind: "error", message: `Ошибка доступа (/v1/allowance): ${detail}` };
+    return { kind: "error", message: `Ошибка доступа к чату: ${detail}` };
   } finally {
     context.onChecked();
   }

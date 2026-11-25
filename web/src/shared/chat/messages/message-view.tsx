@@ -59,6 +59,8 @@ const AssistantFootActions = ({ contentTex, canRetry, onRetry }: FootActionsProp
 
 type Props = {
   readonly canRetry: boolean;
+  /** The retry of this failed answer is waiting for the server. */
+  readonly isRetrying?: boolean;
   readonly isCheckingBrowser?: boolean;
   readonly isBackgroundResponse?: boolean;
   readonly message: ChatMessage;
@@ -114,8 +116,9 @@ const UserMessageView = ({
 const MessageError = ({
   message,
   canRetry,
+  isRetrying,
   onRetry,
-}: Pick<Props, "canRetry" | "message"> & { onRetry: () => void }): JSX.Element => (
+}: Pick<Props, "canRetry" | "isRetrying" | "message"> & { onRetry: () => void }): JSX.Element => (
   <div className="ai-error">
     <div className="ai-error-row">
       <AlertIcon />
@@ -126,11 +129,18 @@ const MessageError = ({
         </div>
       </div>
     </div>
-    {canRetry && (
-      <button className="ai-btn ai-btn-2" onClick={onRetry} type="button">
-        <RetryIcon />
-        Повторить
+    {isRetrying === true ? (
+      <button aria-busy="true" className="ai-btn ai-btn-2" disabled type="button">
+        <span aria-hidden="true" className="ai-spin" />
+        Повторяем…
       </button>
+    ) : (
+      canRetry && (
+        <button className="ai-btn ai-btn-2" onClick={onRetry} type="button">
+          <RetryIcon />
+          Повторить
+        </button>
+      )
     )}
   </div>
 );
@@ -141,16 +151,24 @@ const incompleteCaption = (status: ChatMessage["status"]): string =>
 const AssistantContent = ({
   message,
   canRetry,
+  isRetrying,
   onRetry,
   onJumpToBlock,
-}: Pick<Props, "canRetry" | "message" | "onJumpToBlock"> & {
+}: Pick<Props, "canRetry" | "isRetrying" | "message" | "onJumpToBlock"> & {
   onRetry: () => void;
 }): JSX.Element | null => {
   if (
     message.status === "error" ||
     (message.status === "incomplete" && message.contentTex === "")
   ) {
-    return <MessageError canRetry={canRetry} message={message} onRetry={onRetry} />;
+    return (
+      <MessageError
+        canRetry={canRetry}
+        isRetrying={isRetrying}
+        message={message}
+        onRetry={onRetry}
+      />
+    );
   }
   if (message.contentTex === "") {
     return null;
@@ -179,6 +197,7 @@ const AssistantContent = ({
 
 const AssistantMessageView = ({
   canRetry,
+  isRetrying,
   isCheckingBrowser,
   isBackgroundResponse,
   message,
@@ -205,6 +224,7 @@ const AssistantMessageView = ({
       <div className="ai-body ai-flow" data-answer-id={isFinished ? message.id : undefined}>
         <AssistantContent
           canRetry={canRetry}
+          isRetrying={isRetrying}
           message={message}
           onJumpToBlock={onJumpToBlock}
           onRetry={retrySelf}

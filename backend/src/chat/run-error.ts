@@ -1,3 +1,5 @@
+import { PUBLIC_ERROR_MESSAGES } from "../public-error";
+
 /** Public explanations use fixed strings; upstream payloads and internal exceptions stay private. */
 export function runErrorMessage(code: string | null, hasText: boolean): string {
   const reasons: Record<string, string> = {
@@ -11,6 +13,9 @@ export function runErrorMessage(code: string | null, hasText: boolean): string {
     topic_invalid: "Модель вернула некорректную тему чата.",
     oauth_unavailable: "Авторизация сервиса модели недоступна.",
     internal_error: "Внутренняя ошибка сервера.",
+    storage_quota_exceeded: PUBLIC_ERROR_MESSAGES.storage_quota_exceeded!,
+    storage_unavailable: PUBLIC_ERROR_MESSAGES.storage_unavailable!,
+    search_unavailable: PUBLIC_ERROR_MESSAGES.search_unavailable!,
   };
   const reason = reasons[code ?? ""] ?? "Ответ не удалось завершить.";
   return `${reason} ${hasText ? "Полученный текст сохранён. " : ""}Попробуй ещё раз.${code && code in reasons ? ` Код: ${code}.` : ""}`;

@@ -181,7 +181,7 @@ it("does not save a late response from a different session", async () => {
 
 it("exposes an HTTP failure and releases the shared request for retry", async () => {
   fetchMock.mockResolvedValueOnce(Response.json({}, { status: 403 }));
-  await expect(ensureChatAllowance(hooks)).rejects.toThrow("Allowance error (403)");
+  await expect(ensureChatAllowance(hooks)).rejects.toThrow("HTTP 403");
   await expect(ensureChatAllowance(hooks)).resolves.toMatchObject({ allowanceToken: "allowance" });
 });
 
@@ -231,4 +231,21 @@ it("gets separate single-use tokens before and after Telegram login and sends th
     sessionToken: "session",
   });
   expect(new Headers(posts[1]?.[1]?.headers).get("X-Session-Token")).toBe("session");
+});
+
+it("shows the server's explanation, code and detail instead of a bare status (D1 limit, 25.11.2026)", async () => {
+  fetchMock.mockResolvedValueOnce(
+    Response.json(
+      {
+        code: "storage_quota_exceeded",
+        detail: "D1_ERROR: daily row read limit",
+        message: "Хранилище чата исчерпало дневной лимит Cloudflare D1.",
+      },
+      { status: 503 },
+    ),
+  );
+  const error = await captureRejection(ensureChatAllowance(hooks));
+  expect(error.message).toBe(
+    "Хранилище чата исчерпало дневной лимит Cloudflare D1. (storage_quota_exceeded, HTTP 503: D1_ERROR: daily row read limit)",
+  );
 });

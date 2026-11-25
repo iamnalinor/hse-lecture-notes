@@ -67,6 +67,7 @@ export const ChatLog = ({
       {chat.messages.map((message) => (
         <ChatMessageView
           canRetry={canRetry && message === last}
+          isRetrying={chat.isStreaming && message === last && message.status === "error"}
           isBackgroundResponse={chat.isStreaming && !chat.canStop && message === last}
           isCheckingBrowser={chat.isCheckingBrowser && message === last}
           key={message.renderKey ?? message.id}

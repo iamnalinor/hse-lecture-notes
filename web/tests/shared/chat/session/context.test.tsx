@@ -864,3 +864,47 @@ it("retries the unsent question after a rate limit with only retryAfterSec", asy
     vi.useRealTimers();
   }
 });
+
+it("keeps a failed answer on screen while its retry waits for the server, then starts it on meta", async () => {
+  const chat = mount();
+  await act(() => chat.current.send("Q"));
+  const first = vi.mocked(openChatMessageStream).mock.calls[0]?.[2];
+  act(() => {
+    first?.onMeta({
+      assistantMessageId: "a",
+      userMessageId: "u",
+      runId: "r",
+      threadId: "t",
+      threadTitle: "title",
+      degraded: { active: false },
+    });
+  });
+  act(() => {
+    first?.onError({ code: "storage_unavailable", message: "Хранилище недоступно." });
+  });
+  const failed = chat.current.messages.at(-1);
+  expect(failed?.status).toBe("error");
+  await act(() => chat.current.retryMessage("a"));
+  // No flash of the running state between the click and the server's answer.
+  expect(chat.current.messages.at(-1)).toMatchObject({
+    status: "error",
+    errorMessage: "Хранилище недоступно.",
+  });
+  expect(chat.current.isStreaming).toBe(true);
+  const retry = vi.mocked(openChatMessageStream).mock.calls.at(-1)?.[2];
+  act(() => {
+    retry?.onMeta({
+      assistantMessageId: "a",
+      userMessageId: "u",
+      runId: "r2",
+      threadId: "t",
+      threadTitle: "title",
+      degraded: { active: false },
+    });
+  });
+  expect(chat.current.messages.at(-1)).toMatchObject({
+    status: "running",
+    errorMessage: null,
+    contentTex: "",
+  });
+});

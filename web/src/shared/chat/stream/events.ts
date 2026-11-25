@@ -7,6 +7,7 @@ import {
   applyMetaMessageIds,
   patchLastAssistant,
   rejectOptimisticTurn,
+  resetRetryAssistant,
   rollbackOptimisticTurn,
 } from "./helpers.ts";
 
@@ -136,10 +137,15 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
       failTurn(deps, runId, payload);
     },
     onMeta: (payload) => {
+      const isFirstMeta = runId === null;
       runId = payload.runId;
       setters.setActiveThreadId(payload.threadId);
       if (payload.replayed !== true) {
         setters.setDegraded(payload.degraded);
+      }
+      const retryId = args.retryMessage?.id;
+      if (retryId !== undefined && isFirstMeta) {
+        setters.setMessages((prev) => resetRetryAssistant(prev, retryId));
       }
       setters.setMessages((prev) =>
         applyMetaMessageIds(prev, {
