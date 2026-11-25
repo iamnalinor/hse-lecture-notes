@@ -357,3 +357,24 @@ only push them off the centre.
 .prose-notes > section:first-child > h2 {
   margin-top: 1.75rem;
 }
+
+/* Code in the notes: Pandoc marks tokens (`kw`, `dt`, `st`…); colors match the chat (`chat.css`). */
+pre.sourceCode :is(.kw, .cf, .pp, .im, .bu, .ex) {
+  color: var(--prob);
+}
+pre.sourceCode :is(.dt, .fu, .at) {
+  color: var(--def);
+}
+pre.sourceCode :is(.st, .ch, .vs, .ss) {
+  color: var(--ex);
+}
+pre.sourceCode :is(.dv, .bn, .fl, .cn, .sc) {
+  color: var(--thm);
+}
+pre.sourceCode :is(.co, .do, .an, .cv, .in) {
+  color: var(--muted);
+  font-style: italic;
+}
+pre.sourceCode :is(.al, .er) {
+  color: var(--red);
+}
