@@ -204,6 +204,8 @@ export const fallbackArticle = (fragment: string, route: string): string => {
 type FallbackContent = {
   /** The page text from `fallbackArticle`: search engines, previews and LLMs read it in one request. */
   readonly article?: string | undefined;
+  /** A not-found page has no Markdown of its own: skip the page-specific link. */
+  readonly isNotFound?: boolean;
   /** A course page lists the Markdown of its lectures and documents. */
   readonly children?: readonly SitePage[];
 };
@@ -216,7 +218,7 @@ converters drop `<noscript>` together with its links. React replaces it on mount
 */
 export const fallbackBody = (
   page: SitePage,
-  { article, children = [] }: FallbackContent = {},
+  { article, children = [], isNotFound = false }: FallbackContent = {},
 ): string => {
   const link = (href: string, text: string): string => `<a href="${escapeHtml(href)}">${text}</a>`;
   // A course page lists its lectures and documents: the page and its Markdown, one step to any of them.
@@ -225,7 +227,11 @@ export const fallbackBody = (
       `<li>${link(pageUrl(child.route), escapeHtml(child.name))} (${link(markdownUrl(child.route), "Markdown")})</li>`,
   );
   const links = [
-    `Текст страницы в Markdown: ${link(markdownUrl(page.route), escapeHtml(markdownUrl(page.route)))}`,
+    ...(isNotFound
+      ? []
+      : [
+          `Текст страницы в Markdown: ${link(markdownUrl(page.route), escapeHtml(markdownUrl(page.route)))}`,
+        ]),
     ...(page.pdf === undefined ? [] : [link(SITE_URL + page.pdf, "PDF")]),
     `Все страницы со ссылками на Markdown: ${link(LLMS_URL, LLMS_URL)}`,
     link(REPO_URL, "Исходники всех конспектов на GitHub"),

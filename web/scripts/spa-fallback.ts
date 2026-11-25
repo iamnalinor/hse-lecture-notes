@@ -155,7 +155,7 @@ const notFound: SitePage = {
 };
 await Bun.write(
   new URL("404.html", dist),
-  replaceIn(shell, ROOT, () => `${ROOT}${fallbackBody(notFound)}`),
+  replaceIn(shell, ROOT, () => `${ROOT}${fallbackBody(notFound, { isNotFound: true })}`),
 );
 
 const catalogFile = Bun.file(new URL("data/courses.json", dist));
