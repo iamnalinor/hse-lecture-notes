@@ -60,7 +60,7 @@ const AssistantFootActions = ({ contentTex, canRetry, onRetry }: FootActionsProp
 type Props = {
   readonly canRetry: boolean;
   /** The retry of this failed answer is waiting for the server. */
-  readonly isRetrying?: boolean;
+  readonly isRetrying?: boolean | undefined;
   readonly isCheckingBrowser?: boolean;
   readonly isBackgroundResponse?: boolean;
   readonly message: ChatMessage;

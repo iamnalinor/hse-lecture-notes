@@ -73,7 +73,10 @@ export const describeApiFailure = (res: {
     typeof body[key] === "string" && body[key] !== "" ? body[key] : undefined;
   const code = text("code");
   const detail = text("detail");
-  const meta = `${code === undefined ? "" : `${code}, `}HTTP ${String(res.status)}${detail === undefined ? "" : `: ${detail}`}`;
+  const status = `HTTP ${String(res.status)}`;
+  const meta = [code, detail === undefined ? status : `${status}: ${detail}`]
+    .filter((part) => part !== undefined)
+    .join(", ");
   const message = text("message");
   return message === undefined ? `Сервер ответил ошибкой (${meta})` : `${message} (${meta})`;
 };
