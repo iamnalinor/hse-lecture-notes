@@ -175,7 +175,7 @@ export async function parseResponsesSseStream(
       return;
     }
     const type = typeof evt.type === "string" ? evt.type : "";
-    if (type.startsWith("response.")) sawEvent = true;
+    if (type.startsWith("response.") || type === "error") sawEvent = true;
     const index = typeof evt.output_index === "number" ? evt.output_index : undefined;
     const item = object(evt.item);
     if (type === "response.output_item.added" && item) {

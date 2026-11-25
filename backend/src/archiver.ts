@@ -70,7 +70,8 @@ export async function runArchiveBatch(
   options: { archiveAfterDays?: number; batchLimit?: number; nowMs?: number } = {},
 ): Promise<ArchiveBatchStats> {
   const now = options.nowMs ?? Date.now();
-  const archiveAfterDays = options.archiveAfterDays ?? 30;
+  // At least one day: archived runs must stay available for the 24-hour run-based quota window.
+  const archiveAfterDays = Math.max(options.archiveAfterDays ?? 30, 1);
   const batchLimit = options.batchLimit ?? 50;
   const cutoff = now - archiveAfterDays * DAY_MS;
 

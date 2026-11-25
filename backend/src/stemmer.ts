@@ -25,6 +25,7 @@ const I_ENDING = /и$/;
 const NN_ENDING = /нн$/;
 const SOFT_SIGN = /ь$/;
 
+// Snowball defines R1/R2 on the whole word, so callers pass the full word.
 function findR2(rv: string): number {
   let seenVowel = false;
   let r1 = rv.length;
@@ -62,7 +63,7 @@ export function stemRussianWord(raw: string): string {
   let rv = match[2]!;
   if (!rv) return word;
 
-  const r2Start = findR2(rv);
+  const r2Start = Math.max(0, findR2(word) - head.length);
 
   // Step 1
   if (PERFECTIVE_GERUND_1.test(rv)) {

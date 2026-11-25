@@ -243,8 +243,12 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
         break;
       }
       for (const c of calls) seenIds.add(c.callId);
-      input.push(...result.outputItems);
-      newItems.push(...result.outputItems);
+      // Text from the topic stage is hidden from the user, so it must not enter later requests or replay.
+      const keptItems = topicStage
+        ? result.outputItems.filter((item) => (item as { type?: string }).type !== "message")
+        : result.outputItems;
+      input.push(...keptItems);
+      newItems.push(...keptItems);
       if (topicStage) {
         if (calls.length !== 1 || calls[0]!.name !== "set_topic") {
           errorCode = "topic_required";
