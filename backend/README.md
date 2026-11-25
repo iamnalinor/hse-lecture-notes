@@ -2,7 +2,7 @@
 
 Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
-Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The old `hse-lecture-notes-api.nalinor.workers.dev` stays on until every deployed build uses the new address.
+Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The old `hse-lecture-notes-api.nalinor.workers.dev` stays on (`workers_dev: true` in `wrangler.jsonc`) until every deployed build uses the new address; then set it to `false` and redeploy to retire the old endpoint.
 
 ## Architecture
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/nonce`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
