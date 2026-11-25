@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import {
   type ChatDocContext,
@@ -24,6 +24,8 @@ import {
   makeAssistantMsg,
   makeUserMsg,
 } from "#web/shared/chat/stream/helpers.ts";
+
+afterEach(() => vi.unstubAllEnvs());
 
 const state: {
   docContext: ChatDocContext;
@@ -170,6 +172,7 @@ it.each([
   ["/calculus/kr1", true],
   ["/aiya/04_nov24_integer_operations", true],
 ] as const)("shows the chat and scopes selection on %s", async (path, material) => {
+  vi.stubEnv("VITE_CHAT_API_URL", "https://api.test");
   state.docContext = parseDocContext(path);
   render(
     <>
