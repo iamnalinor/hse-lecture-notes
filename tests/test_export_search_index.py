@@ -143,11 +143,20 @@ def test_sync_recovers_fts_and_vector_deletions(tmp_path: Path) -> None:
         def embed_texts(self, texts):
             return [[0.1] for _ in texts]
 
+        def vector_ids(self):
+            return set(self.vectors)
+
+        def wait_for_mutation(self, pending):
+            assert pending["mutation_id"] == "change"
+
         def vectorize_upsert(self, vectors):
+            assert all(set(v["metadata"]) == {"course", "doc_kind", "block_kind", "content_hash"} for v in vectors)
             self.vectors.update(v["id"] for v in vectors)
+            return "change"
 
         def vectorize_delete(self, ids):
             self.vectors.difference_update(ids)
+            return "change"
 
     course = tmp_path / "notes/algebra"
     course.mkdir(parents=True)
@@ -157,9 +166,30 @@ def test_sync_recovers_fts_and_vector_deletions(tmp_path: Path) -> None:
     cf = Client()
     with pytest.raises(RuntimeError, match="FTS unavailable"):
         esi.sync_to_cloudflare(cf, docs, blocks, refs)
-    assert esi.sync_to_cloudflare(cf, docs, blocks, refs)["blocks_upserted"] == 1
+    confirm = cf.wait_for_mutation
+    def timeout(mutation_id):
+        raise RuntimeError("not confirmed")
+    cf.wait_for_mutation = timeout
+    with pytest.raises(RuntimeError, match="not confirmed"):
+        esi.sync_to_cloudflare(cf, docs, blocks, refs)
+    assert cf.db.execute("SELECT vectorized FROM course_blocks").fetchone()[0] == 0
+    assert cf.db.execute("SELECT count(*) FROM service_config WHERE key='index_meta'").fetchone()[0] == 0
+    cf.wait_for_mutation = confirm
+    assert esi.sync_to_cloudflare(cf, docs, blocks, refs)["vectors_upserted"] == 0
+    assert cf.db.execute("SELECT vectorized FROM course_blocks").fetchone()[0] == 1
     assert cf.db.execute("SELECT count(*) FROM course_blocks_fts").fetchone()[0] == 1
     assert cf.vectors == {blocks[0].id}
+    # Old-format or failed pending upsert: an advanced marker and stale payload
+    # must lead to a new confirmed mutation, even with the same text in D1.
+    cf.db.execute("INSERT INTO service_config VALUES ('pending_vector_mutation', ?, 0)",
+                  [esi.json.dumps({"action": "upsert", "mutation_id": "lost", "blocks": [[blocks[0].id, blocks[0].content_hash]]})])
+    def lost_marker(pending):
+        if pending["mutation_id"] == "lost":
+            raise esi.UnconfirmedMutation("never applied")
+        confirm(pending)
+    cf.wait_for_mutation = lost_marker
+    assert esi.sync_to_cloudflare(cf, docs, blocks, refs)["vectors_upserted"] == 1
+    assert cf.db.execute("SELECT vectorized FROM course_blocks").fetchone()[0] == 1
     path.unlink()
     esi.sync_to_cloudflare(cf, [], [], [], skip_vectorize=True)
     esi.sync_to_cloudflare(cf, [], [], [])
@@ -178,3 +208,41 @@ def test_sync_recovers_fts_and_vector_deletions(tmp_path: Path) -> None:
     esi.sync_to_cloudflare(cf, *scoped, only_course="discrete", global_blocks=full[1])
     assert cf.vectors == {b.id for b in full[1] if b.vectorize_candidate}
     assert cf.db.execute("SELECT COUNT(*) FROM course_blocks WHERE course = 'algebra'").fetchone()[0] == 1
+
+
+def test_vectorize_confirmation_checks_actual_hashes_and_deletions(monkeypatch):
+    cf = esi.CloudflareClient("account", "token", "db", "index")
+    rows = []
+    def request(method, path, body=None):
+        if path.endswith("/info"):
+            return {"result": {"processedUpToMutation": "unrelated"}}
+        assert method == "POST" and body == {"ids": ["a", "b"]}
+        if path.endswith("/delete_by_ids"):
+            return {"result": {"mutationId": "delete"}}
+        assert path.endswith("/get_by_ids")
+        return {"result": rows.pop(0)}
+    monkeypatch.setattr(cf, "_req", request)
+    monkeypatch.setattr(esi.time, "sleep", lambda _: None)
+    good = [{"id": "b", "metadata": {"content_hash": "2"}}, {"id": "a", "metadata": {"content_hash": "1"}}]
+    rows.extend([good[:1], [{"id": "a"}, good[0]], good])
+    cf.wait_for_mutation({"action": "upsert", "mutation_id": "upsert", "blocks": [["a", "1"], ["b", "2"]]})
+    assert not rows
+    rows.extend([good[:1], []])
+    cf.wait_for_mutation({"action": "delete", "mutation_id": cf.vectorize_delete(["a", "b"]), "ids": ["a", "b"]})
+    assert not rows
+
+
+def test_ambiguous_post_failure_is_not_replayed(monkeypatch):
+    import io
+
+    import pytest
+
+    client = esi.CloudflareClient("account", "token", "db", "index")
+    writes = []
+    def ambiguous_response(req, timeout):
+        writes.append(req.data)
+        raise esi.urllib.error.HTTPError(req.full_url, 503, "ambiguous", {}, io.BytesIO(b""))
+    monkeypatch.setattr(esi.urllib.request, "urlopen", ambiguous_response)
+    with pytest.raises(RuntimeError, match="HTTP 503"):
+        client.d1_query("INSERT INTO course_blocks_fts (id) VALUES (?)", ["applied"])
+    assert len(writes) == 1

@@ -5,9 +5,8 @@ import type { PdfDoc } from "#web/domain/preps.ts";
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { DocPage } from "#web/shared/ui/doc-page.tsx";
-import { DocToc, WIDE_QUERY } from "#web/shared/ui/toc/document.tsx";
+import { DocToc, useIsWideToc } from "#web/shared/ui/toc/document.tsx";
 import { TocSheet } from "#web/shared/ui/toc/sheet.tsx";
-import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
 import { FragmentView } from "./fragment-view.tsx";
 import { useScrollToHash } from "./use-scroll-to-hash.ts";
@@ -44,7 +43,7 @@ export const CourseDocument = ({
   const meta = useDocMeta(course, docId);
   const html = useFragment(course, docId);
   useScrollToHash();
-  const isWide = useIsMatching(WIDE_QUERY);
+  const isWide = useIsWideToc();
 
   return (
     <DocPage

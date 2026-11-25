@@ -1,3 +1,4 @@
+import { readBoundedJson } from "./request-json";
 import {
   handleAllowance,
   handleCreateNonce,
@@ -10,7 +11,8 @@ import { ChatRunner } from "./chat/runner";
 import { randomToken } from "./crypto";
 import { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
-import { loadPolicy, sweepExpiredRuns } from "./quotas";
+import { handleGetThread } from "./chat/thread-route";
+import { sweepExpiredRuns } from "./quotas";
 import type { Env } from "./types";
 
 export { ChatRunner };
@@ -68,135 +70,6 @@ function extractSessionToken(request: Request): string | null {
   return null;
 }
 
-async function readBoundedJson(request: Request, maxBytes = 32_768): Promise<Record<string, unknown> | null> {
-  const cl = Number(request.headers.get("Content-Length") ?? "0");
-  if (cl > maxBytes) return null;
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > maxBytes) return null;
-  if (!text.trim()) return {};
-  try {
-    const parsed = JSON.parse(text);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * GET /v1/thread?threadId=...&beforeUpdatedAt=...
- * Authorized by sessionToken (logged-in) or browserToken (guest) — NO Turnstile and NO IP binding!
- * Never selects `agent_items_json`.
- */
-async function handleGetThread(
-  env: Env,
-  db: TrackedD1,
-  request: Request,
-  url: URL,
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  const requestedThreadId = url.searchParams.get("threadId")?.trim() || null;
-  const beforeUpdatedAtRaw = url.searchParams.get("beforeUpdatedAt");
-  const beforeUpdatedAt =
-    beforeUpdatedAtRaw && /^\d+$/.test(beforeUpdatedAtRaw) ? Number(beforeUpdatedAtRaw) : null;
-
-  const btCheck = await resolveBrowserToken(
-    env.BROWSER_TOKEN_SECRET,
-    request.headers.get("X-Browser-Token"),
-  );
-
-  const session = await verifyActiveSession(env, db, extractSessionToken(request));
-  if (!session && btCheck.status === "missing") {
-    return { status: 401, body: { code: "unauthorized", message: "Session or browser token required" } };
-  }
-
-  const policy = await loadPolicy(db);
-  const pageSize = policy.threadsPageSize;
-
-  // Query threads list (1 query)
-  const owner = session ? "telegram_id = ?" : "browser_id = ? AND telegram_id IS NULL";
-  const ownerId = session?.telegramId ?? (btCheck.status === "ok" ? btCheck.browserId : "");
-  const beforeId = url.searchParams.get("beforeId");
-  const cursor = beforeUpdatedAt === null ? "" : beforeId ? "AND (updated_at, id) < (?, ?)" : "AND updated_at < ?";
-  const bounds = beforeUpdatedAt === null ? [] : beforeId ? [beforeUpdatedAt, beforeId] : [beforeUpdatedAt];
-  const threadsRes = await db.all<{ id: string; title: string; generated_title: string | null; context_limited: number; updated_at: number }>(
-    db.prepare(`SELECT id, title, generated_title, context_limited, updated_at FROM chat_threads
-                WHERE ${owner} ${cursor} ORDER BY updated_at DESC, id DESC LIMIT ?`)
-      .bind(ownerId, ...bounds, pageSize + 1),
-  );
-
-  const threads = threadsRes.results.slice(0, pageSize).map((t) => ({
-    id: t.id,
-    title: t.generated_title ?? t.title,
-    generatedTitle: t.generated_title,
-    contextLimited: Boolean(t.context_limited),
-    updatedAt: t.updated_at,
-  }));
-
-  const targetThreadId = requestedThreadId ?? (beforeUpdatedAt === null ? threads[0]?.id : null) ?? null;
-  let thread: Record<string, unknown> | null = null;
-  let requestedThreadMissing = false;
-
-  if (targetThreadId) {
-    // Verify ownership + fetch last 50 messages (WITHOUT agent_items_json) in 1 batch
-    const [thrRes, msgRes] = await db.batch<Record<string, unknown>>([
-      db.prepare(`SELECT id, title, generated_title, context_limited, created_at, updated_at
-                  FROM chat_threads WHERE id = ? AND ${owner}`).bind(targetThreadId, ownerId),
-      db
-        .prepare(
-          `SELECT id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json, suggestion, error_message, run_id, created_at, updated_at
-           FROM chat_messages
-           WHERE thread_id = ?
-           ORDER BY seq DESC
-           LIMIT 50`,
-        )
-        .bind(targetThreadId),
-    ]);
-
-    const thrRow = thrRes?.results[0] as
-      | { id: string; title: string; generated_title: string | null; context_limited: number; created_at: number; updated_at: number }
-      | undefined;
-
-    if (!thrRow) {
-      if (requestedThreadId) requestedThreadMissing = true;
-    } else {
-      const messages = [...(msgRes?.results ?? [])].reverse().map((m) => ({
-        id: m.id,
-        seq: m.seq,
-        page: { course: m.course, docId: m.doc_id },
-        role: m.role,
-        status: m.status,
-        contentTex: m.content_tex,
-        quote: typeof m.quote_json === "string" ? safeJsonParse(m.quote_json) : null,
-        suggestion: typeof m.suggestion === "string" ? m.suggestion : null,
-        steps: typeof m.steps_json === "string" ? safeJsonParse(m.steps_json) : [],
-        errorMessage: m.error_message ?? null,
-        runId: m.run_id ?? null,
-        createdAt: m.created_at,
-        updatedAt: m.updated_at,
-      }));
-      thread = {
-        id: thrRow.id,
-        title: thrRow.generated_title ?? thrRow.title,
-        generatedTitle: thrRow.generated_title,
-        contextLimited: Boolean(thrRow.context_limited),
-        createdAt: thrRow.created_at,
-        updatedAt: thrRow.updated_at,
-        messages,
-      };
-    }
-  }
-
-  return {
-    status: 200,
-    body: {
-      threads,
-      hasMore: threadsRes.results.length > pageSize,
-      thread,
-      requestedThreadMissing,
-    },
-  };
-}
 
 /**
  * GET /v1/runs/:runId/status
@@ -274,22 +147,30 @@ async function handleGetRunStatus(
   };
 }
 
-function safeJsonParse(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+
+
+function configurationError(env: Env): string | null {
+  for (const name of ["TELEGRAM_CLIENT_ID", "BROWSER_TOKEN_SECRET", "ALLOWANCE_JWT_SECRET", "TURNSTILE_SECRET_KEY"] as const) {
+    if (!env[name]?.trim()) return `Required Worker secret ${name} is missing or empty`;
   }
+  return null;
 }
 
 export default {
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    const error = configurationError(env);
+    if (error) throw new Error(error);
     // Delegate immediately to SQLite-backed DO (30s CPU budget instead of 10ms Free Cron limit)
     const stub = env.CHAT_RUNNER.get(env.CHAT_RUNNER.idFromName("daily-archiver"));
     ctx.waitUntil(stub.runDailyArchive());
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
+    const error = configurationError(env);
+    if (error) {
+      logEvent("error", "configuration_error", { message: error });
+      return jsonResponse(503, { code: "configuration_error", message: error }, null);
+    }
     const url = new URL(request.url);
     const allowedOrigin = getAllowedOrigin(request, env);
 
@@ -362,7 +243,8 @@ export default {
       }
 
       if (url.pathname === "/v1/auth/logout" && request.method === "POST") {
-        const body = (await readBoundedJson(request)) ?? {};
+        const body = await readBoundedJson(request);
+        if (!body) return finish(400, { code: "invalid_json", message: "Invalid JSON body" });
         const token =
           typeof body.sessionToken === "string" ? body.sessionToken : extractSessionToken(request);
         const res = await handleLogout(env, db, token);
@@ -387,7 +269,7 @@ export default {
       }
 
       if (url.pathname === "/v1/thread" && request.method === "GET") {
-        const res = await handleGetThread(env, db, request, url);
+        const res = await handleGetThread(env, db, request, url, extractSessionToken(request));
         return finish(res.status, res.body);
       }
 

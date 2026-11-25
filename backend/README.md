@@ -55,6 +55,13 @@ bunx wrangler secret put OWNER_TELEGRAM_ID
 bun run deploy
 ```
 
+The daily cron cleans expired nonces and sessions. With R2 disabled it logs
+`archive_skipped_no_bucket` and keeps conversation history and usage records in D1.
+To enable archiving later, create a private R2 bucket and add it to Wrangler's
+`r2_buckets` with the binding `ARCHIVE_BUCKET`. The cron then copies inactive
+records after `archiveAfterDays` (default 30 days) and verifies the R2 copy before
+deleting D1 rows. R2 retention is configured separately on the bucket.
+
 ## Managing D1 State (No Admin HTTP Endpoints)
 
 ```bash
@@ -109,4 +116,17 @@ System instructions and tool definitions remain stable. The immutable snapshot o
 
 Bootstrap defaults and production policy target a $15 rolling seven-day global budget, warning at $12; actual plus reserved spend gates admission. Standard tariffs for Terra and Luna were rechecked on 2026-11-24 against [official pricing](https://developers.openai.com/api/docs/pricing.md); pricing version 1 remains valid. Cache savings use returned usage, not an assumed cache hit rate.
 
-Detailed release and production verification: [production checks](../docs/chat-production-checks.md).
+
+
+### Search index provisioning
+
+Before the first metadata-aware sync, create the three string indexes on the existing 1024-dimensional cosine index. Run these commands in `backend/` with the deployment account.
+
+```sh
+bunx wrangler vectorize create-metadata-index hse-course-blocks --property-name=course --type=string
+bunx wrangler vectorize create-metadata-index hse-course-blocks --property-name=doc_kind --type=string
+bunx wrangler vectorize create-metadata-index hse-course-blocks --property-name=block_kind --type=string
+bunx wrangler vectorize list-metadata-index hse-course-blocks
+```
+
+After the metadata indexes are ready, apply D1 migrations and run `uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow` from the repository root. Migration 0003 marks existing embeddings for refresh. D1 and FTS cover the full corpus. The exporter reconciles the dedicated Vectorize index against the highest-priority 4,800 block IDs and waits for each mutation to be processed. Run one sync at a time. If a run fails, rerun the same command. The main-branch Build notes workflow reports sync failures in its summary and still publishes the notes.

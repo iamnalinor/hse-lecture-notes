@@ -45,6 +45,30 @@ const RetryButton = (): JSX.Element => {
   );
 };
 
+const guestLimitTitle = (block: ChatBlock | null): string => {
+  if (block?.code === "guest_budget_exceeded") {
+    return "Общий бюджет гостевых ответов исчерпан";
+  }
+  return typeof block?.nextAvailableAt === "number"
+    ? "Твой лимит гостевых ответов исчерпан"
+    : "Для отправки вопроса нужен вход";
+};
+
+const GuestLimit = ({ block }: { readonly block: ChatBlock | null }) => (
+  <>
+    <b>{guestLimitTitle(block)}</b>
+    {typeof block?.nextAvailableAt === "number" && (
+      <p>
+        Следующий гостевой ответ будет доступен в{" "}
+        <time dateTime={new Date(block.nextAvailableAt).toISOString()}>
+          {formatClockTime(block.nextAvailableAt)}
+        </time>
+        .
+      </p>
+    )}
+  </>
+);
+
 export const BottomPlate = ({
   mode,
 }: {
@@ -68,7 +92,7 @@ export const BottomPlate = ({
           <AlertIcon />
           <div>
             <b>ИИ временно не отвечает</b>
-            <p>{`Слишком большая нагрузка, попробуйте позже.${keepNote}`}</p>
+            <p>{`Слишком большая нагрузка, попробуй позже.${keepNote}`}</p>
           </div>
         </div>
         <RetryButton />
@@ -80,7 +104,7 @@ export const BottomPlate = ({
     return (
       <div className="ai-plate ai-fade" role="status">
         {plateQuote}
-        <b>Гостевые ответы закончились</b>
+        <GuestLimit block={block} />
         <p>Войди через Telegram, чтобы продолжить.</p>
         <div className="ai-plate-actions">
           <button
@@ -115,7 +139,7 @@ export const BottomPlate = ({
       <b>Лимит ответов исчерпан</b>
       <p>
         {nextTime === null ? (
-          `Попробуйте снова позже.${keepNote}`
+          `Попробуй снова позже.${keepNote}`
         ) : (
           <>
             Следующий ответ будет доступен в <time>{nextTime}</time>.{keepNote}
@@ -143,12 +167,12 @@ const AccountCaption = ({ compact }: { readonly compact: boolean }): JSX.Element
       <span>
         {!compact && (
           <>
-            У студентов 1 курса ПИ лимиты выше. Если вы среди них, войдите с аккаунта, который есть
-            в чате потока.
+            У студентов 1 курса ПИ лимиты выше. Если ты среди них, войди с аккаунта, который есть в
+            чате потока.
             <br />
           </>
         )}
-        {`Вы вошли как ${user.name}. `}
+        {`Твой аккаунт — ${user.name}. `}
         <button
           disabled={isLoginBusy || isStreaming}
           onClick={() => {

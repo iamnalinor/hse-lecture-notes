@@ -22,6 +22,7 @@ import {
 import type { StreamStateSetters, UnsentQuestion } from "../stream/types.ts";
 import type { ChatContextValue } from "./types.ts";
 
+import { setChatOpen, useIsChatOpen } from "../open-state.ts";
 import { TurnstileModal } from "../panel/turnstile-modal.tsx";
 import { useChatStream } from "../stream/use-stream.ts";
 import { useLoginResume } from "./use-login-resume.ts";
@@ -54,6 +55,14 @@ type BuildCtxArgs = {
   readonly turnstileOpen: boolean;
 };
 
+const detachThread = (a: BuildCtxArgs): void => {
+  a.setUnsent(null);
+  a.detach();
+  if (a.quote?.messageId !== undefined) {
+    a.setQuote(null);
+  }
+};
+
 const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   activeThreadId: a.thr.activeThreadId,
   contextLimited:
@@ -77,20 +86,18 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   isCheckingBrowser: a.isCheckingBrowser,
   isConfigured: a.isConfigured,
   isLoginBusy: a.tgAuth.isLoginBusy,
+  checkingLogin: a.tgAuth.checkingLogin,
+  verificationError: a.tgAuth.verificationError,
   isOpen: a.isOpen,
   isStreaming: a.thr.isStreaming,
   isThreadLoading: a.thr.isThreadLoading,
   login: a.tgAuth.login,
   messages: a.unsent === null ? a.thr.messages : [...a.thr.messages, a.unsent],
   newChat: () => {
-    a.setUnsent(null);
-    a.detach();
+    detachThread(a);
     a.thr.invalidateLoad();
     a.thr.setPollRunId(null);
     a.thr.setIsStreaming(false);
-    if (a.quote?.messageId !== undefined) {
-      a.setQuote(null);
-    }
     a.thr.setActiveThreadId(null);
     a.thr.setMessages([]);
   },
@@ -105,11 +112,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     if (a.thr.activeThreadId === threadId && !a.thr.isThreadLoading) {
       return;
     }
-    a.setUnsent(null);
-    a.detach();
-    if (a.quote?.messageId !== undefined) {
-      a.setQuote(null);
-    }
+    detachThread(a);
     void a.thr.loadThread(threadId);
   },
   send: a.send,
@@ -117,6 +120,9 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   stop: a.stop,
   switchAccount: a.tgAuth.switchAccount,
   threads: a.thr.threads,
+  earlierStatus: a.thr.earlierStatus,
+  hasEarlier: a.thr.hasEarlier,
+  loadEarlier: a.thr.loadEarlier,
   loadMore: a.thr.loadMore,
   moreError: a.thr.moreError,
   hasMore: a.thr.hasMore,
@@ -143,6 +149,28 @@ type SessionProps = {
   readonly setIsOpen: Dispatch<SetStateAction<boolean>>;
 };
 
+const streamSetters = (
+  auth: SessionProps["auth"],
+  composer: SessionProps["composer"],
+  thr: ReturnType<typeof useThreadState>,
+): StreamStateSetters => {
+  return {
+    restoreRejectedDraft: composer.restoreRejectedDraft,
+    setUnsent: composer.setUnsent,
+    setPollRunId: thr.setPollRunId,
+    setActiveThreadId: thr.setActiveThreadId,
+    setBlock: auth.setBlock,
+    setDegraded: auth.setDegraded,
+    setDraft: composer.setDraft,
+    setIsStreaming: thr.setIsStreaming,
+    setMessages: thr.setMessages,
+    setQuote: composer.setQuote,
+    setThreads: thr.setThreads,
+    setTier: auth.setTier,
+    setUser: auth.setUser,
+  };
+};
+
 const useChatSessionValue = ({
   auth,
   composer,
@@ -165,28 +193,24 @@ const useChatSessionValue = ({
     preferredThreadId: composer.resume?.threadId,
   });
 
-  const setters: StreamStateSetters = {
-    restoreRejectedDraft: composer.restoreRejectedDraft,
-    setUnsent,
-    setPollRunId: thr.setPollRunId,
-    setActiveThreadId: thr.setActiveThreadId,
-    setBlock: auth.setBlock,
-    setDegraded: auth.setDegraded,
-    setDraft,
-    setIsStreaming: thr.setIsStreaming,
-    setMessages: thr.setMessages,
-    setQuote,
-    setThreads: thr.setThreads,
-    setTier: auth.setTier,
-    setUser: auth.setUser,
-  };
-
+  const setters = streamSetters(auth, composer, thr);
   const stream = useChatStream(setters, turnstileHooks);
-  const actions = useChatSendActions({ docContext, draft, quote, stream, thr });
+  const actions = useChatSendActions({
+    docContext,
+    draft,
+    quote,
+    stream,
+    thr,
+    unsent,
+    block: auth.block,
+    tgAuth,
+  });
   useLoginResume({
     pending: composer.resume,
     ready:
       isOpen &&
+      !tgAuth.checkingLogin &&
+      !tgAuth.verificationError &&
       auth.user !== null &&
       auth.block === null &&
       !thr.isThreadLoading &&
@@ -209,8 +233,7 @@ const useChatSessionValue = ({
     isConfigured,
     isOpen,
     quote,
-    retryMessage: actions.retryMessage,
-    send: actions.send,
+    ...actions,
     setDraft,
     setIsOpen,
     setQuote,
@@ -234,13 +257,18 @@ const ChatDocSessionProvider = ({ children, ...props }: InnerProps & SessionProp
 export const ChatProvider = ({
   children,
   general = false,
+  sharedOpen = false,
 }: {
   readonly children: ReactNode;
   readonly general?: boolean;
+  readonly sharedOpen?: boolean;
 }): JSX.Element => {
   const location = useLocation();
   const auth = useChatAuthState();
-  const [isOpen, setIsOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const isShared = useIsChatOpen();
+  const isOpen = sharedOpen ? isShared : localOpen;
+  const setIsOpen = sharedOpen ? setChatOpen : setLocalOpen;
   useRootOpenClassSync(isOpen);
   const { turnstileHooks, turnstileOpen } = useTurnstile(isOpen);
 

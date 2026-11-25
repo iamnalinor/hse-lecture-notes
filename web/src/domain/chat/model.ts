@@ -75,6 +75,7 @@ export type ChatThreadSummary = {
 };
 
 export type ChatThread = {
+  readonly beforeSeq?: null | number;
   readonly contextLimited?: boolean;
   readonly createdAt: number;
   readonly id: string;
@@ -222,7 +223,7 @@ export const toPlainCopyText = (source: string): string =>
 
 const waitCopy = (block: ChatBlock, nowMs: number): string =>
   block.nextAvailableAt === undefined || block.nextAvailableAt === null
-    ? "Попробуйте снова позже."
+    ? "Попробуй снова позже."
     : `Новые сообщения появятся через ${formatRemainingDuration(block.nextAvailableAt, nowMs)}.`;
 
 const quotaPlate = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateCopy => {
@@ -230,26 +231,31 @@ const quotaPlate = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateC
   return {
     body:
       tier === "default"
-        ? `${wait} У студентов 1 курса ПИ лимиты выше — войдите с аккаунта из чата потока.`
+        ? `${wait} У студентов 1 курса ПИ лимиты выше — войди с аккаунта из чата потока.`
         : wait,
     showLogin: tier === "default",
     title: "Дневной лимит сообщений исчерпан",
   };
 };
 
+const guestLoginBody = (block: ChatBlock, nowMs: number): string =>
+  typeof block.nextAvailableAt === "number"
+    ? `Твой лимит гостевых ответов исчерпан. ${waitCopy(block, nowMs)}`
+    : "Войди через Telegram, чтобы отправить вопрос.";
+
 /** Returns user-facing plate text for every limit / service block code. */
 export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateCopy => {
   switch (block.code) {
     case "auth_required": {
       return {
-        body: "Гостевые сообщения закончились. Войдите через Telegram — у студентов 1 курса ПИ лимиты выше.",
+        body: guestLoginBody(block, nowMs),
         showLogin: true,
-        title: "Войдите, чтобы продолжить",
+        title: "Войди, чтобы продолжить",
       };
     }
     case "guest_budget_exceeded": {
       return {
-        body: "Суточный бюджет для гостей исчерпан. Войдите через Telegram, чтобы продолжить общение.",
+        body: "Суточный бюджет для гостей исчерпан. Войди через Telegram, чтобы продолжить общение.",
         showLogin: true,
         title: "Гостевой доступ временно ограничен",
       };
@@ -267,14 +273,14 @@ export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number):
     case "rate_limited": {
       const sec = block.retryAfterSec ?? 15;
       return {
-        body: `Слишком много запросов подряд. Подождите ${sec} сек. и отправьте снова.`,
+        body: `Слишком много запросов подряд. Подожди ${sec} сек. и отправь снова.`,
         showLogin: false,
         title: "Не так быстро",
       };
     }
     case "concurrent_run": {
       return {
-        body: "Дождитесь завершения текущего ответа, прежде чем отправлять новый вопрос.",
+        body: "Дождись завершения текущего ответа, прежде чем отправлять новый вопрос.",
         showLogin: false,
         title: "Ответ ещё готовится",
       };
@@ -282,7 +288,7 @@ export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number):
     case "oauth_unavailable":
     case "service_unavailable": {
       return {
-        body: "ИИ-сервис сейчас недоступен. Черновик сохранён — попробуйте чуть позже.",
+        body: "ИИ-сервис сейчас недоступен. Черновик сохранён — попробуй чуть позже.",
         showLogin: false,
         title: "Сервис временно недоступен",
       };

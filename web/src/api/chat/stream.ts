@@ -126,6 +126,20 @@ const deliverTitle = (parsed: Record<string, unknown>, callbacks: WsStreamCallba
   }
 };
 
+const deliverError = (parsed: Record<string, unknown>, callbacks: WsStreamCallbacks): void => {
+  callbacks.onError({
+    code: typeof parsed["code"] === "string" ? parsed["code"] : "invalid_frame",
+    message:
+      typeof parsed["message"] === "string" && parsed["message"].trim() !== ""
+        ? parsed["message"]
+        : "Не удалось прочитать ответ сервера. Попробуй ещё раз.",
+    ...(parsed["block"] !== null &&
+      typeof parsed["block"] === "object" &&
+      "code" in parsed["block"] &&
+      typeof parsed["block"].code === "string" && { block: parsed["block"] as ChatBlock }),
+  });
+};
+
 const isTerminalWsFrame = (
   parsed: Record<string, unknown>,
   callbacks: WsStreamCallbacks,
@@ -154,7 +168,7 @@ const isTerminalWsFrame = (
       return true;
     }
     case "error": {
-      callbacks.onError(parsed as unknown as Parameters<WsStreamCallbacks["onError"]>[0]);
+      deliverError(parsed, callbacks);
       return true;
     }
     default: {
@@ -179,11 +193,20 @@ export const openChatMessageStream = (
   });
 
   ws.addEventListener("message", (event) => {
-    if (isFinished || typeof event.data !== "string") {
+    if (isFinished) {
       return;
     }
-    const parsed = parseFrame(event.data);
-    if (parsed === null || !isMatchingIdentity(parsed, identity)) {
+    const parsed = typeof event.data === "string" ? parseFrame(event.data) : null;
+    if (parsed === null) {
+      isFinished = true;
+      callbacks.onError({
+        code: "invalid_frame",
+        message: "Не удалось прочитать ответ сервера. Попробуй ещё раз.",
+      });
+      ws.close();
+      return;
+    }
+    if (!isMatchingIdentity(parsed, identity)) {
       return;
     }
     if (parsed["type"] === "meta") {

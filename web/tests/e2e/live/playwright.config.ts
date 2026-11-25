@@ -19,7 +19,7 @@ export default defineConfig({
     baseURL: env["E2E_BASE_URL"] ?? "https://hse.nalinor.dev",
     serviceWorkers: "block",
     screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    trace: "off",
     channel: "chromium",
     launchOptions: { args: ["--disable-gpu"] },
   },

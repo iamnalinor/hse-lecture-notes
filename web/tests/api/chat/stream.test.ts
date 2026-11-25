@@ -75,3 +75,50 @@ it("ignores frames for another run and sanitizes malformed metadata fields", () 
   expect(callbacks.onDelta).not.toHaveBeenCalled();
   vi.unstubAllGlobals();
 });
+
+it.each([
+  [
+    '{"type":"error","code":"invalid_frame","message":"Не удалось прочитать цитату."}',
+    "Не удалось прочитать цитату.",
+  ],
+  ["null", "Не удалось прочитать ответ сервера. Попробуй ещё раз."],
+])("reports an unreadable message once, without a second connection error", (data, message) => {
+  const socket = Object.assign(new EventTarget(), { close: vi.fn() });
+  vi.stubGlobal(
+    "WebSocket",
+    vi.fn(function () {
+      return socket;
+    }),
+  );
+  try {
+    const callbacks = {
+      onMeta: vi.fn(),
+      onDelta: vi.fn(),
+      onStep: vi.fn(),
+      onError: vi.fn(),
+      onCloseUnexpected: vi.fn(),
+      onDone: vi.fn(),
+      onTitle: vi.fn(),
+    };
+    openChatMessageStream(
+      "https://api.example",
+      {
+        allowanceToken: "a",
+        browserToken: "b",
+        clientRequestId: "q",
+        course: "",
+        docId: "",
+        text: "q",
+        threadId: null,
+        quote: null,
+      },
+      callbacks,
+    );
+    socket.dispatchEvent(new MessageEvent("message", { data }));
+    socket.dispatchEvent(new Event("close"));
+    expect(callbacks.onError).toHaveBeenCalledExactlyOnceWith({ code: "invalid_frame", message });
+    expect(callbacks.onCloseUnexpected).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

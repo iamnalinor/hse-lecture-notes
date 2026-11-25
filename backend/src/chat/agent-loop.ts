@@ -70,6 +70,20 @@ function preview(raw: string, field: string): string {
     return "";
   }
 }
+async function waitForTool<T>(signal: AbortSignal, execute: () => Promise<T>): Promise<T> {
+  signal.throwIfAborted();
+  let onAbort!: () => void;
+  const cancelled = new Promise<never>((_, reject) => {
+    onAbort = () => reject(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  try {
+    return await Promise.race([execute(), cancelled]);
+  } finally {
+    signal.removeEventListener("abort", onAbort);
+  }
+}
+
 export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
   const { env, db, policy, runId, threadId, route, sendFrame, signal } = p;
   const steps: ChatStep[] = [],
@@ -122,6 +136,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     const input = [...prepared.history.items];
     const instructions = SYSTEM_PROMPT + "\n\n" + METADATA_PROMPT;
     const runner = new AgentToolRunner({
+      signal: abort.signal,
       env,
       db,
       currentCourse: p.course,
@@ -310,7 +325,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
                 };
           const index = steps.push(step) - 1;
           sendFrame({ type: "step", steps: [...steps] });
-          const value = await runner.execute(call.name, call.arguments);
+          const value = await waitForTool(abort.signal, () => runner.execute(call.name, call.arguments));
           if (value.step.kind === "note") steps.splice(index, 1);
           else steps[index] = value.step;
           sendFrame({ type: "step", steps: [...steps] });
@@ -368,7 +383,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
           : error instanceof ResponseEofError
             ? "upstream_eof"
             : "internal_error";
-    logEvent("error", "agent_run_exception", {
+    if (!abort.signal.aborted) logEvent("error", "agent_run_exception", {
       runId,
       code: errorCode,
       upstreamStatus: error instanceof LlmUpstreamError ? error.status : undefined,
@@ -386,6 +401,9 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     finalStatus = "incomplete";
     metadata = undefined;
     errorCode = timedOut ? "run_timeout" : "upstream_incomplete";
+  }
+  if (abort.signal.aborted) {
+    for (const step of steps) if (step.state === "running") step.state = "error";
   }
   if (finalStatus !== "done") metadata = undefined;
   const errorMessage =
@@ -419,7 +437,10 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     toolRounds: rounds,
     toolCalls,
   });
-  if (!won) return;
+  if (!won) {
+    sendFrame({ type: "error", code: "run_expired", message: "Ответ уже завершён. Обнови историю беседы." });
+    return;
+  }
   sendFrame({
     type: "done",
     runId,

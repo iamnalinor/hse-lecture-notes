@@ -102,12 +102,12 @@ export const mockChat = async (page: Page, isEmptyThread = false) => {
   });
   return {
     sent,
-    complete: (errorMessage?: string) => {
+    complete: (errorMessage?: string, answerText = "Готовый ответ на вопрос.") => {
       if (socket === undefined) {
         throw new Error("No message request received");
       }
       const isError = errorMessage !== undefined;
-      const text = isError ? "" : "Готовый ответ на вопрос.";
+      const text = isError ? "" : answerText;
       if (text !== "") {
         socket.send(JSON.stringify({ type: "delta", text }));
       }

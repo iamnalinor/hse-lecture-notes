@@ -113,7 +113,9 @@ export async function validateAssistantQuote(
   const visible = row.content_tex.split("```").map((part, index) => {
     if (index % 2) return part.slice(part.indexOf("\n") + 1);
     const blocks = part.replace(/^ {0,3}#{1,6}[ \t]+|^\s*(?:[-*•]|\d+\.)[ \t]+/gmu, "");
-    return blocks.replace(/\$\$([^$]+)\$\$|(\$[^$]+\$)|`([^`]+)`|\[([^\]]+)\]\((?:#|\/)[^)]*\)|\[\[[^|\]]+\|([^\]]+)\]\]|\*\*([^*]+)\*\*|\*(\S(?:[^*]*?\S)?)\*|(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+)(?<!\s)_(?![\p{L}\p{N}_])/gu,
+    const mathNormalized = blocks.replace(/`[^`]*`|\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]/gu,
+      (raw, inline, display) => inline !== undefined || display !== undefined ? `$${(inline ?? display).trim()}$` : raw);
+    return mathNormalized.replace(/\$\$([^$]+)\$\$|(\$[^$]+\$)|`([^`]+)`|\[([^\]]+)\]\((?:#|\/)[^)]*\)|\[\[[^|\]]+\|([^\]]+)\]\]|\*\*([^*]+)\*\*|\*(\S(?:[^*]*?\S)?)\*|(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+)(?<!\s)_(?![\p{L}\p{N}_])/gu,
       (_match, display, math, code, link, wiki, bold, italic, underscore) =>
         display !== undefined ? `$${display.trim()}$` : math ?? code ?? link ?? wiki ?? bold ?? italic ?? underscore);
   }).join(" ");
@@ -296,6 +298,7 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
 ];
 
 export interface ToolExecutionContext {
+  signal?: AbortSignal;
   env: Pick<Env, "VECTORIZE" | "AI">;
   db: TrackedD1;
   currentCourse: string;
@@ -509,6 +512,7 @@ export class AgentToolRunner {
         );
         const res = await this.ctx.db.all<SearchBlockRow>(statement.bind(...binds));
         ftsRows.push(...res.results);
+        this.ctx.signal?.throwIfAborted();
         if (!ftsRows.length && ftsQuery.includes(" AND ")) {
           const broader = await this.ctx.db.all<SearchBlockRow>(
             statement.bind(buildFtsMatchQuery(query, "OR"), ...binds.slice(1)),
@@ -527,16 +531,24 @@ export class AgentToolRunner {
     // 2. Optional Vectorize semantic search (graceful fallback to FTS5 on quota/error)
     const vecRows: SearchBlockRow[] = [];
     if (!hasExactTitleMatch && this.ctx.env.VECTORIZE && this.ctx.env.AI) {
+      this.ctx.signal?.throwIfAborted();
       try {
         const emb = (await this.ctx.env.AI.run("@cf/baai/bge-m3" as keyof AiModels, {
           text: [query],
-        } as Record<string, unknown>)) as { data?: number[][] };
+        } as Record<string, unknown>, { signal: this.ctx.signal })) as { data?: number[][] };
+        this.ctx.signal?.throwIfAborted();
         const vector = emb?.data?.[0];
         if (vector && vector.length > 0) {
+          const filter: Record<string, string> = {};
+          if (course && course !== "all") filter.course = course;
+          if (docKind) filter.doc_kind = docKind;
+          if (blockKind) filter.block_kind = blockKind;
           const vecRes = await this.ctx.env.VECTORIZE.query(vector, {
             topK: 10,
+            ...(Object.keys(filter).length ? { filter } : {}),
             returnMetadata: "none",
           });
+          this.ctx.signal?.throwIfAborted();
           const candidateIds = vecRes.matches
             .map((m) => m.id)
             .filter((id) => typeof id === "string" && id.length > 0)
@@ -599,6 +611,7 @@ export class AgentToolRunner {
       .slice(0, 8)
       .map((entry) => this.formatSearchItem(entry.row));
 
+    this.ctx.signal?.throwIfAborted();
     const pages = !blockKind && (!docKind || docKind === "prep")
       ? await searchPreparationPages(this.ctx.db, course, query) : [];
     const hits = [
@@ -669,6 +682,7 @@ export class AgentToolRunner {
       );
       id = legacy?.id ?? id;
     }
+    this.ctx.signal?.throwIfAborted();
     // 1 batch with 3 independent bounded queries (avoids double JOIN row multiplication!)
     const [blockRes, outRes, inRes] = await this.ctx.db.batch<Record<string, unknown>>([
       this.ctx.db
@@ -797,6 +811,7 @@ export class AgentToolRunner {
         .bind(course, docId),
     );
 
+    this.ctx.signal?.throwIfAborted();
     if (!doc) {
       return {
         output: JSON.stringify({ error: `Document not found: ${course}/${docId}` }),

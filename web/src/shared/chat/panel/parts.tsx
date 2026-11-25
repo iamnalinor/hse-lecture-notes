@@ -193,7 +193,7 @@ const AgentLinkCard = (): JSX.Element => {
 
   return (
     <section aria-labelledby="ai-agent-title" className="ai-agent">
-      <h3 id="ai-agent-title">Или отправьте ссылку своему агенту</h3>
+      <h3 id="ai-agent-title">Или отправь ссылку своему агенту</h3>
       <p>Сайт адаптирован для ИИ: он прочитает эту страницу целиком.</p>
       <button
         aria-label={isCopied ? "Ссылка скопирована" : `Копировать ссылку ${url}`}

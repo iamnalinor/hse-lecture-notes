@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Link } from "react-router";
 
 import type { TocItem } from "#web/domain/schemas.ts";
@@ -25,7 +25,34 @@ export const tocItems = (toc: readonly TocItem[]): readonly TocItem[] =>
   toc.filter((item) => item.level <= MAX_LEVEL);
 
 /** From this width the table of contents is a sticky side column; below it, a sheet (`TocSheet`). */
-export const WIDE_QUERY = "(min-width: 1100px)";
+const readerWidth = (): number =>
+  document.querySelector("#root")?.getBoundingClientRect().width ?? window.innerWidth;
+const observeWidth = (listener: () => void) => {
+  const root = document.querySelector("#root");
+  let frame = 0;
+  const observer =
+    typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(() => {
+          globalThis.cancelAnimationFrame(frame);
+          frame = globalThis.requestAnimationFrame(listener);
+        });
+  if (root !== null) {
+    observer?.observe(root);
+  }
+  window.addEventListener("resize", listener);
+  return () => {
+    globalThis.cancelAnimationFrame(frame);
+    observer?.disconnect();
+    window.removeEventListener("resize", listener);
+  };
+};
+export const useIsWideToc = () =>
+  useSyncExternalStore(
+    observeWidth,
+    () => readerWidth() >= 1100,
+    () => false,
+  );
 
 type State = {
   /** Id of the section being read (`useActiveSection`). */

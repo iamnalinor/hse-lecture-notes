@@ -136,7 +136,7 @@ describe("TicketGenerator", () => {
     await userEvent.click(screen.getByRole("button", { name: "Сбросить все" }));
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Сгенерировать" })).toHaveAccessibleDescription(
-      "Выберите хотя бы одну тему.",
+      "Выбери хотя бы одну тему.",
     );
   });
 

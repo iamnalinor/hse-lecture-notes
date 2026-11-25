@@ -7,6 +7,7 @@ import {
   handleTelegramLogin,
   resolveBrowserToken,
   verifyAllowanceToken,
+  verifyTelegramIdToken,
 } from "../src/auth";
 import { executeAgentRun } from "../src/chat/agent-loop";
 import { CodexAuthError, getValidCodexCredentials } from "../src/llm/codex-auth";
@@ -783,6 +784,25 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     expect(JSON.parse(catalog.output).documents[0].doc_id).toBe("quiz-o-symbols");
   });
 
+  test("semantic search filters the Vectorize index before topK", async () => {
+    const shim = new SqliteD1Shim();
+    const env = makeTestEnv(shim.asD1());
+    const queries: unknown[] = [];
+    env.AI = { run: async () => ({ data: [[0.1]] }) } as unknown as Ai;
+    env.VECTORIZE = {
+      query: async (_vector: number[], options: unknown) => {
+        queries.push(options);
+        return { matches: [] };
+      },
+    } as unknown as VectorizeIndex;
+    const tools = new AgentToolRunner({ env, db: new TrackedD1(shim.asD1()),
+      currentCourse: "discrete", currentDocId: "", currentDocOrder: 0,
+      maxToolOutputChars: 12000, maxTotalToolOutputChars: 36000 });
+    await tools.execute("search_materials", JSON.stringify({ query: "форма", doc_kind: "lecture", block_kind: "theorem" }));
+    expect(queries).toEqual([{ topK: 10, returnMetadata: "none",
+      filter: { course: "discrete", doc_kind: "lecture", block_kind: "theorem" } }]);
+  });
+
   test("BM25 ranks title match above proof match, caches repeated tool calls, and validates LaTeX quotes", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
@@ -1017,6 +1037,10 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       .bind("_пример_ **кода**: `a * b * c`", adm.assistantMessageId));
     expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "пример кода: a * b * c" }, "br_loop")).toBe(true);
 
+    await db.run(db.prepare("UPDATE chat_messages SET content_tex = ? WHERE id = ?")
+      .bind("Формула \\(x+1\\) и код `\\(y\\)`", adm.assistantMessageId));
+    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "Формула $x+1$" }, "br_loop")).toBe(true);
+    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "код $y$" }, "br_loop")).toBe(false);
     const snap = await readBudgetSnapshot(db, Date.now());
     expect(snap.globalReserved).toBe(0);
     expect(snap.globalActual7d).toBeGreaterThan(0);
@@ -1081,4 +1105,54 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     const remaining = await db.all<{ id: string }>(db.prepare("SELECT id FROM chat_threads"));
     expect(remaining.results.map((r) => r.id)).toEqual(["thr_race"]);
   });
+});
+
+
+test("Telegram checks audience and shares a ten-minute JWKS snapshot across failed signatures", async () => {
+  const env = makeTestEnv(new SqliteD1Shim().asD1());
+  const now = Date.now();
+  const { jwt, jwks } = await generateRs256TestKeyAndJwt({
+    iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: now / 1000 + 3600,
+    id: 42, nonce: "example-nonce",
+  });
+  let fetches = 0;
+  const fetchKeys = (async () => { fetches++; return Response.json(jwks); }) as unknown as typeof fetch;
+  expect(await verifyTelegramIdToken({ ...env, TELEGRAM_CLIENT_ID: "" }, jwt, now, fetchKeys)).toBeNull();
+  expect(await verifyTelegramIdToken(env, "invalid", now, fetchKeys)).toBeNull();
+  expect(fetches).toBe(0);
+  expect(await verifyTelegramIdToken({ ...env, TELEGRAM_CLIENT_ID: "foreign" }, jwt, now, fetchKeys, jwks)).toBeNull();
+  const broken = jwt.slice(0, jwt.lastIndexOf(".") + 1) + "AQ";
+  await Promise.all([jwt, broken, broken].map(token => verifyTelegramIdToken(env, token, now, fetchKeys)));
+  expect(fetches).toBe(1);
+  expect(await verifyTelegramIdToken(env, broken, now + 599_999, fetchKeys)).toBeNull();
+  expect(fetches).toBe(1);
+  expect((await verifyTelegramIdToken(env, jwt, now + 600_000, fetchKeys))?.telegramId).toBe(42);
+  expect(fetches).toBe(2);
+});
+
+test("Turnstile gets the visitor IPv6 address while allowance retains the quota prefix", async () => {
+  const shim = new SqliteD1Shim();
+  const db = new TrackedD1(shim.asD1());
+  const env = makeTestEnv(shim.asD1());
+  const ip = "2001:db8:abcd:12::42";
+  const response = await handleAllowance(env, db, new Request("https://example.org", {
+    headers: { "CF-Connecting-IP": ip },
+  }), { turnstileToken: "t" }, { turnstileVerifier: async (_, remoteIp) => {
+    expect(remoteIp).toBe(ip);
+    return { ok: true };
+  } });
+  const browser = await resolveBrowserToken(env.BROWSER_TOKEN_SECRET, String(response.body.browserToken));
+  if (browser.status !== "ok") throw Error("Missing browser");
+  expect((await verifyAllowanceToken(env, db, String(response.body.allowanceToken), browser.browserId))?.ip)
+    .toBe("2001:0db8:abcd:0012::/64");
+});
+
+test("optional archive skips history and cleans expired nonces without R2", async () => {
+  const shim = new SqliteD1Shim();
+  const db = new TrackedD1(shim.asD1());
+  shim.sqlite.query("INSERT INTO auth_nonces(nonce,browser_id,expires_at) VALUES ('n','b',1)").run();
+  shim.sqlite.query("INSERT INTO chat_threads(id,title,browser_id,created_at,updated_at) VALUES ('old','old thread','b',1,1)").run();
+  expect(await runArchiveBatch(db, null)).toMatchObject({ noncesCleaned: 1, threadsDeleted: 0, runsDeleted: 0 });
+  expect(shim.sqlite.query("SELECT nonce FROM auth_nonces").all()).toEqual([]);
+  expect(shim.sqlite.query("SELECT id FROM chat_threads").get()).toEqual({ id: "old" });
 });

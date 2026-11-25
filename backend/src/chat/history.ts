@@ -76,12 +76,23 @@ export function selectHistoryWindow(
 function decodeSnapshot(raw: string | null): TurnContextSnapshot | null {
   try {
     const s = JSON.parse(raw ?? "null") as TurnContextSnapshot | null;
-    return s?.version === 1 &&
-      Array.isArray(s.contextItems) &&
-      s.userItem?.type === "message" &&
-      s.userItem.role === "user"
-      ? s
-      : null;
+    if (s?.version !== 1 || !Array.isArray(s.contextItems) ||
+        s.userItem?.type !== "message" || s.userItem.role !== "user") return null;
+    // The original snapshot format included a conversation-derived title in
+    // the first line of developer context. Remove it on replay and retry.
+    const first = s.contextItems[0];
+    const part = first?.type === "message" && first.role === "developer" ? first.content[0] : null;
+    if (part?.text.startsWith("{")) {
+      const newline = part.text.indexOf("\n");
+      if (newline !== -1) {
+        const state = JSON.parse(part.text.slice(0, newline));
+        if (Object.hasOwn(state, "title")) {
+          delete state.title;
+          part.text = JSON.stringify(state) + part.text.slice(newline);
+        }
+      }
+    }
+    return s;
   } catch {
     return null;
   }
@@ -182,7 +193,6 @@ export async function prepareTurnContext(
     const state = {
       page: `/${[args.course, args.docId].filter(Boolean).join("/")}`,
       question_time: new Date(args.createdAt).toISOString(),
-      title: args.generatedTitle,
       title_required: !args.generatedTitle,
     };
     snapshot = {

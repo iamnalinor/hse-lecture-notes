@@ -102,7 +102,7 @@ export async function runArchiveBatch(
   stats.sessionsCleaned = sessRes?.meta?.changes ?? 0;
 
   if (!storage) {
-    logEvent("info", "archive_skipped_no_bucket", { ...stats });
+    logEvent("warn", "archive_skipped_no_bucket", { ...stats });
     return stats;
   }
 

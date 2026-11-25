@@ -7,13 +7,7 @@ export type AlertKey =
   | "lastGuestExceededAt"
   | "lastOauthErrorAt";
 
-interface AlertsState {
-  lastWeeklyWarnAt: number;
-  lastWeeklyExceededAt: number;
-  lastGuestExceededAt: number;
-  lastOauthErrorAt: number;
-}
-
+const DELIVERY_LEASE_MS = 60_000;
 const ALERT_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 export async function sendOwnerAlert(
@@ -26,35 +20,23 @@ export async function sendOwnerAlert(
 ): Promise<boolean> {
   if (!env.TELEGRAM_BOT_TOKEN || !env.OWNER_TELEGRAM_ID) return false;
 
-  const row = await db.first<{ value_json: string }>(
-    db.prepare("SELECT value_json FROM service_config WHERE key = 'alerts_state'"),
-  );
-  const state: AlertsState = {
-    lastWeeklyWarnAt: 0,
-    lastWeeklyExceededAt: 0,
-    lastGuestExceededAt: 0,
-    lastOauthErrorAt: 0,
-    ...(row ? (JSON.parse(row.value_json) as Partial<AlertsState>) : {}),
-  };
-
-  if (state[key] > 0 && nowMs - state[key] < ALERT_COOLDOWN_MS) {
-    return false;
-  }
-
-  state[key] = nowMs;
-  await db.run(
-    db
-      .prepare(
-        "INSERT INTO service_config (key, value_json, updated_at) VALUES ('alerts_state', ?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at",
-      )
-      .bind(JSON.stringify(state), nowMs),
-  );
-
+  const sentPath = `$.${key}`;
+  const leasePath = `$.${key}Lease`;
+  const claim = await db.run(db.prepare(`
+    INSERT INTO service_config (key, value_json, updated_at) VALUES ('alerts_state', json_object(?, ?), ?)
+    ON CONFLICT(key) DO UPDATE SET value_json = json_set(value_json, ?, ?), updated_at = excluded.updated_at
+    WHERE COALESCE(json_extract(value_json, ?), 0) <= ?
+      AND (COALESCE(json_extract(value_json, ?), 0) = 0 OR json_extract(value_json, ?) <= ?)
+  `).bind(key + "Lease", nowMs + DELIVERY_LEASE_MS, nowMs, leasePath, nowMs + DELIVERY_LEASE_MS,
+    leasePath, nowMs, sentPath, sentPath, nowMs - ALERT_COOLDOWN_MS));
+  if (claim.meta.changes !== 1) return false;
+  let delivered = false;
   try {
     const resp = await fetchImpl(
       `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: env.OWNER_TELEGRAM_ID,
@@ -63,8 +45,14 @@ export async function sendOwnerAlert(
         }),
       },
     );
-    return resp.ok;
+    delivered = resp.ok && (await resp.json() as { ok?: boolean }).ok === true;
   } catch {
     return false;
   }
+  if (delivered) {
+    await db.run(db.prepare(`UPDATE service_config SET value_json = json_set(json_remove(value_json, ?), ?, ?), updated_at = ?
+      WHERE key = 'alerts_state' AND json_extract(value_json, ?) = ?`)
+      .bind(leasePath, sentPath, nowMs, nowMs, leasePath, nowMs + DELIVERY_LEASE_MS));
+  }
+  return delivered;
 }

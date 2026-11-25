@@ -90,11 +90,11 @@
     right: var(--ai-w);
   }
 }
-@media (min-width: 721px) and (max-width: 1539px) {
-  html.ai-open .ai-toc {
+@supports selector(:has(*)) {
+  .ai-grid:has(.ai-toc:empty) .ai-toc {
     display: none !important;
   }
-  html.ai-open .ai-grid {
+  .ai-grid:has(.ai-toc:empty) {
     grid-template-columns: minmax(0, 860px) !important;
   }
 }
@@ -1339,6 +1339,11 @@ html.ai-open .ai-panel {
 
 /* ---------- проверка «не бот»: всплывающее окно поверх страницы ---------- */
 .ai-modal {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border: 0;
   position: fixed;
   inset: 0;
   z-index: 80;

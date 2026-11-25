@@ -33,9 +33,9 @@ const resolvePlaceholder = (hasQuote: boolean, hasMessages: boolean): string => 
     return "Что непонятно в этом фрагменте?";
   }
   if (hasMessages) {
-    return "Уточните или спросите ещё";
+    return "Уточни или спроси ещё";
   }
-  return "Задайте вопрос";
+  return "Задай вопрос";
 };
 
 type TextareaState = {
@@ -189,15 +189,43 @@ const ComposerBox = ({
   );
 };
 
+const VerificationStatus = () => {
+  const { checkingLogin, verificationError, isStreaming } = useChat();
+  return (
+    <>
+      {checkingLogin === true && (
+        <p className="ai-caption" role="status">
+          Проверяю браузер…
+        </p>
+      )}
+      {verificationError === true && !isStreaming && (
+        <p className="ai-caption" role="status">
+          Вход выполнен. При отправке вопроса повторим проверку браузера.
+        </p>
+      )}
+    </>
+  );
+};
+
 /** Exact `.ai-bottom` (composer / limit plate / status caption) from prototype.html. */
 export const ChatComposer = (): JSX.Element => {
-  const { block, degraded, draft, isStreaming, isThreadLoading, quote, rateLimitUntil } = useChat();
+  const {
+    block,
+    checkingLogin,
+    degraded,
+    draft,
+    isStreaming,
+    isThreadLoading,
+    quote,
+    rateLimitUntil,
+  } = useChat();
   const { suggestion, consume } = useComposerSuggestion();
   const nowMs = useClockTicker(rateLimitUntil, degraded.active);
   const mode = resolveBottomMode(block);
   const rateRemainSec =
     rateLimitUntil > nowMs ? Math.max(0, Math.ceil((rateLimitUntil - nowMs) / 1000)) : 0;
   const canSend =
+    checkingLogin !== true &&
     !isThreadLoading &&
     !isStreaming &&
     mode === "composer" &&
@@ -214,6 +242,7 @@ export const ChatComposer = (): JSX.Element => {
         )}
       </div>
       <div className="ai-caption-slot ai-flow">
+        <VerificationStatus />
         <BottomCaption mode={mode} nowMs={nowMs} rateRemainSec={rateRemainSec} />
       </div>
     </div>

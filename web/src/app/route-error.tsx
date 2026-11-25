@@ -1,14 +1,13 @@
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
 
 import { paths } from "#web/domain/paths.ts";
-import { ChatPanel } from "#web/shared/chat/panel/panel.tsx";
-import { ChatProvider } from "#web/shared/chat/session/context.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
 import { applyUpdate, useHasUpdate } from "#web/shared/offline/sw-registration.ts";
 import { useUpdateOnNavigation } from "#web/shared/offline/update-on-navigation.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
+import { LazyChat } from "./lazy-chat.tsx";
 import { isNotFound } from "./not-found.ts";
 
 const describe = (error: unknown): string => {
@@ -34,34 +33,32 @@ export const RouteError = () => {
   useDocumentTitle(isMissing ? "Страница не найдена" : "Ошибка");
 
   return (
-    <ChatProvider general>
-      <div className="flex min-h-screen flex-col bg-paper text-ink">
-        <TopBar />
-        <main className="mx-auto w-full max-w-[720px] flex-1 px-4 py-16 sm:px-8 sm:py-24">
-          <h1 className="text-large font-bold">
-            {isMissing ? "Такой страницы нет" : "Не получилось открыть страницу"}
-          </h1>
-          {hasUpdate ? (
-            <p className="mt-4 text-title3 text-muted">
-              Сайт обновился, а эта вкладка открыта на старой версии.{" "}
-              <button
-                className="cursor-pointer font-semibold text-brand underline"
-                onClick={applyUpdate}
-                type="button"
-              >
-                Обновить
-              </button>
-            </p>
-          ) : (
-            <p className="mt-4 text-title3 text-muted">{describe(error)}</p>
-          )}
-          <Link className="mt-8 inline-block font-semibold" to={paths.home()}>
-            На главную →
-          </Link>
-        </main>
-        <SiteFooter />
-        <ChatPanel />
-      </div>
-    </ChatProvider>
+    <div className="flex min-h-screen flex-col bg-paper text-ink">
+      <TopBar />
+      <main className="mx-auto w-full max-w-[720px] flex-1 px-4 py-16 sm:px-8 sm:py-24">
+        <h1 className="text-large font-bold">
+          {isMissing ? "Такой страницы нет" : "Не получилось открыть страницу"}
+        </h1>
+        {hasUpdate ? (
+          <p className="mt-4 text-title3 text-muted">
+            Сайт обновился, а эта вкладка открыта на старой версии.{" "}
+            <button
+              className="cursor-pointer font-semibold text-brand underline"
+              onClick={applyUpdate}
+              type="button"
+            >
+              Обновить
+            </button>
+          </p>
+        ) : (
+          <p className="mt-4 text-title3 text-muted">{describe(error)}</p>
+        )}
+        <Link className="mt-8 inline-block font-semibold" to={paths.home()}>
+          На главную →
+        </Link>
+      </main>
+      <SiteFooter />
+      <LazyChat general />
+    </div>
   );
 };

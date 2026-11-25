@@ -2,9 +2,6 @@ import { Suspense } from "react";
 import { Outlet, ScrollRestoration, useLocation, useNavigation } from "react-router";
 
 import { isDocumentPath } from "#web/domain/paths.ts";
-import { ChatPanel } from "#web/shared/chat/panel/panel.tsx";
-import { SelectionAskButton } from "#web/shared/chat/selection/ask-button.tsx";
-import { ChatProvider } from "#web/shared/chat/session/context.tsx";
 import { BackBar } from "#web/shared/layout/back-bar.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
@@ -13,20 +10,20 @@ import { useUpdateOnNavigation } from "#web/shared/offline/update-on-navigation.
 import { useCanonicalUrl } from "#web/shared/ui/canonical-url.ts";
 import { DocSkeleton, PageSkeleton } from "#web/shared/ui/page-skeleton.tsx";
 
+import { LazyChat } from "./lazy-chat.tsx";
+
 const Skeleton = ({ pathname }: { readonly pathname: string }) =>
   isDocumentPath(pathname) ? <DocSkeleton /> : <PageSkeleton />;
 
 /** The first paint, while the page code of the entry route is still loading. */
 export const ShellFallback = () => (
-  <ChatProvider>
-    <div className="flex min-h-screen flex-col bg-paper text-ink">
-      <TopBar />
-      <main className="flex-1">
-        <Skeleton pathname={useLocation().pathname} />
-      </main>
-      <SiteFooter />
-    </div>
-  </ChatProvider>
+  <div className="flex min-h-screen flex-col bg-paper text-ink">
+    <TopBar />
+    <main className="flex-1">
+      <Skeleton pathname={useLocation().pathname} />
+    </main>
+    <SiteFooter />
+  </div>
 );
 
 /**
@@ -43,40 +40,37 @@ export const AppShell = () => {
   useUpdateOnNavigation();
 
   return (
-    <ChatProvider>
-      <div className="flex min-h-screen flex-col bg-paper text-ink">
-        <a
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-ink"
-          href="#content"
-          onClick={(event) => {
-            // A plain `#content` would be taken by the router as a path change.
-            event.preventDefault();
-            const content = document.querySelector<HTMLElement>("#content");
-            content?.focus();
-            content?.scrollIntoView();
-          }}
-        >
-          К содержимому
-        </a>
-        <UpdateBanner />
-        <TopBar />
-        <main className="min-h-dvh flex-1 outline-none" id="content" tabIndex={-1}>
-          {isSwitching ? (
-            <Skeleton pathname={pending} />
-          ) : (
-            <Suspense fallback={<Skeleton pathname={location.pathname} />} key={location.pathname}>
-              <div data-page="">
-                <Outlet />
-              </div>
-            </Suspense>
-          )}
-        </main>
-        <SiteFooter />
-        <BackBar />
-        <ChatPanel />
-        <SelectionAskButton />
-        <ScrollRestoration />
-      </div>
-    </ChatProvider>
+    <div className="flex min-h-screen flex-col bg-paper text-ink">
+      <a
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-ink"
+        href="#content"
+        onClick={(event) => {
+          // A plain `#content` would be taken by the router as a path change.
+          event.preventDefault();
+          const content = document.querySelector<HTMLElement>("#content");
+          content?.focus();
+          content?.scrollIntoView();
+        }}
+      >
+        К содержимому
+      </a>
+      <UpdateBanner />
+      <TopBar />
+      <main className="min-h-dvh flex-1 outline-none" id="content" tabIndex={-1}>
+        {isSwitching ? (
+          <Skeleton pathname={pending} />
+        ) : (
+          <Suspense fallback={<Skeleton pathname={location.pathname} />} key={location.pathname}>
+            <div data-page="">
+              <Outlet />
+            </div>
+          </Suspense>
+        )}
+      </main>
+      <SiteFooter />
+      <BackBar />
+      <LazyChat />
+      <ScrollRestoration />
+    </div>
   );
 };

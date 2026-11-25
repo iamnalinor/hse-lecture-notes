@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { parseClientFrame } from "./client-frame";
 import { ContextSizeError } from "./history";
 import { executeAgentRun } from "./agent-loop";
 import { r2ToArchiveStorage, runArchiveBatch, type ArchiveBatchStats } from "../archiver";
@@ -19,7 +20,9 @@ export class ChatRunner extends DurableObject<Env> {
   async runDailyArchive(): Promise<ArchiveBatchStats> {
     const db = new TrackedD1(this.env.DB);
     const storage = this.env.ARCHIVE_BUCKET ? r2ToArchiveStorage(this.env.ARCHIVE_BUCKET) : null;
-    return runArchiveBatch(db, storage);
+    if (!storage) return runArchiveBatch(db, null);
+    const policy = await loadPolicy(db);
+    return runArchiveBatch(db, storage, { archiveAfterDays: policy.archiveAfterDays });
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -82,40 +85,38 @@ export class ChatRunner extends DurableObject<Env> {
       const raw = event.data;
       const byteLength =
         typeof raw === "string"
-          ? encoder.encode(raw).byteLength
+          ? (raw.length > 40_960 ? raw.length : encoder.encode(raw).byteLength)
           : raw instanceof ArrayBuffer
             ? raw.byteLength
             : 0;
 
-      if (byteLength === 0 || byteLength > 40_960) {
-        safeSend({ type: "error", code: "payload_too_large", message: "Frame exceeds maximum size" });
+      if (byteLength > 40_960) {
+        safeSend({ type: "error", code: "payload_too_large", message: "Сообщение превышает допустимый размер." });
         safeClose(1009, "payload_too_large");
         return;
       }
 
       if (typeof raw !== "string") {
-        safeSend({ type: "error", code: "invalid_frame", message: "Expected UTF-8 JSON frame" });
+        safeSend({ type: "error", code: "invalid_frame", message: "Чат ожидает текстовое сообщение в формате JSON." });
         safeClose(1003, "invalid_frame");
         return;
       }
 
       let frame: ClientWsFrame;
       try {
-        frame = JSON.parse(raw) as ClientWsFrame;
-      } catch {
-        safeSend({ type: "error", code: "invalid_json", message: "Malformed JSON frame" });
-        safeClose(1007, "invalid_json");
+        frame = parseClientFrame(raw);
+      } catch (error) {
+        const code = error instanceof SyntaxError ? "invalid_json" : "invalid_frame";
+        const message = error instanceof SyntaxError ? "Не удалось прочитать JSON сообщения." :
+          error instanceof Error ? error.message : "Не удалось прочитать сообщение.";
+        safeSend({ type: "error", code, message });
+        safeClose(1007, code);
         return;
       }
 
       if (frame.type === "stop") {
         stoppedByUser = true;
         activeAbort?.abort("user_stop");
-        return;
-      }
-
-      if (frame.type !== "send") {
-        safeSend({ type: "error", code: "unknown_frame_type", message: "Unknown WS frame type" });
         return;
       }
 
@@ -171,13 +172,6 @@ export class ChatRunner extends DurableObject<Env> {
     let loggedRunId = "unadmitted";
 
     try {
-      const policy = await loadPolicy(db);
-      if (byteLength > policy.maxBodyBytes) {
-        safeSend({ type: "error", code: "payload_too_large", message: "Message body exceeds limit" });
-        safeClose(1009, "payload_too_large");
-        return;
-      }
-
       const btCheck = await resolveBrowserToken(
         this.env.BROWSER_TOKEN_SECRET,
         frame.browserToken,
@@ -208,22 +202,31 @@ export class ChatRunner extends DurableObject<Env> {
         return;
       }
 
-      const questionText = typeof frame.text === "string" ? frame.text.trim() : "";
-      const course = typeof frame.course === "string" ? frame.course.trim() : "";
-      const docId = typeof frame.docId === "string" ? frame.docId.trim() : "";
-      const clientRequestId =
-        typeof frame.clientRequestId === "string" ? frame.clientRequestId.trim() : "";
-      let quote = frame.quote ?? null;
-
-      if (!clientRequestId || clientRequestId.length > 128) {
-        safeSend({ type: "error", code: "invalid_request", message: "Некорректный идентификатор запроса" });
-        safeClose(4400, "invalid_request");
+      const policy = await loadPolicy(db);
+      if (byteLength > policy.maxBodyBytes) {
+        safeSend({ type: "error", code: "payload_too_large", message: "Message body exceeds limit" });
+        safeClose(1009, "payload_too_large");
         return;
       }
-      if ((frame.course != null && typeof frame.course !== "string") ||
-          (frame.docId != null && typeof frame.docId !== "string") || (!course && docId)) {
-        safeSend({ type: "error", code: "invalid_context", message: "Некорректная страница для вопроса" });
-        safeClose(4400, "invalid_context");
+
+      const questionText = frame.text.trim();
+      const course = frame.course.trim();
+      const docId = frame.docId.trim();
+      const clientRequestId = frame.clientRequestId.trim();
+      let quote = frame.quote ?? null;
+
+      if (questionText.length > policy.maxQuestionChars) {
+        safeSend({
+          type: "error",
+          code: "question_too_long",
+          message: `Question exceeds ${policy.maxQuestionChars} chars`,
+        });
+        safeClose(4400, "question_too_long");
+        return;
+      }
+      if (quote && quote.tex.length > policy.maxQuoteChars) {
+        safeSend({ type: "error", code: "invalid_quote", message: "Цитата слишком длинная." });
+        safeClose(4400, "invalid_quote");
         return;
       }
       if (course) {
@@ -236,26 +239,7 @@ export class ChatRunner extends DurableObject<Env> {
           return;
         }
       }
-      if (!questionText && !quote) {
-        safeSend({ type: "error", code: "empty_question", message: "Question or quote is required" });
-        safeClose(4400, "empty_question");
-        return;
-      }
-      if (questionText.length > policy.maxQuestionChars) {
-        safeSend({
-          type: "error",
-          code: "question_too_long",
-          message: `Question exceeds ${policy.maxQuestionChars} chars`,
-        });
-        safeClose(4400, "question_too_long");
-        return;
-      }
       if (quote) {
-        if (typeof quote.tex !== "string" || quote.tex.length > policy.maxQuoteChars) {
-          safeSend({ type: "error", code: "invalid_quote", message: "Quote exceeds limit or invalid" });
-          safeClose(4400, "invalid_quote");
-          return;
-        }
         const assistantQuote = quote.messageId !== undefined;
         const validQuote = assistantQuote
           ? await validateAssistantQuote(db, frame.threadId ?? null, quote, btCheck.browserId, allowance.tgId)

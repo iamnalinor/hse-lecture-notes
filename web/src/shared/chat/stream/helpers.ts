@@ -107,8 +107,10 @@ export const startOptimisticTurn = (setters: StreamStateSetters, args: SendArgs)
     });
     return;
   }
-  setters.setDraft("");
-  setters.setQuote(null);
+  if (args.keepDraft !== true) {
+    setters.setDraft("");
+    setters.setQuote(null);
+  }
   const turn = optimisticMessages(args.text, args.quote, args.docContext);
   setters.setMessages((prev) => [...prev, ...turn]);
 };
@@ -121,8 +123,7 @@ export const rollbackOptimisticTurn = (setters: StreamStateSetters, args: SendAr
     return;
   }
   setters.setMessages((prev) => prev.slice(0, -2));
-  setters.setDraft(args.text);
-  setters.setQuote(args.quote);
+  setters.restoreRejectedDraft(args.text, args.quote);
 };
 
 export const rejectOptimisticTurn = (setters: StreamStateSetters, args: SendArgs): void => {

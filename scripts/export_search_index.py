@@ -30,7 +30,9 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -546,7 +548,7 @@ def collect_corpus(
     # Enforce Vectorize Free tier budget (<= max_vectorize vectors @ 1024 dim)
     prioritized = sorted(
         range(len(all_blocks)),
-        key=lambda i: (VECTORIZE_PRIORITY.get(all_blocks[i].block_kind, 9), i),
+        key=lambda i: (VECTORIZE_PRIORITY.get(all_blocks[i].block_kind, 9), all_blocks[i].id),
     )
     selected_vec = set(prioritized[:max_vectorize])
     for i, b in enumerate(all_blocks):
@@ -572,6 +574,10 @@ def scope_corpus(
 # =============================================================================
 # Cloudflare REST helpers (D1, Workers AI bge-m3, Vectorize v2)
 # =============================================================================
+
+class UnconfirmedMutation(RuntimeError):
+    pass
+
 
 class CloudflareClient:
     def __init__(self, account_id: str, api_token: str, d1_id: str, vec_index: str) -> None:
@@ -602,15 +608,19 @@ class CloudflareClient:
                 "Content-Type": content_type,
             },
         )
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
-                if not result.get("success"):
-                    raise RuntimeError(f"Cloudflare API {method} {path}: {result.get('errors')}")
-                return result
-        except urllib.error.HTTPError as exc:
-            err_body = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"Cloudflare API {method} {path} HTTP {exc.code}: {err_body}") from exc
+        for attempt in range(4):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    result = json.loads(resp.read().decode("utf-8"))
+                    if not result.get("success"):
+                        raise RuntimeError(f"Cloudflare API {method} {path}: {result.get('errors')}")
+                    return result
+            except urllib.error.HTTPError as exc:
+                if method != "GET" or exc.code not in {429, 500, 502, 503, 504} or attempt == 3:
+                    detail = exc.read().decode("utf-8", errors="replace")
+                    raise RuntimeError(f"Cloudflare API {method} {path} HTTP {exc.code}: {detail}") from exc
+                retry_after = exc.headers.get("Retry-After", "")
+                time.sleep(int(retry_after) if retry_after.isdigit() else 2**attempt)
 
     def d1_query(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         payload: dict[str, Any] = {"sql": sql}
@@ -627,25 +637,95 @@ class CloudflareClient:
             raise RuntimeError(f"Unexpected Workers AI embedding response: {str(res)[:300]}")
         return data
 
-    def vectorize_upsert(self, vectors: list[dict[str, Any]]) -> None:
-        if not vectors:
-            return
-        ndjson = "\n".join(json.dumps(v) for v in vectors).encode("utf-8")
-        self._req(
-            "POST",
-            f"/vectorize/v2/indexes/{self.vec_index}/upsert",
-            body=ndjson,
-            content_type="application/x-ndjson",
-        )
+    @property
+    def vector_path(self) -> str:
+        return f"/vectorize/v2/indexes/{self.vec_index}"
 
-    def vectorize_delete(self, ids: list[str]) -> None:
-        if not ids:
-            return
-        self._req(
-            "POST",
-            f"/vectorize/v2/indexes/{self.vec_index}/delete_by_ids",
-            {"ids": ids},
-        )
+    def vector_ids(self) -> set[str]:
+        ids: set[str] = set()
+        cursor = ""
+        while True:
+            query = urllib.parse.urlencode({"count": 1000, "cursor": cursor} if cursor else {"count": 1000})
+            page = self._req("GET", f"{self.vector_path}/list?{query}")["result"]
+            ids.update(row["id"] for row in page["vectors"])
+            if not page["isTruncated"]:
+                return ids
+            if not page.get("nextCursor") or page["nextCursor"] == cursor:
+                raise RuntimeError("Incomplete Vectorize inventory")
+            cursor = page["nextCursor"]
+
+    def wait_for_mutation(self, pending: dict[str, Any]) -> None:
+        mutation_id = pending["mutation_id"]
+        if not mutation_id:
+            raise RuntimeError("Missing Vectorize mutation ID")
+        deadline = time.monotonic() + 180
+        expected = dict(pending.get("blocks", []))
+        ids = pending["ids"] if pending["action"] == "delete" else list(expected)
+        while time.monotonic() < deadline:
+            info = self._req("GET", f"{self.vector_path}/info")["result"]
+            if info.get("processedUpToMutation") == mutation_id:
+                return
+            # The index only exposes its latest processed mutation. Compare the actual
+            # postcondition if unrelated work has already advanced the marker.
+            rows = self._req("POST", f"{self.vector_path}/get_by_ids", {"ids": ids})["result"]
+            if not isinstance(rows, list):
+                raise RuntimeError("Invalid Vectorize get_by_ids response")
+            if pending["action"] == "delete":
+                if not rows:
+                    return
+            else:
+                observed = {row["id"]: (row.get("metadata") or {}).get("content_hash") for row in rows}
+                if observed == expected:
+                    return
+            time.sleep(2)
+        raise UnconfirmedMutation(f"Vectorize mutation {mutation_id} still unconfirmed; rerun the sync")
+
+    def vectorize_upsert(self, vectors: list[dict[str, Any]]) -> str:
+        boundary = uuid.uuid4().hex
+        ndjson = "\n".join(json.dumps(v) for v in vectors)
+        body = (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="vectors"; filename="vectors.ndjson"\r\n'
+            f"Content-Type: application/x-ndjson\r\n\r\n{ndjson}\r\n--{boundary}--\r\n"
+        ).encode()
+        response = self._req("POST", f"{self.vector_path}/upsert", body,
+                             f"multipart/form-data; boundary={boundary}")
+        return response["result"]["mutationId"]
+
+    def vectorize_delete(self, ids: list[str]) -> str:
+        response = self._req("POST", f"{self.vector_path}/delete_by_ids", {"ids": ids})
+        return response["result"]["mutationId"]
+
+
+def finish_vector_mutation(cf: CloudflareClient, pending: dict[str, Any]) -> None:
+    cf.wait_for_mutation(pending)
+    if pending["action"] == "delete":
+        ids = pending["ids"]
+        placeholders = ", ".join("?" for _ in ids)
+        cf.d1_query(f"UPDATE course_blocks SET vectorized = 0 WHERE id IN ({placeholders})", ids)
+    else:
+        # A text-only sync may have changed the block while the mutation was pending.
+        pairs = pending["blocks"]
+        placeholders = ", ".join("(?, ?)" for _ in pairs)
+        cf.d1_query(f"UPDATE course_blocks SET vectorized = 1 WHERE (id, content_hash) IN ({placeholders})",
+                    [v for pair in pairs for v in pair])
+    cf.d1_query("DELETE FROM service_config WHERE key = 'pending_vector_mutation'")
+
+
+def record_vector_mutation(cf: CloudflareClient, pending: dict[str, Any]) -> None:
+    cf.d1_query("INSERT OR REPLACE INTO service_config (key, value_json, updated_at) VALUES ('pending_vector_mutation', ?, ?)",
+                [json.dumps(pending), int(time.time() * 1000)])
+    finish_vector_mutation(cf, pending)
+
+
+def submit_vector_blocks(cf: CloudflareClient, chunk: list[IndexedBlock]) -> None:
+    texts = [f"{b.title}\n{b.statement_tex[:1200]}" for b in chunk]
+    embeddings = cf.embed_texts(texts)
+    vectors = [{"id": b.id, "values": emb, "metadata": {
+        "course": b.course, "doc_kind": b.doc_kind, "block_kind": b.block_kind, "content_hash": b.content_hash,
+    }} for b, emb in zip(chunk, embeddings, strict=True)]
+    record_vector_mutation(cf, {"mutation_id": cf.vectorize_upsert(vectors), "action": "upsert",
+                                "blocks": [(b.id, b.content_hash) for b in chunk]})
 
 
 def sync_to_cloudflare(
@@ -658,6 +738,8 @@ def sync_to_cloudflare(
     global_blocks: list[IndexedBlock] | None = None,
 ) -> dict[str, int]:
     # The text sync is course-local. Vector capacity is shared by all courses.
+    if only_course and global_blocks is None and not skip_vectorize:
+        raise ValueError("Partial vector sync needs the global selection")
     now_ms = int(time.time() * 1000)
     stats = {
         "docs_upserted": 0,
@@ -750,40 +832,6 @@ def sync_to_cloudflare(
             blocks_needing_vec.append(b)
 
     removed_block_ids = sorted(set(existing_blocks) - new_block_ids)
-    obsolete = {bid for bid in removed_block_ids if len(bid.encode()) <= 64}
-    obsolete.update(b.id for b in blocks if not b.vectorize_candidate and existing_blocks.get(b.id, ("", 0))[1])
-    if only_course and global_blocks is not None and not skip_vectorize:
-        eligible_sources = {(b.course, b.doc_id, b.anchor_id) for b in global_blocks if b.vectorize_candidate}
-        other_vectors = cf.d1_query(
-            "SELECT id, course, doc_id, anchor_id FROM course_blocks WHERE course != ? AND vectorized = 1",
-            [only_course],
-        )
-        obsolete.update(row["id"] for row in other_vectors
-                        if (row["course"], row["doc_id"], row["anchor_id"]) not in eligible_sources)
-    queue_key = "pending_vector_deletes:" + (only_course or "*")
-    if skip_vectorize and obsolete:
-        old = cf.d1_query("SELECT value_json FROM service_config WHERE key = ?", [queue_key])
-        queued = set(json.loads(old[0]["value_json"])) if old else set()
-        cf.d1_query("INSERT OR REPLACE INTO service_config (key, value_json, updated_at) VALUES (?, ?, ?)",
-                    [queue_key, json.dumps(sorted(queued | obsolete)), now_ms])
-    if not skip_vectorize:
-        pending = cf.d1_query("SELECT key, value_json FROM service_config WHERE key LIKE 'pending_vector_deletes:%'")
-        eligible = {b.id for b in (global_blocks if global_blocks is not None else blocks) if b.vectorize_candidate}
-        for row in pending:
-            if only_course and global_blocks is None and row["key"] != queue_key:
-                continue
-            obsolete.update(set(json.loads(row["value_json"])) - eligible)
-        ids = sorted(obsolete)
-        for i in range(0, len(ids), 80):
-            batch = ids[i : i + 80]
-            cf.vectorize_delete(batch)
-            ph = ", ".join("?" for _ in batch)
-            cf.d1_query(f"UPDATE course_blocks SET vectorized = 0 WHERE id IN ({ph})", batch)
-            stats["vectors_deleted"] += len(batch)
-        for row in pending:
-            if not only_course or global_blocks is not None or row["key"] == queue_key:
-                cf.d1_query("DELETE FROM service_config WHERE key = ?", [row["key"]])
-
     # Batch changed blocks into D1 (10 per multi-row SQL statement for speed)
     changed_ids = {b.id for b in changed_blocks}
     BATCH_SZ = 5  # 5 * 16 = 80 params (well under SQLite 100 bind param limit per query!)
@@ -886,19 +934,59 @@ def sync_to_cloudflare(
         cf.d1_query(f"UPDATE course_blocks SET content_hash = CASE id {cases} END WHERE id IN ({ph})",
                     params + [b.id for b in chunk])
 
+    if not skip_vectorize:
+        rows = cf.d1_query("SELECT value_json FROM service_config WHERE key = 'pending_vector_mutation'")
+        if rows:
+            pending = json.loads(rows[0]["value_json"])
+            try:
+                finish_vector_mutation(cf, pending)
+            except UnconfirmedMutation:
+                # A rejected/superseded write cannot be observed on any later retry.
+                # Reassert a deletion for the affected IDs, journal its new mutation
+                # before waiting, then rebuild eligible vectors from the current corpus.
+                ids = pending["ids"] if pending["action"] == "delete" else [pair[0] for pair in pending["blocks"]]
+                pending = {"action": "delete", "ids": ids, "mutation_id": cf.vectorize_delete(ids)}
+                record_vector_mutation(cf, pending)
+            if pending["action"] == "delete":
+                deleted_ids = set(pending["ids"])
+                queued_ids = {b.id for b in blocks_needing_vec}
+                blocks_needing_vec.extend(b for b in blocks if b.vectorize_candidate and
+                                          b.id in deleted_ids and b.id not in queued_ids)
+            if pending["action"] == "delete" and only_course:
+                # Recover a previously interrupted full sync even on a scoped retry.
+                affected = set(pending["ids"])
+                others = [b for b in global_blocks or [] if b.course != only_course and
+                          b.vectorize_candidate and b.id in affected]
+                if others:
+                    ph = ", ".join("?" for _ in others)
+                    stored = {row["id"]: row["content_hash"] for row in cf.d1_query(
+                        f"SELECT id, content_hash FROM course_blocks WHERE id IN ({ph})", [b.id for b in others])}
+                    blocks_needing_vec.extend(b for b in others if stored.get(b.id) == b.content_hash)
+            if pending["action"] == "upsert":
+                confirmed = dict(pending["blocks"])
+                blocks_needing_vec = [b for b in blocks_needing_vec if confirmed.get(b.id) != b.content_hash]
+        inventory = cf.vector_ids()
+        eligible = {b.id for b in (global_blocks if global_blocks is not None else blocks) if b.vectorize_candidate}
+        obsolete = sorted(inventory - eligible)
+        for i in range(0, len(obsolete), 80):
+            ids = obsolete[i : i + 80]
+            record_vector_mutation(cf, {"mutation_id": cf.vectorize_delete(ids), "action": "delete", "ids": ids})
+            stats["vectors_deleted"] += len(ids)
+        # Recover missing vectors even if an old D1 flag still claims they exist.
+        queued = {b.id for b in blocks_needing_vec}
+        blocks_needing_vec.extend(b for b in blocks if b.vectorize_candidate and b.id not in inventory and b.id not in queued)
+
     # 5. Embed & upsert Vectorize in batches of 25
     if not skip_vectorize and blocks_needing_vec:
         for i in range(0, len(blocks_needing_vec), 25):
             chunk = blocks_needing_vec[i : i + 25]
-            texts = [f"{b.title}\n{b.statement_tex[:1200]}" for b in chunk]
-            embeddings = cf.embed_texts(texts)
-            vectors = [{"id": b.id, "values": emb} for b, emb in zip(chunk, embeddings, strict=True)]
-            cf.vectorize_upsert(vectors)
-            ph = ", ".join("?" for _ in chunk)
-            cf.d1_query(f"UPDATE course_blocks SET vectorized = 1 WHERE id IN ({ph})", [b.id for b in chunk])
+            submit_vector_blocks(cf, chunk)
             stats["vectors_upserted"] += len(chunk)
 
-    # 6. Update index_meta version
+    # Only publish a global version after reconciling the entire semantic index.
+    if skip_vectorize or only_course:
+        return stats
+
     index_version = _sha256_hex(
         "|".join(sorted(f"{b.id}:{b.content_hash}" for b in blocks))
     )
@@ -941,13 +1029,14 @@ def main() -> None:
         "references": len(refs),
         "vectorize_selected": vec_count,
         "vectorize_stored_dimensions": stored_dims,
+        "vectorize_coverage": vec_count / len(blocks) if blocks else 0,
         "vectorize_free_limit_dimensions": 5_000_000,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
-    if args.fail_on_vectorize_overflow and len(blocks) > VECTORIZE_FREE_MAX_VECTORS:
+    if args.fail_on_vectorize_overflow and sum(b.vectorize_candidate for b in corpus[1]) > VECTORIZE_FREE_MAX_VECTORS:
         print(
-            f"ERROR: total blocks ({len(blocks)}) exceeds Vectorize Free cap ({VECTORIZE_FREE_MAX_VECTORS})",
+            f"ERROR: global vector selection exceeds Vectorize Free cap ({VECTORIZE_FREE_MAX_VECTORS})",
             file=sys.stderr,
         )
         sys.exit(2)

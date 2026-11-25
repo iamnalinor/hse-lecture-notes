@@ -37,7 +37,7 @@ export interface Env {
   CODEX_PROXY_URL?: string;
   TURNSTILE_SECRET_KEY: string;
   TELEGRAM_BOT_TOKEN?: string;
-  TELEGRAM_CLIENT_ID?: string;
+  TELEGRAM_CLIENT_ID: string;
   OWNER_TELEGRAM_ID?: string;
 }
 

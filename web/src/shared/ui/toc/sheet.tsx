@@ -5,9 +5,8 @@ import type { TocItem } from "#web/domain/schemas.ts";
 import { TexText } from "#web/shared/reader/tex-text.tsx";
 
 import { MenuIcon } from "../icons.tsx";
-import { useIsMatching } from "../use-is-matching.ts";
 import { useReadingProgress } from "../use-reading-progress.ts";
-import { tocItems, TocList, WIDE_QUERY } from "./document.tsx";
+import { tocItems, TocList, useIsWideToc } from "./document.tsx";
 import { useActiveSection } from "./use-active-section.ts";
 
 type Props = {
@@ -23,7 +22,7 @@ back bar after a reference jump is shown (`app.css`): both live at the bottom ed
 the side-column `DocToc` only on wide screens, so this is the page's one `useActiveSection`.
 */
 export const TocSheet = ({ caption, minutes, toc }: Props) => {
-  const isWide = useIsMatching(WIDE_QUERY);
+  const isWide = useIsWideToc();
   return isWide ? null : <Sheet caption={caption} minutes={minutes} toc={toc} />;
 };
 

@@ -17,6 +17,7 @@ import { spawnSync } from "node:child_process";
 import { encryptJsonAesGcm } from "../src/crypto";
 import type { CodexCredentialsPayload } from "../src/llm/codex-auth";
 import { assignmentSql, parseTelegramIds, rosterSql } from "./admin-tiers";
+import { validatePolicy, validatePolicyPatch } from "./admin-policy";
 import initialPolicy from "../policy.json";
 import type { ServicePolicy } from "../src/types";
 
@@ -47,17 +48,12 @@ VALUES ('policy', ${sqlString(JSON.stringify(initialPolicy satisfies ServicePoli
 ON CONFLICT(key) DO NOTHING`, remote);
 }
 
-function validatePolicyPatch(value: unknown, template: unknown, path: string): void {
-  if (template && typeof template === "object") {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Expected an object at ${path}`);
-    for (const [key, item] of Object.entries(value)) {
-      if (!Object.hasOwn(template, key)) throw new Error(`Unknown policy field ${path}.${key}`);
-      validatePolicyPatch(item, (template as Record<string, unknown>)[key], `${path}.${key}`);
-    }
-  } else if (typeof value !== typeof template || (typeof value === "string" && !value.trim()) ||
-      (typeof value === "number" && (!Number.isFinite(value) || value < 0))) {
-    throw new Error(`Invalid policy value at ${path}`);
-  }
+function queryD1(sql: string, remote: boolean): Array<Record<string, string | null>> {
+  const result = spawnSync("bunx", ["wrangler", "d1", "execute", DB_NAME, remote ? "--remote" : "--local",
+    "--json", "--command", sql], { cwd: new URL("..", import.meta.url).pathname, encoding: "utf8" });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(result.stderr || "Wrangler D1 query failed");
+  return JSON.parse(result.stdout)[0].results;
 }
 
 function getFlag(args: string[], name: string): string | undefined {
@@ -136,10 +132,18 @@ ON CONFLICT(id) DO UPDATE SET
     const raw = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
     validatePolicyPatch(raw, initialPolicy, "policy");
     const patch = sqlString(JSON.stringify(raw));
-    const sql = `INSERT INTO service_config (key, value_json, updated_at)
-VALUES ('policy', json_patch(${sqlString(JSON.stringify(initialPolicy))}, ${patch}), ${now})
-ON CONFLICT(key) DO UPDATE SET value_json = json_patch(service_config.value_json, ${patch}), updated_at = excluded.updated_at;`;
-    runD1Sql(sql, remote);
+    const candidate = queryD1(`SELECT value_json AS previous,
+      json_patch(COALESCE(value_json, ${sqlString(JSON.stringify(initialPolicy))}), ${patch}) AS merged
+      FROM (SELECT (SELECT value_json FROM service_config WHERE key = 'policy') AS value_json)`, remote)[0];
+    if (!candidate?.merged) throw new Error("Unable to read current policy");
+    validatePolicy(JSON.parse(candidate.merged));
+    const value = sqlString(candidate.merged);
+    const sql = candidate.previous == null
+      ? `INSERT INTO service_config(key, value_json, updated_at) VALUES ('policy', ${value}, ${now})
+          ON CONFLICT DO NOTHING RETURNING key`
+      : `UPDATE service_config SET value_json = ${value}, updated_at = ${now}
+          WHERE key = 'policy' AND value_json = ${sqlString(candidate.previous)} RETURNING key`;
+    if (!queryD1(sql, remote).length) throw new Error("Policy changed concurrently. Run set-policy again.");
     console.log("Policy updated successfully.");
     return;
   }

@@ -76,7 +76,7 @@ it("default identity remains available with one long-thread warning", () => {
   expect(
     screen.getByText("Чат слишком длинный, качество снижено. Рекомендуем создать новый чат"),
   ).toBeInTheDocument();
-  expect(screen.getByText(/Вы вошли как Albert/u)).toBeInTheDocument();
+  expect(screen.getByText(/Твой аккаунт — Albert/u)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Сменить аккаунт" })).toBeEnabled();
   expect(screen.queryByText(/У студентов 1 курса/u)).not.toBeInTheDocument();
 });

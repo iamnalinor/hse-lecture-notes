@@ -69,7 +69,9 @@ type Props = {
 const UserMessageView = ({
   message,
   onJumpToBlock,
-}: Pick<Props, "message" | "onJumpToBlock">): JSX.Element => {
+  canRetry,
+  onRetry,
+}: Pick<Props, "canRetry" | "message" | "onJumpToBlock" | "onRetry">): JSX.Element => {
   const { quote } = message;
   const blockId = quote?.blockId;
   return (
@@ -91,7 +93,18 @@ const UserMessageView = ({
       </div>
       {message.status === "error" && (
         <div className="ai-unsent" role="status">
-          Не отправлено
+          Не отправлено{" "}
+          {canRetry && (
+            <button
+              className="ai-btn ai-btn-2"
+              onClick={() => {
+                onRetry(message.id);
+              }}
+              type="button"
+            >
+              Повторить
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -109,7 +122,7 @@ const MessageError = ({
       <div>
         Не удалось получить ответ
         <div className="ai-error-detail">
-          {message.errorMessage ?? "Не удалось завершить запрос. Попробуйте ещё раз."}
+          {message.errorMessage ?? "Не удалось завершить запрос. Попробуй ещё раз."}
         </div>
       </div>
     </div>
@@ -150,6 +163,11 @@ const AssistantContent = ({
         onJumpToBlock={onJumpToBlock}
         text={message.contentTex}
       />
+      {message.status === "done" && message.errorMessage !== null && (
+        <p className="ai-error-detail" role="status">
+          {message.errorMessage}
+        </p>
+      )}
       {isStopped && (
         <div className="ai-stopped ai-fade">
           {message.errorMessage ?? incompleteCaption(message.status)}
@@ -216,7 +234,7 @@ export const ChatMessageView = (props: Props): JSX.Element => {
   return (
     <MessageMaterialPathContext value={path}>
       {props.message.role === "user" ? (
-        <UserMessageView message={props.message} onJumpToBlock={jump} />
+        <UserMessageView {...props} onJumpToBlock={jump} />
       ) : (
         <AssistantMessageView {...props} onJumpToBlock={jump} />
       )}

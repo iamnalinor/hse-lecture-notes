@@ -12,9 +12,8 @@ import { readingMinutes } from "#web/domain/text.ts";
 import { FragmentView } from "#web/shared/reader/fragment-view.tsx";
 import { useScrollToHash } from "#web/shared/reader/use-scroll-to-hash.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
-import { DocToc, WIDE_QUERY } from "#web/shared/ui/toc/document.tsx";
+import { DocToc, useIsWideToc } from "#web/shared/ui/toc/document.tsx";
 import { TocSheet } from "#web/shared/ui/toc/sheet.tsx";
-import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
 import { LectureHeader } from "./header.tsx";
 import { PrevNext } from "./prev-next.tsx";
@@ -49,7 +48,7 @@ const LecturePage = ({ entry, info, lectures }: LectureProps) => {
   useDocumentTitle(`${info.name}, лекция ${String(meta.lecture)}: ${meta.title}`);
   useScrollToHash();
 
-  const isWide = useIsMatching(WIDE_QUERY);
+  const isWide = useIsWideToc();
   const minutes = readingMinutes(html);
   const caption = "Содержание";
 

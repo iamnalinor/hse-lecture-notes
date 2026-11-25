@@ -139,7 +139,7 @@ export const TicketGenerator = ({ course, prepId }: Props) => {
       )}
       {isEmpty && (
         <p className="mt-2 mb-0 text-subhead text-muted" id="ticket-topics-empty">
-          Выберите хотя бы одну тему.
+          Выбери хотя бы одну тему.
         </p>
       )}
       <p aria-live="polite" className="sr-only">

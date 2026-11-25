@@ -13,5 +13,5 @@ export function runErrorMessage(code: string | null, hasText: boolean): string {
     internal_error: "Внутренняя ошибка сервера.",
   };
   const reason = reasons[code ?? ""] ?? "Ответ не удалось завершить.";
-  return `${reason} ${hasText ? "Полученный текст сохранён. " : ""}Попробуйте ещё раз.${code && code in reasons ? ` Код: ${code}.` : ""}`;
+  return `${reason} ${hasText ? "Полученный текст сохранён. " : ""}Попробуй ещё раз.${code && code in reasons ? ` Код: ${code}.` : ""}`;
 }

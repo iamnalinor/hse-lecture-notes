@@ -16,8 +16,10 @@ vi.mock("#web/shared/chat/session/context.tsx", () => ({
     login: vi.fn(),
   }),
 }));
-it("offers only Telegram login after the guest limit", () => {
+it("asks for login without claiming a quota when no reset time is supplied", () => {
   render(<BottomPlate mode="login" />);
+  expect(screen.getByText("Для отправки вопроса нужен вход")).toBeInTheDocument();
+  expect(screen.queryByText(/исчерпан/u)).toBeNull();
   expect(screen.getByRole("button", { name: /Войти через Telegram/ })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Попробовать снова" })).not.toBeInTheDocument();
 });

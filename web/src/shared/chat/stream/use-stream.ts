@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
 
 import { type ChatAccess, getChatEnvConfig } from "#web/api/chat/client.ts";
+import { clearAllowanceToken, readStoredAuth } from "#web/api/chat/storage.ts";
 import {
   type ActiveWsStream,
   openChatMessageStream,
@@ -44,7 +45,18 @@ const connectStream = (
         text: args.text,
         threadId: args.activeThreadId,
       },
-      callbacks,
+      {
+        ...callbacks,
+        onError: (error) => {
+          if (
+            error.code === "allowance_expired" &&
+            readStoredAuth().allowanceToken === allowance.allowanceToken
+          ) {
+            clearAllowanceToken();
+          }
+          callbacks.onError(error);
+        },
+      },
     );
   } catch {
     callbacks.onCloseUnexpected();
@@ -172,11 +184,9 @@ const finishAccessFailure = (
 ): void => {
   if (outcome.kind === "error") {
     deps.callbacks.onError({ code: "allowance_error", message: outcome.message });
-  } else if (outcome.kind === "blocked") {
+  } else {
     deps.connection.clearActive();
     rejectOptimisticTurn(deps.setters, deps.args);
-  } else {
-    deps.connection.detachActive();
   }
 };
 

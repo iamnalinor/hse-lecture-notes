@@ -168,5 +168,6 @@ web/public/pdf/
 # Local agent plans and execution notes
 .superpowers/
 docs/superpowers/
+web/playwright/.auth/
 web/playwright-report/
 web/test-results/

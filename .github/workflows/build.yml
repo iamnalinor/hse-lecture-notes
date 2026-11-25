@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   lint:
@@ -114,7 +114,10 @@ jobs:
           done
 
       - name: Sync chat search index (D1 + Vectorize)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: chat_index
+        continue-on-error: true
+        timeout-minutes: 120
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -122,8 +125,15 @@ jobs:
           if [[ -n "$CLOUDFLARE_ACCOUNT_ID" && -n "$CLOUDFLARE_API_TOKEN" ]]; then
             uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow
           else
-            echo "Skipping chat search index sync: Cloudflare secrets not configured."
+            echo "Missing Cloudflare credentials for chat search index sync." >&2
+            exit 1
           fi
+
+      - name: Report stale chat search index
+        if: steps.chat_index.outcome == 'failure'
+        run: |
+          echo "::warning::Chat search index sync failed. Check the sync logs and rerun Build notes on main."
+          echo "Chat search index sync failed. Check the sync logs and rerun Build notes on main." >> "$GITHUB_STEP_SUMMARY"
 
   # Превью сайта для PR: тот же сайт, что собирает Pages, но из артефактов этого запуска.
   # Загружается новой версией (не деплоем) в Cloudflare Worker со статическими ассетами

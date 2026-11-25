@@ -141,7 +141,9 @@ test("real chat returns a usable suggestion, Tab fills it and history survives r
   );
   await page.getByTitle("Чат с ИИ").click();
   const input = page.getByRole("textbox", { name: "Сообщение в чат" });
-  await input.fill("Что важнее перед КР: выучить доказательства или решить больше задач?");
+  await input.fill(
+    "Помоги выбрать тему для подготовки к контрольной по алгебре. Предложи две темы и попроси меня выбрать одну для разбора примера.",
+  );
   await page.context().setOffline(true);
   await input.press("Enter");
   const retry = page.getByRole("button", { name: "Повторить", exact: true });

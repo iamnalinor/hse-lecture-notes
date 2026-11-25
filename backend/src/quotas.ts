@@ -7,7 +7,7 @@ import {
   modelPricing,
   type ModelRoute,
 } from "./pricing";
-import { shortenThreadTitle } from "./chat/thread-title";
+import { displayThreadTitle, firstQuestionSql } from "./chat/thread-title";
 import { sendOwnerAlert } from "./telegram-alerts";
 import {
   type BlockInfo,
@@ -676,7 +676,7 @@ export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<nu
       finalStatus: "error",
       messageStatus: "incomplete",
       errorCode: "run_expired",
-      errorMessage: "Ответ не завершился вовремя. Попробуйте задать вопрос ещё раз.",
+      errorMessage: "Ответ не завершился вовремя. Попробуй задать вопрос ещё раз.",
       actualCostMicros: row.actual_cost_micros,
       isCostUncertain: true,
       nowMs,
@@ -843,11 +843,6 @@ export type AdmitRunResult =
       message: string;
     };
 
-function deriveThreadTitle(text: string, quote: QuotePayload | null): string {
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  return shortenThreadTitle(cleaned || quote?.label || "Новый чат");
-}
-
 function identityQuotaGuard(
   policy: ServicePolicy,
   axes: IdentityAxes,
@@ -955,7 +950,7 @@ async function tryAdmitRun(
     const thread = await db.first<{
       id: string;
       generated_title: string | null;
-      title: string;
+      first_question: string | null;
       context_limited: number;
       context_revision: number;
       browser_id: string | null;
@@ -963,7 +958,7 @@ async function tryAdmitRun(
     }>(
       db
         .prepare(
-          "SELECT id, generated_title, title, context_limited, context_revision, browser_id, telegram_id FROM chat_threads WHERE id = ?",
+          `SELECT id, generated_title, ${firstQuestionSql} AS first_question, context_limited, context_revision, browser_id, telegram_id FROM chat_threads WHERE id = ?`,
         )
         .bind(idempRow.thread_id),
     );
@@ -983,7 +978,7 @@ async function tryAdmitRun(
       contextLimited: Boolean(thread.context_limited),
       runId: idempRow.id,
       threadId: idempRow.thread_id,
-      threadTitle: thread.generated_title ?? thread.title,
+      threadTitle: displayThreadTitle(thread.generated_title, thread.first_question),
       generatedTitle: thread.generated_title,
       userMessageId: idempRow.user_message_id,
       assistantMessageId: idempRow.assistant_message_id,
@@ -1003,7 +998,7 @@ async function tryAdmitRun(
 
   // 4. Verify existing thread ownership or prepare new thread
   let threadId = params.threadId;
-  let threadTitle = deriveThreadTitle(params.questionText, params.quote);
+  let threadTitle = displayThreadTitle(null, params.questionText);
   let generatedTitle: string | null = null;
   let nextSeq = 1;
   let creatingThread = false;
@@ -1014,7 +1009,7 @@ async function tryAdmitRun(
     const [threadRes, seqRes] = await db.batch<Record<string, unknown>>([
       db
         .prepare(
-          "SELECT id, generated_title, title, context_limited, context_revision, browser_id, telegram_id FROM chat_threads WHERE id = ?",
+          `SELECT id, generated_title, ${firstQuestionSql} AS first_question, context_limited, context_revision, browser_id, telegram_id FROM chat_threads WHERE id = ?`,
         )
         .bind(threadId),
       db
@@ -1025,7 +1020,7 @@ async function tryAdmitRun(
       | {
           id: string;
           generated_title: string | null;
-          title: string;
+          first_question: string | null;
           context_limited: number;
           context_revision: number;
           browser_id: string | null;
@@ -1048,7 +1043,7 @@ async function tryAdmitRun(
     contextLimited = Boolean(thread.context_limited);
     contextRevision = thread.context_revision;
     generatedTitle = thread.generated_title;
-    threadTitle = generatedTitle ?? thread.title;
+    threadTitle = displayThreadTitle(generatedTitle, thread.first_question);
     nextSeq = Number(seqRes?.results[0]?.max_seq ?? 0) + 1;
   } else {
     creatingThread = true;
@@ -1237,11 +1232,10 @@ async function tryAdmitRun(
       db
         .prepare(
           `INSERT INTO chat_threads (id, title, browser_id, telegram_id, created_at, updated_at, context_limited, context_revision)
-           SELECT ?, ?, ?, ?, ?, ?, ?, 1 WHERE ${admitted}`,
+           SELECT ?, '', ?, ?, ?, ?, ?, 1 WHERE ${admitted}`,
         )
         .bind(
           threadId,
-          threadTitle,
           isGuest ? params.axes.browserId : null,
           isGuest ? null : params.axes.telegramId,
           nowMs,

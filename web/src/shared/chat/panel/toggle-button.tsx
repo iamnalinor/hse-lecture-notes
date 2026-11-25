@@ -1,20 +1,24 @@
 import type { JSX } from "react";
 
+import { isChatConfigured } from "#web/api/chat/http.ts";
+
 import { SparklesIcon } from "../icons.tsx";
-import { useChat } from "../session/context.tsx";
+import { setChatOpen, useIsChatOpen } from "../open-state.ts";
 
 export const ChatToggleButton = (): JSX.Element | null => {
-  const chat = useChat();
-  if (!chat.isConfigured) {
+  const isOpen = useIsChatOpen();
+  if (!isChatConfigured()) {
     return null;
   }
 
   return (
     <button
       aria-controls="ai-panel"
-      aria-expanded={chat.isOpen}
+      aria-expanded={isOpen}
       className="ai-head-btn"
-      onClick={chat.toggle}
+      onClick={() => {
+        setChatOpen((open) => !open);
+      }}
       title="Чат с ИИ"
       type="button"
     >

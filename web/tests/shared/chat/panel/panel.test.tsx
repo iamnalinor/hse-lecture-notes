@@ -280,7 +280,7 @@ it("shows the account switch caption only for an external account", () => {
     expect(screen.getByRole("button", { name: "Сменить аккаунт" })).toBeVisible();
     state.tier = "student";
     view.rerender(<BottomCaption mode="composer" nowMs={0} rateRemainSec={0} />);
-    expect(screen.queryByText(/Вы вошли как/u)).toBeNull();
+    expect(screen.queryByText(/Твой аккаунт —/u)).toBeNull();
     expect(screen.queryByRole("button", { name: "Сменить аккаунт" })).toBeNull();
   } finally {
     state.tier = "guest";
@@ -366,7 +366,7 @@ it("rotates response words every five seconds while browser and background statu
     expect(screen.getByText("Отвечаю в фоне…")).toBe(status);
     await act(() => vi.advanceTimersByTime(10_000));
     expect(screen.getByText("Отвечаю в фоне…")).toBe(status);
-    expect(view.container.querySelector(".ai-answer")).toHaveTextContent("Частичный ответ");
+    expect(view.baseElement.querySelector(".ai-answer")).toHaveTextContent("Частичный ответ");
     state.canStop = true;
     state.messages = [makeAssistantMsg(state.docContext)];
     view.rerender(statusPanel());

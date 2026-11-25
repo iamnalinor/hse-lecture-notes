@@ -38,7 +38,7 @@ const useHits = (
   const index = useQuery({ ...searchIndexQuery, enabled: isWanted, select: prepareIndex });
   const labels = useQuery({ ...labelIndexQuery, enabled: isWanted });
   if (index.isError || labels.isError) {
-    return { hits: [], status: "Не удалось загрузить поиск. Проверьте подключение." };
+    return { hits: [], status: "Не удалось загрузить поиск. Проверь подключение." };
   }
   if (index.data === undefined || labels.data === undefined) {
     return { hits: [], status: "Загружаем конспекты…" };

@@ -34,6 +34,12 @@ jobs:
       - name: Typecheck & test
         working-directory: backend
         run: bun run typecheck && bun test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify Worker, WebSocket Durable Object and D1 together
+        working-directory: backend
+        run: node integration/chat-workerd.mjs
 
   deploy:
     name: Migrate D1 & deploy Worker

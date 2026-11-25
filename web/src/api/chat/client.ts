@@ -7,7 +7,7 @@ import {
   parseChatSuggestion,
 } from "#web/domain/chat/model.ts";
 
-import { type ChatAccess, ensureChatAllowance } from "./access.ts";
+import { ensureChatAllowance } from "./access.ts";
 import { apiJson, assertSameSession, getChatEnvConfig } from "./http.ts";
 import {
   clearAllowanceToken,
@@ -36,7 +36,7 @@ export type RunStatusResponse = {
 };
 
 type HistoryCursor = Pick<ChatThreadSummary, "id" | "updatedAt">;
-const threadUrl = (id?: null | string, before?: HistoryCursor): string => {
+const threadUrl = (id?: null | string, before?: HistoryCursor, beforeSeq?: number): string => {
   const query = new URLSearchParams();
   if (id !== undefined && id !== null) {
     query.set("threadId", id);
@@ -45,18 +45,22 @@ const threadUrl = (id?: null | string, before?: HistoryCursor): string => {
     query.set("beforeUpdatedAt", String(before.updatedAt));
     query.set("beforeId", before.id);
   }
+  if (beforeSeq !== undefined) {
+    query.set("beforeSeq", String(beforeSeq));
+  }
   return `/v1/thread?${query}`;
 };
 
 export const fetchChatThread = async (
   threadId?: null | string,
   before?: HistoryCursor,
+  beforeSeq?: number,
 ): Promise<null | ThreadResponse> => {
   const auth = readStoredAuth();
   if (auth.browserToken === null && auth.sessionToken === null) {
     return null;
   }
-  const res = await apiJson(threadUrl(threadId, before), { method: "GET" });
+  const res = await apiJson(threadUrl(threadId, before, beforeSeq), { method: "GET" });
   if (auth.sessionToken !== readStoredAuth().sessionToken || !res.ok) {
     return null;
   }
@@ -98,7 +102,9 @@ const requestLoginNonce = async (turnstileHooks: TurnstileHooks): Promise<string
   return nonceData.nonce;
 };
 
-export const loginViaTelegram = async (turnstileHooks: TurnstileHooks): Promise<ChatAccess> => {
+export const loginViaTelegram = async (
+  turnstileHooks: TurnstileHooks,
+): Promise<{ readonly user: ChatUser; readonly tier: ChatTier }> => {
   const { sessionToken } = readStoredAuth();
   const nonce = await requestLoginNonce(turnstileHooks);
   const idToken = await openTelegramLoginPopup(getChatEnvConfig().telegramClientId, nonce);
@@ -121,7 +127,7 @@ export const loginViaTelegram = async (turnstileHooks: TurnstileHooks): Promise<
   saveBrowserToken(loginData.browserToken);
   saveSessionAuth(loginData.sessionToken, loginData.tier, loginData.user);
   clearAllowanceToken();
-  return await ensureChatAllowance(turnstileHooks);
+  return loginData;
 };
 
 export const logoutChatSession = async (): Promise<"logged_out" | "session_changed"> => {

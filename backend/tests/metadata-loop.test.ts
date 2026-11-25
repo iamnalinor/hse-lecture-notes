@@ -1,4 +1,5 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
+import { AgentToolRunner } from "../src/chat/tools";
 import { executeAgentRun } from "../src/chat/agent-loop";
 import { TrackedD1 } from "../src/db";
 import { admitRunAtomic } from "../src/quotas";
@@ -58,12 +59,15 @@ async function fixture(
   maxRounds = 6,
   hasTitle = false,
   maxOutputChars = defaults.maxToolOutputChars,
+  maxRunDurationMs = defaults.maxRunDurationMs,
+  stop?: AbortController,
 ) {
   const shim = new SqliteD1Shim(),
     db = new TrackedD1(shim.asD1()),
     policy = {
       ...structuredClone(defaults),
       maxToolRounds: maxRounds,
+      maxRunDurationMs,
       maxToolOutputChars: maxOutputChars,
       maxTotalToolOutputChars: maxOutputChars,
     };
@@ -111,8 +115,8 @@ async function fixture(
     questionCreatedAt: admit.questionCreatedAt,
     questionText: "q",
     quote: null,
-    signal: new AbortController().signal,
-    isStoppedByUser: () => false,
+    signal: stop?.signal ?? new AbortController().signal,
+    isStoppedByUser: () => Boolean(stop?.signal.aborted),
     sendFrame: (f) => frames.push(f),
   });
   const message = shim.sqlite
@@ -280,4 +284,30 @@ test("pending suggestion is never published without a complete answer", async ()
 test("malformed early suggestion does not prevent a subsequent answer", async () => {
   const r = await fixture([round("", [suggest("**Bad**")]), round("Ответ")], 6, true);
   expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ", suggestion: null });
+});
+
+test("a hung tool settles once at the deadline or on explicit stop and ignores late results", async () => {
+  for (const manual of [false, true]) {
+    const stop = new AbortController();
+    const late = Promise.withResolvers<Awaited<ReturnType<AgentToolRunner["execute"]>>>();
+    const tool = spyOn(AgentToolRunner.prototype, "execute").mockImplementation(() => {
+      if (manual) stop.abort("user_stop");
+      return late.promise;
+    });
+    try {
+      const state = await fixture([round("Часть ответа", [{ name: "search_materials", callId: "find", arguments: "{}" }])],
+        6, true, 1000, 40, stop);
+      expect(state.message).toMatchObject({ status: manual ? "stopped" : "incomplete", content_tex: "Часть ответа" });
+      const done = state.frames.filter(f => f.type === "done");
+      expect(done).toHaveLength(1);
+      expect(done[0]?.steps[0]?.state).toBe("error");
+      expect(state.shim.sqlite.query("SELECT global_reserved_micros FROM budget_reserves").get()).toEqual({global_reserved_micros: 0});
+      const count = state.frames.length;
+      late.resolve({fromCache: false, output: "late", step: {kind: "search", state: "done"}});
+      await Promise.resolve();
+      expect(state.frames).toHaveLength(count);
+    } finally {
+      tool.mockRestore();
+    }
+  }
 });

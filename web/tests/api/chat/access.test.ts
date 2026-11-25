@@ -218,6 +218,7 @@ it("gets separate single-use tokens before and after Telegram login and sends th
     tier: "student",
     user: { id: 1 },
   });
+  await ensureChatAllowance(hooks);
   const posts = fetchMock.mock.calls.filter(
     ([url]) => typeof url === "string" && url.endsWith("/v1/allowance"),
   );

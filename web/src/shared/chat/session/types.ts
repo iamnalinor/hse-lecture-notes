@@ -23,6 +23,8 @@ export type ChatContextValue = {
   readonly draft: string;
   readonly isCheckingBrowser: boolean;
   readonly isConfigured: boolean;
+  readonly checkingLogin?: boolean;
+  readonly verificationError?: boolean;
   readonly isLoginBusy: boolean;
   readonly isOpen: boolean;
   readonly isStreaming: boolean;
@@ -39,6 +41,9 @@ export type ChatContextValue = {
   readonly setDraft: (value: string) => void;
   readonly stop: () => void;
   readonly switchAccount: () => Promise<void>;
+  readonly earlierStatus: "error" | "idle" | "loading";
+  readonly hasEarlier: boolean;
+  readonly loadEarlier: () => Promise<void>;
   readonly loadMore: () => Promise<void>;
   readonly hasMore: boolean;
   readonly moreError: boolean;

@@ -1,5 +1,4 @@
-import type { JSX } from "react";
-
+import { type JSX, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { CloseIcon } from "../icons.tsx";
@@ -13,20 +12,37 @@ export const TurnstileModal = ({
   readonly cancelTurnstile: () => void;
   readonly turnstileOpen: boolean;
 }): JSX.Element => {
+  const ref = useRef<HTMLDialogElement>(null);
+  useLayoutEffect(() => {
+    const dialog = ref.current;
+    if (turnstileOpen && dialog !== null && !dialog.open) {
+      dialog.showModal();
+    }
+    return () => {
+      if (dialog?.open === true) {
+        dialog.close();
+      }
+    };
+  }, [turnstileOpen]);
   return createPortal(
-    <div
+    <dialog
       aria-hidden={!turnstileOpen}
+      aria-labelledby="ai-ts-title"
       className={turnstileOpen ? "ai-modal is-on" : "ai-modal"}
       inert={!turnstileOpen}
+      onCancel={(event) => {
+        event.preventDefault();
+        cancelTurnstile();
+      }}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           cancelTurnstile();
         }
       }}
       onKeyDown={undefined}
-      role="presentation"
+      ref={ref}
     >
-      <div aria-labelledby="ai-ts-title" aria-modal="true" className="ai-modal-card" role="dialog">
+      <div className="ai-modal-card">
         <button
           aria-label="Закрыть"
           className="ai-icon-btn ai-modal-x"
@@ -35,10 +51,10 @@ export const TurnstileModal = ({
         >
           <CloseIcon />
         </button>
-        <h2 id="ai-ts-title">Подтвердите, что вы не бот</h2>
+        <h2 id="ai-ts-title">Подтверди, что ты не бот</h2>
         <div id={TURNSTILE_HOST_ID} />
       </div>
-    </div>,
+    </dialog>,
     document.body,
   );
 };

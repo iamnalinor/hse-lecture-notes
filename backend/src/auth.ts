@@ -1,5 +1,6 @@
 import {
   mintBrowserToken,
+  decodeJwtUnverified,
   normalizeIpAddress,
   randomToken,
   signHs256Jwt,
@@ -22,7 +23,7 @@ import type {
 const NONCE_TTL_MS = 5 * 60_000;
 const MIGRATION_IDEMPOTENCY_WINDOW_MS = 10 * 60_000;
 
-let cachedJwks: { doc: JwksDocument; fetchedAt: number } | null = null;
+const jwksCache = new Map<string, { doc: Promise<JwksDocument>; fetchedAt: number }>();
 const JWKS_CACHE_TTL_MS = 10 * 60_000;
 
 export type BrowserTokenCheck =
@@ -136,7 +137,7 @@ export async function verifyTurnstileToken(
   const form = new URLSearchParams({
     secret: env.TURNSTILE_SECRET_KEY,
     response: token,
-    remoteip: remoteIp,
+    ...(remoteIp ? { remoteip: remoteIp } : {}),
   });
 
   const resp = await fetchImpl("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
@@ -182,18 +183,20 @@ async function loadTelegramJwks(
   jwksUrl: string,
   fetchImpl: typeof fetch,
   nowMs: number,
-  forceRefresh = false,
 ): Promise<JwksDocument> {
-  if (!forceRefresh && cachedJwks && nowMs - cachedJwks.fetchedAt < JWKS_CACHE_TTL_MS) {
-    return cachedJwks.doc;
+  const cached = jwksCache.get(jwksUrl);
+  if (cached && nowMs - cached.fetchedAt < JWKS_CACHE_TTL_MS) return cached.doc;
+  const doc = fetchImpl(jwksUrl).then(async (resp) => {
+    if (!resp.ok) throw new Error(`Failed to fetch Telegram JWKS (${resp.status})`);
+    return await resp.json() as JwksDocument;
+  });
+  jwksCache.set(jwksUrl, { doc, fetchedAt: nowMs });
+  try {
+    return await doc;
+  } catch (error) {
+    if (jwksCache.get(jwksUrl)?.doc === doc) jwksCache.delete(jwksUrl);
+    throw error;
   }
-  const resp = await fetchImpl(jwksUrl);
-  if (!resp.ok) {
-    throw new Error(`Failed to fetch Telegram JWKS (${resp.status})`);
-  }
-  const doc = (await resp.json()) as JwksDocument;
-  cachedJwks = { doc, fetchedAt: nowMs };
-  return doc;
 }
 
 export interface TelegramIdClaims {
@@ -214,26 +217,15 @@ export async function verifyTelegramIdToken(
   fetchImpl: typeof fetch = fetch,
   jwksOverride?: JwksDocument,
 ): Promise<{ telegramId: number; telegramName: string; nonce: string } | null> {
-  let claims: TelegramIdClaims | null = null;
-  if (jwksOverride) {
-    claims = await verifyRs256JwtWithJwks<TelegramIdClaims>(idToken, jwksOverride);
-  } else {
-    const jwks = await loadTelegramJwks(env.TELEGRAM_JWKS_URL, fetchImpl, nowMs, false);
-    claims = await verifyRs256JwtWithJwks<TelegramIdClaims>(idToken, jwks);
-    if (!claims) {
-      const freshJwks = await loadTelegramJwks(env.TELEGRAM_JWKS_URL, fetchImpl, nowMs, true);
-      claims = await verifyRs256JwtWithJwks<TelegramIdClaims>(idToken, freshJwks);
-    }
-  }
-  if (!claims) return null;
-
+  const expectedAud = env.TELEGRAM_CLIENT_ID?.trim();
+  const parsed = decodeJwtUnverified<TelegramIdClaims>(idToken);
+  const claims = parsed?.payload;
+  if (!expectedAud || parsed?.header?.alg !== "RS256" || !claims) return null;
   if (claims.iss !== env.TELEGRAM_ISSUER) return null;
   if (typeof claims.exp !== "number" || claims.exp * 1000 <= nowMs) return null;
-
-  if (env.TELEGRAM_CLIENT_ID) {
-    const expectedAud = String(env.TELEGRAM_CLIENT_ID);
-    const audList = Array.isArray(claims.aud) ? claims.aud.map(String) : [String(claims.aud ?? "")];
-    if (!audList.includes(expectedAud)) return null;
+  const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+  if (!audiences.some(aud => (typeof aud === "number" || typeof aud === "string") && String(aud) === expectedAud)) {
+    return null;
   }
 
   // Match strictly on numeric claim `id` (NOT `sub`)
@@ -247,6 +239,10 @@ export async function verifyTelegramIdToken(
   if (!Number.isSafeInteger(telegramId) || telegramId <= 0) return null;
 
   if (typeof claims.nonce !== "string" || claims.nonce.length < 12) return null;
+
+  // Reject malformed claims locally. Only a verified signature can authorize login.
+  const jwks = jwksOverride ?? await loadTelegramJwks(env.TELEGRAM_JWKS_URL, fetchImpl, nowMs);
+  if (!await verifyRs256JwtWithJwks<TelegramIdClaims>(idToken, jwks)) return null;
 
   const telegramName =
     (typeof claims.name === "string" && claims.name.trim()) ||
@@ -449,9 +445,9 @@ export async function handleAllowance(
   } = {},
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const nowMs = options.nowMs ?? Date.now();
-  const ipAddress = normalizeIpAddress(
-    request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For"),
-  );
+  const visitorIp = (request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For") ?? "")
+    .split(",")[0]!.trim();
+  const ipAddress = normalizeIpAddress(visitorIp);
   const fingerprint =
     typeof body.fingerprint === "string" ? body.fingerprint.trim().slice(0, 128) : "";
 
@@ -466,7 +462,7 @@ export async function handleAllowance(
     options.turnstileVerifier ??
     ((tok: string, ip: string) => verifyTurnstileToken(env, tok, ip));
 
-  const tsResult = await verifier(body.turnstileToken ?? "", ipAddress);
+  const tsResult = await verifier(body.turnstileToken ?? "", visitorIp);
   if (!tsResult.ok) {
     return {
       status: 403,
@@ -501,19 +497,14 @@ export async function handleAllowance(
   });
 
   // Informational quota/budget check (does not check 1-minute burst or reserve budget)
-  const evalRes = await evaluateQuotasAndBudgets(
-    db,
-    policy,
-    {
-      tier,
-      telegramId: session?.telegramId ?? null,
-      browserId,
-      ipAddress,
-      fingerprint,
-    },
-    nowMs,
-    { checkConcurrency: false, checkRateLimit: false },
-  );
+  const axes = { tier, telegramId: session?.telegramId ?? null, browserId, ipAddress, fingerprint };
+  const checks = { checkConcurrency: false, checkRateLimit: false };
+  let evalRes = await evaluateQuotasAndBudgets(db, policy, axes, nowMs, checks);
+  // A continued thread may qualify for the low route. Admission selects its final route.
+  if (evalRes.bucket === "high" && evalRes.block?.code === "global_budget_exceeded") {
+    const low = await evaluateQuotasAndBudgets(db, policy, axes, nowMs, { ...checks, forceLow: true });
+    if (low.allowed) evalRes = { ...evalRes, allowed: true, block: null };
+  }
 
   return {
     status: 200,

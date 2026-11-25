@@ -22,7 +22,7 @@ const isReducedMotion = (): boolean =>
   globalThis.window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const focusHeaderChatButton = (): void => {
-  document.querySelector<HTMLButtonElement>(".ai-head-btn")?.focus();
+  document.querySelector<HTMLButtonElement>(".ai-head-btn")?.focus({ preventScroll: true });
 };
 
 const highlightTargetBlock = (target: Element): void => {
@@ -37,7 +37,6 @@ const highlightTargetBlock = (target: Element): void => {
 };
 
 type EscHandlerDeps = {
-  readonly cancelTurnstile: () => void;
   readonly closeHistory: () => void;
   readonly handleClose: () => void;
   readonly historyOpen: boolean;
@@ -48,12 +47,14 @@ type EscHandlerDeps = {
 const usePanelEscapeKey = (deps: EscHandlerDeps): void => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape") {
+      if (
+        event.key !== "Escape" ||
+        deps.turnstileOpen ||
+        document.querySelector("dialog[open]") !== null
+      ) {
         return;
       }
-      if (deps.turnstileOpen) {
-        deps.cancelTurnstile();
-      } else if (deps.historyOpen) {
+      if (deps.historyOpen) {
         deps.closeHistory();
       } else if (deps.isOpen) {
         deps.handleClose();
@@ -70,19 +71,20 @@ const useMaterialNavigation = (course: string) => {
   const client = useQueryClient();
   const navigate = useNavigate();
   return useCallback(
-    async (anchor: string): Promise<void> => {
+    async (anchor: string): Promise<boolean> => {
       if (isMaterialLink(anchor)) {
         await navigate(anchor);
-        return;
+        return true;
       }
       const origin = globalThis.location.pathname;
       const index = await client.query(labelIndexQuery);
       const label = index[course]?.[anchor];
       if (label === undefined || globalThis.location.pathname !== origin) {
-        return;
+        return false;
       }
 
       await navigate(paths.lecture(course, label.weekId, anchor));
+      return true;
     },
     [client, course, navigate],
   );
@@ -92,7 +94,7 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
   const { isOpen, close } = chat;
   const { course, docId } = chat.docContext;
   const documentPrefix = `${paths.lecture(course, docId)}#`;
-  const openMissing = useMaterialNavigation(course);
+  const hasNavigated = useMaterialNavigation(course);
   const pendingRef = useRef<Element | null>(null);
   useEffect(() => {
     const target = pendingRef.current;
@@ -109,13 +111,16 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
   }, [isOpen]);
 
   return useCallback(
-    (blockId: string): void => {
+    async (blockId: string): Promise<void> => {
       const anchor = blockId.startsWith(documentPrefix)
         ? blockId.slice(documentPrefix.length)
         : blockId;
       const target = isMaterialLink(anchor) ? null : findMaterialTarget(anchor, docId);
       if (target === null) {
-        void openMissing(anchor);
+        if ((await hasNavigated(anchor)) && isMobileViewport()) {
+          close();
+          onMobileBack();
+        }
         return;
       }
       if (isMobileViewport()) {
@@ -126,8 +131,58 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
       }
       highlightTargetBlock(target);
     },
-    [close, docId, documentPrefix, onMobileBack, openMissing],
+    [close, docId, documentPrefix, onMobileBack, hasNavigated],
   );
+};
+
+const useMobileFocus = (isOpen: boolean, panelEl: HTMLElement | null): void => {
+  useEffect(() => {
+    if (panelEl === null || !isOpen) {
+      return;
+    }
+    const media = globalThis.matchMedia("(max-width: 720px)");
+    const root = document.querySelector<HTMLElement>("#root");
+    const sync = () => {
+      if (root !== null) {
+        root.inert = media.matches;
+      }
+      if (media.matches && !panelEl.contains(document.activeElement)) {
+        panelEl.focus();
+      }
+    };
+    const cycle = (event: KeyboardEvent) => {
+      if (!media.matches || event.key !== "Tab" || event.defaultPrevented) {
+        return;
+      }
+      const controls = [
+        ...panelEl.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href], textarea, input, [tabindex="0"]',
+        ),
+      ].filter((el) => el.checkVisibility({ visibilityProperty: true }));
+      const first = controls.at(0);
+      const last = controls.at(-1);
+      const [edge, next] = event.shiftKey ? [first, last] : [last, first];
+      if (edge?.matches(":focus") !== true) {
+        return;
+      }
+
+      event.preventDefault();
+      next?.focus();
+    };
+    sync();
+    panelEl.addEventListener("keydown", cycle);
+    media.addEventListener("change", sync);
+    return () => {
+      panelEl.removeEventListener("keydown", cycle);
+      media.removeEventListener("change", sync);
+      if (root !== null) {
+        root.inert = false;
+      }
+      if (media.matches) {
+        focusHeaderChatButton();
+      }
+    };
+  }, [isOpen, panelEl]);
 };
 
 /** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
@@ -138,6 +193,7 @@ export const ChatPanel = (): JSX.Element | null => {
   const [panelEl, setPanelEl] = useState<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
+  useMobileFocus(chat.isOpen, panelEl);
   const handleClose = useCallback((): void => {
     setHistoryOpen(false);
     chat.close();
@@ -149,7 +205,6 @@ export const ChatPanel = (): JSX.Element | null => {
   });
 
   usePanelEscapeKey({
-    cancelTurnstile: chat.cancelTurnstile,
     closeHistory: () => {
       setHistoryOpen(false);
     },
@@ -166,22 +221,32 @@ export const ChatPanel = (): JSX.Element | null => {
 
   return (
     <>
-      <aside aria-label="Чат с ИИ" className="ai-panel" id="ai-panel" ref={setPanelEl}>
-        <ChatResizeHandle />
-        <ChatPanelHeader
-          historyOpen={historyOpen}
-          onClose={handleClose}
-          onToggleHistory={() => {
-            setHistoryOpen((prev) => !prev);
-          }}
-        />
-        <div className="ai-scroll" ref={scrollerRef}>
-          <div aria-live="polite" className="ai-log">
-            <ChatLog onJumpToBlock={jumpToBlock} />
+      {createPortal(
+        <aside
+          aria-label="Чат с ИИ"
+          className="ai-panel"
+          id="ai-panel"
+          inert={!chat.isOpen}
+          ref={setPanelEl}
+          tabIndex={-1}
+        >
+          <ChatResizeHandle />
+          <ChatPanelHeader
+            historyOpen={historyOpen}
+            onClose={handleClose}
+            onToggleHistory={() => {
+              setHistoryOpen((prev) => !prev);
+            }}
+          />
+          <div className="ai-scroll" ref={scrollerRef}>
+            <div aria-live="polite" className="ai-log">
+              <ChatLog onJumpToBlock={jumpToBlock} />
+            </div>
           </div>
-        </div>
-        <ChatComposer />
-      </aside>
+          <ChatComposer />
+        </aside>,
+        document.body,
+      )}
       <ChatRefPreview onJumpToBlock={jumpToBlock} panelElement={panelEl} />
       {createPortal(
         <button

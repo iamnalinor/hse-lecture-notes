@@ -24,6 +24,7 @@ export type StreamStateSetters = AllowanceSetters & {
 };
 
 export type SendArgs = {
+  readonly keepDraft?: boolean;
   readonly activeThreadId: null | string;
   readonly docContext: ChatDocContext;
   readonly quote: ChatQuote | null;

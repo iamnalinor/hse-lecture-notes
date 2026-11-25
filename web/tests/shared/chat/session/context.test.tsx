@@ -13,7 +13,13 @@ import {
   loginViaTelegram,
   type ThreadResponse,
 } from "#web/api/chat/client.ts";
-import { saveBrowserToken, saveDegraded, saveSessionAuth } from "#web/api/chat/storage.ts";
+import {
+  readStoredAuth,
+  saveAllowanceToken,
+  saveBrowserToken,
+  saveDegraded,
+  saveSessionAuth,
+} from "#web/api/chat/storage.ts";
 import { type ActiveWsStream, openChatMessageStream } from "#web/api/chat/stream.ts";
 import { ChatProvider, useChat } from "#web/shared/chat/session/context.tsx";
 import { makeAssistantMsg, makeUserMsg } from "#web/shared/chat/stream/helpers.ts";
@@ -641,14 +647,22 @@ it("clears browser verification and restores the draft when a pre-stream request
   });
   expect(chat.current.isCheckingBrowser).toBe(true);
   await act(async () => {
+    chat.current.setDraft("следующий");
     chat.current.stop();
     await sending;
   });
   expect(chat.current.isCheckingBrowser).toBe(false);
   expect(chat.current.isStreaming).toBe(false);
-  expect(chat.current.draft).toBe("draft");
-  expect(chat.current.messages).toHaveLength(0);
+  expect(chat.current.draft).toBe("следующий");
+  const unsent = chat.current.messages[0];
+  if (unsent === undefined) {
+    throw new Error("Expected an unsent question");
+  }
+  expect(unsent).toMatchObject({ contentTex: "draft", status: "error" });
   expect(openChatMessageStream).not.toHaveBeenCalled();
+  await act(() => chat.current.retryMessage(unsent.id));
+  expect(vi.mocked(openChatMessageStream).mock.calls.at(-1)?.[1].text).toBe("draft");
+  expect(chat.current.draft).toBe("следующий");
 });
 
 it("shows the already known degraded quota immediately and keeps it scoped to the account", () => {
@@ -783,4 +797,70 @@ it("does not resume an old pending question after navigation during login", asyn
     await signingIn;
   });
   expect(openChatMessageStream).not.toHaveBeenCalled();
+});
+
+it.each(["allowance", "newer"])(
+  "invalidates only the rejected allowance when the cache holds %s",
+  async (cached) => {
+    const chat = mount();
+    await act(() => chat.current.send("Вопрос"));
+    saveAllowanceToken(cached, Date.now() + 3_600_000);
+    act(() =>
+      vi
+        .mocked(openChatMessageStream)
+        .mock.calls[0]?.[2].onError({ code: "allowance_expired", message: "Разрешение истекло." }),
+    );
+    expect(readStoredAuth().allowanceToken).toBe(cached === "allowance" ? null : "newer");
+  },
+);
+
+it("shows the signed-in account while browser verification is pending and after it fails", async () => {
+  const account = { id: 4, name: "Читатель" };
+  vi.mocked(loginViaTelegram).mockResolvedValueOnce({ tier: "default", user: account });
+  const pending = Promise.withResolvers<typeof allowance>();
+  vi.mocked(ensureChatAllowance).mockReturnValueOnce(pending.promise);
+  const chat = mount();
+  let login: Promise<void> | undefined;
+  await act(async () => {
+    login = chat.current.login();
+    await Promise.resolve();
+  });
+  expect(chat.current.user).toEqual(account);
+  expect(chat.current.checkingLogin).toBe(true);
+  expect(chat.current.isLoginBusy).toBe(false);
+  await act(async () => {
+    pending.reject(new Error("cancelled"));
+    await login;
+  });
+  expect(chat.current.user).toEqual(account);
+  expect(chat.current.checkingLogin).toBe(false);
+  expect(chat.current.verificationError).toBe(true);
+});
+
+it("retries the unsent question after a rate limit with only retryAfterSec", async () => {
+  vi.useFakeTimers();
+  try {
+    const chat = mount();
+    await act(() => chat.current.send("Первый"));
+    act(() => {
+      chat.current.setDraft("Следующий");
+      vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onError({
+        code: "rate_limited",
+        message: "Подожди",
+        block: { code: "rate_limited", retryAfterSec: 2 },
+      });
+    });
+    expect(chat.current.block?.code).toBe("rate_limited");
+    const unsent = chat.current.messages[0];
+    if (unsent === undefined) {
+      throw new Error("Expected an unsent question");
+    }
+    await act(() => vi.advanceTimersByTimeAsync(2001));
+    expect(chat.current.block).toBeNull();
+    await act(() => chat.current.retryMessage(unsent.id));
+    expect(vi.mocked(openChatMessageStream).mock.calls.at(-1)?.[1].text).toBe("Первый");
+    expect(chat.current.draft).toBe("Следующий");
+  } finally {
+    vi.useRealTimers();
+  }
 });

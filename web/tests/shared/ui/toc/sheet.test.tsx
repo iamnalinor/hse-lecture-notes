@@ -80,11 +80,7 @@ describe("TocSheet", () => {
   });
 
   it("is not there on a wide screen, where the side column shows the contents", () => {
-    vi.stubGlobal("matchMedia", () => ({
-      addEventListener: () => undefined,
-      matches: true,
-      removeEventListener: () => undefined,
-    }));
+    vi.stubGlobal("innerWidth", 1440);
     open();
     expect(screen.queryByRole("button", { name: /%/u })).toBeNull();
   });

@@ -4,6 +4,7 @@ import { fetchChatRunStatus, fetchChatThread, type ThreadResponse } from "#web/a
 import { readPageThread, readStoredAuth, savePageThread } from "#web/api/chat/storage.ts";
 import { type ChatMessage, nextRunPollDelayMs } from "#web/domain/chat/model.ts";
 
+import { useEarlierMessages } from "./use-earlier-messages.ts";
 import { useThreadHistory } from "./use-thread-history.ts";
 
 const readThread = async (threadId?: null | string): Promise<null | ThreadResponse> => {
@@ -127,27 +128,32 @@ export const useThreadState = ({
 }: ThreadStateOptions) => {
   const history = useThreadHistory();
   const { replacePage } = history;
-  const {
-    currentKey,
-    activeThreadId,
-    setActiveThreadId,
-    messages,
-    setMessages,
-    isStreaming,
-    setIsStreaming,
-    pollRunId,
-    setPollRunId,
-    isThreadLoading,
-    setIsThreadLoading,
-  } = usePageState(pageKey, isConfigured, isOpen);
+  const page = usePageState(pageKey, isConfigured, isOpen);
+  const earlier = useEarlierMessages(page.setMessages);
+  const { setCursor, cancelEarlier } = earlier;
+  const { setActiveThreadId, setMessages, setIsStreaming, setPollRunId, setIsThreadLoading } = page;
   const requestRef = useRef(0);
   const invalidateLoad = useCallback(() => {
     requestRef.current += 1;
+    cancelEarlier();
     setIsThreadLoading(false);
-  }, [setIsThreadLoading]);
+  }, [cancelEarlier, setIsThreadLoading]);
+  const applyPage = useCallback(
+    (data: ThreadResponse, requestedThreadId?: null | string) => {
+      const { selected, items, run } = selectThread(data, requestedThreadId);
+      replacePage({ ...data, thread: selected });
+      setActiveThreadId(selected?.id ?? null);
+      setMessages(items);
+      setCursor(selected?.beforeSeq ?? null);
+      setIsStreaming(run !== null);
+      setPollRunId(run);
+    },
+    [replacePage, setActiveThreadId, setCursor, setMessages, setIsStreaming, setPollRunId],
+  );
   const loadThread = useCallback(
     async (requestedThreadId?: null | string): Promise<"loaded" | "unavailable"> => {
       const request = ++requestRef.current;
+      cancelEarlier();
       setIsThreadLoading(true);
       const data = await readThread(requestedThreadId);
       if (request !== requestRef.current) {
@@ -157,48 +163,37 @@ export const useThreadState = ({
       if (data === null) {
         return "unavailable";
       }
-      const { selected, items, run } = selectThread(data, requestedThreadId);
-      replacePage({ ...data, thread: selected });
-      setActiveThreadId(selected?.id ?? null);
-      setMessages(items);
-      setIsStreaming(run !== null);
-      setPollRunId(run);
+      applyPage(data, requestedThreadId);
       return "loaded";
     },
-    [replacePage, setActiveThreadId, setMessages, setIsStreaming, setPollRunId, setIsThreadLoading],
+    [applyPage, cancelEarlier, setIsThreadLoading],
   );
-
   useRunStatusPoller({
-    runId: isThreadLoading ? null : pollRunId,
-    threadId: activeThreadId,
+    runId: page.isThreadLoading ? null : page.pollRunId,
+    threadId: page.activeThreadId,
     loadThread,
   });
-
   usePageRestore({
     preferredThreadId,
-    currentKey,
-    isOpen: isOpen && !isStreaming,
+    currentKey: page.currentKey,
+    isOpen: isOpen && !page.isStreaming,
     isConfigured,
     requestRef,
     invalidateLoad,
     loadThread,
   });
   return {
-    activeThreadId,
-    canStop: isStreaming && pollRunId === null,
-    invalidateLoad,
-    isStreaming,
-    isThreadLoading,
-    loadThread: (threadId: string) => {
-      setIsThreadLoading(true);
-      return loadThread(threadId);
-    },
-    messages,
-    setActiveThreadId,
-    setIsStreaming,
-    setMessages,
-    setPollRunId,
+    ...page,
     ...history,
+    loadThread,
+    canStop: page.isStreaming && page.pollRunId === null,
+    invalidateLoad: () => {
+      invalidateLoad();
+      setCursor(null);
+    },
+    earlierStatus: earlier.status,
+    hasEarlier: page.activeThreadId !== null && earlier.cursor !== null,
+    loadEarlier: () => earlier.load(page.activeThreadId),
   };
 };
 

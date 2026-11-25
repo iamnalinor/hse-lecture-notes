@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
 
-import { loginViaTelegram, logoutChatSession } from "#web/api/chat/client.ts";
+import { ensureChatAllowance, loginViaTelegram, logoutChatSession } from "#web/api/chat/client.ts";
 import {
   readStoredAuth,
   readStoredDegraded,
@@ -12,7 +12,7 @@ import {
 } from "#web/api/chat/storage.ts";
 
 export const useRootOpenClassSync = (isOpen: boolean): void => {
-  const savedScrollYRef = useRef<null | number>(null);
+  const savedScrollYRef = useRef<null | { url: string; y: number }>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -22,7 +22,7 @@ export const useRootOpenClassSync = (isOpen: boolean): void => {
         globalThis.window.matchMedia("(max-width: 720px)").matches &&
         savedScrollYRef.current === null
       ) {
-        savedScrollYRef.current = globalThis.window.scrollY;
+        savedScrollYRef.current = { url: globalThis.location.href, y: globalThis.scrollY };
       }
       return;
     }
@@ -30,10 +30,13 @@ export const useRootOpenClassSync = (isOpen: boolean): void => {
     if (savedScrollYRef.current === null) {
       return;
     }
-    const y = savedScrollYRef.current;
+    const saved = savedScrollYRef.current;
     savedScrollYRef.current = null;
-    if (globalThis.window.matchMedia("(max-width: 720px)").matches) {
-      globalThis.window.scrollTo(0, y);
+    if (
+      saved.url === globalThis.location.href &&
+      globalThis.window.matchMedia("(max-width: 720px)").matches
+    ) {
+      globalThis.window.scrollTo(0, saved.y);
     }
   }, [isOpen]);
 
@@ -65,19 +68,20 @@ export const useChatAuthState = () => {
   }, []);
 
   useEffect(() => {
-    if (typeof block?.nextAvailableAt !== "number") {
+    const unblockAt = block?.code === "rate_limited" ? rateLimitUntil : block?.nextAvailableAt;
+    if (typeof unblockAt !== "number") {
       return;
     }
     const timer = globalThis.setTimeout(
       () => {
         applyBlock(null);
       },
-      Math.max(0, block.nextAvailableAt - Date.now()),
+      Math.max(0, unblockAt - Date.now()),
     );
     return () => {
       globalThis.clearTimeout(timer);
     };
-  }, [applyBlock, block]);
+  }, [applyBlock, block, rateLimitUntil]);
 
   useEffect(
     () =>
@@ -118,26 +122,42 @@ type LoginDeps = {
 export const useTelegramAuthActions = (deps: LoginDeps) => {
   const [isLoginBusy, setIsLoginBusy] = useState(false);
 
+  const [checkingLogin, setCheckingLogin] = useState(false);
+  const [verificationError, setVerificationError] = useState(false);
+  const checkLogin = useCallback(async () => {
+    setCheckingLogin(true);
+    setVerificationError(false);
+    try {
+      const access = await ensureChatAllowance(deps.turnstileHooks);
+      if (access.degraded !== null) {
+        deps.setDegraded(access.degraded);
+      }
+      deps.setBlock(access.block);
+    } catch {
+      setVerificationError(true);
+    } finally {
+      setCheckingLogin(false);
+    }
+  }, [deps]);
   const login = useCallback(async (): Promise<void> => {
-    if (isLoginBusy) {
+    if (isLoginBusy || checkingLogin) {
       return;
     }
     setIsLoginBusy(true);
     try {
       const res = await loginViaTelegram(deps.turnstileHooks);
-      deps.onLogin(res.user, res.block === null);
+      deps.onLogin(res.user, true);
       deps.setTier(res.tier);
       deps.setUser(res.user);
-      if (res.degraded !== null) {
-        deps.setDegraded(res.degraded);
-      }
-      deps.setBlock(res.block);
+      deps.setBlock(null);
+      setIsLoginBusy(false);
+      await checkLogin();
     } catch {
       // User cancelled Telegram popup or network error
     } finally {
       setIsLoginBusy(false);
     }
-  }, [deps, isLoginBusy]);
+  }, [checkingLogin, checkLogin, deps, isLoginBusy]);
 
   const switchAccount = useCallback(async (): Promise<void> => {
     if ((await logoutChatSession()) === "session_changed") {
@@ -150,7 +170,16 @@ export const useTelegramAuthActions = (deps: LoginDeps) => {
     await login();
   }, [deps, login]);
 
-  return { isLoginBusy, login, switchAccount };
+  return {
+    checkingLogin,
+    verificationError,
+    clearVerificationError: () => {
+      setVerificationError(false);
+    },
+    isLoginBusy,
+    login,
+    switchAccount,
+  };
 };
 
 export const useCopyFeedback = () => {

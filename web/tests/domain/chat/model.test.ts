@@ -49,6 +49,6 @@ describe("chat domain helpers", () => {
   it("produces login CTA on guest blocks", () => {
     const plate = blockPlateCopy({ code: "auth_required" }, "guest", Date.now());
     expect(plate.showLogin).toBe(true);
-    expect(plate.title).toContain("Войдите");
+    expect(plate.title).toContain("Войди");
   });
 });

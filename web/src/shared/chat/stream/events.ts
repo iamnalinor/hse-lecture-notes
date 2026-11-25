@@ -46,6 +46,9 @@ const failTurn = (
 ): void => {
   if (runId === null && args.retryMessage !== undefined) {
     rollbackOptimisticTurn(setters, args);
+    setters.setMessages((prev) =>
+      patchLastAssistant(prev, (msg) => ({ ...msg, errorMessage: error.message })),
+    );
     return;
   }
   if (runId === null && error.code === "context_too_large") {

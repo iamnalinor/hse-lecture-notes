@@ -1,4 +1,5 @@
 import { createContext, type JSX, type ReactNode, use } from "react";
+import { Link } from "react-router";
 
 import { splitTex } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
@@ -60,7 +61,7 @@ const renderRefAnchor = (
   const inner: ReactNode[] = [];
   pushTexNodes(inner, label, { isAnimated: false, keyPrefix: `${key}-l` });
   return (
-    <a
+    <Link
       className="ref"
       data-ref={
         isMaterialLink(target) ||
@@ -68,7 +69,6 @@ const renderRefAnchor = (
           ? undefined
           : target
       }
-      href={isMaterialLink(target) ? target : `${path}#${target}`}
       key={key}
       onClick={(event) => {
         if (
@@ -84,9 +84,10 @@ const renderRefAnchor = (
         event.preventDefault();
         onJumpToBlock(target);
       }}
+      to={isMaterialLink(target) ? target : `${path}#${target}`}
     >
       {inner}
-    </a>
+    </Link>
   );
 };
 
