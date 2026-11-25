@@ -13,12 +13,14 @@ describe("SyncedTitle", () => {
     expect(tail).toHaveTextContent("ограниченность");
     expect(tail.textContent).not.toContain("монотонность");
     expect(tail.querySelector("svg")).not.toBeNull();
-    expect(tail).toHaveTextContent("Сверено с лекцией");
+    expect(tail).toHaveTextContent("Содержание совпадает с реальной лекцией этого года");
   });
 
   it("says in the tooltip what the note was synced with", () => {
     render(<SyncedTitle synced={["lecture", "seminars"]} title="Пределы" />);
-    expect(screen.getByTestId("title-tail")).toHaveTextContent("Сверено с лекцией и семинарами");
+    expect(screen.getByTestId("title-tail")).toHaveTextContent(
+      "Содержание совпадает с реальными лекцией и семинаром этого года",
+    );
   });
 
   it("glues the tick to a one-word title", () => {

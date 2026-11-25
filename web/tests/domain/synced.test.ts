@@ -19,12 +19,11 @@ describe("syncedLabel", () => {
 });
 
 describe("syncedHint", () => {
-  it("adds a short explanation to the label", () => {
-    expect(syncedHint(["lecture"])).toBe(
-      "Сверено с лекцией: содержание и темп совпадают с реальной лекцией этого года",
-    );
+  it("says in one sentence what the note matches", () => {
+    expect(syncedHint(["lecture"])).toBe("Содержание совпадает с реальной лекцией этого года");
     expect(syncedHint(["lecture", "seminars"])).toBe(
-      "Сверено с лекцией и семинарами: содержание и темп совпадают с реальной лекцией этого года, в конспект включен материал семинаров этого года",
+      "Содержание совпадает с реальными лекцией и семинаром этого года",
     );
+    expect(syncedHint([])).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react-dom";
 import { useState } from "react";
 
-import { syncedHint, syncedLabel, syncedNote, type SyncedPart } from "#web/domain/synced.ts";
+import { syncedHint, type SyncedPart } from "#web/domain/synced.ts";
 import { CheckIcon } from "#web/shared/ui/icons.tsx";
 
 type Props = {
@@ -64,12 +64,11 @@ const SyncedTick = ({ synced }: { readonly synced: readonly SyncedPart[] }) => {
       {isOpen && (
         <span
           aria-hidden="true"
-          className="pointer-events-none z-50 w-64 rounded-lg bg-ink px-3 py-2 text-left text-footnote/snug font-normal whitespace-normal text-paper shadow-lg"
+          className="pointer-events-none z-50 max-w-64 rounded-lg bg-ink px-3 py-2 text-left text-footnote/snug font-normal whitespace-normal text-paper shadow-lg"
           ref={setTip}
           style={floatingStyles}
         >
-          <b className="block font-semibold">{syncedLabel(synced)}</b>
-          {syncedNote(synced)}
+          {syncedHint(synced)}
         </span>
       )}
     </span>

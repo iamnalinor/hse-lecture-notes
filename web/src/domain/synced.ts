@@ -11,17 +11,12 @@ export const syncedLabel = (synced: readonly SyncedPart[]): null | string => {
   return hasPart(synced, "seminars") ? "Сверено с лекцией и семинарами" : "Сверено с лекцией";
 };
 
-const LECTURE_NOTE = "содержание и темп совпадают с реальной лекцией этого года";
-const SEMINARS_NOTE = "в конспект включен материал семинаров этого года";
-
-/** The explanation alone, for the tooltip under the label; `null` when the note is not synced. */
-export const syncedNote = (synced: readonly SyncedPart[]): null | string =>
-  hasPart(synced, "lecture")
-    ? [LECTURE_NOTE, ...(hasPart(synced, "seminars") ? [SEMINARS_NOTE] : [])].join(", ")
-    : null;
-
-/** The label with a short explanation, for a tooltip; `null` when the note is not synced. */
+/** The tooltip of the tick: one sentence; `null` when the note is not synced. */
 export const syncedHint = (synced: readonly SyncedPart[]): null | string => {
-  const label = syncedLabel(synced);
-  return label === null ? null : `${label}: ${syncedNote(synced) ?? ""}`;
+  if (!hasPart(synced, "lecture")) {
+    return null;
+  }
+  return hasPart(synced, "seminars")
+    ? "Содержание совпадает с реальными лекцией и семинаром этого года"
+    : "Содержание совпадает с реальной лекцией этого года";
 };

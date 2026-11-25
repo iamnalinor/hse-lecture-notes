@@ -78,7 +78,7 @@ describe("course page", () => {
 
   it("marks only the synced lectures with a check", () => {
     calculusOn("2026-10-20");
-    const hint = /Сверено с лекцией: содержание и темп/;
+    const hint = /Содержание совпадает с реальной лекцией/;
     const marked = screen
       .getAllByRole("row")
       .filter((row) => within(row).queryByText(hint) !== null)
