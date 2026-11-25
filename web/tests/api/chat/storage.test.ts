@@ -1,6 +1,12 @@
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
-import { readStoredAuth } from "#web/api/chat/storage.ts";
+import {
+  readPageThread,
+  readStoredAuth,
+  replaceChatAuth,
+  savePageThread,
+  subscribeAuthStorage,
+} from "#web/api/chat/storage.ts";
 
 import { seedChatAuth } from "../../support/chat-auth.ts";
 
@@ -70,4 +76,64 @@ it("preserves a legacy guest's browser identity and allowance", () => {
     allowanceToken: "guest-allowance",
     allowanceExpiresAt: 12_345,
   });
+});
+
+const unavailable = () => {
+  throw new DOMException("Storage unavailable", "SecurityError");
+};
+
+it("retains auth and thread changes in this tab when storage throws", async () => {
+  const auth = { ...readStoredAuth(), browserToken: "private-browser" };
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(unavailable);
+  vi.spyOn(Storage.prototype, "removeItem").mockImplementation(unavailable);
+  try {
+    await replaceChatAuth(null, auth);
+    expect(readStoredAuth()).toEqual(auth);
+    savePageThread("private", "new");
+    expect(readPageThread("private")).toBe("new");
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(unavailable);
+    expect(readStoredAuth()).toEqual(auth);
+    savePageThread("private", null);
+    expect(readPageThread("private")).toBeNull();
+  } finally {
+    vi.restoreAllMocks();
+    globalThis.dispatchEvent(new StorageEvent("storage", { key: null }));
+  }
+});
+
+it("honors storage changes from another tab after a failed local write", () => {
+  localStorage.setItem("hse_chat_thread:shared", "old");
+  const write = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+    throw new DOMException("Storage unavailable", "SecurityError");
+  });
+  const stop = subscribeAuthStorage(vi.fn());
+  try {
+    savePageThread("shared", null);
+    expect(readPageThread("shared")).toBeNull();
+    write.mockRestore();
+    localStorage.setItem("hse_chat_thread:shared", "other-tab");
+    globalThis.dispatchEvent(
+      new StorageEvent("storage", { key: "hse_chat_thread:shared", newValue: "other-tab" }),
+    );
+    expect(readPageThread("shared")).toBe("other-tab");
+  } finally {
+    write.mockRestore();
+    stop();
+  }
+});
+
+it("keeps persisted legacy credentials when migrating them in memory after a failed write", async () => {
+  localStorage.setItem("hse_chat_browser_token", "legacy");
+  const auth = { ...readStoredAuth(), allowanceToken: "fresh" };
+  const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    throw new DOMException("Storage full", "QuotaExceededError");
+  });
+  try {
+    await replaceChatAuth(null, auth);
+    expect(readStoredAuth()).toEqual(auth);
+    expect(localStorage.getItem("hse_chat_browser_token")).toBe("legacy");
+  } finally {
+    write.mockRestore();
+    globalThis.dispatchEvent(new StorageEvent("storage", { key: null }));
+  }
 });

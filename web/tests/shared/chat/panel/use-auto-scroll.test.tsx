@@ -45,3 +45,23 @@ it("pauses streaming autoscroll on upward input and resumes only when the user r
   expect(scrollTo).not.toHaveBeenCalled();
   el.remove();
 });
+
+it("restores a cited answer before the next stream update or native scroll event", () => {
+  const el = document.createElement("div");
+  Object.defineProperties(el, { scrollHeight: { value: 1000 }, clientHeight: { value: 300 } });
+  const scrollTo = vi.fn();
+  el.scrollTo = scrollTo;
+  const ref = { current: el };
+  const message = makeAssistantMsg({ course: "", docId: "" });
+  const { result, rerender } = renderHook(
+    ({ text }) =>
+      useChatAutoScroll(ref, {
+        messages: [{ ...message, contentTex: text }],
+        isLoading: false,
+      }),
+    { initialProps: { text: "первая часть" } },
+  );
+  result.current(120);
+  rerender({ text: "продолжение ответа" });
+  expect(scrollTo).toHaveBeenLastCalledWith({ behavior: "instant", top: 120 });
+});

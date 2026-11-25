@@ -5,6 +5,7 @@ import type { SendArgs, StreamStateSetters } from "./types.ts";
 
 import {
   applyMetaMessageIds,
+  makeUserMsg,
   patchLastAssistant,
   rejectOptimisticTurn,
   resetRetryAssistant,
@@ -53,7 +54,20 @@ const failTurn = (
     );
     return;
   }
-  if (runId === null && error.code === "context_too_large") {
+  if (runId === null && error.code === "invalid_quote") {
+    rollbackOptimisticTurn(setters, args, { restoreDraft: false });
+    setters.rejectQuote({
+      ...makeUserMsg(args.text, null, args.docContext),
+      threadId: args.activeThreadId,
+      status: "error",
+      errorMessage: error.message,
+    });
+    return;
+  }
+  if (
+    runId === null &&
+    (error.code === "context_too_large" || error.code === "question_too_long")
+  ) {
     setters.restoreRejectedDraft(args.text, args.quote);
   }
   setters.setIsStreaming(false);
@@ -132,6 +146,9 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     },
     onError: (payload) => {
       clearActive();
+      if (payload.code === "question_too_long" && payload.maxQuestionChars !== undefined) {
+        setters.setQuestionLimit(payload.maxQuestionChars);
+      }
       if (payload.block !== undefined && payload.block !== null) {
         setters.setBlock(payload.block);
         if (runId === null) {

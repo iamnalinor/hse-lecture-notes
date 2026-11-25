@@ -110,6 +110,9 @@ dist
 # Serverless directories
 .serverless/
 .wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 
 # FuseBox cache
 .fusebox/
@@ -171,3 +174,9 @@ docs/superpowers/
 web/playwright/.auth/
 web/playwright-report/
 web/test-results/
+
+# Temporary screenshots from local browser checks
+/.local-screens/
+/hdr-desktop.png
+/logo-now.png
+/web/tick.png

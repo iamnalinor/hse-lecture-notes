@@ -21,11 +21,17 @@ export type ChatContextValue = {
   readonly degraded: ChatDegraded;
   readonly docContext: ChatDocContext;
   readonly draft: string;
+  readonly draftError: null | string;
+  readonly readingSource: boolean;
+  readonly returnFromSource: () => void;
+  readonly closeForSource: () => void;
   readonly isCheckingBrowser: boolean;
   readonly isConfigured: boolean;
   readonly checkingLogin?: boolean;
   readonly verificationError?: boolean;
   readonly isLoginBusy: boolean;
+  readonly loginError: boolean;
+  readonly maxQuestionChars: number;
   readonly telegramLoadFailed: boolean;
   readonly isOpen: boolean;
   readonly isStreaming: boolean;

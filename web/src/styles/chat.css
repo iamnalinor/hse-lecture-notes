@@ -1,29 +1,3 @@
-/* ИИ-чат: 1-в-1 перенос стилей из sources/ai_design/prototype.html.
-   Только токены сайта (app.css), шкала кеглей и радиусов сайта. */
-
-:root {
-  --ai-accent: #d77757;
-  --ai-w: clamp(320px, var(--chat-preferred-width, 440px), min(55vw, 720px));
-  --ai-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 16px rgb(0 0 0 / 0.08);
-  --ai-shadow-lg: 0 2px 6px rgb(0 0 0 / 0.06), 0 16px 48px rgb(0 0 0 / 0.16);
-  --ai-quote-hl: color-mix(in srgb, var(--def) 18%, transparent);
-  --ai-flash-hl: color-mix(in srgb, var(--flash) 40%, transparent);
-  --ai-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-:root[data-theme="dark"] {
-  --ai-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.35);
-  --ai-shadow-lg: 0 2px 6px rgb(0 0 0 / 0.4), 0 16px 48px rgb(0 0 0 / 0.5);
-  --ai-quote-hl: color-mix(in srgb, var(--def) 28%, transparent);
-  --ai-flash-hl: color-mix(in srgb, var(--flash) 30%, transparent);
-}
-
-::highlight(ai-quote) {
-  background-color: var(--ai-quote-hl);
-}
-::highlight(ai-flash) {
-  background-color: var(--ai-flash-hl);
-}
-
 /* ---------- общие анимации ---------- */
 @keyframes ai-in {
   from {
@@ -71,128 +45,6 @@
 }
 .ai-flow {
   display: flow-root;
-}
-
-/* ---------- страница при открытой панели ---------- */
-@media (min-width: 721px) {
-  #root {
-    transition: margin-right 260ms var(--ai-ease);
-  }
-  [data-toc-pill],
-  aside[aria-label="Возврат"] {
-    transition: right 260ms var(--ai-ease);
-  }
-  html.ai-open #root {
-    margin-right: var(--ai-w);
-  }
-  html.ai-open [data-toc-pill],
-  html.ai-open aside[aria-label="Возврат"] {
-    right: var(--ai-w);
-  }
-}
-@supports selector(:has(*)) {
-  .ai-grid:has(.ai-toc:empty) .ai-toc {
-    display: none !important;
-  }
-  .ai-grid:has(.ai-toc:empty) {
-    grid-template-columns: minmax(0, 860px) !important;
-  }
-}
-@media (max-width: 720px) {
-  html.ai-open,
-  html.ai-open body {
-    overflow: hidden;
-  }
-}
-
-/* ---------- кнопка в шапке ---------- */
-.ai-head-btn {
-  display: inline-flex;
-  flex-shrink: 0;
-  white-space: nowrap;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 14px 0 12px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-lg, 12px);
-  background: var(--card);
-  color: var(--ink);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 150ms ease-out;
-}
-/* Phones: as tall as the search field (44 px), and the word stays: an unlabeled sparkle reads as
-decoration, «Чат» says what the button opens. */
-@media (width < 640px) {
-  .ai-head-btn {
-    height: 44px;
-    gap: 6px;
-    padding: 0 12px 0 10px;
-  }
-}
-.ai-head-btn:hover {
-  background: var(--wash);
-}
-.ai-head-btn[aria-expanded="true"] {
-  background: var(--wash);
-}
-.ai-head-btn svg {
-  width: 18px;
-  height: 18px;
-  color: var(--ai-accent);
-}
-
-/* ---------- плавающее действие у выделения ---------- */
-.ai-sel-btn {
-  position: absolute;
-  z-index: 60;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px 0 10px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  box-shadow: var(--ai-shadow);
-  cursor: pointer;
-  opacity: 0;
-  transform: translateY(-2px);
-  transition:
-    opacity 120ms ease-out,
-    transform 120ms ease-out;
-  pointer-events: none;
-}
-.ai-sel-btn.is-on {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-.ai-sel-btn:hover {
-  background: color-mix(in srgb, var(--ink) 85%, var(--paper));
-}
-.ai-sel-btn:active {
-  transform: scale(0.97);
-}
-.ai-sel-btn svg {
-  width: 15px;
-  height: 15px;
-}
-@media (hover: none) {
-  .ai-sel-btn {
-    height: 40px;
-    font-size: 15px;
-    padding: 0 16px 0 14px;
-  }
 }
 
 /* ---------- панель ---------- */
@@ -1036,6 +888,11 @@ html.ai-open .ai-panel {
   gap: 2px;
   margin: 8px 0 0 -8px;
 }
+.ai-actions-stopped {
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+}
 .ai-actions .ai-icon-btn {
   width: 32px;
   height: 32px;
@@ -1177,6 +1034,16 @@ html.ai-open .ai-panel {
   .ai-bottom {
     padding: 8px 12px max(12px, env(safe-area-inset-bottom));
   }
+}
+.ai-question-count {
+  margin: 4px 8px;
+  text-align: right;
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  color: var(--muted);
+}
+.ai-question-count-over {
+  color: var(--red);
 }
 .ai-composer {
   border: 1px solid var(--rule);
@@ -1593,21 +1460,15 @@ html.ai-open .ai-panel {
   white-space: nowrap;
 }
 
-:where(.ai-panel, .ai-sel-btn, .ai-back, .ai-head-btn, .ai-modal) :focus-visible,
-.ai-sel-btn:focus-visible,
-.ai-head-btn:focus-visible,
+:where(.ai-panel, .ai-back, .ai-modal) :focus-visible,
 .ai-back:focus-visible {
   outline: 2px solid var(--def);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #root,
-  [data-toc-pill],
-  aside[aria-label="Возврат"],
   .ai-panel,
   html.ai-open .ai-panel,
-  .ai-sel-btn,
   .ai-back,
   .ai-modal,
   .ai-modal-card,

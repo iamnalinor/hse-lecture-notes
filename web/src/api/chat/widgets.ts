@@ -1,6 +1,6 @@
 import { load as loadFingerprint } from "@fingerprintjs/fingerprintjs";
 
-import { awaitWithSignal } from "./abort.ts";
+import { awaitWithSignal, TelegramLoginCancelled } from "./abort.ts";
 import { ManagedTurnstile, type TurnstileApi, type TurnstileHooks } from "./turnstile.ts";
 
 export type { TurnstileHooks } from "./turnstile.ts";
@@ -11,7 +11,9 @@ type TelegramLoginSdk = {
       readonly client_id: number | string;
       readonly scope: readonly string[];
     },
-    callback: (result: false | null | { readonly id_token?: string }) => void,
+    callback: (
+      result: false | null | { readonly error?: string; readonly id_token?: string },
+    ) => void,
   ) => void;
 };
 
@@ -65,7 +67,7 @@ export const getBrowserFingerprint = async (): Promise<string> => {
     return fpCache.value;
   }
   try {
-    const agent = await loadFingerprint();
+    const agent = await loadFingerprint({ monitoring: false });
     const result = await agent.get();
     fpCache.value = result.visitorId;
     return result.visitorId;
@@ -189,11 +191,20 @@ export const openTelegramLoginPopup = async (clientId: string): Promise<string> 
   }
   return await new Promise<string>((resolve, reject) => {
     sdk.auth({ client_id: clientId, scope: ["profile"] }, (result) => {
-      if (result !== false && result !== null && typeof result.id_token === "string") {
+      if (
+        result === false ||
+        result === null ||
+        result.error === "popup_closed" ||
+        result.error === "access_denied"
+      ) {
+        reject(new TelegramLoginCancelled());
+        return;
+      }
+      if (typeof result.id_token === "string" && result.id_token !== "") {
         resolve(result.id_token);
         return;
       }
-      reject(new Error("Telegram login cancelled"));
+      reject(new Error("Telegram login failed"));
     });
   });
 };

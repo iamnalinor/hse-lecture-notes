@@ -109,6 +109,7 @@ export class CodexResponsesProvider implements LlmProvider {
 
         const resp = await this.fetchImpl(this.env.CODEX_RESPONSES_URL, {
           method: "POST",
+          redirect: "manual",
           headers,
           body: JSON.stringify(payload),
           signal: localAbort.signal,

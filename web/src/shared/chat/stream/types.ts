@@ -10,6 +10,7 @@ import type { AllowanceSetters } from "./allowance.ts";
 export type UnsentQuestion = ChatMessage & { readonly threadId: null | string };
 
 export type StreamStateSetters = AllowanceSetters & {
+  readonly rejectQuote: (message: UnsentQuestion) => void;
   readonly restoreRejectedDraft: (text: string, quote: ChatQuote | null) => void;
   readonly setUnsent: (message: null | UnsentQuestion) => void;
   readonly setPollRunId: (id: null | string) => void;

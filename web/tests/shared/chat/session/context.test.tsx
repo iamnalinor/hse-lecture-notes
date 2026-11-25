@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { ChatMessage } from "#web/domain/chat/model.ts";
 
+import { TelegramLoginCancelled } from "#web/api/chat/abort.ts";
 import {
   ensureChatAllowance,
   fetchChatRunStatus,
@@ -15,6 +16,7 @@ import {
 } from "#web/api/chat/client.ts";
 import { readStoredAuth, saveDegraded } from "#web/api/chat/storage.ts";
 import { type ActiveWsStream, openChatMessageStream } from "#web/api/chat/stream.ts";
+import { cancelActiveTurnstile } from "#web/api/chat/widgets.ts";
 import { ChatProvider, useChat } from "#web/shared/chat/session/context.tsx";
 import { makeAssistantMsg, makeUserMsg } from "#web/shared/chat/stream/helpers.ts";
 
@@ -128,7 +130,8 @@ it("can select history during a restored background response without its poll re
     await Promise.resolve();
   });
   expect(chat.current.isStreaming).toBe(true);
-  await act(() => vi.advanceTimersByTimeAsync(1500));
+  await act(() => vi.advanceTimersToNextTimerAsync());
+  expect(fetchChatRunStatus).toHaveBeenCalledExactlyOnceWith("r");
   await act(async () => {
     chat.current.selectThread("other");
     await Promise.resolve();
@@ -998,4 +1001,262 @@ it("can finish a stream after the same account renews its session", async () => 
   expect(chat.current.isStreaming).toBe(false);
   await act(() => chat.current.send("Second"));
   expect(openChatMessageStream).toHaveBeenCalledTimes(2);
+});
+
+it("keeps the pending retry, typed draft and quote with their original thread", async () => {
+  seedChatAuth({ browserToken: "browser" });
+  localStorage.setItem("hse_chat_thread:guest:/", "a");
+  vi.mocked(fetchChatThread).mockImplementation((id) => Promise.resolve(thread(id ?? "empty")));
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({
+    ...allowance,
+    block: { code: "auth_required" },
+  });
+  await act(() => chat.current.send("Вопрос в A"));
+  const pendingId = chat.current.messages[0]?.id ?? "";
+  const quote = { label: "Ответ", messageId: "a1", tex: "Фрагмент ответа A" };
+  act(() => {
+    chat.current.clearBlock();
+    chat.current.openWithQuote(quote);
+    chat.current.setDraft("Черновик A");
+  });
+  await act(async () => {
+    chat.current.selectThread("b");
+    await Promise.resolve();
+  });
+  expect(chat.current.draft).toBe("");
+  expect(chat.current.quote).toBeNull();
+  expect(chat.current.messages).toHaveLength(0);
+  await act(() => chat.current.retryMessage(pendingId));
+  expect(openChatMessageStream).not.toHaveBeenCalled();
+  await act(async () => {
+    chat.current.selectThread("a");
+    await Promise.resolve();
+  });
+  expect(chat.current.draft).toBe("Черновик A");
+  expect(chat.current.quote).toEqual(quote);
+  expect(chat.current.messages.map((msg) => msg.id)).toEqual([pendingId]);
+});
+
+it("keeps a late rejection on the original page and restores its retry on return", async () => {
+  const view = renderHook(() => ({ chat: useChat(), go: useNavigate() }), {
+    wrapper: ({ children }: { readonly children: ReactNode }) => (
+      <MemoryRouter initialEntries={["/algebra/a"]}>
+        <ChatProvider>{children}</ChatProvider>
+      </MemoryRouter>
+    ),
+  }).result;
+  act(() => {
+    view.current.chat.toggle();
+  });
+  await act(() => view.current.chat.send("Вопрос к A"));
+  await act(() => view.current.go("/algebra/b"));
+  act(() =>
+    vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onError({
+      code: "rate_limited",
+      message: "Подожди",
+      block: { code: "rate_limited", retryAfterSec: 1 },
+    }),
+  );
+  expect(view.current.chat.messages).toHaveLength(0);
+  await act(() => view.current.go("/algebra/a"));
+  expect(view.current.chat.messages[0]).toMatchObject({
+    contentTex: "Вопрос к A",
+    status: "error",
+  });
+});
+
+it("shows a retryable Telegram error after a failed exchange and clears it on cancellation", async () => {
+  const user = { id: 7, name: "Старый аккаунт" };
+  seedChatAuth({ sessionToken: "old", tier: "default", user });
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  vi.mocked(loginViaTelegram).mockRejectedValueOnce(new Error("exchange unavailable"));
+  await act(() => chat.current.switchAccount());
+  expect(chat.current.loginError).toBe(true);
+  expect(chat.current.user).toEqual(user);
+  vi.mocked(loginViaTelegram).mockRejectedValueOnce(new TelegramLoginCancelled());
+  await act(() => chat.current.switchAccount());
+  expect(chat.current.loginError).toBe(false);
+  expect(chat.current.user).toEqual(user);
+});
+
+it("restores the draft if a fresh allowance reduces the question limit", async () => {
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, maxQuestionChars: 10 });
+  const chat = mount();
+  await act(() => chat.current.send("Вопрос длиннее"));
+  expect(openChatMessageStream).not.toHaveBeenCalled();
+  expect(chat.current.maxQuestionChars).toBe(10);
+  expect(chat.current.draft).toBe("Вопрос длиннее");
+});
+
+it.each(["close", "toggle"] as const)(
+  "continues browser verification when the panel closes via %s",
+  async (method) => {
+    const deferred = Promise.withResolvers<typeof allowance>();
+    vi.mocked(ensureChatAllowance).mockReturnValueOnce(deferred.promise);
+    const chat = mount();
+    act(() => {
+      chat.current.toggle();
+    });
+    let sending: Promise<void> | undefined;
+    act(() => {
+      sending = chat.current.send("Вопрос");
+    });
+    act(() => {
+      chat.current[method]();
+    });
+    expect(cancelActiveTurnstile).not.toHaveBeenCalled();
+    expect(chat.current.isOpen).toBe(false);
+    await act(async () => {
+      deferred.resolve(allowance);
+      await sending;
+    });
+    expect(openChatMessageStream).toHaveBeenCalledOnce();
+  },
+);
+
+it.each(["", "Следующий вопрос"])(
+  "keeps only one editable copy after a stale material quote is rejected: %s",
+  async (newDraft) => {
+    const chat = mount();
+    const quote = { blockId: "old", label: "Определение", tex: "Старая формулировка" };
+    act(() => {
+      chat.current.openWithQuote(quote);
+    });
+    await act(() => chat.current.send("Почему так?"));
+    act(() => {
+      chat.current.setDraft(newDraft);
+      vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onError({
+        code: "invalid_quote",
+        message: "Выдели фрагмент заново.",
+      });
+    });
+    expect(chat.current.draft).toBe(newDraft === "" ? "Почему так?" : newDraft);
+    expect(chat.current.quote).toBeNull();
+    expect(chat.current.draftError).toBe("Выдели фрагмент заново.");
+    expect(chat.current.messages.filter((m) => m.contentTex === "Почему так?")).toHaveLength(
+      newDraft === "" ? 0 : 1,
+    );
+  },
+);
+
+it("lets the reader edit the rejected question after sending their newer draft and receiving a real thread ID", async () => {
+  const chat = mount();
+  act(() => {
+    chat.current.openWithQuote({ tex: "Устарело", label: "Лекция" });
+  });
+  await act(() => chat.current.send("Первоначальный вопрос"));
+  act(() => {
+    chat.current.setDraft("Следующий вопрос");
+    vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onError({
+      code: "invalid_quote",
+      message: "Выдели фрагмент заново.",
+    });
+  });
+  const pending = chat.current.messages.at(-1)?.id ?? "";
+  await act(() => chat.current.send());
+  const second = vi.mocked(openChatMessageStream).mock.calls[1]?.[2];
+  act(() => {
+    second?.onMeta({
+      runId: "r",
+      threadId: "t",
+      userMessageId: "u",
+      assistantMessageId: "a",
+      threadTitle: "Тема",
+      degraded: { active: false },
+    });
+    second?.onDone({
+      runId: "r",
+      status: "done",
+      text: "Ответ",
+      block: null,
+      steps: [],
+      degraded: { active: false },
+    });
+  });
+  await act(() => chat.current.retryMessage(pending));
+  expect(chat.current.draft).toBe("Первоначальный вопрос");
+  expect(
+    chat.current.messages.filter((message) => message.contentTex === "Первоначальный вопрос"),
+  ).toHaveLength(0);
+});
+
+it("uses the smaller live policy after the server rejects a cached allowance's longer question", async () => {
+  seedChatAuth({
+    allowanceToken: "allowance",
+    allowanceExpiresAt: Date.now() + 300_000,
+    maxQuestionChars: 4000,
+  });
+  const chat = mount();
+  await act(() => chat.current.send("Длинный вопрос"));
+  await act(async () => {
+    vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onError({
+      code: "question_too_long",
+      message: "Лимит изменился.",
+      maxQuestionChars: 9,
+    });
+    await Promise.resolve();
+  });
+  expect(chat.current.draft).toBe("Длинный вопрос");
+  expect(chat.current.maxQuestionChars).toBe(9);
+  expect(readStoredAuth()).toMatchObject({ allowanceToken: null, maxQuestionChars: 9 });
+  await act(() => chat.current.send());
+  expect(openChatMessageStream).toHaveBeenCalledTimes(1);
+});
+
+it("regenerates a saved answer even when the original question exceeds today's input limit", async () => {
+  seedChatAuth({ browserToken: "browser" });
+  localStorage.setItem("hse_chat_thread:guest:/", "old");
+  const page = { course: "", docId: "" };
+  const original = makeUserMsg("Вопрос из старого чата", null, page);
+  const answer = {
+    ...makeAssistantMsg(page),
+    status: "done" as const,
+    runId: "saved-run",
+    id: "saved-answer",
+  };
+  vi.mocked(fetchChatThread).mockResolvedValue(thread("old", [original, answer]));
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, maxQuestionChars: 9 });
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  await act(() => chat.current.retryMessage("saved-answer"));
+  expect(vi.mocked(openChatMessageStream).mock.calls[0]?.[1]).toMatchObject({
+    threadId: "old",
+    retryAssistantMessageId: "saved-answer",
+  });
+});
+
+it("continues an open stream while the panel is closed and sends a stop only on request", async () => {
+  const chat = mount();
+  act(() => {
+    chat.current.toggle();
+  });
+  await act(() => chat.current.send("Вопрос"));
+  const stream = vi.mocked(openChatMessageStream);
+  const connection = stream.mock.results[0]?.value as ActiveWsStream | undefined;
+  act(() => {
+    chat.current.close();
+    stream.mock.calls[0]?.[2].onDelta("Ответ в фоне");
+  });
+  expect(chat.current.messages.at(-1)?.contentTex).toBe("Ответ в фоне");
+  expect(connection?.disconnect).not.toHaveBeenCalled();
+  expect(connection?.stop).not.toHaveBeenCalled();
+  act(() => {
+    chat.current.toggle();
+  });
+  act(() => {
+    chat.current.stop();
+  });
+  expect(connection?.stop).toHaveBeenCalledOnce();
 });

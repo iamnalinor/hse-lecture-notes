@@ -29,6 +29,8 @@ export function validatePolicy(value: ServicePolicy): void {
   requireFields(value, defaults, "policy");
   // A fresh chat spends round 1 on the forced set_topic call, so it needs a second round for the answer.
   if (value.maxToolRounds < 2) throw new Error("policy.maxToolRounds must be at least 2");
+  if (value.staleRunTimeoutMs <= value.maxRunDurationMs)
+    throw new Error("staleRunTimeoutMs must leave time to finalize after maxRunDurationMs");
   for (const route of [value.buckets.high, value.buckets.low]) {
     resolveModelRoute(route);
     if (!["none", "minimal", "low", "medium", "high", "xhigh"].includes(route.effort))

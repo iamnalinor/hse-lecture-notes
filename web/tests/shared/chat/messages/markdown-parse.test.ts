@@ -126,3 +126,10 @@ it("keeps the material-link restriction when trimming whitespace", () => {
     scanInlinePieces("[ссылка]( javascript:alert(1) )").some((piece) => piece.kind === "span"),
   ).toBe(false);
 });
+
+it("keeps ordinary interval brackets in prose before a citation", () => {
+  expect(scanInlinePieces("На [a,b] см. [лекцию](#sec)")).toMatchObject([
+    { kind: "plain", text: "На [a,b] см. " },
+    { kind: "span", span: { kind: "ref", label: "лекцию", target: "sec" } },
+  ]);
+});

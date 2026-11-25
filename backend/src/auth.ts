@@ -146,8 +146,8 @@ export async function verifyTurnstileToken(
     return { ok: false, reason: `unexpected_hostname:${data.hostname}` };
   }
 
-  if (data.action && data.action !== "chat_allowance") {
-    return { ok: false, reason: `unexpected_action:${data.action}` };
+  if (data.action !== "chat_allowance") {
+    return { ok: false, reason: data.action ? `unexpected_action:${data.action}` : "missing_action" };
   }
 
   return { ok: true };
@@ -404,6 +404,7 @@ export async function handleAllowance(
       browserToken,
       allowanceToken,
       allowanceExpiresAt: allowanceExpMs,
+      maxQuestionChars: policy.maxQuestionChars,
       tier,
       user: session ? { id: session.telegramId, name: session.telegramName } : null,
       degraded: evalRes.degraded,

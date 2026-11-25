@@ -21,7 +21,7 @@ export interface BankQuestion {
   topic?: string;
   text: string;
   answer?: string;
-  refs?: string[];
+  refs?: Array<string | { id: string; doc: string }>;
 }
 export interface TicketPart {
   kind: string;
@@ -45,7 +45,7 @@ export const SAMPLE_PROBLEMS_TOOL: CodexFunctionTool = {
   type: "function",
   name: "sample_problems",
   description:
-    "Случайные задачи из банка генератора вариантов к КР, коллоквиуму или экзамену (тот же банк, что в «Генераторе вариантов» на странице подготовки). Для «проверь меня», тренировки и пробного варианта. Возвращает условия (LaTeX), ответ или ключевой шаг (answer) и id разобранных задач (refs → read_block). mode=variant без kind — по задаче на каждый номер варианта. Банки: " +
+    "Случайные задачи из банка генератора вариантов к КР, коллоквиуму или экзамену (тот же банк, что в «Генераторе вариантов» на странице подготовки). Для «проверь меня», тренировки и пробного варианта. Возвращает условия (LaTeX), ответ или ключевой шаг (answer) и ссылки на разборы (передай строку из refs в read_block как id). mode=variant без kind — по задаче на каждый номер варианта. Банки: " +
     bankList() +
     ".",
   parameters: {
@@ -164,6 +164,10 @@ export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number =
         )
       : shuffled(pool, random).slice(0, a.count);
   const titles = new Map(allParts.map((t) => [t.kind, t.title]));
+  const sourceLink = (ref: NonNullable<BankQuestion["refs"]>[number]): string => {
+    if (typeof ref === "string") return ref.startsWith("block:") ? ref : `/${a.course}#${ref}`;
+    return `/${a.course}/${ref.doc}#${ref.id}`;
+  };
   return {
     about: bank.about,
     left_after_filters: pool.length - picked.length,
@@ -174,7 +178,7 @@ export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number =
       topic: q.topic,
       text: bankHtmlToTex(q.text),
       ...(q.answer === undefined ? {} : { answer: bankHtmlToTex(q.answer) }),
-      ...(q.refs === undefined || q.refs.length === 0 ? {} : { refs: q.refs }),
+      ...(q.refs === undefined || q.refs.length === 0 ? {} : { refs: q.refs.map(sourceLink) }),
     })),
     page: `/${a.course}/${a.prepId}`,
     note: "Дай студенту решить сам: answer и refs не показывай до его попытки, потом сверь и разбери.",

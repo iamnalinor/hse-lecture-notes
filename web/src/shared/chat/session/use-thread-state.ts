@@ -115,6 +115,7 @@ const runningId = (items: readonly ChatMessage[]) => {
 };
 
 type ThreadStateOptions = {
+  readonly readingSource: boolean;
   readonly isOpen: boolean;
   readonly isConfigured: boolean;
   readonly pageKey: string;
@@ -125,10 +126,11 @@ export const useThreadState = ({
   isConfigured,
   pageKey,
   preferredThreadId,
+  readingSource,
 }: ThreadStateOptions) => {
   const history = useThreadHistory();
   const { replacePage } = history;
-  const page = usePageState(pageKey, isConfigured, isOpen);
+  const page = usePageState(pageKey, isConfigured, isOpen || readingSource);
   const earlier = useEarlierMessages(page.setMessages);
   const { setCursor, cancelEarlier } = earlier;
   const { setActiveThreadId, setMessages, setIsStreaming, setPollRunId, setIsThreadLoading } = page;

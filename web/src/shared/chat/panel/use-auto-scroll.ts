@@ -5,7 +5,7 @@ import type { ChatMessage } from "#web/domain/chat/model.ts";
 export const useChatAutoScroll = (
   scrollerRef: RefObject<HTMLDivElement | null>,
   content: { readonly messages: readonly ChatMessage[]; readonly isLoading: boolean },
-): void => {
+): ((top: number) => void) => {
   const followRef = useRef(true);
   const targetRef = useRef<string | undefined>(undefined);
   const touchYRef = useRef<number | undefined>(undefined);
@@ -60,4 +60,13 @@ export const useChatAutoScroll = (
       el.scrollTo({ behavior: "instant", top: content.isLoading ? 0 : el.scrollHeight });
     }
   }, [content.isLoading, content.messages, scrollerRef]);
+  return (top: number) => {
+    const el = scrollerRef.current;
+    if (el === null) {
+      return;
+    }
+
+    followRef.current = el.scrollHeight - top - el.clientHeight <= 4;
+    el.scrollTo({ behavior: "instant", top });
+  };
 };

@@ -1063,7 +1063,8 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--sync-remote", action="store_true")
     parser.add_argument("--skip-vectorize", action="store_true")
-    parser.add_argument("--fail-on-vectorize-overflow", action="store_true")
+    parser.add_argument("--fail-on-vectorize-overflow", action="store_true",
+                        help="Exit before sync if the global corpus exceeds the semantic search limit.")
     parser.add_argument("--output-json", type=Path, default=None)
     args = parser.parse_args()
 
@@ -1077,15 +1078,18 @@ def main() -> None:
         "blocks": len(blocks),
         "references": len(refs),
         "vectorize_selected": vec_count,
+        "vectorize_omitted": len(blocks) - vec_count,
         "vectorize_stored_dimensions": stored_dims,
         "vectorize_coverage": vec_count / len(blocks) if blocks else 0,
         "vectorize_free_limit_dimensions": 5_000_000,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
-    if args.fail_on_vectorize_overflow and sum(b.vectorize_candidate for b in corpus[1]) > VECTORIZE_FREE_MAX_VECTORS:
+    total_blocks = len(corpus[1])
+    if args.fail_on_vectorize_overflow and total_blocks > VECTORIZE_FREE_MAX_VECTORS:
         print(
-            f"ERROR: global vector selection exceeds Vectorize Free cap ({VECTORIZE_FREE_MAX_VECTORS})",
+            f"ERROR: {total_blocks} blocks exceed the vector selection limit of {VECTORIZE_FREE_MAX_VECTORS}. "
+            f"{total_blocks - VECTORIZE_FREE_MAX_VECTORS} blocks would have full-text search only.",
             file=sys.stderr,
         )
         sys.exit(2)

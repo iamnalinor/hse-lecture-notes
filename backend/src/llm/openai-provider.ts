@@ -38,6 +38,7 @@ export class OpenAIResponsesProvider implements LlmProvider {
     try {
       const response = await this.fetchImpl(this.responsesUrl, {
         method: "POST",
+        redirect: "manual",
         headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json", Accept: "text/event-stream" },
         body: JSON.stringify({
           model: req.model,

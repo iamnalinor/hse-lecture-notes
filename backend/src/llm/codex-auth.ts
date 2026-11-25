@@ -175,11 +175,16 @@ async function refreshWithLease(
 
     const resp = await fetchImpl(env.CODEX_TOKEN_URL, {
       method: "POST",
+      redirect: "manual",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body.toString(),
       signal: AbortSignal.timeout(LEASE_TTL_MS / 2),
     });
 
+    if (resp.status >= 300 && resp.status < 400) {
+      await resp.body?.cancel().catch(() => {});
+      throw new CodexAuthError("oauth_unavailable", `Codex OAuth unexpected redirect (${resp.status})`);
+    }
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
       const isTerminal =

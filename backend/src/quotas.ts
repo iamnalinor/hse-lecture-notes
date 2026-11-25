@@ -1,4 +1,4 @@
-import { prepareTurnContext, type PreparedTurnContext } from "./chat/history";
+import { decodeStoredQuote, prepareTurnContext, type PreparedTurnContext } from "./chat/history";
 import { randomToken } from "./crypto";
 import type { TrackedD1 } from "./db";
 import {
@@ -793,6 +793,7 @@ export interface AdmitRunParams {
 export type AdmitRunResult =
   | {
       kind: "admitted";
+      question: Pick<AdmitRunParams, "course" | "docId" | "questionText" | "quote">;
       contextLimited: boolean;
       preparedContext: PreparedTurnContext;
       questionCreatedAt: number;
@@ -892,6 +893,48 @@ export async function admitRunAtomic(
     kind: "conflict",
     message: "История чата изменилась. Попробуй отправить вопрос еще раз.",
   };
+}
+
+async function reportAdmissionAlerts(
+  env: AdmitRunParams["env"],
+  db: TrackedD1,
+  policy: ServicePolicy,
+  evalRes: QuotaEvaluation,
+  nowMs: number,
+): Promise<void> {
+  // Only the final route determines whether its reservation fits and emits alerts.
+  if (evalRes.weeklyWarnTriggered) {
+    const pct = Math.round(
+      ((evalRes.budget.globalActual7d + evalRes.budget.globalReserved) /
+        policy.budgets.weeklyGlobalUsdMicros) *
+        100,
+    );
+    await sendOwnerAlert(
+      env,
+      db,
+      "lastWeeklyWarnAt",
+      `Weekly budget reached ~${pct}% ($${((evalRes.budget.globalActual7d + evalRes.budget.globalReserved) / 1_000_000).toFixed(2)} / $${(policy.budgets.weeklyGlobalUsdMicros / 1_000_000).toFixed(2)}).`,
+      nowMs,
+    );
+  }
+
+  if (evalRes.block?.code === "global_budget_exceeded") {
+    await sendOwnerAlert(
+      env,
+      db,
+      "lastWeeklyExceededAt",
+      "Global 7-day budget limit exceeded! Chat requests are paused.",
+      nowMs,
+    );
+  } else if (evalRes.block?.code === "guest_budget_exceeded") {
+    await sendOwnerAlert(
+      env,
+      db,
+      "lastGuestExceededAt",
+      "Guest 24-hour budget limit exceeded! Guests are prompted to sign in.",
+      nowMs,
+    );
+  }
 }
 
 async function tryAdmitRun(
@@ -1041,23 +1084,45 @@ async function tryAdmitRun(
     threadId = `thr_${randomToken(12)}`;
   }
 
+  const evaluateLow = () => evaluateQuotasAndBudgets(db, policy, params.axes, nowMs, { forceLow: true });
+  let possibleLow: QuotaEvaluation | undefined;
+  if (contextLimited) {
+    evalRes = await evaluateLow();
+  } else if (evalRes.bucket === "high" && evalRes.block?.code === "global_budget_exceeded" &&
+    evalRes.budget.globalActual7d + evalRes.budget.globalReserved + policy.budgets.reserveLowMicros <=
+      policy.budgets.weeklyGlobalUsdMicros) {
+    // Only a permitted smaller reservation can overturn this denial during history routing.
+    possibleLow = await evaluateLow();
+  }
+  if (evalRes.block && !possibleLow?.allowed) {
+    await reportAdmissionAlerts(params.env, db, policy, evalRes, nowMs);
+    return { kind: "blocked", block: evalRes.block, degraded: evalRes.degraded };
+  }
+
   const runId = `run_${randomToken(12)}`;
   let userMessageId = `msg_${randomToken(12)}`;
   let assistantMessageId = `msg_${randomToken(12)}`;
   let questionCreatedAt = nowMs;
   let retryAssistantSeq: number | null = null;
   const expiresAt = nowMs + policy.staleRunTimeoutMs;
-  const quoteJson = params.quote ? JSON.stringify(params.quote) : null;
+  let question = {
+    course: params.course, docId: params.docId, questionText: params.questionText, quote: params.quote,
+  };
 
   if (params.retryAssistantMessageId) {
     const target = await db.first<{
       id: string;
       seq: number;
       user_id: string;
+      course: string;
+      doc_id: string;
+      content_tex: string;
+      quote_json: string | null;
       created_at: number;
     }>(
       db
-        .prepare(`SELECT assistant.id, assistant.seq, user.id AS user_id, user.created_at
+        .prepare(`SELECT assistant.id, assistant.seq, user.id AS user_id, user.created_at,
+          user.course, user.doc_id, user.content_tex, user.quote_json
         FROM chat_messages AS assistant JOIN chat_messages AS user
           ON user.thread_id = assistant.thread_id AND user.seq = assistant.seq - 1 AND user.role = 'user'
         WHERE assistant.thread_id = ? AND assistant.id = ? AND assistant.role = 'assistant'`)
@@ -1069,6 +1134,12 @@ async function tryAdmitRun(
         message: "Only the latest assistant message can be retried",
       };
     }
+    question = {
+      course: target.course,
+      docId: target.doc_id,
+      questionText: target.content_tex,
+      quote: decodeStoredQuote(target.quote_json),
+    };
     questionCreatedAt = target.created_at;
     userMessageId = target.user_id;
     assistantMessageId = target.id;
@@ -1080,10 +1151,7 @@ async function tryAdmitRun(
     prepareTurnContext(db, {
       threadId: creatingThread ? null : threadId,
       retryAssistantMessageId: params.retryAssistantMessageId,
-      course: params.course,
-      docId: params.docId,
-      questionText: params.questionText,
-      quote: params.quote,
+      ...question,
       createdAt: questionCreatedAt,
       generatedTitle,
       route: {
@@ -1100,13 +1168,11 @@ async function tryAdmitRun(
       preparedContext.expectedContextRevision !== contextRevision)
   )
     return { kind: "reevaluate" };
-  contextLimited ||= preparedContext.history.limitReached;
-  if (contextLimited) {
+  if (!contextLimited && preparedContext.history.limitReached) {
+    contextLimited = true;
     const candidateBucket = evalRes.bucket;
-    evalRes = await evaluateQuotasAndBudgets(db, policy, params.axes, nowMs, {
-      forceLow: true,
-    });
-    if (candidateBucket !== "low") preparedContext = await prepare("low");
+    evalRes = possibleLow ?? await evaluateLow();
+    if (candidateBucket !== "low" && !evalRes.block) preparedContext = await prepare("low");
     if (
       !creatingThread &&
       (preparedContext.expectedMaxSeq !== nextSeq - 1 ||
@@ -1114,46 +1180,8 @@ async function tryAdmitRun(
     )
       return { kind: "reevaluate" };
   }
-  // Only the final route determines whether its reservation fits and emits alerts.
-  if (evalRes.weeklyWarnTriggered) {
-    const pct = Math.round(
-      ((evalRes.budget.globalActual7d + evalRes.budget.globalReserved) /
-        policy.budgets.weeklyGlobalUsdMicros) *
-        100,
-    );
-    await sendOwnerAlert(
-      params.env,
-      db,
-      "lastWeeklyWarnAt",
-      `Weekly budget reached ~${pct}% ($${((evalRes.budget.globalActual7d + evalRes.budget.globalReserved) / 1_000_000).toFixed(2)} / $${(policy.budgets.weeklyGlobalUsdMicros / 1_000_000).toFixed(2)}).`,
-      nowMs,
-    );
-  }
-
-  if (!evalRes.allowed && evalRes.block) {
-    if (evalRes.block.code === "global_budget_exceeded") {
-      await sendOwnerAlert(
-        params.env,
-        db,
-        "lastWeeklyExceededAt",
-        "Global 7-day budget limit exceeded! Chat requests are paused.",
-        nowMs,
-      );
-    } else if (evalRes.block.code === "guest_budget_exceeded") {
-      await sendOwnerAlert(
-        params.env,
-        db,
-        "lastGuestExceededAt",
-        "Guest 24-hour budget limit exceeded! Guests are prompted to sign in.",
-        nowMs,
-      );
-    }
-    return {
-      kind: "blocked",
-      block: evalRes.block,
-      degraded: evalRes.degraded,
-    };
-  }
+  await reportAdmissionAlerts(params.env, db, policy, evalRes, nowMs);
+  if (evalRes.block) return { kind: "blocked", block: evalRes.block, degraded: evalRes.degraded };
 
   const contextGuard = creatingThread
     ? "1"
@@ -1269,7 +1297,7 @@ async function tryAdmitRun(
           params.docId,
           nextSeq,
           params.questionText,
-          quoteJson,
+          params.quote ? JSON.stringify(params.quote) : null,
           runId,
           nowMs,
           nowMs,
@@ -1396,6 +1424,7 @@ async function tryAdmitRun(
 
   return {
     kind: "admitted",
+    question,
     contextLimited,
     preparedContext,
     questionCreatedAt,

@@ -12,6 +12,9 @@ The same list of pages becomes `sitemap.xml` and `llms.txt` (with `robots.txt` b
 page gets its Markdown at `<path>.md`. Dates come from git: the first and the last commit of a page's
 source (a shallow clone has no history, then the pages carry no dates rather than wrong ones).
 */
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+
 import { COURSE_DOC_DESCRIPTIONS, courseDocTitle } from "../src/domain/course-docs.ts";
 import { type CourseInfo, COURSES } from "../src/domain/courses.ts";
 import { pdfFile } from "../src/domain/paths.ts";
@@ -33,6 +36,7 @@ import {
   type SitePage,
   snippet,
 } from "../src/domain/seo.ts";
+import { HomeStart } from "../src/features/home/introduction.tsx";
 
 const dist = new URL("../dist/", import.meta.url);
 const repo = new URL("../../", import.meta.url);
@@ -86,6 +90,7 @@ const TITLE = /<title>.*?<\/title>/u;
 const DESCRIPTION = /(<meta name="description" content=")[^"]*(")/u;
 const OG_DESCRIPTION = /(<meta property="og:description" content=")[^"]*(")/u;
 const OG_TITLE = /(<meta property="og:title" content=")[^"]*(")/u;
+const homeStart = `<div data-home-start><div class="h-[61px] border-b border-rule" aria-hidden="true"></div>${renderToStaticMarkup(createElement(HomeStart))}</div>`;
 const ROOT = '<div id="root">';
 
 /** Replaces the part of the shell that the pattern finds; a missing tag fails the build. */
@@ -125,7 +130,7 @@ const render = async (page: SitePage, children: readonly SitePage[] = []): Promi
     [OG_DESCRIPTION, (open, close) => `${open}${text}${close}`],
     [OG_TITLE, (open, close) => `${open}${isHome ? SITE_NAME : title}${close}`],
     ["</head>", () => `  ${headTags(page)}\n  </head>`],
-    [ROOT, () => `${ROOT}${fallbackBody(page, { article, children })}`],
+    [ROOT, () => `${ROOT}${isHome ? homeStart : ""}${fallbackBody(page, { article, children })}`],
   ];
   let html = shell;
   for (const [pattern, replace] of steps) {
@@ -162,6 +167,7 @@ await Bun.write(
 const catalogFile = Bun.file(new URL("data/courses.json", dist));
 if (!(await catalogFile.exists())) {
   // CI checks of web/ build without notes data; Pages always has it (and its smoke test checks a copy).
+  await Bun.write(new URL("index.html", dist), await render(home));
   console.log("dist/404.html written; no data/courses.json, page shells skipped");
   process.exit(0);
 }

@@ -3,10 +3,19 @@ import type { Plugin } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { renderToString } from "katex";
+import { existsSync, readFileSync } from "node:fs";
 import { defineConfig } from "vitest/config";
+import { z } from "zod";
 
 import { COURSES } from "./src/domain/courses.ts";
+import { LabelIndexSchema } from "./src/domain/schemas.ts";
+import { labelStats } from "./src/domain/stats.ts";
 import { HERO_FORMULAS } from "./src/features/home/formulas.ts";
+
+const policyText = readFileSync("../backend/policy.json", "utf8");
+const chatPolicy = z
+  .object({ maxQuestionChars: z.number().int().positive() })
+  .parse(JSON.parse(policyText));
 
 const GA_ID = "G-0FYSMRT6KK";
 
@@ -44,6 +53,18 @@ const homeMathHtml = Object.fromEntries(
   homeFormulas.map(([name, tex]) => [name, renderToString(tex)]),
 );
 
+// The desktop counter costs one number in the bundle, instead of a full label-index request.
+const countStatements = (): null | number => {
+  if (!existsSync("public/data/index.json")) {
+    return null;
+  }
+  const index = LabelIndexSchema.parse(JSON.parse(readFileSync("public/data/index.json", "utf8")));
+  const { definitions, theorems } = labelStats(
+    COURSES.flatMap(({ id }) => Object.values(index[id] ?? {})),
+  );
+  return definitions + theorems;
+};
+
 export default defineConfig({
   server: { watch: { ignored: ["**/playwright-report/**", "**/test-results/**"] } },
   // GitHub Pages serves the project site from /<repo>/ (the deploy workflow sets BASE_PATH).
@@ -51,6 +72,8 @@ export default defineConfig({
   build: { chunkSizeWarningLimit: 700, sourcemap: false },
   define: {
     "import.meta.env.BUILD_TIME": JSON.stringify(new Date().toISOString()),
+    CHAT_DEFAULT_QUESTION_LIMIT: JSON.stringify(chatPolicy.maxQuestionChars),
+    HOME_STATEMENTS: JSON.stringify(countStatements()),
     HOME_MATH_HTML: JSON.stringify(homeMathHtml),
   },
   plugins: [react(), tailwindcss(), analytics()],

@@ -69,3 +69,23 @@ test("policy accepts published routes and rejects invalid counters, ratios and r
     expect(() => validatePolicy(policy)).toThrow();
   }
 });
+
+test("generation may run for 90 seconds with a separate finalization window", () => {
+  expect(defaults.maxRunDurationMs).toBe(90_000);
+  expect(defaults.staleRunTimeoutMs).toBe(105_000);
+  expect(() => validatePolicy({ ...defaults, staleRunTimeoutMs: 75_000 })).toThrow();
+});
+
+test("existing installations update only the old timeout defaults", async () => {
+  const sql = await Bun.file(new URL("../migrations/0003_run_timeouts.sql", import.meta.url)).text();
+  const db = new SqliteD1Shim();
+  const change = db.sqlite.query("UPDATE service_config SET value_json=? WHERE key='policy'");
+  const read = db.sqlite.query<{ value_json: string }, []>("SELECT value_json FROM service_config WHERE key='policy'");
+  for (const [max, stale, nextMax, nextStale] of [[60000, 75000, 90000, 105000], [70000, 85000, 70000, 85000]] as const) {
+    const policy = { ...defaults, maxQuestionChars: 1873, maxRunDurationMs: max, staleRunTimeoutMs: stale };
+    change.run(JSON.stringify(policy));
+    db.sqlite.exec(sql);
+    db.sqlite.exec(sql);
+    expect(JSON.parse(read.get()!.value_json)).toEqual({ ...policy, maxRunDurationMs: nextMax, staleRunTimeoutMs: nextStale });
+  }
+});

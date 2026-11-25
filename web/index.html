@@ -13,12 +13,19 @@
     <meta property="og:title" content="Конспекты ПИ ФКН" />
     <meta property="og:description" content="Конспекты лекций ПИ ФКН ВШЭ 2026/27 по алгебре, матанализу, дискретной математике и АиЯ: теория, подготовка к КР и коллоквиумам, PDF." />
     <title>Конспекты ПИ ФКН</title>
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/src/styles/fonts/hse-sans-700.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/src/styles/fonts/hse-sans-400.woff2" />
     <link href="%BASE_URL%favicon.svg" rel="icon" type="image/svg+xml" />
     <link href="%BASE_URL%favicon-120.png" rel="icon" sizes="120x120" type="image/png" />
     <link href="%BASE_URL%favicon.ico" rel="icon" sizes="16x16 32x32 48x48" />
     <link href="%BASE_URL%apple-touch-icon.png" rel="apple-touch-icon" />
     <script>
       (function () {
+        // The worker can serve the cached home shell at a deep link.
+        var base = "%BASE_URL%";
+        if (location.pathname === base || location.pathname + "/" === base) {
+          document.documentElement.dataset.home = "";
+        }
         var saved;
         try {
           saved = localStorage.getItem("theme");
@@ -44,6 +51,7 @@
     <!-- The page copies put a text fallback for clients without scripts into #root (src/domain/seo.ts):
          the script above has set data-theme, so this browser runs scripts and React will draw the page. -->
     <style>
+      html:not([data-home]) [data-home-start],
       html[data-theme] .static-fallback {
         display: none;
       }

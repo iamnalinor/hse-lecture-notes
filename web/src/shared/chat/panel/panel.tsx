@@ -16,14 +16,11 @@ import { useChat } from "../session/context.tsx";
 import { ChatPanelHeader } from "./parts.tsx";
 import { ChatResizeHandle } from "./resize-handle.tsx";
 import { useChatAutoScroll } from "./use-auto-scroll.ts";
+import { focusHeaderChatButton, type FocusOrigin, useMobileFocus } from "./use-mobile-focus.ts";
 
 const isMobileViewport = (): boolean => globalThis.window.matchMedia("(max-width: 720px)").matches;
 const isReducedMotion = (): boolean =>
   globalThis.window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-const focusHeaderChatButton = (): void => {
-  document.querySelector<HTMLButtonElement>(".ai-head-btn")?.focus({ preventScroll: true });
-};
 
 const highlightTargetBlock = (target: Element): void => {
   const details = target.closest("details");
@@ -90,8 +87,8 @@ const useMaterialNavigation = (course: string) => {
   );
 };
 
-const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => void) => {
-  const { isOpen, close } = chat;
+const useJumpToBlock = (chat: ReturnType<typeof useChat>) => {
+  const { isOpen, closeForSource } = chat;
   const { course, docId } = chat.docContext;
   const documentPrefix = `${paths.lecture(course, docId)}#`;
   const hasNavigated = useMaterialNavigation(course);
@@ -118,91 +115,61 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>, onMobileBack: () => vo
       const target = isMaterialLink(anchor) ? null : findMaterialTarget(anchor, docId);
       if (target === null) {
         if ((await hasNavigated(anchor)) && isMobileViewport()) {
-          close();
-          onMobileBack();
+          closeForSource();
         }
         return;
       }
       if (isMobileViewport()) {
         pendingRef.current = target;
-        close();
-        onMobileBack();
+        closeForSource();
         return;
       }
       highlightTargetBlock(target);
     },
-    [close, docId, documentPrefix, onMobileBack, hasNavigated],
+    [docId, documentPrefix, closeForSource, hasNavigated],
   );
 };
 
-const useMobileFocus = (isOpen: boolean, panelEl: HTMLElement | null): void => {
-  useEffect(() => {
-    if (panelEl === null || !isOpen) {
-      return;
-    }
-    const media = globalThis.matchMedia("(max-width: 720px)");
-    const root = document.querySelector<HTMLElement>("#root");
-    const sync = () => {
-      if (root !== null) {
-        root.inert = media.matches;
-      }
-      if (media.matches && !panelEl.contains(document.activeElement)) {
-        panelEl.focus();
-      }
-    };
-    const cycle = (event: KeyboardEvent) => {
-      if (!media.matches || event.key !== "Tab" || event.defaultPrevented) {
-        return;
-      }
-      const controls = [
-        ...panelEl.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), a[href], textarea, input, [tabindex="0"]',
-        ),
-      ].filter((el) => el.checkVisibility({ visibilityProperty: true }));
-      const first = controls.at(0);
-      const last = controls.at(-1);
-      const [edge, next] = event.shiftKey ? [first, last] : [last, first];
-      if (edge?.matches(":focus") !== true) {
-        return;
-      }
-
-      event.preventDefault();
-      next?.focus();
-    };
-    sync();
-    panelEl.addEventListener("keydown", cycle);
-    media.addEventListener("change", sync);
-    return () => {
-      panelEl.removeEventListener("keydown", cycle);
-      media.removeEventListener("change", sync);
-      if (root !== null) {
-        root.inert = false;
-      }
-      if (media.matches) {
-        focusHeaderChatButton();
-      }
-    };
-  }, [isOpen, panelEl]);
-};
+const SourceReturnButton = ({
+  isVisible,
+  onReturn,
+}: {
+  readonly isVisible: boolean;
+  readonly onReturn: () => void;
+}) =>
+  createPortal(
+    <button className={isVisible ? "ai-back is-on" : "ai-back"} onClick={onReturn} type="button">
+      <SparklesIcon />К чату
+    </button>,
+    document.body,
+  );
 
 /** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
-export const ChatPanel = (): JSX.Element | null => {
+export const ChatPanel = ({
+  takeSelectionOrigin,
+}: {
+  readonly takeSelectionOrigin?: FocusOrigin;
+}): JSX.Element | null => {
   const chat = useChat();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [showMobileBack, setShowMobileBack] = useState(false);
+  const sourceScrollRef = useRef(0);
   const [panelEl, setPanelEl] = useState<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  useMobileFocus(chat.isOpen, panelEl);
+  useMobileFocus(chat.isOpen, panelEl, takeSelectionOrigin);
   const handleClose = useCallback((): void => {
     setHistoryOpen(false);
     chat.close();
-    focusHeaderChatButton();
+    if (!isMobileViewport()) {
+      focusHeaderChatButton();
+    }
   }, [chat]);
 
-  const jumpToBlock = useJumpToBlock(chat, () => {
-    setShowMobileBack(true);
-  });
+  const jumpToBlock = useJumpToBlock(chat);
+  const followSource = (blockId: string) => {
+    sourceScrollRef.current = scrollerRef.current?.scrollTop ?? 0;
+    return jumpToBlock(blockId);
+  };
 
   usePanelEscapeKey({
     closeHistory: () => {
@@ -213,7 +180,10 @@ export const ChatPanel = (): JSX.Element | null => {
     isOpen: chat.isOpen,
     turnstileOpen: chat.turnstileOpen,
   });
-  useChatAutoScroll(scrollerRef, { messages: chat.messages, isLoading: chat.isThreadLoading });
+  const restorePosition = useChatAutoScroll(scrollerRef, {
+    messages: chat.messages,
+    isLoading: chat.isThreadLoading,
+  });
 
   if (!chat.isConfigured) {
     return null;
@@ -240,29 +210,23 @@ export const ChatPanel = (): JSX.Element | null => {
           />
           <div className="ai-scroll" ref={scrollerRef}>
             <div aria-live="polite" className="ai-log">
-              <ChatLog onJumpToBlock={jumpToBlock} />
+              <ChatLog onJumpToBlock={followSource} />
             </div>
           </div>
           <ChatComposer />
         </aside>,
         document.body,
       )}
-      <ChatRefPreview onJumpToBlock={jumpToBlock} panelElement={panelEl} />
-      {createPortal(
-        <button
-          className={showMobileBack && !chat.isOpen ? "ai-back is-on" : "ai-back"}
-          onClick={() => {
-            setShowMobileBack(false);
-            if (!chat.isOpen) {
-              chat.toggle();
-            }
-          }}
-          type="button"
-        >
-          <SparklesIcon />К чату
-        </button>,
-        document.body,
-      )}
+      <ChatRefPreview onJumpToBlock={followSource} panelElement={panelEl} />
+      <SourceReturnButton
+        isVisible={chat.readingSource && !chat.isOpen}
+        onReturn={() => {
+          chat.returnFromSource();
+          globalThis.requestAnimationFrame(() => {
+            restorePosition(sourceScrollRef.current);
+          });
+        }}
+      />
     </>
   );
 };

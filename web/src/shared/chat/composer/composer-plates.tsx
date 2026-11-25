@@ -197,7 +197,7 @@ const AccountCaption = ({ compact }: { readonly compact: boolean }): JSX.Element
             <br />
           </>
         )}
-        {`Твой аккаунт — ${user.name}. `}
+        {`Ты вошел как ${user.name}. `}
         <button
           disabled={isLoginBusy || isStreaming}
           onClick={() => {

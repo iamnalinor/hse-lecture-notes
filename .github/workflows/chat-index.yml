@@ -1,0 +1,62 @@
+name: Sync chat search index
+
+on:
+  workflow_run:
+    workflows: ["Build notes"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  chat-index:
+    name: Sync chat search index (D1 + Vectorize)
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    concurrency:
+      group: cloudflare-d1
+      queue: max
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      # A retry of an earlier workflow must not roll the live index back.
+      - name: Choose the latest successfully built main revision
+        id: notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for event in push workflow_dispatch; do
+            gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch main \
+              --event "$event" --status success --limit 1 --json number,headSha
+          done > "$RUNNER_TEMP/index-builds.json"
+          sha=$(jq -ers 'add | max_by(.number).headSha // empty' "$RUNNER_TEMP/index-builds.json")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.notes.outputs.sha }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Apply D1 migrations
+        working-directory: backend
+        run: |
+          bun install --frozen-lockfile
+          bun run scripts/admin.ts init-db --remote
+      - name: Sync the index
+        timeout-minutes: 120
+        run: uv run python scripts/export_search_index.py --sync-remote
+      - name: Report stale chat search index
+        if: failure()
+        run: |
+          echo "::warning::Chat search index sync failed. Check the sync logs and rerun Sync chat search index on main."
+          echo "Chat search index sync failed. Check the sync logs and rerun Sync chat search index on main." >> "$GITHUB_STEP_SUMMARY"

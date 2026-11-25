@@ -4,6 +4,7 @@ import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/ch
 import { type ChatAccess, ensureChatAllowance } from "#web/api/chat/client.ts";
 
 export type AllowanceSetters = {
+  readonly setQuestionLimit: (limit: number | undefined) => void;
   readonly setBlock: (block: ChatBlock | null) => void;
   readonly setDegraded: (degraded: ChatDegraded) => void;
   readonly setTier: (tier: ChatTier) => void;
@@ -17,6 +18,7 @@ export type AllowanceOutcome =
   | { readonly kind: "error"; readonly message: string };
 
 const applyAccess = (setters: AllowanceSetters, allowance: ChatAccess): void => {
+  setters.setQuestionLimit(allowance.maxQuestionChars);
   setters.setTier(allowance.tier);
   setters.setUser(allowance.user);
   if (allowance.degraded !== null) {

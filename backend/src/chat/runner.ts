@@ -17,13 +17,19 @@ const AUTH_FRAME_TIMEOUT_MS = 5_000;
 const encoder = new TextEncoder();
 
 export class ChatRunner extends DurableObject<Env> {
-  /** RPC entrypoint called by the daily Cron Trigger (runs with DO 30s CPU budget). */
+  /** Each cron or alarm invocation processes one bounded archive batch. */
   async runDailyArchive(): Promise<ArchiveBatchStats> {
     const db = new TrackedD1(this.env.DB);
     const storage = this.env.ARCHIVE_BUCKET ? r2ToArchiveStorage(this.env.ARCHIVE_BUCKET) : null;
     if (!storage) return runArchiveBatch(db, null);
     const policy = await loadPolicy(db);
-    return runArchiveBatch(db, storage, { archiveAfterDays: policy.archiveAfterDays });
+    const stats = await runArchiveBatch(db, storage, { archiveAfterDays: policy.archiveAfterDays });
+    if (stats.needsContinuation) await this.ctx.storage.setAlarm(Date.now() + 1_000);
+    return stats;
+  }
+
+  async alarm(): Promise<void> {
+    await this.runDailyArchive();
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -216,31 +222,34 @@ export class ChatRunner extends DurableObject<Env> {
       const clientRequestId = frame.clientRequestId.trim();
       let quote = frame.quote ?? null;
 
-      if (questionText.length > policy.maxQuestionChars) {
+      const retryAssistantMessageId = frame.retryAssistantMessageId?.trim() || null;
+      // Admission resolves retries from the saved user message after verifying ownership.
+      if (!retryAssistantMessageId && questionText.length > policy.maxQuestionChars) {
         safeSend({
           type: "error",
           code: "question_too_long",
-          message: `Question exceeds ${policy.maxQuestionChars} chars`,
+          maxQuestionChars: policy.maxQuestionChars,
+          message: `Сократи вопрос до ${policy.maxQuestionChars} символов.`,
         });
         safeClose(4400, "question_too_long");
         return;
       }
-      if (quote && quote.tex.length > policy.maxQuoteChars) {
+      if (!retryAssistantMessageId && quote && quote.tex.length > policy.maxQuoteChars) {
         safeSend({ type: "error", code: "invalid_quote", message: "Цитата слишком длинная." });
         safeClose(4400, "invalid_quote");
         return;
       }
-      if (course) {
+      if (!retryAssistantMessageId && course) {
         const context = docId
           ? db.prepare("SELECT 1 FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1").bind(course, docId)
           : db.prepare("SELECT 1 FROM course_documents WHERE course = ? LIMIT 1").bind(course);
         if (!(await db.first(context))) {
-          safeSend({ type: "error", code: "invalid_context", message: "Учебный материал не найден" });
+          safeSend({ type: "error", code: "invalid_context", message: "Материал не найден. Обнови страницу и выбери материал снова." });
           safeClose(4400, "invalid_context");
           return;
         }
       }
-      if (quote) {
+      if (!retryAssistantMessageId && quote) {
         const assistantQuote = quote.messageId !== undefined;
         const validQuote = assistantQuote
           ? await validateAssistantQuote(db, frame.threadId ?? null, quote, btCheck.browserId, allowance.tgId)
@@ -249,18 +258,13 @@ export class ChatRunner extends DurableObject<Env> {
           safeSend({
             type: "error",
             code: "invalid_quote",
-            message: assistantQuote ? "Фрагмент не найден в ответе этого диалога" : "Фрагмент не найден в материале",
+            message: assistantQuote ? "Фрагмент не найден в ответе этого диалога" : "Фрагмент не найден в текущей версии материала. Обнови страницу и выдели цитату заново.",
           });
           safeClose(4400, "invalid_quote");
           return;
         }
         if (assistantQuote) quote = { messageId: quote.messageId, label: "Ответ ассистента", tex: quote.tex };
       }
-
-      const retryAssistantMessageId =
-        typeof frame.retryAssistantMessageId === "string" && frame.retryAssistantMessageId.trim()
-          ? frame.retryAssistantMessageId.trim()
-          : null;
 
       const payloadHash = await sha256Hex(
         JSON.stringify({
@@ -385,15 +389,12 @@ export class ChatRunner extends DurableObject<Env> {
         runId: admit.runId,
         threadId: admit.threadId,
         excludeMessageIds: [admit.userMessageId, admit.assistantMessageId],
-        course,
-        docId,
+        ...admit.question,
         tier: allowance.tier,
         bucket: admit.bucket,
         route: admit.route,
         initialReserveMicros: admit.reserveMicros,
         degraded: admit.degraded,
-        questionText,
-        quote,
         signal,
         isStoppedByUser,
         sendFrame: safeSend,

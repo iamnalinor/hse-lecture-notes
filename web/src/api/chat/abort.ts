@@ -1,3 +1,7 @@
+export class TelegramLoginCancelled extends Error {
+  override readonly name = "TelegramLoginCancelled";
+}
+
 /** Stops waiting even when an SDK or a browser API does not support AbortSignal. */
 export const awaitWithSignal = async <T>(promise: Promise<T>, signal: AbortSignal): Promise<T> => {
   signal.throwIfAborted();

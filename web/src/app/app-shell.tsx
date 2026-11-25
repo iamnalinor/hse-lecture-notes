@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Outlet, ScrollRestoration, useLocation, useNavigation } from "react-router";
 
 import { isDocumentPath } from "#web/domain/paths.ts";
+import { HomeStart } from "#web/features/home/introduction.tsx";
 import { BackBar } from "#web/shared/layout/back-bar.tsx";
 import { SiteFooter } from "#web/shared/layout/site-footer.tsx";
 import { TopBar } from "#web/shared/layout/top-bar.tsx";
@@ -12,8 +13,12 @@ import { DocSkeleton, PageSkeleton } from "#web/shared/ui/page-skeleton.tsx";
 
 import { LazyChat } from "./lazy-chat.tsx";
 
-const Skeleton = ({ pathname }: { readonly pathname: string }) =>
-  isDocumentPath(pathname) ? <DocSkeleton /> : <PageSkeleton />;
+const Skeleton = ({ pathname }: { readonly pathname: string }) => {
+  if (pathname === "/" || pathname === import.meta.env.BASE_URL) {
+    return <HomeStart />;
+  }
+  return isDocumentPath(pathname) ? <DocSkeleton /> : <PageSkeleton />;
+};
 
 /** The first paint, while the page code of the entry route is still loading. */
 export const ShellFallback = () => (

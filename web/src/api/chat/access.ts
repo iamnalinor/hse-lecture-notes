@@ -1,4 +1,10 @@
-import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
+import {
+  type ChatBlock,
+  type ChatDegraded,
+  type ChatTier,
+  type ChatUser,
+  resolveQuestionLimit,
+} from "#web/domain/chat/model.ts";
 
 import { awaitWithSignal } from "./abort.ts";
 import { apiJson, describeApiFailure, getChatEnvConfig } from "./http.ts";
@@ -19,6 +25,7 @@ import {
 export type AllowanceResponse = {
   readonly allowanceExpiresAt: number;
   readonly allowanceToken: string;
+  readonly maxQuestionChars?: number | undefined;
   readonly block: ChatBlock | null;
   readonly browserToken: string;
   readonly degraded: ChatDegraded;
@@ -42,6 +49,7 @@ const readCachedAccess = (): ChatAccess | null => {
   return {
     allowanceExpiresAt: cached.allowanceExpiresAt,
     allowanceToken: cached.allowanceToken,
+    maxQuestionChars: cached.maxQuestionChars,
     block: null,
     browserToken: cached.browserToken,
     degraded: null,
@@ -96,17 +104,22 @@ const refreshAllowance = async (context: AccessContext): Promise<ChatAccess> =>
         throw new Error(describeApiFailure(res));
       }
       const data = res.data as AllowanceResponse;
+      const maxQuestionChars = resolveQuestionLimit(
+        data.maxQuestionChars,
+        readStoredAuth().maxQuestionChars,
+      );
       await replaceChatAuth(context.sessionToken, {
         sessionToken: data.user === null ? null : context.sessionToken,
         browserToken: data.browserToken,
         tier: data.tier,
         user: data.user,
         allowanceToken: data.allowanceToken,
+        maxQuestionChars,
         allowanceExpiresAt: data.allowanceExpiresAt,
       });
       assertSameSession(context.sessionToken);
       saveDegraded(data.degraded);
-      return data;
+      return { ...data, maxQuestionChars };
     },
     context.signal,
   );

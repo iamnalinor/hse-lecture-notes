@@ -200,7 +200,11 @@ const useSelectionUpdates = (
 };
 
 /** Exact `.ai-sel-btn` floating button from prototype.html when selecting text in notes. */
-export const SelectionAskButton = (): JSX.Element | null => {
+export const SelectionAskButton = ({
+  onOpenFromSelection,
+}: {
+  readonly onOpenFromSelection?: (target: HTMLElement | null) => void;
+}): JSX.Element | null => {
   const chat = useChat();
   const [pill, setPill] = useState<FloatingPill | null>(null);
   const canQuoteMaterial = chat.docContext.docId !== "";
@@ -230,6 +234,14 @@ export const SelectionAskButton = (): JSX.Element | null => {
   return (
     <SelectionPill
       onSelect={(selected) => {
+        if (!chat.isOpen) {
+          const start = nodeToElement(selected.range.startContainer);
+          onOpenFromSelection?.(
+            start?.closest<HTMLElement>(
+              "p, li, dt, dd, td, th, h1, h2, h3, h4, h5, h6, section, .prose-notes",
+            ) ?? null,
+          );
+        }
         highlightQuoteRange(selected.range);
         chat.openWithQuote(selected.quote);
         setPill(null);

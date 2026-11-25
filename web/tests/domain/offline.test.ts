@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   type CachedHashes,
+  cacheNames,
   contentHash,
   countSavedNotes,
   fileWeight,
@@ -115,4 +116,15 @@ describe("pageOf", () => {
   ])("scope %s, path %s → %s", (scope, pathname, page) => {
     expect(pageOf(scope, pathname)).toBe(page);
   });
+});
+
+it("keeps persistent caches and staging cleanup separate for overlapping registration scopes", () => {
+  const scopes = ["/", "/pr-45/", "/pr-45/nested/", "/pr-450/"].map((scope) => cacheNames(scope));
+  expect(new Set(scopes.map(({ main }) => main)).size).toBe(scopes.length);
+  for (const own of scopes) {
+    const candidates = scopes.map(({ stagePrefix }) => `${stagePrefix}same-version`);
+    expect(candidates.filter((name) => name.startsWith(own.stagePrefix))).toEqual([
+      `${own.stagePrefix}same-version`,
+    ]);
+  }
 });

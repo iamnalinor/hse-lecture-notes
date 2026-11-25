@@ -270,7 +270,7 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
     parameters: {
       type: "object",
       properties: {
-        id: { type: "string", description: "Точный ID блока (например, thm:lec07:fta)." },
+        id: { type: "string", description: "ID блока или ссылка из refs банка задач в формате /курс/документ#метка." },
         include_proof: {
           type: "boolean",
           description: "Включить ли доказательство/решение блока (по умолчанию true).",
@@ -688,11 +688,16 @@ export class AgentToolRunner {
     }
 
     if (!id.startsWith("block:")) {
-      const legacy = await this.ctx.db.first<{id: string}>(
-        this.ctx.db.prepare("SELECT id FROM course_blocks WHERE course = ? AND anchor_id = ? ORDER BY (doc_id = ?) DESC, id LIMIT 1")
-          .bind(this.ctx.currentCourse, id, this.ctx.currentDocId),
+      const source = /^\/([^/#]+)(?:\/([^/#]+))?#(.+)$/u.exec(id);
+      const course = source?.[1] ?? this.ctx.currentCourse;
+      const doc = source?.[2] ?? null;
+      const match = await this.ctx.db.first<{ id: string }>(
+        this.ctx.db.prepare(`SELECT id FROM course_blocks
+          WHERE course = ? AND anchor_id = ? AND (? IS NULL OR doc_id = ?)
+          ORDER BY (doc_id = ?) DESC, id LIMIT 1`)
+          .bind(course, source?.[3] ?? id, doc, doc, this.ctx.currentDocId),
       );
-      id = legacy?.id ?? id;
+      id = match?.id ?? id;
     }
     this.ctx.signal?.throwIfAborted();
     // 1 batch with 3 independent bounded queries (avoids double JOIN row multiplication!)

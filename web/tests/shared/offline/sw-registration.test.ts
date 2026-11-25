@@ -1,7 +1,8 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#web/api/offline-cache.ts", () => ({ isOfflineSupported: () => true }));
+const isOfflineSupported = vi.hoisted(() => vi.fn(() => true));
+vi.mock("#web/api/offline-cache.ts", () => ({ isOfflineSupported }));
 
 /** Tasks waiting for the page to settle; `pageSettles` runs them. */
 const settleQueue: (() => void)[] = [];
@@ -254,4 +255,29 @@ describe("didOpenUpdated", () => {
     expect(await module.didOpenUpdated("/algebra")).toBe(true);
     expect(waiting.posted).toStrictEqual(["skip-waiting"]);
   });
+});
+
+it("dev cleanup unregisters only the worker for this exact deployment", async () => {
+  const current = {
+    scope: new URL("/pr-45/", location.origin).href,
+    unregister: vi.fn().mockResolvedValue(true),
+  };
+  const sibling = {
+    scope: new URL("/", location.origin).href,
+    unregister: vi.fn().mockResolvedValue(true),
+  };
+  vi.stubEnv("BASE_URL", "/pr-45/");
+  isOfflineSupported.mockReturnValueOnce(false);
+  vi.stubGlobal("navigator", {
+    serviceWorker: { getRegistrations: vi.fn().mockResolvedValue([current, sibling]) },
+  });
+  try {
+    const { registerServiceWorker } = await import("#web/shared/offline/sw-registration.ts");
+    await registerServiceWorker();
+    expect(current.unregister).toHaveBeenCalledOnce();
+    expect(sibling.unregister).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  }
 });

@@ -30,8 +30,8 @@ export const isMaterialLink = (target: string): boolean => {
 };
 
 const matchMdRef = (text: string, pos: number): InlineSpan | null => {
-  const closeBracket = text.indexOf("](", pos + 1);
-  if (closeBracket === -1) {
+  const closeBracket = text.indexOf("]", pos + 1);
+  if (closeBracket === -1 || text[closeBracket + 1] !== "(") {
     return null;
   }
   const closeParen = text.indexOf(")", closeBracket + 2);
@@ -44,7 +44,7 @@ const matchMdRef = (text: string, pos: number): InlineSpan | null => {
   if (!href.startsWith("#") && !isMaterialLink(href)) {
     return null;
   }
-  return label === "" || target === "" || label.includes("\n")
+  return label === "" || target === "" || /[\n[]/u.test(label)
     ? null
     : { end: closeParen + 1, kind: "ref", label, target };
 };

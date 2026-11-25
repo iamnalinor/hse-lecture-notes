@@ -9,6 +9,7 @@ import {
   openChatMessageStream,
   type WsStreamCallbacks,
 } from "#web/api/chat/stream.ts";
+import { resolveQuestionLimit } from "#web/domain/chat/model.ts";
 
 import type { SendArgs, StreamStateSetters } from "./types.ts";
 
@@ -48,8 +49,8 @@ const connectStream = (
       {
         ...callbacks,
         onError: (error) => {
-          if (error.code === "allowance_expired") {
-            void invalidateAllowance(allowance.allowanceToken);
+          if (error.code === "allowance_expired" || error.code === "question_too_long") {
+            void invalidateAllowance(allowance.allowanceToken, error.maxQuestionChars);
           }
           callbacks.onError(error);
         },
@@ -191,6 +192,10 @@ const finishAccessFailure = (
   }
 };
 
+const isNewQuestionTooLong = (args: SendArgs, allowance: ChatAccess): boolean =>
+  typeof args.retryMessage?.runId !== "string" &&
+  args.text.length > resolveQuestionLimit(allowance.maxQuestionChars);
+
 export const useChatStream = (
   setters: StreamStateSetters,
   turnstileHooks: TurnstileHooks,
@@ -215,6 +220,13 @@ export const useChatStream = (
       }
       if (outcome.kind !== "ok" || !isCurrent()) {
         finishAccessFailure(outcome, { args, setters, connection, callbacks });
+        return;
+      }
+      if (isNewQuestionTooLong(args, outcome.allowance)) {
+        callbacks.onError({
+          code: "question_too_long",
+          message: "Вопрос слишком длинный. Сократи его и отправь еще раз.",
+        });
         return;
       }
       streamRef.current = connectStream({ ...args, clientRequestId }, outcome.allowance, callbacks);

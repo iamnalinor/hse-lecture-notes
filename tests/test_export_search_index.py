@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -96,6 +99,27 @@ def test_collect_corpus_respects_vectorize_free_budget() -> None:
     vec_selected = sum(1 for b in blocks if b.vectorize_candidate)
     assert vec_selected <= esi.VECTORIZE_FREE_MAX_VECTORS
     assert vec_selected * 1024 < 5_000_000
+
+
+@pytest.mark.parametrize(("count", "exit_code"), [(4799, 0), (4800, 0), (4801, 2)])
+def test_vectorize_overflow_checks_all_blocks_before_selection(tmp_path, count, exit_code):
+    course = tmp_path / "notes" / "algebra"
+    course.mkdir(parents=True)
+    (course / "lecture.md").write_text(
+        "".join(f"::: {{.lemma #lem:{i}}}\nЛемма.\n:::\n" for i in range(count))
+    )
+    cmd = [sys.executable, str(ROOT / "scripts/export_search_index.py"), "--root", str(tmp_path), "--dry-run"]
+    strict = subprocess.run([*cmd, "--fail-on-vectorize-overflow"], capture_output=True, text=True)
+    assert strict.returncode == exit_code
+    summary = json.loads(strict.stdout)
+    assert summary["blocks"] == count
+    assert summary["vectorize_omitted"] == max(0, count - 4800)
+    if count > 4800:
+        output = tmp_path / "export.json"
+        subprocess.run([*cmd, "--output-json", str(output)], check=True)
+        blocks = json.loads(output.read_text())["blocks"]
+        assert len(blocks) == 4801
+        assert sum(b["vectorize_candidate"] for b in blocks) == 4800
 
 
 def test_partial_sync_preserves_course_ids_proofs_references_and_vector_budget(tmp_path: Path) -> None:

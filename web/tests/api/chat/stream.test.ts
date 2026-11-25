@@ -44,7 +44,9 @@ it("ignores frames for another run and sanitizes malformed metadata fields", () 
     userMessageId: "u",
     threadTitle: "T",
     contextLimited: "yes",
+    degraded: { active: false },
   });
+  frame({ type: "heartbeat", received: true });
   frame({ type: "title", threadId: "other", title: "Wrong" });
   frame({
     type: "done",
@@ -82,6 +84,21 @@ it.each([
     "Не удалось прочитать цитату.",
   ],
   ["null", "Не удалось прочитать ответ сервера. Попробуй еще раз."],
+  [
+    JSON.stringify({
+      type: "meta",
+      threadId: "t",
+      runId: "r",
+      assistantMessageId: "a",
+      userMessageId: "u",
+      threadTitle: "T",
+    }),
+    "Не удалось прочитать ответ сервера. Попробуй еще раз.",
+  ],
+  [
+    JSON.stringify({ type: "step", steps: [{ kind: "search", state: "done", links: [123] }] }),
+    "Не удалось прочитать ответ сервера. Попробуй еще раз.",
+  ],
 ])("reports an unreadable message once, without a second connection error", (data, message) => {
   const socket = Object.assign(new EventTarget(), { close: vi.fn() });
   vi.stubGlobal(
@@ -118,6 +135,8 @@ it.each([
     socket.dispatchEvent(new Event("close"));
     expect(callbacks.onError).toHaveBeenCalledExactlyOnceWith({ code: "invalid_frame", message });
     expect(callbacks.onCloseUnexpected).not.toHaveBeenCalled();
+    expect(callbacks.onMeta).not.toHaveBeenCalled();
+    expect(callbacks.onStep).not.toHaveBeenCalled();
   } finally {
     vi.unstubAllGlobals();
   }

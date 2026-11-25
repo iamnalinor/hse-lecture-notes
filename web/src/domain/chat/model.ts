@@ -1,5 +1,13 @@
 import { findCourse } from "../courses.ts";
 
+declare const CHAT_DEFAULT_QUESTION_LIMIT: number;
+
+export const resolveQuestionLimit = (
+  limit?: number,
+  fallback = CHAT_DEFAULT_QUESTION_LIMIT,
+): number =>
+  typeof limit === "number" && Number.isSafeInteger(limit) && limit > 0 ? limit : fallback;
+
 export type ChatTier = "default" | "extended" | "guest" | "student";
 
 export type ChatBlockCode =

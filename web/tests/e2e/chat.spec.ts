@@ -76,6 +76,33 @@ test("server errors show their reason instead of an invented timeout", async ({ 
   await expect(page.getByText("Сервер не ответил вовремя.", { exact: false })).toHaveCount(0);
 });
 
+test("an incompatible first frame shows a readable error and keeps the chat usable", async ({
+  page,
+}) => {
+  await mockChat(page, true);
+  await page.routeWebSocket("ws://127.0.0.1:8787/v1/messages", (socket) => {
+    socket.onMessage(() => {
+      socket.send(
+        JSON.stringify({
+          type: "meta",
+          threadId: "t",
+          runId: "r",
+          assistantMessageId: "a",
+          userMessageId: "u",
+          threadTitle: "Вопрос",
+        }),
+      );
+    });
+  });
+  const input = await openChat(page);
+  await input.fill("Почему?");
+  await input.press("Enter");
+  await expect(
+    page.getByText("Не удалось прочитать ответ сервера. Попробуй еще раз."),
+  ).toBeVisible();
+  await expect(input).toBeEditable();
+});
+
 test("mobile header keeps Chat text and collapses search first", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
@@ -158,13 +185,13 @@ test("a citation opens the other lecture on mobile and contents stay reachable o
   await page.route("**/data/algebra/*/fragment.html", (route) =>
     route.fulfill({
       contentType: "text/html",
-      body: '<section id="section"><h2>Раздел</h2><p style="text-align:right">Правый край</p></section>',
+      body: '<section id="section"><h2>Раздел</h2><p style="text-align:right">Правый край</p><a href="#section">Следующая ссылка</a></section>',
     }),
   );
   await page.setViewportSize({ width: 320, height: 780 });
   await page.goto("/algebra/01_test");
   await expect(page.locator("[data-page] h1")).toBeVisible();
-  const edge = page.getByText("Правый край");
+  const edge = page.locator("#section p");
   await edge.scrollIntoViewIfNeeded();
   await edge.evaluate((element) => {
     const range = document.createRange();
@@ -177,7 +204,12 @@ test("a citation opens the other lecture on mobile and contents stay reachable o
   const bounds = await quote.boundingBox();
   expect(bounds).not.toBeNull();
   expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(312);
-  await page.evaluate(() => globalThis.getSelection()?.removeAllRanges());
+  await quote.click();
+  await expect(page.getByRole("textbox", { name: "Сообщение в чат" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(edge).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Следующая ссылка" })).toBeFocused();
 
   await page.getByTitle("Чат с ИИ").click();
   for (const width of [1280, 1440]) {
@@ -192,12 +224,30 @@ test("a citation opens the other lecture on mobile and contents stay reachable o
   await input.fill("Следующая лекция");
   await input.press("Enter");
   await expect(page.locator(".ai-title")).toHaveText("Новая тема");
-  mock.complete(undefined, "[Открыть раздел](/algebra/02_test#section)");
+  mock.complete(
+    undefined,
+    `[Открыть раздел](/algebra/02_test#section)
+
+${"Остальная часть ответа.\n\n".repeat(40)}`,
+  );
+  const followUp = "Уточнение к первой лекции";
+  await input.fill(followUp);
   await page.getByRole("link", { name: "Открыть раздел" }).click();
   await expect(page).toHaveURL(/02_test#section$/u);
   await expect(page.getByTitle("Чат с ИИ")).toHaveAttribute("aria-expanded", "false");
   await page.getByRole("button", { name: "К чату" }).click();
   await expect(input).toBeVisible();
+  await expect(page.locator(".ai-title")).toHaveText("Новая тема");
+  await expect(page.getByRole("link", { name: "Открыть раздел" })).toBeInViewport();
+  await expect(input).toHaveValue(followUp);
+  await input.press("Enter");
+  await expect
+    .poll(() => mock.sent.at(-1))
+    .toMatchObject({
+      docId: "01_test",
+      threadId: "t",
+      text: followUp,
+    });
 });
 
 test("interactive browser verification takes keyboard focus and restores it on Escape", async ({

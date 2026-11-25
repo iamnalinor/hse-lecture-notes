@@ -5,62 +5,57 @@ import {
   type ReactNode,
   type SetStateAction,
   use,
-  useMemo,
   useState,
 } from "react";
 import { useLocation } from "react-router";
 
+import type { ChatDocContext, ChatMessage, ChatQuote } from "#web/domain/chat/model.ts";
+
 import { isChatConfigured } from "#web/api/chat/client.ts";
 import { cancelActiveTurnstile, type TurnstileHooks } from "#web/api/chat/widgets.ts";
-import {
-  type ChatDocContext,
-  type ChatMessage,
-  type ChatQuote,
-  parseDocContext,
-} from "#web/domain/chat/model.ts";
 
-import type { StreamStateSetters, UnsentQuestion } from "../stream/types.ts";
 import type { ChatContextValue } from "./types.ts";
 
 import { setChatOpen, useIsChatOpen } from "../open-state.ts";
 import { TurnstileModal } from "../panel/turnstile-modal.tsx";
 import { useChatStream } from "../stream/use-stream.ts";
+import { streamSetters } from "./stream-setters.ts";
+import { useComposerDrafts } from "./use-composer-drafts.ts";
 import { useLoginResume } from "./use-login-resume.ts";
-import { useChatSendActions, useComposerDraft } from "./use-send-actions.ts";
+import { chatSendActions } from "./use-send-actions.ts";
+import { useSourceReturn } from "./use-source-return.ts";
 import { useChatAuthState, useRootOpenClassSync, useTelegramAuthActions } from "./use-state.ts";
 import { useThreadState } from "./use-thread-state.ts";
 import { useTurnstile } from "./use-turnstile.ts";
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-type BuildCtxArgs = {
+type BuildCtxArgs = Pick<
+  ChatContextValue,
+  "login" | "retryMessage" | "send" | "setDraft" | "stop"
+> & {
   readonly unsent: ChatMessage | null;
-  readonly setUnsent: (message: null | UnsentQuestion) => void;
+  readonly leaveThread: (isNewChat: boolean) => void;
   readonly detach: () => void;
   readonly auth: ReturnType<typeof useChatAuthState>;
   readonly docContext: ChatDocContext;
+  readonly source: ReturnType<typeof useSourceReturn>;
   readonly draft: string;
+  readonly draftError: null | string;
   readonly isCheckingBrowser: boolean;
   readonly isConfigured: boolean;
   readonly isOpen: boolean;
   readonly quote: ChatQuote | null;
-  readonly retryMessage: (assistantMsgId: string) => Promise<void>;
-  readonly send: (overrideText?: string) => Promise<void>;
-  readonly setDraft: (value: string) => void;
   readonly setIsOpen: Dispatch<SetStateAction<boolean>>;
   readonly setQuote: (value: ChatQuote | null) => void;
-  readonly stop: () => void;
   readonly tgAuth: ReturnType<typeof useTelegramAuthActions>;
   readonly thr: ReturnType<typeof useThreadState>;
   readonly turnstileOpen: boolean;
 };
 
-const detachThread = (a: BuildCtxArgs): void => {
-  a.setUnsent(null);
+const detachThread = (a: BuildCtxArgs, isNewChat: boolean): void => {
   a.detach();
-  if (a.quote?.messageId !== undefined) {
-    a.setQuote(null);
-  }
+  a.leaveThread(isNewChat);
 };
 
 const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
@@ -77,21 +72,33 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     a.setQuote(null);
   },
   close: () => {
-    cancelActiveTurnstile();
     a.setIsOpen(false);
   },
+  closeForSource: () => {
+    a.source.retainForSource();
+    a.setIsOpen(false);
+  },
+  readingSource: a.source.readingSource,
+  returnFromSource: () => {
+    a.source.returnFromSource();
+    a.setIsOpen(true);
+  },
+  draftError: a.draftError,
   degraded: a.auth.degraded,
+  maxQuestionChars: a.auth.maxQuestionChars,
   docContext: a.docContext,
   draft: a.draft,
   isCheckingBrowser: a.isCheckingBrowser,
   isConfigured: a.isConfigured,
   ...a.tgAuth,
+  login: a.login,
+  switchAccount: a.login,
   isOpen: a.isOpen,
   isStreaming: a.thr.isStreaming,
   isThreadLoading: a.thr.isThreadLoading,
   messages: a.unsent === null ? a.thr.messages : [...a.thr.messages, a.unsent],
   newChat: () => {
-    detachThread(a);
+    detachThread(a, true);
     a.thr.invalidateLoad();
     a.thr.setPollRunId(null);
     a.thr.setIsStreaming(false);
@@ -109,7 +116,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     if (a.thr.activeThreadId === threadId && !a.thr.isThreadLoading) {
       return;
     }
-    detachThread(a);
+    detachThread(a, false);
     void a.thr.loadThread(threadId);
   },
   send: a.send,
@@ -125,9 +132,6 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   isLoadingMore: a.thr.isLoadingMore,
   tier: a.auth.tier,
   toggle: () => {
-    if (a.isOpen) {
-      cancelActiveTurnstile();
-    }
     a.setIsOpen((prev) => !prev);
   },
   turnstileOpen: a.turnstileOpen,
@@ -135,42 +139,34 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
 });
 
 type SessionProps = {
-  readonly composer: ReturnType<typeof useComposerDraft>;
+  readonly source: ReturnType<typeof useSourceReturn>;
+  readonly drafts: ReturnType<typeof useComposerDrafts>;
   readonly tgAuth: ReturnType<typeof useTelegramAuthActions>;
   readonly turnstileHooks: TurnstileHooks;
   readonly turnstileOpen: boolean;
   readonly auth: ReturnType<typeof useChatAuthState>;
-  readonly docContext: ChatDocContext;
+  readonly pageKey: string;
   readonly isOpen: boolean;
   readonly setIsOpen: Dispatch<SetStateAction<boolean>>;
 };
 
-const streamSetters = (
-  auth: SessionProps["auth"],
-  composer: SessionProps["composer"],
+const canResumeLogin = (
+  { isOpen, auth, tgAuth }: Pick<SessionProps, "auth" | "isOpen" | "tgAuth">,
   thr: ReturnType<typeof useThreadState>,
-): StreamStateSetters => {
-  return {
-    restoreRejectedDraft: composer.restoreRejectedDraft,
-    setUnsent: composer.setUnsent,
-    setPollRunId: thr.setPollRunId,
-    setActiveThreadId: thr.setActiveThreadId,
-    setBlock: auth.setBlock,
-    setDegraded: auth.setDegraded,
-    setDraft: composer.setDraft,
-    setIsStreaming: thr.setIsStreaming,
-    setMessages: thr.setMessages,
-    setQuote: composer.setQuote,
-    setThreads: thr.setThreads,
-    setTier: auth.setTier,
-    setUser: auth.setUser,
-  };
-};
+) =>
+  isOpen &&
+  !tgAuth.checkingLogin &&
+  !tgAuth.verificationError &&
+  auth.user !== null &&
+  auth.block === null &&
+  !thr.isThreadLoading &&
+  !thr.isStreaming;
 
 const useChatSessionValue = ({
   auth,
-  composer,
-  docContext,
+  drafts,
+  pageKey,
+  source,
   isOpen,
   setIsOpen,
   tgAuth,
@@ -178,23 +174,25 @@ const useChatSessionValue = ({
   turnstileOpen,
 }: SessionProps): ChatContextValue => {
   const isConfigured = isChatConfigured();
-  const { draft, setDraft, quote, setQuote, unsent, setUnsent } = composer;
 
-  const { pathname } = useLocation();
   const userId = auth.user?.id;
-  const pageKey = `${userId ?? "guest"}:/${pathname.split("/").filter(Boolean).join("/")}`;
   const thr = useThreadState({
     isOpen,
     isConfigured,
     pageKey,
-    preferredThreadId: composer.resume?.threadId,
+    preferredThreadId: drafts.migration?.threadId,
+    readingSource: source.readingSource,
   });
 
+  const composer = drafts.forThread(thr.activeThreadId);
+  const { text: draft, setDraft, quote, setQuote, unsent } = composer;
   const setters = streamSetters(auth, composer, thr);
   const stream = useChatStream(setters, turnstileHooks, userId);
-  const actions = useChatSendActions({
-    docContext,
+  const actions = chatSendActions({
+    docContext: source.composerDoc,
     draft,
+    maxQuestionChars: auth.maxQuestionChars,
+    editUnsent: composer.editUnsent,
     quote,
     stream,
     thr,
@@ -203,28 +201,24 @@ const useChatSessionValue = ({
     tgAuth,
   });
   useLoginResume({
-    pending: composer.resume,
-    ready:
-      isOpen &&
-      !tgAuth.checkingLogin &&
-      !tgAuth.verificationError &&
-      auth.user !== null &&
-      auth.block === null &&
-      !thr.isThreadLoading &&
-      !thr.isStreaming,
+    pending: drafts.migration?.resume ?? null,
+    ready: canResumeLogin({ isOpen, auth, tgAuth }, thr),
     draft,
     quote,
     activeThreadId: thr.activeThreadId,
-    clear: composer.clearResume,
+    clear: drafts.clearResume,
     send: stream.sendQuestion,
   });
 
   return buildContextValue({
+    source,
     unsent,
-    setUnsent,
+    leaveThread: drafts.leaveThread,
+    draftError: composer.draftError,
+    login: () => tgAuth.login(composer.onLogin),
     detach: stream.detachActive,
     auth,
-    docContext,
+    docContext: source.docContext,
     draft,
     isCheckingBrowser: stream.isCheckingBrowser,
     isConfigured,
@@ -241,12 +235,10 @@ const useChatSessionValue = ({
   });
 };
 
-type InnerProps = {
-  readonly children: ReactNode;
-  readonly docContext: ChatDocContext;
-};
-
-const ChatDocSessionProvider = ({ children, ...props }: InnerProps & SessionProps): JSX.Element => {
+const ChatDocSessionProvider = ({
+  children,
+  ...props
+}: SessionProps & { readonly children: ReactNode }): JSX.Element => {
   const value = useChatSessionValue(props);
   return <ChatContext value={value}>{children}</ChatContext>;
 };
@@ -269,28 +261,26 @@ export const ChatProvider = ({
   useRootOpenClassSync(isOpen);
   const widgets = useTurnstile(isOpen);
 
-  const docContext = useMemo(
-    () => parseDocContext(general ? "/" : location.pathname),
-    [general, location.pathname],
-  );
-  const docKey = `${docContext.course}:${docContext.docId}`;
-  const composer = useComposerDraft(docKey, auth.user);
+  const owner = String(auth.user?.id ?? "guest");
+  const source = useSourceReturn(location.pathname, owner, { isOpen, general });
+  const drafts = useComposerDrafts(source.page, auth.user);
   const tgAuth = useTelegramAuthActions({
     ...widgets,
-    onLogin: composer.onLogin,
     setBlock: auth.setBlock,
     setDegraded: auth.setDegraded,
+    setQuestionLimit: auth.setQuestionLimit,
     applyLogin: auth.applyLogin,
   });
   return (
     <>
       <ChatDocSessionProvider
         auth={auth}
-        composer={composer}
-        docContext={docContext}
+        drafts={drafts}
         isOpen={isOpen}
-        key={auth.user?.id ?? "guest"}
+        key={owner}
+        pageKey={`${owner}:/${source.page}`}
         setIsOpen={setIsOpen}
+        source={source}
         tgAuth={tgAuth}
         turnstileHooks={widgets.turnstileHooks}
         turnstileOpen={widgets.turnstileOpen}
@@ -300,7 +290,7 @@ export const ChatProvider = ({
       {isChatConfigured() && (
         <TurnstileModal
           cancelTurnstile={cancelActiveTurnstile}
-          turnstileOpen={widgets.turnstileOpen}
+          turnstileOpen={isOpen && widgets.turnstileOpen}
         />
       )}
     </>

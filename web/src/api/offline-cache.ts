@@ -1,7 +1,7 @@
 import {
   BACKGROUND_HEADER,
-  CACHE_NAME,
   type CachedHashes,
+  cacheNames,
   fileWeight,
   HASH_HEADER,
   MANIFEST_PATH,
@@ -27,7 +27,7 @@ export const fetchOfflineManifest = async (): Promise<OfflineManifest | undefine
 
 /** Hash of every cached document file, by path. */
 export const readCachedHashes = async (manifest: OfflineManifest): Promise<CachedHashes> => {
-  const cache = await caches.open(CACHE_NAME);
+  const cache = await caches.open(cacheNames(BASE).main);
   const paths = manifest.docs.flatMap((doc) => doc.files);
   const hashes = await Promise.all(
     paths.map(async (path) => {

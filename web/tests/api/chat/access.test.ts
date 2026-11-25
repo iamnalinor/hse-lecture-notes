@@ -395,3 +395,10 @@ it("drops an expired account when the server grants guest access and rejects its
   await expect(ensureChatAllowance(hooks)).resolves.toMatchObject({ tier: "guest" });
   expect(fetchMock).toHaveBeenCalledOnce();
 });
+
+it("retains the active question limit on cached allowances", async () => {
+  fetchMock.mockResolvedValueOnce(Response.json({ ...response(), maxQuestionChars: 3650 }));
+  await ensureChatAllowance(hooks);
+  expect(await ensureChatAllowance(hooks)).toMatchObject({ maxQuestionChars: 3650 });
+  expect(fetchMock).toHaveBeenCalledOnce();
+});

@@ -6,7 +6,7 @@ Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone,
 
 ## Architecture
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/telegram`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
-- **SQLite-backed Durable Object (`ChatRunner`, `src/chat/runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 8 rounds / 16 tool calls, 30 s CPU limit, 60 s generation kept alive even after client disconnect), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
+- **SQLite-backed Durable Object (`ChatRunner`, `src/chat/runner.ts`)**: `WS /v1/messages` — runs the multi-round LLM agent loop (up to 8 rounds / 16 tool calls, 30 s CPU limit, 90 s generation timeout and a 105 s stale-run deadline), handles in-socket `{ type: "stop" }`, and closes the socket immediately on completion.
 - **D1 (`hse-lecture-notes`)**: schema in `migrations/` (hourly O(1) budget buckets, quotas, threads, messages, FTS5 course materials).
 - **Vectorize (`hse-course-blocks`, 1024 dim cosine) + Workers AI (`@cf/baai/bge-m3`)**: semantic search with automatic fallback to FTS5.
 
@@ -63,7 +63,15 @@ With R2 disabled the daily cron logs
 To enable archiving later, create a private R2 bucket and add it to Wrangler's
 `r2_buckets` with the binding `ARCHIVE_BUCKET`. The cron then copies inactive
 records after `archiveAfterDays` (default 30 days) and verifies the R2 copy before
-deleting D1 rows. R2 retention is configured separately on the bucket.
+deleting D1 rows. Each gzip JSONL object in `archives/<day>/` contains a complete
+`thread`, a `thread_manifest` or `usage_run` records. For a manifest, follow
+`previousPart` through the immutable `thread_part` objects in `archive-parts/<day>/`
+until it is null. Read those message pages oldest first and append the messages
+in the manifest. The object filename is the SHA-256 of its compressed contents.
+Retain every referenced part for the lifetime of its manifest. The daily cron
+starts one bounded batch. When it reaches a batch limit and advances a D1
+checkpoint or deletes verified records, a Durable Object alarm processes the
+next batch. A long thread resumes from its last verified page in D1.
 
 ## Managing D1 State (No Admin HTTP Endpoints)
 
@@ -113,7 +121,7 @@ New chats first make a forced hidden strict `set_topic({title})` call. The harne
 
 `suggest_reply({suggestion})` is optional and requested after the visible answer. Suggestions use natural plain user wording, usually 3–7 words (target 50, hard cap 80 Unicode code points), without Markdown or TeX. Missing or invalid suggestions leave the ordinary placeholder and do not invalidate the answer. Tab inserts the placeholder without sending; touch only displays it.
 
-Parallel search/read calls remain enabled, with 8 provider rounds, 16 executed search/read calls, 12,000 characters per result, 60,000 material-output characters in total and 60 seconds per run. Tool definitions stay stable; the final available round disables calls through `tool_choice: none`. There is no mandatory finishing tool or metadata repair loop. Capped tool results are replayed as raw text. Exhausting the material-output budget forces the next round to answer from existing results; remaining calls receive a fixed internal explanation. Internal note steps stay out of public history and the UI. Known usage and conservative unknown-round estimates are settled even on failure. Terminal WebSocket frames carry the same safe error explanation as restored history; raw upstream payloads stay private.
+Parallel search/read calls remain enabled, with 8 provider rounds, 16 executed search/read calls, 12,000 characters per result, 60,000 material-output characters in total and 90 seconds per run. Tool definitions stay stable; the final available round disables calls through `tool_choice: none`. There is no mandatory finishing tool or metadata repair loop. Capped tool results are replayed as raw text. Exhausting the material-output budget forces the next round to answer from existing results; remaining calls receive a fixed internal explanation. Internal note steps stay out of public history and the UI. Known usage and conservative unknown-round estimates are settled even on failure. Terminal WebSocket frames carry the same safe error explanation as restored history; raw upstream payloads stay private.
 
 The model receives a whole-exchange suffix: at most 15 logical user/assistant messages including the new question, and 50,000 JavaScript characters in serialized input items. Context snapshots, quotes, calls/results and encrypted reasoning count toward size. The complete visible conversation remains stored. Reaching either threshold latches only that thread to the low route with its own quota/reserve and a persistent warning. New threads keep ordinary routing. Context revision plus max sequence guards admission against finalize/retry races.
 
@@ -134,4 +142,4 @@ bunx wrangler vectorize create-metadata-index hse-course-blocks --property-name=
 bunx wrangler vectorize list-metadata-index hse-course-blocks
 ```
 
-After the metadata indexes are ready, apply D1 migrations and run `uv run python scripts/export_search_index.py --sync-remote --fail-on-vectorize-overflow` from the repository root. D1 and FTS cover the full corpus. The exporter reconciles the dedicated Vectorize index against the highest-priority 4,800 block IDs and waits for each mutation to be processed. Run one sync at a time. If a run fails, rerun the same command. The main-branch Build notes workflow reports sync failures in its summary and still publishes the notes.
+After the metadata indexes are ready, apply D1 migrations and run `uv run python scripts/export_search_index.py --sync-remote` from the repository root. D1 and FTS cover the full corpus. The sync log reports how many blocks have full-text search only in `vectorize_omitted`. To require semantic coverage of every block, run `uv run python scripts/export_search_index.py --dry-run --fail-on-vectorize-overflow`. The exporter reconciles the dedicated Vectorize index against the highest-priority 4,800 block IDs and waits for each mutation to be processed. Run one sync at a time. If a run fails, rerun the same command. After a successful main-branch notes build, Pages and the Sync chat search index workflow run independently. A failed index sync can be rerun without republishing the notes. The sync uses the newest successful main build and shares a queued D1 writer lock with the Worker deployment.

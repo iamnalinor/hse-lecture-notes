@@ -116,6 +116,34 @@ const useComposerKeyDown = (canSend: boolean, suggestion: null | string, consume
   };
 };
 
+const SendButton = ({ canSend }: { readonly canSend: boolean }) => {
+  const { canStop, send, stop } = useChat();
+  return canStop ? (
+    <button
+      aria-label="Остановить ответ"
+      className="ai-send is-stop"
+      onClick={stop}
+      title="Остановить"
+      type="button"
+    >
+      <StopIcon />
+    </button>
+  ) : (
+    <button
+      aria-label="Отправить"
+      className="ai-send"
+      disabled={!canSend}
+      onClick={() => {
+        void send();
+      }}
+      title="Отправить (Enter)"
+      type="button"
+    >
+      <SendIcon />
+    </button>
+  );
+};
+
 const ComposerBox = ({
   canSend,
   suggestion,
@@ -125,7 +153,10 @@ const ComposerBox = ({
   readonly suggestion: null | string;
   readonly consume: () => void;
 }): JSX.Element => {
-  const { canStop, clearQuote, draft, isOpen, messages, quote, send, setDraft, stop } = useChat();
+  const { clearQuote, draft, isOpen, maxQuestionChars, messages, quote, setDraft } = useChat();
+  const length = draft.trim().length;
+  const isNearingLimit = length >= maxQuestionChars * 0.9;
+  const isOverLimit = length > maxQuestionChars;
   const placeholder = suggestion ?? resolvePlaceholder(quote !== null, messages.length > 0);
   const textareaRef = useComposerTextarea({
     draft,
@@ -152,6 +183,8 @@ const ComposerBox = ({
           Сообщение в чат
         </label>
         <textarea
+          aria-describedby={isNearingLimit ? "ai-question-count" : undefined}
+          aria-invalid={isOverLimit || undefined}
           id="ai-input"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -160,39 +193,34 @@ const ComposerBox = ({
           rows={1}
           value={draft}
         />
-        {canStop ? (
-          <button
-            aria-label="Остановить ответ"
-            className="ai-send is-stop"
-            onClick={stop}
-            title="Остановить"
-            type="button"
-          >
-            <StopIcon />
-          </button>
-        ) : (
-          <button
-            aria-label="Отправить"
-            className="ai-send"
-            disabled={!canSend}
-            onClick={() => {
-              void send();
-            }}
-            title="Отправить (Enter)"
-            type="button"
-          >
-            <SendIcon />
-          </button>
-        )}
+        <SendButton canSend={canSend} />
       </div>
+      {isNearingLimit && (
+        <div
+          className={isOverLimit ? "ai-question-count ai-question-count-over" : "ai-question-count"}
+          id="ai-question-count"
+        >
+          {length} / {maxQuestionChars}
+        </div>
+      )}
     </div>
   );
 };
 
 const VerificationStatus = () => {
-  const { checkingLogin, verificationError, isStreaming } = useChat();
+  const { checkingLogin, verificationError, isStreaming, loginError, draftError } = useChat();
   return (
     <>
+      {typeof draftError === "string" && (
+        <p className="ai-caption" role="status">
+          {draftError}
+        </p>
+      )}
+      {loginError && (
+        <p className="ai-caption" role="status">
+          Не удалось войти через Telegram. Попробуй еще раз.
+        </p>
+      )}
       {checkingLogin === true && (
         <p className="ai-caption" role="status">
           Проверяю браузер…
@@ -216,6 +244,7 @@ export const ChatComposer = (): JSX.Element => {
     draft,
     isStreaming,
     isThreadLoading,
+    maxQuestionChars,
     quote,
     rateLimitUntil,
   } = useChat();
@@ -230,6 +259,7 @@ export const ChatComposer = (): JSX.Element => {
     !isStreaming &&
     mode === "composer" &&
     rateRemainSec === 0 &&
+    draft.trim().length <= maxQuestionChars &&
     (draft.trim() !== "" || quote !== null);
 
   return (

@@ -7,6 +7,7 @@ import { TexText } from "#web/shared/reader/tex-text.tsx";
 import { ChevronIcon, ReadStepIcon, SearchStepIcon } from "../icons.tsx";
 import { isMaterialLink } from "./markdown-parse.ts";
 import { ChatResponseStatus } from "./response-status.tsx";
+import { SourceLink } from "./source-link.tsx";
 
 const plural = (n: number, [one, few, many]: readonly [string, string, string]): string => {
   const abs = Math.abs(n) % 100;
@@ -47,7 +48,9 @@ const StepIcon = ({ step }: { readonly step: ChatStep }): JSX.Element => {
 };
 
 const formatReadLabel = (step: ChatStep): string => {
-  const verb = step.state === "running" ? "Читаю " : "Прочитал ";
+  const verb = { running: "Читаю ", done: "Прочитал ", error: "Чтение не завершено · " }[
+    step.state
+  ];
   const target = step.target ?? "фрагмент";
   const note = step.note === undefined || step.note === "" ? "" : `, ${step.note}`;
   return `${verb}${target}${note}`;
@@ -55,12 +58,14 @@ const formatReadLabel = (step: ChatStep): string => {
 
 const StepLabel = ({ step }: { readonly step: ChatStep }): JSX.Element => {
   if (step.kind === "search") {
-    const prefix = step.state === "running" ? "Ищу в конспектах " : "Поиск ";
+    const prefix = { running: "Ищу в конспектах ", done: "Поиск ", error: "Поиск не завершен · " }[
+      step.state
+    ];
     return (
       <span className="ai-step-label">
         {prefix}
         <span className="ai-step-query">
-          <TexText text={step.q ?? ""} />
+          <TexText text={step.q === undefined || step.q === "" ? "" : `«${step.q}»`} />
         </span>
       </span>
     );
@@ -97,19 +102,14 @@ const ResultLink = ({
     return <TexText text={label} />;
   }
   return (
-    <a
-      href={href}
-      onClick={(event) => {
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-          return;
-        }
-
-        event.preventDefault();
+    <SourceLink
+      onFollow={() => {
         onJumpToBlock(href);
       }}
+      to={href}
     >
       <TexText text={label} />
-    </a>
+    </SourceLink>
   );
 };
 
@@ -136,14 +136,25 @@ type StepsBlockProps = {
   readonly isBackgroundResponse: boolean;
   readonly isCheckingBrowser: boolean;
   readonly isRunningSteps: boolean;
+  readonly isStopped?: boolean;
   readonly onJumpToBlock: (blockId: string) => void;
   readonly steps: readonly ChatStep[];
 };
 
-const RunningSummary = ({
+const StepsSummary = ({
+  count,
   isBackgroundResponse,
   isCheckingBrowser,
-}: Pick<StepsBlockProps, "isBackgroundResponse" | "isCheckingBrowser">): JSX.Element => {
+  isRunningSteps,
+  isStopped,
+}: Pick<
+  StepsBlockProps,
+  "isBackgroundResponse" | "isCheckingBrowser" | "isRunningSteps" | "isStopped"
+> & { readonly count: number }): JSX.Element => {
+  if (!isRunningSteps) {
+    const label = `${String(count)} ${pluralSteps(count)}`;
+    return <>{isStopped === true ? `${label} до остановки` : `Подготовил ответ за ${label}`}</>;
+  }
   if (isCheckingBrowser) {
     return <>Проверяю браузер…</>;
   }
@@ -158,26 +169,22 @@ export const ChatStepsBlock = ({
   isBackgroundResponse,
   isCheckingBrowser,
   isRunningSteps,
+  isStopped = false,
   onJumpToBlock,
   steps: allSteps,
 }: StepsBlockProps): JSX.Element | null => {
-  const [stepsOpen, setStepsOpen] = useState(false);
-  const steps = allSteps.filter((step) => step.kind !== "note");
+  const [stepsOpen, setStepsOpen] = useState<boolean>();
+  const steps = allSteps
+    .filter((step) => step.kind !== "note")
+    .map((step) =>
+      isStopped && step.state === "running" ? { ...step, state: "error" as const } : step,
+    );
 
   if (!isRunningSteps && steps.length === 0) {
     return null;
   }
 
-  const isOpen = isRunningSteps || stepsOpen;
-  const count = steps.length;
-  const summary = isRunningSteps ? (
-    <RunningSummary
-      isBackgroundResponse={isBackgroundResponse}
-      isCheckingBrowser={isCheckingBrowser}
-    />
-  ) : (
-    `Подготовил ответ за ${String(count)} ${pluralSteps(count)}`
-  );
+  const isOpen = isRunningSteps || (stepsOpen ?? isStopped);
   const boxClass = `ai-steps ai-fade${isOpen ? " is-open" : ""}${isRunningSteps ? " is-run" : ""}`;
 
   return (
@@ -188,12 +195,20 @@ export const ChatStepsBlock = ({
           className="ai-steps-toggle"
           disabled={isRunningSteps}
           onClick={() => {
-            setStepsOpen((prev) => !prev);
+            setStepsOpen(!isOpen);
           }}
           type="button"
         >
           {isRunningSteps && <span aria-hidden="true" className="ai-status-icon" />}
-          <span className="ai-steps-sum">{summary}</span>
+          <span className="ai-steps-sum">
+            <StepsSummary
+              count={steps.length}
+              isBackgroundResponse={isBackgroundResponse}
+              isCheckingBrowser={isCheckingBrowser}
+              isRunningSteps={isRunningSteps}
+              isStopped={isStopped}
+            />
+          </span>
           <ChevronIcon />
         </button>
         {steps.length > 0 && (

@@ -1,9 +1,14 @@
+import { load } from "@fingerprintjs/fingerprintjs";
 import { expect, it, vi } from "vitest";
 
-import { loadTelegramSdk, openTelegramLoginPopup } from "#web/api/chat/widgets.ts";
+import {
+  getBrowserFingerprint,
+  loadTelegramSdk,
+  openTelegramLoginPopup,
+} from "#web/api/chat/widgets.ts";
 
 vi.mock("@fingerprintjs/fingerprintjs", () => ({
-  load: () => Promise.resolve({ get: () => Promise.resolve({ visitorId: "fingerprint" }) }),
+  load: vi.fn(() => Promise.resolve({ get: () => Promise.resolve({ visitorId: "fingerprint" }) })),
 }));
 
 it("opens an already loaded SDK in the click call stack", async () => {
@@ -149,5 +154,32 @@ it("replaces a disconnected host and targets the new provider's modal callbacks"
     oldHost.remove();
     newHost.remove();
     document.querySelector("#hse-turnstile-script")?.remove();
+  }
+});
+
+it("gets the quota fingerprint with SDK monitoring disabled", async () => {
+  await expect(getBrowserFingerprint()).resolves.toBe("fingerprint");
+  expect(load).toHaveBeenCalledWith({ monitoring: false });
+});
+
+it.each([
+  [false, "TelegramLoginCancelled"],
+  [null, "TelegramLoginCancelled"],
+  [{ error: "popup_closed" }, "TelegramLoginCancelled"],
+  [{ error: "access_denied" }, "TelegramLoginCancelled"],
+  [{ error: "malformed id_token" }, "Error"],
+  [{}, "Error"],
+])("distinguishes popup dismissal from an invalid credential response", async (result, name) => {
+  vi.stubGlobal("Telegram", {
+    Login: {
+      auth: (_opts: unknown, done: (value: unknown) => void) => {
+        done(result);
+      },
+    },
+  });
+  try {
+    await expect(openTelegramLoginPopup("123")).rejects.toMatchObject({ name });
+  } finally {
+    vi.unstubAllGlobals();
   }
 });

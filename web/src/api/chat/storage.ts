@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ChatDegraded } from "#web/domain/chat/model.ts";
+import { type ChatDegraded, resolveQuestionLimit } from "#web/domain/chat/model.ts";
 
 const KEY_AUTH = "hse_chat_auth";
 const KEY_BROWSER = "hse_chat_browser_token";
@@ -26,32 +26,62 @@ const AuthSchema = z.object({
   user: UserSchema.nullable(),
   allowanceExpiresAt: z.number(),
   allowanceToken: z.string().nullable(),
+  maxQuestionChars: z.number().int().positive().optional().catch(undefined),
 });
 export type StoredChatAuth = z.infer<typeof AuthSchema>;
 
-const safeGet = (key: string): null | string => {
-  try {
-    return globalThis.localStorage.getItem(key);
-  } catch {
-    return null;
+// Keep this tab usable when storage access is denied or a write exceeds the quota.
+const cachedValues = new Map<string, string>();
+const failedWrites = new Set<string>();
+
+const remember = (key: string, value: null | string): void => {
+  if (value === null) {
+    cachedValues.delete(key);
+  } else {
+    cachedValues.set(key, value);
   }
 };
 
-const safeSet = (key: string, value: null | string): void => {
+globalThis.addEventListener("storage", (event) => {
+  if (event.key === null) {
+    cachedValues.clear();
+    failedWrites.clear();
+  } else if (event.key.startsWith("hse_chat_")) {
+    remember(event.key, event.newValue);
+    failedWrites.delete(event.key);
+  }
+});
+
+const safeGet = (key: string): null | string => {
+  if (!failedWrites.has(key)) {
+    try {
+      remember(key, globalThis.localStorage.getItem(key));
+    } catch {
+      // The last value seen in this tab remains available.
+    }
+  }
+  return cachedValues.get(key) ?? null;
+};
+
+const writeValue = (key: string, value: null | string): "memory" | "stored" => {
+  remember(key, value);
   try {
     if (value === null) {
       globalThis.localStorage.removeItem(key);
     } else {
       globalThis.localStorage.setItem(key, value);
     }
+    failedWrites.delete(key);
+    return "stored";
   } catch {
-    // Storage may be unavailable in strict private mode.
+    failedWrites.add(key);
+    return "memory";
   }
 };
 
 export const readPageThread = (key: string): null | string => safeGet(`hse_chat_thread:${key}`);
 export const savePageThread = (key: string, id: null | string): void => {
-  safeSet(`hse_chat_thread:${key}`, id);
+  writeValue(`hse_chat_thread:${key}`, id);
 };
 
 const parseJson = (raw: null | string): unknown => {
@@ -109,7 +139,9 @@ export const readStoredAuth = (): StoredChatAuth => {
 };
 
 const writeStoredAuth = (auth: StoredChatAuth): void => {
-  globalThis.localStorage.setItem(KEY_AUTH, JSON.stringify(auth));
+  if (writeValue(KEY_AUTH, JSON.stringify(auth)) === "memory") {
+    return;
+  }
   for (const key of [
     KEY_SESSION,
     KEY_BROWSER,
@@ -118,7 +150,7 @@ const writeStoredAuth = (auth: StoredChatAuth): void => {
     KEY_ALLOWANCE,
     KEY_ALLOWANCE_EXP,
   ]) {
-    safeSet(key, null);
+    writeValue(key, null);
   }
 };
 
@@ -153,11 +185,19 @@ export const replaceChatAuth = async (
   });
 };
 
-export const invalidateAllowance = async (rejectedToken: string): Promise<void> => {
+export const invalidateAllowance = async (
+  rejectedToken: string,
+  maxQuestionChars?: number,
+): Promise<void> => {
   await withChatLock("auth-update", () => {
     const auth = readStoredAuth();
     if (auth.allowanceToken === rejectedToken) {
-      writeStoredAuth({ ...auth, allowanceToken: null, allowanceExpiresAt: 0 });
+      writeStoredAuth({
+        ...auth,
+        allowanceToken: null,
+        allowanceExpiresAt: 0,
+        maxQuestionChars: resolveQuestionLimit(maxQuestionChars, auth.maxQuestionChars),
+      });
     }
   });
 };
@@ -188,7 +228,7 @@ export const readStoredDegraded = (): ChatDegraded => {
 
 export const saveDegraded = (degraded: ChatDegraded): void => {
   const key = `${KEY_DEGRADED}${readStoredAuth().user?.id ?? "guest"}`;
-  safeSet(
+  writeValue(
     key,
     degraded.active
       ? JSON.stringify({ savedAt: Date.now(), restoresAt: degraded.restoresAt })

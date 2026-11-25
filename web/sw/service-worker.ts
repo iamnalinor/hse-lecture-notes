@@ -17,24 +17,25 @@ minute stays tiny). Any change of any file changes VERSION → the page offers t
 */
 import {
   BACKGROUND_HEADER,
-  CACHE_NAME,
   type CachedHashes,
+  cacheNames,
   contentHash,
   HASH_HEADER,
   knownPages,
   MANIFEST_PATH,
   type OfflineManifest,
   pageOf,
-  STAGE_PREFIX,
   stalePaths,
 } from "../src/domain/offline.ts";
+import { importLegacyRoot } from "./legacy-cache.ts";
 import { checkForUpdate, hasNewerDeploy } from "./update-check.ts";
 
 declare const self: ServiceWorkerGlobalScope;
 declare const VERSION: string;
 
-const STAGE = `${STAGE_PREFIX}${VERSION}`;
 const SCOPE = new URL(self.registration.scope);
+const { main: CACHE_NAME, stagePrefix: STAGE_PREFIX } = cacheNames(SCOPE.pathname);
+const STAGE = `${STAGE_PREFIX}${VERSION}`;
 const SHELL = "index.html";
 /** How long a navigation waits for the page from the network before the cached shell. */
 const NAVIGATION_TIMEOUT_MS = 4000;
@@ -119,6 +120,7 @@ const install = async (): Promise<void> => {
     throw new Error(`manifest ${manifest.version}, worker ${VERSION}`);
   }
   const [main, stage] = await Promise.all([caches.open(CACHE_NAME), caches.open(STAGE)]);
+  await importLegacyRoot(main, SCOPE, manifest);
   await stage.put(urlOf(MANIFEST_PATH), response);
   await Promise.all(
     manifest.precache.map(async (path) => {
@@ -163,11 +165,8 @@ const activate = async (): Promise<void> => {
     await moveStaged(main);
   }
   const names = await caches.keys();
-  await Promise.all(
-    names
-      .filter((name) => name.startsWith(STAGE_PREFIX))
-      .map(async (name) => await caches.delete(name)),
-  );
+  const stages = names.filter((name) => name.startsWith(STAGE_PREFIX));
+  await Promise.all(stages.map(async (name) => await caches.delete(name)));
   await self.clients.claim();
 };
 

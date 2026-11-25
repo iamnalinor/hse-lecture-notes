@@ -10,52 +10,70 @@ import { ChatMarkdown, InlineTeX, MessageMaterialPathContext } from "./markdown.
 import { ChatQuoteCard } from "./quote-card.tsx";
 import { ChatStepsBlock } from "./steps.tsx";
 
+const RetryAnswerButton = ({ onRetry }: { readonly onRetry: () => void }) => (
+  <button className="ai-btn ai-btn-2" onClick={onRetry} type="button">
+    <RetryIcon />
+    Повторить
+  </button>
+);
+
 type FootActionsProps = {
+  readonly isStopped: boolean;
   readonly contentTex: string;
   readonly canRetry: boolean;
   readonly onRetry: () => void;
 };
 
-const AssistantFootActions = ({ contentTex, canRetry, onRetry }: FootActionsProps): JSX.Element => {
+const CopyAnswerButton = ({ contentTex }: Pick<FootActionsProps, "contentTex">): JSX.Element => {
   const { copyText, isCopied } = useCopyFeedback();
 
   return (
-    <div className="ai-foot ai-flow">
-      <div className="ai-actions">
-        <span className={isCopied ? "ai-copy is-done" : "ai-copy"}>
-          <button
-            aria-label="Скопировать ответ"
-            className="ai-icon-btn"
-            onClick={() => {
-              void copyText(toPlainCopyText(contentTex));
-            }}
-            title="Скопировать"
-            type="button"
-          >
-            <span className="ai-ico-swap">
-              <CopyIcon />
-              <CheckIcon />
-            </span>
-          </button>
-          <span aria-hidden="true" className="ai-tip">
-            Скопировано
-          </span>
+    <span className={isCopied ? "ai-copy is-done" : "ai-copy"}>
+      <button
+        aria-label="Скопировать ответ"
+        className="ai-icon-btn"
+        onClick={() => {
+          void copyText(toPlainCopyText(contentTex));
+        }}
+        title="Скопировать"
+        type="button"
+      >
+        <span className="ai-ico-swap">
+          <CopyIcon />
+          <CheckIcon />
         </span>
-        {canRetry && (
-          <button
-            aria-label="Ответить заново"
-            className="ai-icon-btn"
-            onClick={onRetry}
-            title="Ответить заново"
-            type="button"
-          >
-            <RetryIcon />
-          </button>
-        )}
-      </div>
-    </div>
+      </button>
+      <span aria-hidden="true" className="ai-tip">
+        Скопировано
+      </span>
+    </span>
   );
 };
+
+const AssistantFootActions = ({
+  contentTex,
+  canRetry,
+  isStopped,
+  onRetry,
+}: FootActionsProps): JSX.Element => (
+  <div className="ai-foot ai-flow">
+    <div className={isStopped ? "ai-actions ai-actions-stopped" : "ai-actions"}>
+      {canRetry && isStopped && <RetryAnswerButton onRetry={onRetry} />}
+      {contentTex !== "" && <CopyAnswerButton contentTex={contentTex} />}
+      {canRetry && !isStopped && (
+        <button
+          aria-label="Ответить заново"
+          className="ai-icon-btn"
+          onClick={onRetry}
+          title="Ответить заново"
+          type="button"
+        >
+          <RetryIcon />
+        </button>
+      )}
+    </div>
+  </div>
+);
 
 type Props = {
   readonly canRetry: boolean;
@@ -104,7 +122,7 @@ const UserMessageView = ({
               }}
               type="button"
             >
-              Повторить
+              {message.errorMessage === null ? "Повторить" : "Редактировать"}
             </button>
           )}
         </div>
@@ -135,18 +153,17 @@ const MessageError = ({
         Повторяем…
       </button>
     ) : (
-      canRetry && (
-        <button className="ai-btn ai-btn-2" onClick={onRetry} type="button">
-          <RetryIcon />
-          Повторить
-        </button>
-      )
+      canRetry && <RetryAnswerButton onRetry={onRetry} />
     )}
   </div>
 );
 
-const incompleteCaption = (status: ChatMessage["status"]): string =>
-  status === "stopped" ? "Ответ остановлен" : "Ответ не завершен";
+const interruptedCaption = ({ status, errorMessage }: ChatMessage): null | string => {
+  if (status === "stopped") {
+    return "Вы остановили ответ";
+  }
+  return status === "incomplete" ? (errorMessage ?? "Ответ не завершен") : null;
+};
 
 const AssistantContent = ({
   message,
@@ -170,25 +187,24 @@ const AssistantContent = ({
       />
     );
   }
-  if (message.contentTex === "") {
-    return null;
-  }
-  const isStopped = message.status === "stopped" || message.status === "incomplete";
+  const caption = interruptedCaption(message);
   return (
     <>
-      <ChatMarkdown
-        isStreaming={message.status === "running"}
-        onJumpToBlock={onJumpToBlock}
-        text={message.contentTex}
-      />
+      {message.contentTex !== "" && (
+        <ChatMarkdown
+          isStreaming={message.status === "running"}
+          onJumpToBlock={onJumpToBlock}
+          text={message.contentTex}
+        />
+      )}
       {message.status === "done" && message.errorMessage !== null && (
         <p className="ai-error-detail" role="status">
           {message.errorMessage}
         </p>
       )}
-      {isStopped && (
-        <div className="ai-stopped ai-fade">
-          {message.errorMessage ?? incompleteCaption(message.status)}
+      {caption !== null && (
+        <div className="ai-stopped ai-fade" role="status">
+          {caption}
         </div>
       )}
     </>
@@ -218,6 +234,7 @@ const AssistantMessageView = ({
         isBackgroundResponse={isBackgroundResponse === true}
         isCheckingBrowser={isCheckingBrowser === true}
         isRunningSteps={isRunningSteps}
+        isStopped={message.status === "stopped"}
         onJumpToBlock={onJumpToBlock}
         steps={message.steps}
       />
@@ -230,10 +247,11 @@ const AssistantMessageView = ({
           onRetry={retrySelf}
         />
       </div>
-      {isFinished && message.contentTex !== "" && (
+      {isFinished && (message.contentTex !== "" || (message.status === "stopped" && canRetry)) && (
         <AssistantFootActions
           canRetry={canRetry}
           contentTex={message.contentTex}
+          isStopped={message.status === "stopped"}
           onRetry={retrySelf}
         />
       )}

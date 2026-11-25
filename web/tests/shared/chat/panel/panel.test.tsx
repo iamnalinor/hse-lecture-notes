@@ -288,7 +288,7 @@ it("shows the account switch caption only for an external account", () => {
     expect(screen.getByRole("button", { name: "Сменить аккаунт" })).toBeVisible();
     state.tier = "student";
     view.rerender(<BottomCaption mode="composer" nowMs={0} rateRemainSec={0} />);
-    expect(screen.queryByText(/Твой аккаунт —/u)).toBeNull();
+    expect(screen.queryByText(/Ты вошел как/u)).toBeNull();
     expect(screen.queryByRole("button", { name: "Сменить аккаунт" })).toBeNull();
   } finally {
     state.tier = "guest";

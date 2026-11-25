@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
-import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
 
-import { ensureChatAllowance, loginViaTelegram } from "#web/api/chat/client.ts";
+import { TelegramLoginCancelled } from "#web/api/chat/abort.ts";
+import { type ChatAccess, ensureChatAllowance, loginViaTelegram } from "#web/api/chat/client.ts";
 import {
   readStoredAuth,
   readStoredDegraded,
   saveDegraded,
   subscribeAuthStorage,
 } from "#web/api/chat/storage.ts";
+import {
+  type ChatBlock,
+  type ChatDegraded,
+  type ChatTier,
+  type ChatUser,
+  resolveQuestionLimit,
+} from "#web/domain/chat/model.ts";
 
 export const useRootOpenClassSync = (isOpen: boolean): void => {
   const savedScrollYRef = useRef<null | { url: string; y: number }>(null);
@@ -50,6 +57,12 @@ export const useRootOpenClassSync = (isOpen: boolean): void => {
 
 export const useChatAuthState = () => {
   const initial = useMemo(() => readStoredAuth(), []);
+  const [maxQuestionChars, setMaxQuestionChars] = useState(() =>
+    resolveQuestionLimit(initial.maxQuestionChars),
+  );
+  const setQuestionLimit = useCallback((limit: number | undefined) => {
+    setMaxQuestionChars(resolveQuestionLimit(limit));
+  }, []);
   const [tier, setTier] = useState<ChatTier>(initial.tier);
   const [user, setUser] = useState<ChatUser | null>(initial.user);
   const [degraded, setDegraded] = useState<ChatDegraded>(readStoredDegraded);
@@ -91,16 +104,19 @@ export const useChatAuthState = () => {
           applyBlock(null);
         }
         setDegraded(readStoredDegraded());
+        setQuestionLimit(fresh.maxQuestionChars);
         setTier(fresh.tier);
         setUser(fresh.user);
       }),
-    [applyBlock, user?.id],
+    [applyBlock, setQuestionLimit, user?.id],
   );
 
   return {
     block,
     degraded,
     rateLimitUntil,
+    maxQuestionChars,
+    setQuestionLimit,
     setBlock: applyBlock,
     applyLogin: (account: ChatUser, nextTier: ChatTier) => {
       setDegraded(readStoredDegraded());
@@ -119,8 +135,8 @@ export const useChatAuthState = () => {
 type LoginDeps = {
   readonly telegramSdk: "failed" | "loading" | "ready";
   readonly retryTelegram: () => Promise<void>;
-  readonly onLogin: (account: ChatUser | null, canResume: boolean) => void;
   readonly setBlock: (next: ChatBlock | null) => void;
+  readonly setQuestionLimit: (limit: number | undefined) => void;
   readonly setDegraded: (next: ChatDegraded) => void;
   readonly applyLogin: (account: ChatUser, tier: ChatTier) => void;
   readonly turnstileHooks: TurnstileHooks;
@@ -132,6 +148,14 @@ const abortOnSessionChange = (sessionToken: null | string, controller: AbortCont
       controller.abort();
     }
   });
+
+const applyLoginAllowance = (deps: LoginDeps, access: ChatAccess): void => {
+  if (access.degraded !== null) {
+    deps.setDegraded(access.degraded);
+  }
+  deps.setQuestionLimit(access.maxQuestionChars);
+  deps.setBlock(access.block);
+};
 
 const useLoginCheck = (deps: LoginDeps) => {
   type Check = { sessionToken: null | string; status: "checking" | "error" };
@@ -145,10 +169,7 @@ const useLoginCheck = (deps: LoginDeps) => {
     try {
       const access = await ensureChatAllowance(deps.turnstileHooks, { signal: controller.signal });
       if (sessionToken === readStoredAuth().sessionToken) {
-        if (access.degraded !== null) {
-          deps.setDegraded(access.degraded);
-        }
-        deps.setBlock(access.block);
+        applyLoginAllowance(deps, access);
       }
       setCheck((prev) => (prev === active ? null : prev));
     } catch {
@@ -171,36 +192,48 @@ const useLoginCheck = (deps: LoginDeps) => {
 };
 
 export const useTelegramAuthActions = (deps: LoginDeps) => {
-  const [isLoginBusy, setIsLoginBusy] = useState(false);
+  const [attempt, setAttempt] = useState<null | {
+    token: null | string;
+    status: "busy" | "failed";
+  }>(null);
+  const isLoginBusy = attempt?.status === "busy";
   const { checkLogin, ...verification } = useLoginCheck(deps);
   const { checkingLogin } = verification;
-  const login = useCallback(async (): Promise<void> => {
-    if (isLoginBusy || checkingLogin || deps.telegramSdk === "loading") {
-      return;
-    }
-    if (deps.telegramSdk === "failed") {
-      await deps.retryTelegram();
-      return;
-    }
-    setIsLoginBusy(true);
-    try {
-      const res = await loginViaTelegram(deps.turnstileHooks);
-      deps.onLogin(res.user, true);
-      deps.applyLogin(res.user, res.tier);
-    } catch {
-      return;
-    } finally {
-      setIsLoginBusy(false);
-    }
-    await checkLogin();
-  }, [checkingLogin, checkLogin, deps, isLoginBusy]);
+  const login = useCallback(
+    async (onLogin: (account: ChatUser) => void): Promise<void> => {
+      if (isLoginBusy || checkingLogin || deps.telegramSdk === "loading") {
+        return;
+      }
+      if (deps.telegramSdk === "failed") {
+        await deps.retryTelegram();
+        return;
+      }
+      const { sessionToken } = readStoredAuth();
+      setAttempt({ token: sessionToken, status: "busy" });
+      try {
+        const res = await loginViaTelegram(deps.turnstileHooks);
+        onLogin(res.user);
+        deps.applyLogin(res.user, res.tier);
+      } catch (error) {
+        setAttempt(
+          error instanceof TelegramLoginCancelled
+            ? null
+            : { token: sessionToken, status: "failed" },
+        );
+        return;
+      }
+      setAttempt(null);
+      await checkLogin();
+    },
+    [checkingLogin, checkLogin, deps, isLoginBusy],
+  );
 
   return {
     ...verification,
     isLoginBusy: isLoginBusy || checkingLogin || deps.telegramSdk === "loading",
+    loginError: attempt?.status === "failed" && attempt.token === readStoredAuth().sessionToken,
     telegramLoadFailed: deps.telegramSdk === "failed",
     login,
-    switchAccount: login,
   };
 };
 

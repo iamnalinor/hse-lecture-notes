@@ -299,6 +299,7 @@ export type ServerWsFrame =
       type: "error";
       code: string;
       message: string;
+      maxQuestionChars?: number;
       block?: BlockInfo | null;
       retryAfterSec?: number;
     };

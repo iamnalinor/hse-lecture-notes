@@ -5,8 +5,6 @@ import { isOtherPage } from "#web/domain/paths.ts";
 
 import { didOpenUpdated, useHasUpdate } from "./sw-registration.ts";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/u, "");
-
 /**
 While a new version is out and the network is up, a link to another page opens it as a full page
 load of the new version instead of a route change in the old code: the page changes anyway, so the
@@ -27,7 +25,7 @@ export const useUpdateOnNavigation = (): void => {
       return;
     }
     void (async () => {
-      if (!(await didOpenUpdated(`${BASE}${createPath(blocker.location)}`))) {
+      if (!(await didOpenUpdated(createPath(blocker.location)))) {
         blocker.proceed();
       }
     })();

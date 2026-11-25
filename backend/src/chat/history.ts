@@ -131,13 +131,17 @@ interface Row {
 function userText(text: string, quote: QuotePayload | null): string {
   return quote ? `Цитата (${quote.label}):\n${quote.tex}\n\nВопрос студента:\n${text}` : text;
 }
-function legacySnapshot(row: Row): TurnContextSnapshot {
-  let quote: QuotePayload | null = null;
+export function decodeStoredQuote(raw: string | null): QuotePayload | null {
   try {
-    quote = JSON.parse(row.quote_json ?? "null") as QuotePayload | null;
+    const quote = JSON.parse(raw ?? "null") as QuotePayload | null;
+    return typeof quote?.tex === "string" && typeof quote.label === "string" ? quote : null;
   } catch {
-    /* legacy corrupt quote */
+    return null;
   }
+}
+
+function legacySnapshot(row: Row): TurnContextSnapshot {
+  const quote = decodeStoredQuote(row.quote_json);
   return {
     version: 1,
     contextItems: [],

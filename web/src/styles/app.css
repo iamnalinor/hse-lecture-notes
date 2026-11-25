@@ -2,7 +2,7 @@
 @import "katex/dist/katex.min.css";
 @import "./fonts.css";
 @import "./prose.css";
-@import "./chat.css";
+@import "./chat-controls.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 

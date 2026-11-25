@@ -1,5 +1,4 @@
 import { createContext, type JSX, type ReactNode, use } from "react";
-import { Link } from "react-router";
 
 import { splitTex } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
@@ -13,6 +12,7 @@ import {
   safeStreamCut,
   scanInlinePieces,
 } from "./markdown-parse.ts";
+import { SourceLink } from "./source-link.tsx";
 
 export const MessageMaterialPathContext = createContext("");
 
@@ -61,33 +61,20 @@ const renderRefAnchor = (
   const inner: ReactNode[] = [];
   pushTexNodes(inner, label, { isAnimated: false, keyPrefix: `${key}-l` });
   return (
-    <Link
+    <SourceLink
       className="ref"
-      data-ref={
-        isMaterialLink(target) ||
-        (path !== "" && path !== globalThis.location.pathname.replace(/\/$/u, ""))
-          ? undefined
-          : target
-      }
       key={key}
-      onClick={(event) => {
-        if (
-          onJumpToBlock === undefined ||
-          event.metaKey ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          event.altKey
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-        onJumpToBlock(target);
-      }}
+      onFollow={
+        onJumpToBlock === undefined
+          ? undefined
+          : () => {
+              onJumpToBlock(target);
+            }
+      }
       to={isMaterialLink(target) ? target : `${path}#${target}`}
     >
       {inner}
-    </Link>
+    </SourceLink>
   );
 };
 

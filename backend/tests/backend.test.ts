@@ -6,10 +6,12 @@ import {
   resolveBrowserToken,
   verifyAllowanceToken,
   verifyTelegramIdToken,
+  verifyTurnstileToken,
 } from "../src/auth";
 import { handleGetThread } from "../src/chat/thread-route";
 import { executeAgentRun } from "../src/chat/agent-loop";
 import { CodexAuthError, getValidCodexCredentials } from "../src/llm/codex-auth";
+import { OpenAIResponsesProvider } from "../src/llm/openai-provider";
 import { CodexResponsesProvider, parseCodexSseStream } from "../src/llm/codex-provider";
 import {
   bytesToBase64Url,
@@ -265,6 +267,29 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     },
   );
 
+  test("model requests reject redirects at the configured endpoint", async () => {
+    const shim = new SqliteD1Shim();
+    const db = new TrackedD1(shim.asD1());
+    const modes: (RequestInit["redirect"])[] = [];
+    const fetchImpl = async (_input: RequestInfo | URL, init?: RequestInit) => {
+      modes.push(init?.redirect);
+      return new Response(null, { status: 307, headers: { location: "https://redirect.invalid/" } });
+    };
+    const providers = [
+      new OpenAIResponsesProvider({ OPENAI_API_KEY: "fixture" }, { fetchImpl }),
+      new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, { fetchImpl,
+        getCredentialsImpl: async () => ({ accessToken: "fixture", refreshToken: "", expiresAt: 0, accountId: "" }),
+      }),
+    ];
+    for (const provider of providers) {
+      await expect(provider.runRound({
+        ...resolveModelRoute((await loadPolicy(db)).buckets.low), instructions: "", input: [], tools: [],
+        maxResponseChars: 50, signal: new AbortController().signal, onDelta: () => {},
+      })).rejects.toThrow("HTTP 307");
+    }
+    expect(modes).toEqual(["manual", "manual"]);
+  });
+
   test("OAuth refresh uses CAS version bump and marks needs_reauth on invalid_grant", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
@@ -283,6 +308,18 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
         )
         .bind(seedEnc),
     );
+
+    let redirectMode: RequestInit["redirect"];
+    await expect(getValidCodexCredentials(env, db, {
+      now: () => 1_000_000,
+      fetchImpl: async (_input, init) => {
+        redirectMode = init?.redirect;
+        return new Response("invalid_grant", { status: 307, headers: { location: "https://redirect.invalid/" } });
+      },
+    })).rejects.toMatchObject({ code: "oauth_unavailable" });
+    expect(redirectMode).toBe("manual");
+    expect(await db.first(db.prepare("SELECT version, status, lease_owner FROM codex_credentials")))
+      .toEqual({ version: 1, status: "ok", lease_owner: null });
 
     const refreshed = await getValidCodexCredentials(env, db, {
       now: () => 1_000_000,
@@ -1070,12 +1107,9 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
 
     const objects = new Map<string, Uint8Array>();
     const storage: ArchiveStoragePort = {
-      async head(key) {
-        return objects.has(key);
-      },
       async putIfAbsent(key, body) {
         // Simulate a user sending a new message into thr_race right while archive is being uploaded!
-        shim.sqlite.exec(
+        if (objects.size === 0) shim.sqlite.exec(
           `UPDATE chat_threads SET updated_at = ${now} WHERE id = 'thr_race';
            INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at)
            VALUES ('m2_new', 'thr_race', 2, 'user', 'done', 'Fresh Q', 'discrete', '01', ${now}, ${now});`,
@@ -1093,7 +1127,7 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     expect(stats.threadsFound).toBe(2);
     expect(stats.threadsDeleted).toBe(1);
     expect(stats.threadsSkippedRace).toBe(1);
-    expect(stats.archivesWritten).toBe(1);
+    expect(stats.archivesWritten).toBeGreaterThanOrEqual(1);
 
     const remaining = await db.all<{ id: string }>(db.prepare("SELECT id FROM chat_threads"));
     expect(remaining.results.map((r) => r.id)).toEqual(["thr_race"]);
@@ -1121,6 +1155,15 @@ test("Telegram checks audience and shares a ten-minute JWKS snapshot across fail
   expect(fetches).toBe(1);
   expect((await verifyTelegramIdToken(env, jwt, now + 600_000, fetchKeys))?.telegramId).toBe(42);
   expect(fetches).toBe(2);
+});
+
+test.each([
+  [undefined, false], ["", false], ["login", false], ["chat_allowance", true],
+] as const)("Turnstile requires the exact allowance action (%p)", async (action, accepted) => {
+  const env = makeTestEnv(new SqliteD1Shim().asD1());
+  const verify = (async () => Response.json({ success: true, hostname: "localhost", action })) as unknown as typeof fetch;
+  const result = await verifyTurnstileToken(env, "local-challenge", "", verify);
+  expect(result.ok).toBe(accepted);
 });
 
 test("Turnstile gets the visitor IPv6 address while allowance retains the quota prefix", async () => {

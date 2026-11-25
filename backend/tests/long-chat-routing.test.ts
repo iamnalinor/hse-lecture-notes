@@ -12,6 +12,7 @@ test("long thread latches low with low reserve while new thread keeps high", asy
     db = new TrackedD1(shim.asD1());
   const policy = structuredClone(policyDefaults);
   policy.maxHistoryMessages = 3;
+  policy.maxQuestionChars = 321;
   policy.rateLimitPerMinute = 100;
   const alertFetch = spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ ok: true }));
   const params = {
@@ -57,6 +58,7 @@ test("long thread latches low with low reserve while new thread keeps high", asy
   const preliminary = await handleAllowance({ ALLOWANCE_JWT_SECRET: secret, BROWSER_TOKEN_SECRET: secret } as Env,
     db, new Request("https://test.invalid"), { sessionToken, browserToken: browser.browserToken, turnstileToken: "test" },
     { nowMs: params.nowMs, turnstileVerifier: async () => ({ ok: true }) });
+  expect(preliminary.body.maxQuestionChars).toBe(321);
   expect(preliminary.body.tier).toBe("student");
   expect(preliminary.body.block).toBeNull();
   const b = await admitRunAtomic(db, policy, {
@@ -183,4 +185,41 @@ test("same-seq context mutation during admission forces preparation again", asyn
       payloadHash: "b",
     }),
   ).toMatchObject({ kind: "duplicate", runId: next.runId });
+});
+
+test("concurrency and rate denials precede history preparation while a duplicate still replays", async () => {
+  const db = new TrackedD1(new SqliteD1Shim().asD1());
+  const policy = structuredClone(policyDefaults);
+  policy.rateLimitPerMinute = 1;
+  const params = {
+    env: {}, axes: { tier: "guest" as const, telegramId: null, browserId: "br", ipAddress: "ip", fingerprint: "" },
+    clientRequestId: "original", payloadHash: "same", threadId: null, course: "", docId: "",
+    questionText: "original", quote: null, nowMs: 1_700_000_000_000,
+  };
+  const first = await admitRunAtomic(db, policy, params);
+  if (first.kind !== "admitted") throw Error(first.kind);
+  // Preparing even the current turn with this policy would throw ContextSizeError.
+  policy.maxHistoryChars = 1;
+  const next = { ...params, clientRequestId: "new", threadId: first.threadId };
+  expect(await admitRunAtomic(db, policy, params)).toMatchObject({ kind: "duplicate", runId: first.runId });
+  expect(await admitRunAtomic(db, policy, next)).toMatchObject({ kind: "blocked", block: { code: "concurrent_run" } });
+  await finalizeRunAtomic(db, { runId: first.runId, finalStatus: "done", messageStatus: "done",
+    actualCostMicros: 0, isCostUncertain: false, nowMs: params.nowMs });
+  expect(await admitRunAtomic(db, policy, next)).toMatchObject({ kind: "blocked", block: { code: "rate_limited" } });
+});
+
+test("a high-reserve denial skips replay when the low route is also unavailable", async () => {
+  const db = new TrackedD1(new SqliteD1Shim().asD1());
+  const policy = structuredClone(policyDefaults);
+  const params = {
+    env: {}, axes: { tier: "student" as const, telegramId: 10, browserId: "br", ipAddress: "ip", fingerprint: "" },
+    clientRequestId: "first", payloadHash: "same", threadId: null, course: "", docId: "",
+    questionText: "question", quote: null, nowMs: 1_700_000_000_000,
+  };
+  const first = await admitRunAtomic(db, policy, params);
+  if (first.kind !== "admitted") throw Error(first.kind);
+  policy.maxHistoryChars = 1;
+  policy.budgets.weeklyGlobalUsdMicros = policy.budgets.reserveHighMicros + policy.budgets.reserveLowMicros;
+  expect(await admitRunAtomic(db, policy, { ...params, threadId: first.threadId, clientRequestId: "later" }))
+    .toMatchObject({ kind: "blocked" });
 });
