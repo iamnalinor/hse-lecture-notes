@@ -128,6 +128,36 @@ export const intensity = (load: number, max: number): number =>
 export const currentModule = (curriculum: Curriculum, today: string): number | undefined =>
   curriculum.moduleSpans.find((span) => span.from <= today && today <= span.to)?.module;
 
+const DAY_MS = 86_400_000;
+const dayNumber = (date: string): number => Date.parse(`${date}T00:00:00Z`) / DAY_MS;
+
+/**
+Calendar days of modules 1–4 with their sessions (`from`…`to` inclusive): the chart's column widths, so a
+module is as wide as it is long. `undefined` unless the plan knows all four; then the columns are equal.
+*/
+export const moduleDays = (curriculum: Curriculum): readonly number[] | undefined => {
+  const days = MODULES.map((module) => {
+    const span = curriculum.moduleSpans.find((item) => item.module === module);
+    return span === undefined ? undefined : dayNumber(span.to) - dayNumber(span.from) + 1;
+  });
+  return days.every((value) => value !== undefined) ? days : undefined;
+};
+
+/** Where today falls in its module: 0 at the first day's start, 1 after the last; `undefined` between modules. */
+export const todayInModule = (
+  curriculum: Curriculum,
+  today: string,
+): undefined | { readonly fraction: number; readonly module: number } => {
+  const span = curriculum.moduleSpans.find((item) => item.from <= today && today <= item.to);
+  if (span === undefined) {
+    return undefined;
+  }
+  const start = dayNumber(span.from);
+  // The middle of today: the mark stands inside its day, not at its edge.
+  const fraction = (dayNumber(today) + 0.5 - start) / (dayNumber(span.to) + 1 - start);
+  return { fraction, module: span.module };
+};
+
 const listModules = (modules: readonly number[]): string => {
   const last = modules.at(-1);
   return last === undefined || modules.length < 2

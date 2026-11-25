@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { type CSSProperties, useRef } from "react";
 
 import { curriculumQuery } from "#web/api/queries.ts";
 import {
@@ -8,12 +9,16 @@ import {
   groupByCategory,
   loadText,
   maxLoad,
+  moduleDays,
+  MODULES,
   moduleTotals,
   moduleWeeks,
+  todayInModule,
 } from "#web/domain/curriculum.ts";
 
 import { SectionTitle } from "../section-title.tsx";
-import { GroupRows, HeaderRow, type PlanScale, TotalRow } from "./rows.tsx";
+import { ModuleEdges, TodayMark } from "./marks.tsx";
+import { GroupRows, HeaderRow, moduleTrack, type PlanScale, TotalRow } from "./rows.tsx";
 import { barBackground } from "./style.ts";
 import { StudyPlanTable } from "./table.tsx";
 
@@ -51,25 +56,49 @@ export const StudyPlan = ({
   const totals = moduleTotals(curriculum.disciplines);
   const sums = creditSums(curriculum);
   const weeks = moduleWeeks(curriculum);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const days = moduleDays(curriculum);
   const scale: PlanScale = {
     current: currentModule(curriculum, today),
+    days,
     max: maxLoad(curriculum.disciplines, weeks),
-    maxTotal: Math.max(1, ...totals),
     totals,
     weeks,
+  };
+  // Module tracks for every grid of the chart (rows, bar labels, marks): see GRID in rows.tsx.
+  const tracks: CSSProperties & Record<`--${string}`, string> = {
+    "--plan-modules": MODULES.map((_, index) => moduleTrack(days, index)).join(" "),
   };
   return (
     <figure
       aria-label={curriculum.title}
       className="relative overflow-hidden rounded-xl border border-rule bg-card"
     >
-      <div aria-hidden="true" className="overflow-x-auto">
-        <div className="min-w-152">
+      <div
+        aria-hidden="true"
+        className="overflow-x-auto"
+        onScroll={(event) => {
+          // A CSS variable, not state: the marks' clip follows the scroll without re-rendering.
+          chartRef.current?.style.setProperty(
+            "--plan-scroll",
+            `${String(event.currentTarget.scrollLeft)}px`,
+          );
+        }}
+      >
+        <div
+          className="relative isolate min-w-152 [--plan-min:5.5rem] [--plan-name:8.75rem] sm:[--plan-min:6rem] sm:[--plan-name:11.5rem]"
+          ref={chartRef}
+          style={tracks}
+        >
+          <ModuleEdges />
           <HeaderRow current={scale.current} />
-          <TotalRow scale={scale} />
-          {groups.map((group) => (
-            <GroupRows group={group} key={group.category.id} scale={scale} />
-          ))}
+          <div className="relative">
+            <TodayMark today={todayInModule(curriculum, today)} />
+            <TotalRow scale={scale} />
+            {groups.map((group) => (
+              <GroupRows group={group} key={group.category.id} scale={scale} />
+            ))}
+          </div>
         </div>
       </div>
       <StudyPlanTable groups={groups} totals={totals} />

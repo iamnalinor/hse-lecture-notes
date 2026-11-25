@@ -15,15 +15,24 @@ export type PlanScale = {
   readonly current: number | undefined;
   /** The highest load (hours per week, or hours without `weeks`): the top of the intensity scale. */
   readonly max: number;
-  readonly maxTotal: number;
   readonly totals: readonly number[];
   /** Teaching weeks of modules 1–4, when the plan knows them. */
   readonly weeks: readonly number[] | undefined;
+  /** Calendar days of modules 1–4: the column widths. */
+  readonly days: readonly number[] | undefined;
 };
 
-/** One name column plus four module columns; on a phone the name column is narrower and sticks to the left. */
+/**
+One name column plus four module columns; on a phone the name column is narrower and sticks to the left.
+Module columns are as wide as the modules are long: `--plan-modules` (set by `StudyPlan`) holds their
+`minmax(var(--plan-min), <days>fr)`, the same tracks for the rows, the bar labels and the overlay.
+*/
 export const GRID =
-  "grid grid-cols-[8.75rem_repeat(4,minmax(5.5rem,1fr))] sm:grid-cols-[11.5rem_repeat(4,minmax(6rem,1fr))]";
+  "grid grid-cols-[8.75rem_var(--plan-modules)] sm:grid-cols-[11.5rem_var(--plan-modules)]";
+
+/** The track of one module column: `minmax(var(--plan-min), 61fr)`; equal columns when lengths are unknown. */
+export const moduleTrack = (days: readonly number[] | undefined, index: number): string =>
+  `minmax(var(--plan-min),${String(days?.[index] ?? 1)}fr)`;
 const STICKY = "sticky left-0 z-10 bg-card";
 
 export const HeaderRow = ({ current }: { readonly current: number | undefined }) => (
@@ -47,7 +56,7 @@ export const HeaderRow = ({ current }: { readonly current: number | undefined })
   </div>
 );
 
-/** A mini load chart: a column per module, as tall as the module's hours against the heaviest module. */
+/** Contact hours of each module: numbers only (the bars of the rows below show the load). */
 export const TotalRow = ({ scale }: { readonly scale: PlanScale }) => (
   <div className={`${GRID} border-b border-rule`}>
     <div className={`${STICKY} px-4 py-3`}>
@@ -56,23 +65,20 @@ export const TotalRow = ({ scale }: { readonly scale: PlanScale }) => (
     </div>
     {scale.totals.map((total, index) => (
       <div
-        className={`flex items-end p-1.5 ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
+        className={`flex items-center justify-center p-1.5 text-footnote font-semibold tabular-nums ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
         key={MODULES[index]}
+        title={`${String(total)} контактных часов в ${String(index + 1)} модуле`}
       >
-        <div
-          className="flex w-full items-center justify-center rounded-md border border-ink/25 bg-ink/15 text-footnote font-semibold tabular-nums"
-          style={{ height: `${String(Math.max(28, Math.round((total / scale.maxTotal) * 64)))}px` }}
-          title={`${String(total)} контактных часов в ${String(index + 1)} модуле`}
-        >
-          {total}
-        </div>
+        {total}
       </div>
     ))}
   </div>
 );
 
+/** A group's label band lies over the today line (`z-6` > its `z-5`): the line runs between groups. Opaque,
+the same tone as paper at 60 % over the card. */
 const GroupLabel = ({ group }: { readonly group: CategoryGroup }) => (
-  <div className="col-span-5 border-b border-rule bg-paper/60 py-2">
+  <div className="relative z-6 col-span-5 border-b border-rule bg-[color-mix(in_srgb,var(--paper)_60%,var(--card))] py-2">
     <span className="sticky left-0 flex w-fit items-center gap-2 px-4 text-caption font-semibold tracking-wide text-muted uppercase">
       <span
         className="size-2.5 rounded-xs"
@@ -111,7 +117,11 @@ const Run = (props: {
         {/* Labels sit on the module columns, not on the bar: the bar is inset by the padding, its thirds are off-centre. */}
         <div
           className="absolute -inset-x-1.5 inset-y-0 grid text-footnote font-semibold text-ink tabular-nums"
-          style={{ gridTemplateColumns: `repeat(${String(end - start)}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: strengths
+              .map((_, offset) => moduleTrack(scale.days, start + offset))
+              .join(" "),
+          }}
         >
           {strengths.map((_, offset) => (
             <span
