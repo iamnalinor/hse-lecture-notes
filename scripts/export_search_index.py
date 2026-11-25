@@ -728,6 +728,26 @@ def submit_vector_blocks(cf: CloudflareClient, chunk: list[IndexedBlock]) -> Non
                                 "blocks": [(b.id, b.content_hash) for b in chunk]})
 
 
+FTS_ROWID_MARKER = "fts_rowid_aligned_v1"
+
+
+def _ensure_fts_rowid_alignment(cf: Any) -> None:
+    """Rebuild FTS once so its rowids equal course_blocks.rowid (deletes go by rowid)."""
+    if cf.d1_query("SELECT 1 FROM service_config WHERE key = ?", [FTS_ROWID_MARKER]):
+        return
+    cf.d1_query("DELETE FROM course_blocks_fts")
+    cf.d1_query(
+        """INSERT INTO course_blocks_fts
+             (rowid, id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas)
+           SELECT rowid, id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas
+           FROM course_blocks"""
+    )
+    cf.d1_query(
+        "INSERT OR REPLACE INTO service_config (key, value_json, updated_at) VALUES (?, 'true', ?)",
+        [FTS_ROWID_MARKER, int(time.time() * 1000)],
+    )
+
+
 def sync_to_cloudflare(
     cf: CloudflareClient,
     docs: list[IndexedDocument],
@@ -752,6 +772,8 @@ def sync_to_cloudflare(
         "vectors_deleted": 0,
         "refs_updated": 0,
     }
+
+    _ensure_fts_rowid_alignment(cf)
 
     # 1. Fetch existing hashes from D1 for incremental diff
     if only_course:
@@ -861,6 +883,13 @@ def sync_to_cloudflare(
                     now_ms,
                 ]
             )
+        # FTS rows share course_blocks.rowid: delete by rowid (an UNINDEXED id filter
+        # scans the whole FTS table and burned the D1 free-tier read quota).
+        del_ph = ", ".join("?" for _ in chunk)
+        cf.d1_query(
+            f"DELETE FROM course_blocks_fts WHERE rowid IN (SELECT rowid FROM course_blocks WHERE id IN ({del_ph}))",
+            [b.id for b in chunk],
+        )
         cf.d1_query(
             f"""INSERT INTO course_blocks
                (id, course, doc_kind, doc_id, doc_order, block_order, block_kind, anchor_id, section_id,
@@ -877,19 +906,12 @@ def sync_to_cloudflare(
             params,
         )
 
-        # Delete & re-insert FTS5 rows in batch
-        del_ph = ", ".join("?" for _ in chunk)
-        cf.d1_query(f"DELETE FROM course_blocks_fts WHERE id IN ({del_ph})", [b.id for b in chunk])
-        fts_ph = ", ".join("(?, ?, ?, ?, ?, ?, ?, ?)" for _ in chunk)
-        fts_params: list[Any] = []
-        for b in chunk:
-            fts_params.extend(
-                [b.id, b.course, b.doc_kind, b.block_kind, b.title, b.statement_tex, b.proof_tex, b.lemmas]
-            )
         cf.d1_query(
-            f"""INSERT INTO course_blocks_fts (id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas)
-               VALUES {fts_ph}""",
-            fts_params,
+            f"""INSERT INTO course_blocks_fts
+                 (rowid, id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas)
+               SELECT rowid, id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas
+               FROM course_blocks WHERE id IN ({del_ph})""",
+            [b.id for b in chunk],
         )
         stats["blocks_upserted"] += len(chunk)
 
@@ -897,7 +919,10 @@ def sync_to_cloudflare(
     for i in range(0, len(removed_block_ids), 40):
         chunk_ids = removed_block_ids[i : i + 40]
         ph = ", ".join("?" for _ in chunk_ids)
-        cf.d1_query(f"DELETE FROM course_blocks_fts WHERE id IN ({ph})", chunk_ids)
+        cf.d1_query(
+            f"DELETE FROM course_blocks_fts WHERE rowid IN (SELECT rowid FROM course_blocks WHERE id IN ({ph}))",
+            chunk_ids,
+        )
         cf.d1_query(
             f"DELETE FROM block_references WHERE from_block_id IN ({ph}) OR to_block_id IN ({ph})",
             chunk_ids + chunk_ids,

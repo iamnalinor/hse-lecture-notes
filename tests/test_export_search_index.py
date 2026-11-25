@@ -246,3 +246,68 @@ def test_ambiguous_post_failure_is_not_replayed(monkeypatch):
     with pytest.raises(RuntimeError, match="HTTP 503"):
         client.d1_query("INSERT INTO course_blocks_fts (id) VALUES (?)", ["applied"])
     assert len(writes) == 1
+
+
+def test_fts_rows_share_block_rowid_and_deletes_never_scan_fts(tmp_path: Path) -> None:
+    """FTS deletes by UNINDEXED id full-scan the table (6.8M D1 reads per sync, 2026-11-25)."""
+    import sqlite3
+
+    class Client:
+        def __init__(self) -> None:
+            self.db = sqlite3.connect(":memory:")
+            self.db.row_factory = sqlite3.Row
+            for name in sorted((ROOT / "backend/migrations").glob("*.sql")):
+                self.db.executescript(name.read_text())
+            self.sql: list[str] = []
+
+        def d1_query(self, sql, params=None):
+            self.sql.append(" ".join(sql.split()))
+            return [dict(r) for r in self.db.execute(sql, params or [])]
+
+    course = tmp_path / "notes/algebra"
+    course.mkdir(parents=True)
+    path = course / "lecture.md"
+    path.write_text('::: {.lemma #lem:x}\nА.\n:::\n\n::: {.lemma #lem:y}\nБ.\n:::\n')
+    cf = Client()
+    esi.sync_to_cloudflare(cf, *esi.collect_corpus(tmp_path), skip_vectorize=True)
+    path.write_text('::: {.lemma #lem:x}\nА изменено.\n:::\n')
+    esi.sync_to_cloudflare(cf, *esi.collect_corpus(tmp_path), skip_vectorize=True)
+
+    fts_deletes = [s for s in cf.sql if s.startswith("DELETE FROM course_blocks_fts WHERE")]
+    assert fts_deletes and all("WHERE rowid IN (SELECT rowid FROM course_blocks" in s for s in fts_deletes)
+    pairs = cf.db.execute(
+        "SELECT f.rowid, b.rowid, f.statement_tex FROM course_blocks_fts f JOIN course_blocks b ON b.id = f.id"
+    ).fetchall()
+    assert [(r[0] == r[1], r[2]) for r in pairs] == [(True, "А изменено.")]
+    assert cf.db.execute("SELECT count(*) FROM course_blocks_fts").fetchone()[0] == 1
+
+
+def test_misaligned_legacy_fts_is_rebuilt_before_rowid_deletes(tmp_path: Path) -> None:
+    import sqlite3
+
+    class Client:
+        def __init__(self) -> None:
+            self.db = sqlite3.connect(":memory:")
+            self.db.row_factory = sqlite3.Row
+            for name in sorted((ROOT / "backend/migrations").glob("*.sql")):
+                self.db.executescript(name.read_text())
+
+        def d1_query(self, sql, params=None):
+            return [dict(r) for r in self.db.execute(sql, params or [])]
+
+    course = tmp_path / "notes/algebra"
+    course.mkdir(parents=True)
+    path = course / "lecture.md"
+    path.write_text('::: {.lemma #lem:x}\nА.\n:::\n\n::: {.lemma #lem:y}\nБ.\n:::\n')
+    cf = Client()
+    esi.sync_to_cloudflare(cf, *esi.collect_corpus(tmp_path), skip_vectorize=True)
+    # Simulate the legacy layout: FTS rowids unrelated to course_blocks rowids.
+    cf.db.execute("DELETE FROM service_config WHERE key = ?", [esi.FTS_ROWID_MARKER])
+    cf.db.execute("DELETE FROM course_blocks_fts")
+    cf.db.execute("INSERT INTO course_blocks_fts (rowid, id, statement_tex) SELECT rowid + 100, id, statement_tex FROM course_blocks ORDER BY id DESC")
+    path.write_text('::: {.lemma #lem:x}\nА изменено.\n:::\n\n::: {.lemma #lem:y}\nБ.\n:::\n')
+    esi.sync_to_cloudflare(cf, *esi.collect_corpus(tmp_path), skip_vectorize=True)
+    rows = cf.db.execute(
+        "SELECT f.rowid = b.rowid, f.statement_tex FROM course_blocks_fts f JOIN course_blocks b ON b.id = f.id ORDER BY b.id"
+    ).fetchall()
+    assert [tuple(r) for r in rows] == [(1, "А изменено."), (1, "Б.")]
