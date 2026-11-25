@@ -65,6 +65,8 @@ const languages = new Map<string, ShjLanguage>([
   ["markdown", "md"],
 ]);
 
+const HIGHLIGHT_DEBOUNCE_MS = 150;
+
 type Props = { readonly code: string; readonly lang: string };
 
 export const ChatCodeHighlight = ({ code, lang }: Props): JSX.Element => {
@@ -101,9 +103,13 @@ export const ChatCodeHighlight = ({ code, lang }: Props): JSX.Element => {
         setResult({ code, language, nodes });
       }
     };
-    void highlight();
+    // Streaming grows `code` on every delta: tokenize once it settles, not per delta.
+    const timer = globalThis.setTimeout(() => {
+      void highlight();
+    }, HIGHLIGHT_DEBOUNCE_MS);
     return () => {
       isActive = false;
+      globalThis.clearTimeout(timer);
     };
   }, [code, language]);
   return <>{result?.code === code && result.language === language ? result.nodes : code}</>;

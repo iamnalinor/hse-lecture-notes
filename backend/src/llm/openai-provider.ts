@@ -19,8 +19,12 @@ export class OpenAIResponsesProvider implements LlmProvider {
     } catch {
       throw new Error("OPENAI_BASE_URL must be an absolute HTTP(S) URL");
     }
-    if (!["https:", "http:"].includes(parsed.protocol) || parsed.search || parsed.hash || parsed.username || parsed.password) {
+    if (/[?#]/.test(baseUrl) || !["https:", "http:"].includes(parsed.protocol) || parsed.search || parsed.hash || parsed.username || parsed.password) {
       throw new Error("OPENAI_BASE_URL must be an HTTP(S) URL without credentials, query or fragment");
+    }
+    const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+    if (parsed.protocol === "http:" && !loopback) {
+      throw new Error("OPENAI_BASE_URL must use HTTPS except for loopback hosts");
     }
     this.responsesUrl = parsed.href.replace(/\/+$/, "") + "/responses";
     this.fetchImpl = options.fetchImpl ?? ((input, init) => globalThis.fetch(input, init));

@@ -1,6 +1,12 @@
 import type { JSX } from "react";
 
-import { type ChatBlock, formatDegradedCaption } from "#web/domain/chat/model.ts";
+import {
+  blockPlateCopy,
+  type ChatBlock,
+  type ChatPlateCopy,
+  type ChatTier,
+  formatDegradedCaption,
+} from "#web/domain/chat/model.ts";
 
 import { AlertIcon, InfoIcon, TelegramIcon } from "../icons.tsx";
 import { ChatQuoteCard } from "../messages/quote-card.tsx";
@@ -15,7 +21,8 @@ export const resolveBottomMode = (block: ChatBlock | null): BottomMode => {
   if (
     block.code === "service_unavailable" ||
     block.code === "oauth_unavailable" ||
-    block.code === "global_budget_exceeded"
+    block.code === "global_budget_exceeded" ||
+    block.code === "concurrent_run"
   ) {
     return "down";
   }
@@ -54,6 +61,20 @@ const guestLimitTitle = (block: ChatBlock | null): string => {
     : "Для отправки вопроса нужен вход";
 };
 
+const OVERLOAD_COPY = {
+  title: "ИИ временно не отвечает",
+  body: "Слишком большая нагрузка, попробуй позже.",
+};
+
+/** Budget and concurrent-run blocks are not overload: their copy does not depend on the clock. */
+const downCopy = (
+  block: ChatBlock | null,
+  tier: ChatTier,
+): Pick<ChatPlateCopy, "body" | "title"> =>
+  block?.code === "global_budget_exceeded" || block?.code === "concurrent_run"
+    ? blockPlateCopy(block, tier, 0)
+    : OVERLOAD_COPY;
+
 const GuestLimit = ({ block }: { readonly block: ChatBlock | null }) => (
   <>
     <b>{guestLimitTitle(block)}</b>
@@ -77,7 +98,7 @@ export const BottomPlate = ({
 }: {
   readonly mode: Exclude<BottomMode, "composer">;
 }): JSX.Element => {
-  const { block, clearQuote, draft, isLoginBusy, login, quote } = useChat();
+  const { block, clearQuote, draft, isLoginBusy, login, quote, tier } = useChat();
   const hasDraft = draft.trim() !== "" || quote !== null;
   const keepNote = hasDraft ? " Черновик сохранится." : "";
   const plateQuote =
@@ -88,14 +109,15 @@ export const BottomPlate = ({
     );
 
   if (mode === "down") {
+    const copy = downCopy(block, tier);
     return (
       <div className="ai-plate ai-fade" role="status">
         {plateQuote}
         <div className="ai-plate-row">
           <AlertIcon />
           <div>
-            <b>ИИ временно не отвечает</b>
-            <p>{`Слишком большая нагрузка, попробуй позже.${keepNote}`}</p>
+            <b>{copy.title}</b>
+            <p>{`${copy.body}${keepNote}`}</p>
           </div>
         </div>
         <RetryButton />

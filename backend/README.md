@@ -2,7 +2,7 @@
 
 Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 
-Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The old `hse-lecture-notes-api.nalinor.workers.dev` stays on until every deployed build uses the new address.
+Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The old `hse-lecture-notes-api.nalinor.workers.dev` stays on (`workers_dev: true` in `wrangler.jsonc`) until every deployed build uses the new address; then set it to `false` and redeploy to retire the old endpoint.
 
 ## Architecture
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/nonce`, `/v1/auth/telegram`, `/v1/auth/logout`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
@@ -26,7 +26,7 @@ OPENAI_API_KEY=your-api-key
 OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-`OPENAI_API_KEY` is a secret. `OPENAI_BASE_URL` is optional and defaults to `https://api.openai.com/v1`; the provider appends `/responses`, preserving custom path prefixes and accepting trailing slashes. A custom endpoint must support the Responses API, SSE streaming and function calling; a gateway that only implements `/chat/completions` is insufficient. For a local mock, an HTTP URL is supported. OpenAI requests use direct fetch and do not use `CODEX_PROXY_URL`, OAuth refresh tokens or Codex-specific headers.
+`OPENAI_API_KEY` is a secret. `OPENAI_BASE_URL` is optional and defaults to `https://api.openai.com/v1`; the provider appends `/responses`, preserving custom path prefixes and accepting trailing slashes. A custom endpoint must support the Responses API, SSE streaming and function calling; a gateway that only implements `/chat/completions` is insufficient. Plain HTTP is accepted only for loopback hosts (local mocks). OpenAI requests use direct fetch and do not use `CODEX_PROXY_URL`, OAuth refresh tokens or Codex-specific headers.
 
 Models, reasoning effort, pricing versions, quotas and budgets remain in the existing D1 policy. The selected endpoint must accept the configured model names and reasoning effort, and the policy must select a published tariff for those models. Switching provider does not rewrite the policy or tariff table.
 
@@ -48,6 +48,7 @@ bunx wrangler secret put ALLOWANCE_JWT_SECRET
 bunx wrangler secret put BROWSER_TOKEN_SECRET
 bunx wrangler secret put CODEX_CREDENTIALS_ENCRYPTION_KEY
 bunx wrangler secret put CODEX_PROXY_URL
+bunx wrangler secret put OPENAI_API_KEY
 bunx wrangler secret put TURNSTILE_SECRET_KEY
 bunx wrangler secret put TELEGRAM_BOT_TOKEN
 bunx wrangler secret put TELEGRAM_CLIENT_ID

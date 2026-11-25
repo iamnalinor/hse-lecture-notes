@@ -85,7 +85,8 @@ export const ChatPanelHeader = ({
   onToggleHistory,
 }: PanelHeaderProps): JSX.Element => {
   const chat = useChat();
-  const title = chat.threads.find((t) => t.id === chat.activeThreadId)?.generatedTitle ?? "Чат";
+  const activeThread = chat.threads.find((t) => t.id === chat.activeThreadId);
+  const title = activeThread?.generatedTitle ?? activeThread?.title ?? "Чат";
   const headerRef = useHistoryDismiss(historyOpen, onToggleHistory);
   return (
     <div className="ai-top" ref={headerRef}>

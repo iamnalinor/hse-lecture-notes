@@ -5,7 +5,7 @@
  *
  * Usage:
  *   bun run scripts/admin.ts init-db [--remote]
- *   bun run scripts/admin.ts set-codex-token [--remote] [--refresh-token <tok>] [--account-id <id>]
+ *   bun run scripts/admin.ts set-codex-token [--remote] [--account-id <id>]
  *   bun run scripts/admin.ts set-policy <path-to-policy.json> [--remote]
  *   bun run scripts/admin.ts sync-telegram-accounts <path-to-ids.txt> [--remote]
  *   bun run scripts/admin.ts set-tier <telegram-id> <default|student|extended> [--remote]
@@ -72,8 +72,8 @@ async function main(): Promise<void> {
     console.log(`Commands:
   init-db [--remote]
     Applies the schema and initializes missing service policy.
-  set-codex-token [--remote] [--refresh-token <tok>] [--account-id <id>]
-    Reads CODEX_CREDENTIALS_ENCRYPTION_KEY and CODEX_INITIAL_REFRESH_TOKEN from env if not passed.
+  set-codex-token [--remote] [--account-id <id>]
+    Reads CODEX_CREDENTIALS_ENCRYPTION_KEY and CODEX_INITIAL_REFRESH_TOKEN from env.
   set-policy <policy.json> [--remote]
     Merges and writes service_config['policy'].
   sync-telegram-accounts <ids.txt> [--remote]
@@ -96,15 +96,16 @@ async function main(): Promise<void> {
       console.error("Missing env CODEX_CREDENTIALS_ENCRYPTION_KEY");
       process.exit(1);
     }
-    const refreshToken = getFlag(args, "--refresh-token") ?? process.env.CODEX_INITIAL_REFRESH_TOKEN;
+    // Read from the environment only: a CLI flag would leak the secret into process arguments and shell history.
+    const refreshToken = process.env.CODEX_INITIAL_REFRESH_TOKEN?.trim();
     if (!refreshToken) {
-      console.error("Missing --refresh-token or env CODEX_INITIAL_REFRESH_TOKEN");
+      console.error("Missing env CODEX_INITIAL_REFRESH_TOKEN");
       process.exit(1);
     }
     const accountId = getFlag(args, "--account-id") ?? process.env.CODEX_ACCOUNT_ID ?? "";
     const payload: CodexCredentialsPayload = {
       accessToken: "",
-      refreshToken: refreshToken.trim(),
+      refreshToken,
       accountId: accountId.trim(),
       expiresAt: 0,
     };

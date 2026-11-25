@@ -154,6 +154,9 @@ function configurationError(env: Env): string | null {
   for (const name of ["TELEGRAM_CLIENT_ID", "BROWSER_TOKEN_SECRET", "ALLOWANCE_JWT_SECRET", "TURNSTILE_SECRET_KEY"] as const) {
     if (!env[name]?.trim()) return `Required Worker secret ${name} is missing or empty`;
   }
+  if (env.LLM_PROVIDER?.trim() === "openai" && !env.OPENAI_API_KEY?.trim()) {
+    return "Required Worker secret OPENAI_API_KEY is missing or empty";
+  }
   return null;
 }
 

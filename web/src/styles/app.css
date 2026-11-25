@@ -236,6 +236,7 @@ stray `text-sm` does nothing instead of adding an eleventh size.
     background: var(--scroll-thumb-hover);
   }
   @supports not selector(::-webkit-scrollbar) {
+    :root[data-scrollbars="classic"],
     :root[data-scrollbars="classic"] * {
       scrollbar-width: thin;
       scrollbar-color: var(--scroll-thumb) transparent;

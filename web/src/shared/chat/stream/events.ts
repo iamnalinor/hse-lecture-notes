@@ -24,6 +24,7 @@ const guardStreamCallbacks = (
     };
   return {
     onCloseUnexpected: guard(callbacks.onCloseUnexpected),
+    onCancelledBeforeStart: guard(() => callbacks.onCancelledBeforeStart?.()),
     onDelta: guard(callbacks.onDelta),
     onDone: guard(callbacks.onDone),
     onError: guard(callbacks.onError),
@@ -107,6 +108,10 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
       setters.setThreads((prev) =>
         prev.map((t) => (t.id === threadId ? { ...t, title, generatedTitle: title } : t)),
       );
+    },
+    onCancelledBeforeStart: () => {
+      clearActive();
+      rejectOptimisticTurn(setters, args);
     },
     onCloseUnexpected: () => {
       clearActive();

@@ -269,7 +269,7 @@ export class ChatRunner extends DurableObject<Env> {
           course,
           docId,
           text: questionText,
-          quote: quote ? { blockId: quote.blockId ?? null, messageId: quote.messageId ?? null, tex: quote.tex } : null,
+          quote: quote ? { blockId: quote.blockId ?? null, messageId: quote.messageId ?? null, label: quote.label ?? null, tex: quote.tex } : null,
         }),
       );
 
@@ -407,7 +407,7 @@ export class ChatRunner extends DurableObject<Env> {
         code: failure?.code ?? "context_too_large",
         message: failure
           ? `${failure.message} Попробуй еще раз. Код: ${failure.code}${failure.detail ? ` (${failure.detail})` : ""}.`
-          : "Вопрос с цитатой слишком длинный. Сократи его и попробуй снова.",
+          : "Контекст вопроса слишком большой. Сократи вопрос или цитату и попробуй снова.",
       });
       safeClose(1011, "internal_error");
     } finally {

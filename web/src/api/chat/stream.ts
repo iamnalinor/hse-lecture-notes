@@ -10,6 +10,8 @@ import {
 export type WsStreamCallbacks = {
   readonly onTitle: (threadId: string, title: string) => void;
   readonly onCloseUnexpected: () => void;
+  /** The user stopped before the socket opened: nothing reached the server. */
+  readonly onCancelledBeforeStart?: () => void;
   readonly onDelta: (text: string) => void;
   readonly onDone: (payload: {
     readonly errorMessage?: null | string;
@@ -154,7 +156,7 @@ const isTerminalWsFrame = (
       return false;
     }
     case "step": {
-      callbacks.onStep((parsed["steps"] as ChatStep[] | undefined) ?? []);
+      callbacks.onStep(Array.isArray(parsed["steps"]) ? (parsed["steps"] as ChatStep[]) : []);
       return false;
     }
     case "delta": {
@@ -184,6 +186,7 @@ export const openChatMessageStream = (
 ): ActiveWsStream => {
   const ws = new WebSocket(`${toWsUrl(apiUrl)}/v1/messages`);
   let isFinished = false;
+  let isCancelledBeforeStart = false;
   let identity: StreamIdentity = { threadId: params.threadId, runId: null };
 
   ws.addEventListener("open", () => {
@@ -218,6 +221,11 @@ export const openChatMessageStream = (
   });
 
   ws.addEventListener("close", () => {
+    if (isCancelledBeforeStart && !isFinished) {
+      isFinished = true;
+      callbacks.onCancelledBeforeStart?.();
+      return;
+    }
     if (!isFinished) {
       callbacks.onCloseUnexpected();
     }
@@ -232,6 +240,7 @@ export const openChatMessageStream = (
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "stop" }));
       } else if (ws.readyState === WebSocket.CONNECTING) {
+        isCancelledBeforeStart = true;
         ws.close();
       }
     },

@@ -419,7 +419,7 @@ export async function handleLogout(
     sessionToken,
     nowMs,
   );
-  if (payload?.sid) {
+  if (payload?.typ === "session" && payload.sid) {
     await db.run(
       db
         .prepare("UPDATE user_sessions SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL")

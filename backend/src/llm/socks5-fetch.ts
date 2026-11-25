@@ -322,9 +322,23 @@ async function defaultConnector(
 export async function fetchViaProxy(
   proxyUrlRaw: string,
   input: string | URL | Request,
-  init: RequestInit = {},
+  initArg: RequestInit = {},
   connector?: SocketConnector,
 ): Promise<Response> {
+  // Merge a Request input with `init` the way fetch() does: init wins, Request supplies the rest.
+  let init: RequestInit = initArg;
+  if (input instanceof Request) {
+    const headers = new Headers(input.headers);
+    new Headers(initArg.headers).forEach((value, key) => headers.set(key, value));
+    const hasBody = input.body !== null && initArg.body === undefined;
+    init = {
+      ...initArg,
+      method: initArg.method ?? input.method,
+      headers,
+      signal: initArg.signal ?? input.signal,
+      body: hasBody ? await input.arrayBuffer() : initArg.body,
+    };
+  }
   const proxyUrl = new URL(proxyUrlRaw);
   const proxyScheme = proxyUrl.protocol.replace(/:$/, "").toLowerCase();
   const proxyHost = proxyUrl.hostname;
@@ -437,17 +451,26 @@ export async function fetchViaProxy(
 
     // Prepare HTTP/1.1 request body & headers
     let bodyBytes: Uint8Array = new Uint8Array(0);
+    let encodedContentType: string | null = null;
     if (typeof init.body === "string") {
       bodyBytes = encoder.encode(init.body);
     } else if (init.body instanceof Uint8Array) {
       bodyBytes = init.body;
     } else if (init.body instanceof ArrayBuffer) {
       bodyBytes = new Uint8Array(init.body);
+    } else if (ArrayBuffer.isView(init.body)) {
+      bodyBytes = new Uint8Array(init.body.buffer, init.body.byteOffset, init.body.byteLength);
     } else if (init.body != null) {
-      bodyBytes = encoder.encode(String(init.body));
+      // FormData, Blob, URLSearchParams, streams: let the platform serialize them.
+      const encoded = new Request(targetUrl, { method: "POST", body: init.body });
+      bodyBytes = new Uint8Array(await encoded.arrayBuffer());
+      encodedContentType = encoded.headers.get("content-type");
     }
 
     const reqHeaders = new Headers(init.headers);
+    if (encodedContentType && !reqHeaders.has("content-type")) {
+      reqHeaders.set("content-type", encodedContentType);
+    }
     if (!reqHeaders.has("host")) {
       reqHeaders.set("host", targetUrl.port ? `${targetHost}:${targetUrl.port}` : targetHost);
     }
@@ -498,6 +521,12 @@ export async function fetchViaProxy(
     const isChunked = te.includes("chunked");
     const clRaw = respHeaders.get("content-length");
     const contentLength = clRaw && /^\d+$/.test(clRaw.trim()) ? Number(clRaw.trim()) : null;
+
+    const noBody = method === "HEAD" || status === 204 || status === 205 || status === 304;
+    if (noBody) {
+      closeActive();
+      return new Response(null, { status, statusText, headers: respHeaders });
+    }
 
     const bodyStream = isChunked
       ? createChunkedBodyStream(appBr, closeActive)

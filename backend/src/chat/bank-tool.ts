@@ -23,9 +23,16 @@ export interface BankQuestion {
   answer?: string;
   refs?: string[];
 }
+export interface TicketPart {
+  kind: string;
+  title: string;
+  count: number;
+}
+/** A ticket item is a part, or `one_of`: alternative lists of parts, of which one is taken. */
+export type TicketItem = TicketPart | { one_of: TicketPart[][] };
 export interface Bank {
   about?: string;
-  ticket: { kind: string; title: string; count: number }[];
+  ticket: TicketItem[];
   questions: BankQuestion[];
 }
 
@@ -135,7 +142,8 @@ export function parseSampleArgs(args: Record<string, unknown>): SampleArgs | { e
 
 /** Picks problems; pure, so tests pass their own `random`. */
 export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number = Math.random) {
-  const kinds = bank.ticket.map((t) => ({ kind: t.kind, title: t.title }));
+  const allParts = bank.ticket.flatMap((t) => ("one_of" in t ? t.one_of.flat() : [t]));
+  const kinds = allParts.map((t) => ({ kind: t.kind, title: t.title }));
   if (a.kind !== undefined && !kinds.some((k) => k.kind === a.kind)) {
     return { error: `Нет типа задач ${a.kind}`, kinds };
   }
@@ -147,11 +155,15 @@ export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number =
   );
   const picked =
     a.mode === "variant" && a.kind === undefined
-      ? bank.ticket.flatMap((t) =>
+      ? bank.ticket
+          .flatMap((t) =>
+            "one_of" in t ? (t.one_of[Math.min(Math.floor(random() * t.one_of.length), t.one_of.length - 1)] ?? []) : [t],
+          )
+          .flatMap((t) =>
           shuffled(pool.filter((q) => q.kind === t.kind), random).slice(0, t.count),
         )
       : shuffled(pool, random).slice(0, a.count);
-  const titles = new Map(bank.ticket.map((t) => [t.kind, t.title]));
+  const titles = new Map(allParts.map((t) => [t.kind, t.title]));
   return {
     about: bank.about,
     left_after_filters: pool.length - picked.length,

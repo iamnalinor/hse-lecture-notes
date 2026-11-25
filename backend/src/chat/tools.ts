@@ -413,7 +413,9 @@ export class AgentToolRunner {
     };
     let args: Record<string, unknown> = {};
     try {
-      args = rawArgs ? (JSON.parse(rawArgs) as Record<string, unknown>) : {};
+      const parsed: unknown = rawArgs ? JSON.parse(rawArgs) : {};
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
+      args = parsed as Record<string, unknown>;
     } catch {
       return {
         output: capped(JSON.stringify({ error: "Invalid JSON arguments" })),
@@ -474,7 +476,13 @@ export class AgentToolRunner {
           )
           .bind(query, course, query, this.ctx.currentDocId),
       );
-      if (exact) {
+      const explicitCourse = typeof args.course === "string" && args.course.trim() ? course : null;
+      const inScope =
+        exact &&
+        (!explicitCourse || explicitCourse === "all" || exact.course === explicitCourse) &&
+        (!docKind || exact.doc_kind === docKind) &&
+        (!blockKind || exact.block_kind === blockKind);
+      if (exact && inScope) {
         const item = this.formatSearchItem(exact);
         return {
           output: JSON.stringify({ results: [item], source: "exact_id" }),

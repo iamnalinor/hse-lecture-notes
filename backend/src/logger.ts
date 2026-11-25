@@ -11,10 +11,10 @@ export function logEvent(
   fields: Record<string, unknown> = {},
 ): void {
   const entry = {
+    ...fields,
     ts: new Date().toISOString(),
     level,
     event,
-    ...fields,
   };
   const line = JSON.stringify(entry);
   if (level === "error") {

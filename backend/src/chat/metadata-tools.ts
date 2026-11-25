@@ -44,7 +44,7 @@ function parseString(raw: string, field: string): string {
     throw Error("metadata_invalid");
   const rawValue = (v as Record<string, string>)[field]!;
   const value = rawValue.trim();
-  if (!value || /[\p{Cc}\p{Cf}]/u.test(rawValue)) throw Error("metadata_invalid");
+  if (!value || /[\p{Cc}\p{Cf}]/u.test(rawValue.replace(/[\u200C\u200D]/gu, ""))) throw Error("metadata_invalid");
   return value;
 }
 export function parseTopicArguments(raw: string): string {
