@@ -1,6 +1,6 @@
 # chat-suggestions/ — стартовые вопросы чата
 
-Кнопки-подсказки в пустом чате сайта. Для страницы в YAML лежит ровно 6 вопросов; сайт показывает 3 случайных из них, выбор делается заново при смене страницы. Страницы без записи получают три фиксированных универсальных вопроса (`web/src/domain/chat-suggestion-pools.ts`).
+Кнопки-подсказки в пустом чате сайта. Для страницы в YAML лежит ровно 6 вопросов; сайт показывает 3 случайных из них, выбор делается заново при смене страницы. Страницы без записи получают три фиксированных универсальных вопроса (`web/src/domain/chat/suggestion-pools.ts`).
 
 ## Раскладка
 
@@ -24,7 +24,7 @@ Id страницы — имя файла без `.md`: лекция `01_sep03_m
 ## Сборка
 
 ```bash
-uv run scripts/build_chat_suggestions.py          # YAML → web/src/domain/chat-suggestions.json
+uv run scripts/build_chat_suggestions.py          # YAML → web/src/domain/chat/suggestions.json
 uv run scripts/build_chat_suggestions.py --check  # проверка без записи (CI и тесты)
 ```
 
