@@ -614,7 +614,8 @@ class CloudflareClient:
                 "Content-Type": content_type,
             },
         )
-        for attempt in range(4):
+        attempts = 7
+        for attempt in range(attempts):
             try:
                 with urllib.request.urlopen(req, timeout=60) as resp:
                     result = json.loads(resp.read().decode("utf-8"))
@@ -622,11 +623,19 @@ class CloudflareClient:
                         raise RuntimeError(f"Cloudflare API {method} {path}: {result.get('errors')}")
                     return result
             except urllib.error.HTTPError as exc:
-                if method != "GET" or exc.code not in {429, 500, 502, 503, 504} or attempt == 3:
+                # 429 is rejected before processing, so any method may retry it; a 5xx POST may
+                # already have applied and is never replayed.
+                rate_limited = exc.code == 429
+                retryable = rate_limited or (method == "GET" and exc.code in {500, 502, 503, 504})
+                if not retryable or attempt == attempts - 1 or (not rate_limited and attempt >= 3):
                     detail = exc.read().decode("utf-8", errors="replace")
                     raise RuntimeError(f"Cloudflare API {method} {path} HTTP {exc.code}: {detail}") from exc
-                retry_after = exc.headers.get("Retry-After", "")
-                time.sleep(int(retry_after) if retry_after.isdigit() else 2**attempt)
+                retry_after = exc.headers.get("Retry-After", "") if exc.headers else ""
+                if retry_after.isdigit():
+                    time.sleep(int(retry_after))
+                else:
+                    # The account-wide API limit is per 5 minutes: wait 15 s, 30 s, … up to 2 min.
+                    time.sleep(min(15 * 2**attempt, 120) if rate_limited else 2**attempt)
 
     def d1_query(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         payload: dict[str, Any] = {"sql": sql}

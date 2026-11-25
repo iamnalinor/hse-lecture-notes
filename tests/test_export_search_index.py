@@ -346,3 +346,19 @@ def test_vectorize_confirmation_backs_off_to_spare_the_api_rate_limit(monkeypatc
     cf.wait_for_mutation({"action": "upsert", "mutation_id": "m", "blocks": [["a", "1"]]})
     assert sleeps == sorted(sleeps) and sleeps[0] == 2 and max(sleeps) <= 15 and sleeps[-1] > 5
     assert esi.VECTOR_BATCH >= 50
+
+
+def test_rate_limited_post_is_retried_after_waiting(monkeypatch):
+    """A 429 (error 971) means Cloudflare rejected the request unprocessed: safe to retry, even a POST."""
+    import io
+    client = esi.CloudflareClient("account", "token", "db", "index")
+    calls, sleeps = [], []
+    def rate_limited_then_ok(req, timeout):
+        calls.append(req.data)
+        if len(calls) < 3:
+            raise esi.urllib.error.HTTPError(req.full_url, 429, "slow down", {}, io.BytesIO(b'{"errors":[{"code":971}]}'))
+        return io.BytesIO(b'{"success": true, "result": [{"results": [{"n": 1}]}]}')
+    monkeypatch.setattr(esi.urllib.request, "urlopen", rate_limited_then_ok)
+    monkeypatch.setattr(esi.time, "sleep", sleeps.append)
+    assert client.d1_query("SELECT 1 AS n") == [{"n": 1}]
+    assert len(calls) == 3 and all(s >= 15 for s in sleeps)
