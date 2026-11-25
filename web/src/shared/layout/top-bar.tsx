@@ -35,7 +35,7 @@ export const TopBar = () => (
       <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1 max-[21rem]:flex-none md:flex-none md:gap-2">
         <HeaderSearch />
         <ChatToggleButton />
-        <ThemeToggle place="bar" />
+        <ThemeToggle />
       </div>
     </div>
   </header>

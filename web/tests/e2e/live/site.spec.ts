@@ -70,7 +70,7 @@ test("home → course → notes, search → a real result, quiz solutions and PD
     nodes.map((node) => node.getBoundingClientRect().top),
   );
   expect(positions.every((top, i) => i === 0 || top > (positions[i - 1] ?? 0))).toBe(true);
-  const solution = problem.getByText("Показать решение", { exact: true });
+  const solution = problem.getByRole("button", { name: "Решение" });
   await solution.click();
   const opened = problem.getByRole("button", { name: "Решение", exact: true });
   await expect(opened).toHaveAttribute("aria-expanded", "true");

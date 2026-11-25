@@ -44,7 +44,7 @@ const useHits = (
     return { hits: [], status: "Загружаем конспекты…" };
   }
   const hits = search(index.data, labels.data, query);
-  return { hits, status: hits.length === 0 ? "Ничего не нашлось." : "" };
+  return { hits, status: hits.length === 0 ? "Ничего не нашлось" : "" };
 };
 
 const step = (active: number, delta: number, count: number): number =>
@@ -262,7 +262,7 @@ export const HeaderSearch = () => {
   const hasPanel = state.isOpen && state.query.trim() !== "";
   return (
     <div
-      className="min-w-0 flex-1 md:flex-none"
+      className="min-w-0 flex-1 md:flex-none lg:relative"
       {...boxHandlers(close, () => {
         dismiss(isPhone);
       })}

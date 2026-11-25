@@ -31,7 +31,7 @@ export const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="flex h-11 w-full items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-80">
+  <label className="flex h-11 w-full items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-96">
     <SearchIcon size={16} />
     <input
       aria-activedescendant={hasPanel ? resultId(active) : undefined}
@@ -100,7 +100,7 @@ export const Popover = ({ children, isOpen }: PopoverProps) => {
   return kept === undefined ? null : (
     <div
       aria-hidden={!isOpen}
-      className="absolute inset-x-0 top-full z-50 border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border"
+      className="absolute inset-x-0 top-full z-50 border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:mt-1 lg:rounded-xl lg:border"
       data-popover=""
       data-state={isOpen ? "open" : "closed"}
       inert={!isOpen}

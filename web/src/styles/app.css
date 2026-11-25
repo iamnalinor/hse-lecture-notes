@@ -309,16 +309,18 @@ Everything is switched off under `prefers-reduced-motion` at the end of this fil
   }
 }
 
-/* Blend two complete page snapshots so text, formulas, menus and paper change together. */
-::view-transition-group(root) {
-  animation-duration: 280ms;
-  animation-timing-function: ease-in-out;
+/* Theme switch as in Telegram Android: a soft-edged circle from the toggle (`theme-toggle.tsx`
+animates the mask). To dark the new snapshot grows on top; to light the old dark one shrinks on top. */
+:root[data-theme-reveal]::view-transition-old(root),
+:root[data-theme-reveal]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(root) {
-    animation-duration: 0s;
-  }
+:root[data-theme-reveal="dark"]::view-transition-new(root),
+:root[data-theme-reveal="light"]::view-transition-old(root) {
+  z-index: 1;
+  mask-image: radial-gradient(closest-side, #000 60%, transparent);
+  mask-repeat: no-repeat;
 }
 
 /* A theme switch repaints everything at once: no element may lag behind with its own fade (`theme.ts`). */

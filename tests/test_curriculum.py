@@ -39,7 +39,7 @@ def test_real_plan_scope():
     shorts = {d["id"]: d["short"] for d in data["disciplines"]}
     assert shorts["history"] == "История" and shorts["state"] == "ОРГ"
     assert shorts["intro-prog"] == "Введение в программирование"
-    assert shorts["intro-se"] == "Введение в программную инженерию"
+    assert shorts["intro-se"] == "ВвПИ"
 
 
 def put_plan(demo: Path, text: str | None = None) -> None:  # noqa: F811 (фикстура pytest)

@@ -31,7 +31,7 @@ type DownloadButtonProps = {
 
 const DownloadButton = ({ missingBytes, onClick }: DownloadButtonProps) => (
   <button
-    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-footnote font-semibold text-ink hover:bg-wash"
+    className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2.5 py-1 text-subhead font-semibold text-ink hover:bg-wash"
     onClick={onClick}
     type="button"
   >

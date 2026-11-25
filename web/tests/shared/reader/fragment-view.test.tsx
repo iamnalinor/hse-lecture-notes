@@ -97,7 +97,7 @@ describe("FragmentView proofs and problems", () => {
     expect(screen.getByText("Ответ: 10.")).not.toBeVisible();
     expect(screen.queryByRole("button", { name: /Показать ответ/ })).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: /Показать решение/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Решение" }));
     expect(screen.getByText("Ответ: 10.")).toBeVisible();
   });
 

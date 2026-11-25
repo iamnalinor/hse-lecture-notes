@@ -48,7 +48,7 @@ disciplines:
   - { id: aiya, name: Алгоритмы и алгоритмические языки, short: АиАЯ, category: prog, credits: 5, hours: [0, 62, 66, 0], attestations: [3] }
   - { id: arch, name: Архитектура ЭВМ и язык ассемблера, short: Архитектура ЭВМ, category: prog, credits: 3, hours: [0, 0, 0, 80], attestations: [4] }
   - { id: intro-prog, name: Введение в программирование, short: Введение в программирование, category: prog, credits: 3, hours: [24, 0, 0, 0], attestations: [1] }
-  - { id: intro-se, name: Введение в программную инженерию, short: Введение в программную инженерию, category: prog, credits: 4, hours: [18, 18, 0, 0], attestations: [2] }
+  - { id: intro-se, name: Введение в программную инженерию, short: ВвПИ, category: prog, credits: 4, hours: [18, 18, 0, 0], attestations: [2] }
   - { id: cpp, name: Основы программирования на С++, short: С++, category: prog, credits: 5, hours: [0, 0, 40, 40], attestations: [4] }
   # 11 вариантов семинара (по выбору). Часы у семи — 10/14/20 (всего 44), у четырёх (Android, iOS, веб,
   # кибербезопасность) — 14/14/20 (48); взяты самые частые. Аттестация — в модуле 3.
