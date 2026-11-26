@@ -174,7 +174,7 @@ export const ChatEmptyView = (): JSX.Element => {
   return (
     <div className="ai-empty ai-enter">
       <h2>{title}</h2>
-      {docContext.docId !== "" && <p>Выделите фрагмент материала, чтобы задать вопрос о нём.</p>}
+      {docContext.docId !== "" && <p>Выдели фрагмент материала, чтобы задать вопрос о нём.</p>}
       {quote === null && (
         <div className="ai-sugg">
           {suggestions.map((prompt) => (

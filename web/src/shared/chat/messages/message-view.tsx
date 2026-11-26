@@ -160,7 +160,7 @@ const MessageError = ({
 
 const interruptedCaption = ({ status, errorMessage }: ChatMessage): null | string => {
   if (status === "stopped") {
-    return "Вы остановили ответ";
+    return "Ты остановил ответ";
   }
   return status === "incomplete" ? (errorMessage ?? "Ответ не завершен") : null;
 };

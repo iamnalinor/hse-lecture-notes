@@ -83,7 +83,7 @@ test("an early stop waits for meta while the answer stream remains readable", as
   const text = "Первые слова ответа";
   mock.send({ type: "delta", text });
   await expect(page.getByText(text, { exact: true })).toBeVisible();
-  await expect(page.getByText("Вы остановили ответ")).toHaveCount(0);
+  await expect(page.getByText("Ты остановил ответ")).toHaveCount(0);
   mock.send({
     type: "done",
     runId: "r",
@@ -94,7 +94,7 @@ test("an early stop waits for meta while the answer stream remains readable", as
     degraded: { active: false },
   });
   mock.end();
-  await expect(page.getByText("Вы остановили ответ")).toBeVisible();
+  await expect(page.getByText("Ты остановил ответ")).toBeVisible();
   await expect(page.getByRole("button", { name: "Повторить", exact: true })).toBeEnabled();
 });
 
@@ -140,7 +140,7 @@ test("a refused stop leaves the answer streaming and allows a second click", asy
     degraded: { active: false },
   });
   mock.end();
-  await expect(page.getByText("Вы остановили ответ")).toBeVisible();
+  await expect(page.getByText("Ты остановил ответ")).toBeVisible();
 });
 
 test("retry after a gateway error before meta reuses the original request ID", async ({ page }) => {

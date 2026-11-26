@@ -281,7 +281,7 @@ export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): stri
     `> ${summary}`,
     "",
     "Сайт — одностраничное приложение; HTML каждой страницы содержит и её текст (формулы — LaTeX), но точнее всего Markdown:",
-    "добавьте `.md` к адресу любой страницы без последнего слеша (`/algebra/theory/` → `/algebra/theory.md`). Исходники:",
+    "добавь `.md` к адресу любой страницы без последнего слеша (`/algebra/theory/` → `/algebra/theory.md`). Исходники:",
     `весь репозиторий — ${REPO_URL}, конспекты лекций — \`notes/<курс>/<week_id>.md\`, теория курса — \`theory/<курс>.md\`,`,
     "план учебной дисциплины — `program/<курс>.md`, подготовка к контрольным и коллоквиумам — `prep/<курс>/<id>.md`.",
     "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида `{#thm:lec04:laplace}`.",
