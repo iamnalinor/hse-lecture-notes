@@ -139,8 +139,12 @@ const useFollowSource = (
 ) => {
   const scrollTopRef = useRef(0);
   const wasReadingRef = useRef(false);
+  const restoreRef = useRef(restorePosition);
   const jumpToBlock = useJumpToBlock(chat);
   const { isOpen, readingSource: isReadingSource } = chat;
+  useEffect(() => {
+    restoreRef.current = restorePosition;
+  }, [restorePosition]);
   useEffect(() => {
     if (!isOpen) {
       wasReadingRef.current = isReadingSource;
@@ -151,12 +155,12 @@ const useFollowSource = (
     }
     wasReadingRef.current = false;
     const frame = globalThis.requestAnimationFrame(() => {
-      restorePosition(scrollTopRef.current);
+      restoreRef.current(scrollTopRef.current);
     });
     return () => {
       globalThis.cancelAnimationFrame(frame);
     };
-  }, [isOpen, isReadingSource, restorePosition]);
+  }, [isOpen, isReadingSource]);
   return async (blockId: string): Promise<void> => {
     scrollTopRef.current = scrollerRef.current?.scrollTop ?? 0;
     await jumpToBlock(blockId);

@@ -8,9 +8,9 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* The header stays on screen everywhere: on a phone its «Чат» is also the way back to the chat after a link
-   from an answer (no separate «К чату» pill). The bar is a 3.25rem row (3.75rem from 640px) and a 1px border. */
+   from an answer (no separate «К чату» pill). The bar is a 3.5rem row (40px logo and 8px padding; 3.75rem from 640px) and a 1px border. */
 html {
-  --top-bar-height: calc(3.25rem + 1px);
+  --top-bar-height: calc(3.5rem + 1px);
   scroll-padding-top: var(--top-bar-height);
 }
 @media (min-width: 40rem) {
