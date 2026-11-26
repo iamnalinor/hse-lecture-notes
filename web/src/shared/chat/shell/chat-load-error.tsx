@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import type { ChatLoadFailure } from "./load-failure.ts";
 
-import { AlertIcon } from "../icons.tsx";
+import { TriangleExclamationPointIcon } from "../icons.tsx";
 
 const HINTS = {
   network: "Проверь подключение и попробуй еще раз",
@@ -22,7 +22,7 @@ arrive and in the log when a thread did not. It sits in the middle of the area i
 export const ChatLoadError = ({ failure, onRetry }: Props): JSX.Element => (
   <div className="ai-load-error ai-fade" role="alert">
     <span aria-hidden="true" className="ai-load-error-icon">
-      <AlertIcon />
+      <TriangleExclamationPointIcon />
     </span>
     <b>Не удалось загрузить чат</b>
     <p>{HINTS[failure]}</p>

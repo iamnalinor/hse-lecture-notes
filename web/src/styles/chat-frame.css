@@ -296,17 +296,12 @@ html.ai-open .ai-panel {
 }
 .ai-load-error-icon {
   display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  background: var(--wash);
+  margin-bottom: 12px;
   color: var(--muted);
 }
 .ai-load-error-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 .ai-load-error b {
   font-size: 15px;
