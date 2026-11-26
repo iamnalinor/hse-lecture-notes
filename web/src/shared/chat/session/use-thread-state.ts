@@ -2,10 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { fetchChatRunStatus, fetchChatThread, type ThreadResponse } from "#web/api/chat/client.ts";
 import { readPageThread, readStoredAuth, savePageThread } from "#web/api/chat/storage.ts";
-import { type ChatMessage, nextRunPollDelayMs } from "#web/domain/chat/model.ts";
+import {
+  type ChatMessage,
+  type ChatThreadSummary,
+  nextRunPollDelayMs,
+} from "#web/domain/chat/model.ts";
 
 import { useEarlierMessages } from "./use-earlier-messages.ts";
 import { useThreadHistory } from "./use-thread-history.ts";
+
+/** `superseded`: a newer load took over, so this one's outcome is not the reader's concern. */
+export type ThreadLoadResult = "loaded" | "superseded" | "unavailable";
 
 const readThread = async (threadId?: null | string): Promise<null | ThreadResponse> => {
   try {
@@ -61,7 +68,7 @@ type PageRestore = {
   isConfigured: boolean;
   requestRef: React.RefObject<number>;
   invalidateLoad: () => void;
-  loadThread: (id: null | string) => Promise<"loaded" | "unavailable">;
+  loadThread: (id: null | string) => Promise<ThreadLoadResult>;
 };
 const usePageRestore = (options: PageRestore) => {
   const {
@@ -114,6 +121,49 @@ const runningId = (items: readonly ChatMessage[]) => {
   return last?.role === "assistant" && last.status === "running" ? last.runId : null;
 };
 
+/** Puts a loaded page on screen: the thread, its history list and whether a run is still going. */
+const useApplyPage = (
+  page: ReturnType<typeof usePageState>,
+  replacePage: ReturnType<typeof useThreadHistory>["replacePage"],
+  setCursor: ReturnType<typeof useEarlierMessages>["setCursor"],
+) => {
+  const { setActiveThreadId, setMessages, setIsStreaming, setPollRunId } = page;
+  return useCallback(
+    (data: ThreadResponse, requestedThreadId?: null | string) => {
+      const { selected, items, run } = selectThread(data, requestedThreadId);
+      replacePage({ ...data, thread: selected });
+      setActiveThreadId(selected?.id ?? null);
+      setMessages(items);
+      setCursor(selected?.beforeSeq ?? null);
+      setIsStreaming(run !== null);
+      setPollRunId(run);
+    },
+    [replacePage, setActiveThreadId, setCursor, setMessages, setIsStreaming, setPollRunId],
+  );
+};
+
+/** Opening a thread from history: a failed load leaves the previous thread on screen, so the failure is kept to be shown. */
+const useThreadOpening = (
+  loadThread: (id: string) => Promise<ThreadLoadResult>,
+  threads: readonly ChatThreadSummary[],
+) => {
+  const [failedThreadId, setFailedThreadId] = useState<null | string>(null);
+  const openThread = useCallback(
+    async (threadId: string): Promise<void> => {
+      setFailedThreadId(null);
+      if ((await loadThread(threadId)) === "unavailable") {
+        setFailedThreadId(threadId);
+      }
+    },
+    [loadThread],
+  );
+  const clearFailedThread = useCallback(() => {
+    setFailedThreadId(null);
+  }, []);
+  const failedThread = threads.find((item) => item.id === failedThreadId) ?? null;
+  return { openThread, failedThread, clearFailedThread };
+};
+
 type ThreadStateOptions = {
   readonly readingSource: boolean;
   readonly isOpen: boolean;
@@ -129,37 +179,25 @@ export const useThreadState = ({
   readingSource,
 }: ThreadStateOptions) => {
   const history = useThreadHistory();
-  const { replacePage } = history;
   const page = usePageState(pageKey, isConfigured, isOpen || readingSource);
   const earlier = useEarlierMessages(page.setMessages);
   const { setCursor, cancelEarlier } = earlier;
-  const { setActiveThreadId, setMessages, setIsStreaming, setPollRunId, setIsThreadLoading } = page;
+  const { setIsThreadLoading } = page;
   const requestRef = useRef(0);
   const invalidateLoad = useCallback(() => {
     requestRef.current += 1;
     cancelEarlier();
     setIsThreadLoading(false);
   }, [cancelEarlier, setIsThreadLoading]);
-  const applyPage = useCallback(
-    (data: ThreadResponse, requestedThreadId?: null | string) => {
-      const { selected, items, run } = selectThread(data, requestedThreadId);
-      replacePage({ ...data, thread: selected });
-      setActiveThreadId(selected?.id ?? null);
-      setMessages(items);
-      setCursor(selected?.beforeSeq ?? null);
-      setIsStreaming(run !== null);
-      setPollRunId(run);
-    },
-    [replacePage, setActiveThreadId, setCursor, setMessages, setIsStreaming, setPollRunId],
-  );
+  const applyPage = useApplyPage(page, history.replacePage, setCursor);
   const loadThread = useCallback(
-    async (requestedThreadId?: null | string): Promise<"loaded" | "unavailable"> => {
+    async (requestedThreadId?: null | string): Promise<ThreadLoadResult> => {
       const request = ++requestRef.current;
       cancelEarlier();
       setIsThreadLoading(true);
       const data = await readThread(requestedThreadId);
       if (request !== requestRef.current) {
-        return "unavailable";
+        return "superseded";
       }
       setIsThreadLoading(false);
       if (data === null) {
@@ -169,6 +207,10 @@ export const useThreadState = ({
       return "loaded";
     },
     [applyPage, cancelEarlier, setIsThreadLoading],
+  );
+  const { openThread, failedThread, clearFailedThread } = useThreadOpening(
+    loadThread,
+    history.threads,
   );
   useRunStatusPoller({
     runId: page.isThreadLoading ? null : page.pollRunId,
@@ -188,10 +230,13 @@ export const useThreadState = ({
     ...page,
     ...history,
     loadThread,
+    openThread,
+    failedThread,
     canStop: page.isStreaming && page.pollRunId === null,
     invalidateLoad: () => {
       invalidateLoad();
       setCursor(null);
+      clearFailedThread();
     },
     earlierStatus: earlier.status,
     hasEarlier: page.activeThreadId !== null && earlier.cursor !== null,
@@ -202,7 +247,7 @@ export const useThreadState = ({
 type PollTarget = {
   readonly runId: null | string;
   readonly threadId: null | string;
-  readonly loadThread: (threadId: null | string) => Promise<"loaded" | "unavailable">;
+  readonly loadThread: (threadId: null | string) => Promise<ThreadLoadResult>;
 };
 
 const useRunStatusPoller = ({ runId, threadId, loadThread }: PollTarget): void => {

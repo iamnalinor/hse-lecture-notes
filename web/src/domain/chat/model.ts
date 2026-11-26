@@ -83,6 +83,9 @@ export type ChatThreadSummary = {
   readonly updatedAt: number;
 };
 
+export const threadDisplayTitle = (thread: ChatThreadSummary | undefined): string =>
+  thread?.generatedTitle ?? thread?.title ?? "Чат";
+
 export type ChatThread = {
   readonly beforeSeq?: null | number;
   readonly contextLimited?: boolean;

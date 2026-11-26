@@ -22,6 +22,8 @@ export type ChatContextValue = {
   readonly docContext: ChatDocContext;
   readonly draft: string;
   readonly draftError: null | string;
+  /** The thread the reader picked in history that could not be loaded; the previous one is still on screen. */
+  readonly failedThread: ChatThreadSummary | null;
   readonly readingSource: boolean;
   readonly returnFromSource: () => void;
   readonly closeForSource: () => void;

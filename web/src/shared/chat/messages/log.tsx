@@ -1,5 +1,8 @@
 import { useLayoutEffect, useRef } from "react";
 
+import { type ChatThreadSummary, threadDisplayTitle } from "#web/domain/chat/model.ts";
+
+import { AlertIcon } from "../icons.tsx";
 import { ChatEmptyView } from "../panel/parts.tsx";
 import { useChat } from "../session/context.tsx";
 import { ChatMessageView } from "./message-view.tsx";
@@ -43,6 +46,37 @@ const EarlierMessagesButton = () => {
   );
 };
 
+const ThreadLoadError = ({ failed }: { readonly failed: ChatThreadSummary }) => {
+  const chat = useChat();
+  const open = chat.threads.find((thread) => thread.id === chat.activeThreadId);
+  return (
+    <div className="ai-plate ai-fade" role="alert">
+      <div className="ai-plate-row">
+        <AlertIcon />
+        <div>
+          <b>{`Не удалось открыть «${threadDisplayTitle(failed)}»`}</b>
+          <p>
+            {chat.activeThreadId === null
+              ? "Сейчас открыт новый чат, сообщение уйдет в него."
+              : `Сейчас открыта «${threadDisplayTitle(open)}», сообщение уйдет в нее.`}
+          </p>
+        </div>
+      </div>
+      <div className="ai-plate-actions">
+        <button
+          className="ai-btn ai-btn-2"
+          onClick={() => {
+            chat.selectThread(failed.id);
+          }}
+          type="button"
+        >
+          Повторить
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const ChatLog = ({
   onJumpToBlock,
 }: {
@@ -52,8 +86,15 @@ export const ChatLog = ({
   if (chat.isThreadLoading) {
     return <ChatSkeleton />;
   }
+  const failure =
+    chat.failedThread === null ? null : <ThreadLoadError failed={chat.failedThread} />;
   if (chat.messages.length === 0) {
-    return <ChatEmptyView />;
+    return (
+      <>
+        {failure}
+        <ChatEmptyView />
+      </>
+    );
   }
   const last = chat.messages.at(-1);
   const canRetry =
@@ -63,6 +104,7 @@ export const ChatLog = ({
       : chat.messages.at(-2)?.role === "user");
   return (
     <>
+      {failure}
       <EarlierMessagesButton />
       {chat.messages.map((message) => (
         <ChatMessageView

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { MemoryRouter, useNavigate } from "react-router";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ChatMessage } from "#web/domain/chat/model.ts";
 
@@ -1261,4 +1261,86 @@ it("continues an open stream while the panel is closed and sends a stop only on 
     chat.current.stop();
   });
   expect(connection?.stop).toHaveBeenCalledOnce();
+});
+
+const withHistory = (id: string, messages: readonly ChatMessage[] = []): ThreadResponse => ({
+  ...thread(id, messages),
+  threads: [
+    { id: "algebra", title: "Алгебра", updatedAt: 2 },
+    { id: "calculus", title: "Матанализ", updatedAt: 1 },
+  ],
+});
+const openAlgebra = async () => {
+  seedChatAuth({ browserToken: "browser" });
+  localStorage.setItem("hse_chat_thread:guest:/", "algebra");
+  vi.mocked(fetchChatThread).mockResolvedValueOnce(
+    withHistory("algebra", [makeUserMsg("Про группы", null, { course: "", docId: "" })]),
+  );
+  const chat = mount();
+  await act(async () => {
+    chat.current.toggle();
+    await Promise.resolve();
+  });
+  expect(chat.current.activeThreadId).toBe("algebra");
+  return chat;
+};
+const failToOpenCalculus = async (chat: ReturnType<typeof mount>) => {
+  vi.mocked(fetchChatThread).mockRejectedValueOnce(new Error("offline"));
+  await act(async () => {
+    chat.current.selectThread("calculus");
+    await Promise.resolve();
+  });
+};
+
+describe("opening a thread from history", () => {
+  it("names the thread that failed to load, keeps the open one and sends the next message to it", async () => {
+    const chat = await openAlgebra();
+    await failToOpenCalculus(chat);
+    expect(chat.current.failedThread).toMatchObject({ id: "calculus", title: "Матанализ" });
+    expect(chat.current.activeThreadId).toBe("algebra");
+    expect(chat.current.isThreadLoading).toBe(false);
+    await act(() => chat.current.send("Еще вопрос"));
+    expect(vi.mocked(openChatMessageStream).mock.calls[0]?.[1]).toMatchObject({
+      threadId: "algebra",
+      text: "Еще вопрос",
+    });
+  });
+
+  it("opens the chosen thread on retry and clears the error", async () => {
+    const chat = await openAlgebra();
+    await failToOpenCalculus(chat);
+    vi.mocked(fetchChatThread).mockResolvedValueOnce(withHistory("calculus"));
+    await act(async () => {
+      chat.current.selectThread("calculus");
+      await Promise.resolve();
+    });
+    expect(chat.current.failedThread).toBeNull();
+    expect(chat.current.activeThreadId).toBe("calculus");
+    await act(() => chat.current.send("Про пределы"));
+    expect(vi.mocked(openChatMessageStream).mock.calls[0]?.[1]).toMatchObject({
+      threadId: "calculus",
+    });
+  });
+
+  it("drops the error when a new chat is started and does not blame a superseded load", async () => {
+    const chat = await openAlgebra();
+    await failToOpenCalculus(chat);
+    act(() => {
+      chat.current.newChat();
+    });
+    expect(chat.current.failedThread).toBeNull();
+    const slow = Promise.withResolvers<ThreadResponse>();
+    vi.mocked(fetchChatThread).mockReturnValueOnce(slow.promise);
+    act(() => {
+      chat.current.selectThread("calculus");
+    });
+    act(() => {
+      chat.current.newChat();
+    });
+    await act(async () => {
+      slow.reject(new Error("offline"));
+      await Promise.resolve();
+    });
+    expect(chat.current.failedThread).toBeNull();
+  });
 });

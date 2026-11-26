@@ -1,6 +1,7 @@
 import { type JSX, useMemo } from "react";
 import { useLocation } from "react-router";
 
+import { threadDisplayTitle } from "#web/domain/chat/model.ts";
 import { getChatSuggestions } from "#web/domain/chat/suggestion-pools.ts";
 
 import {
@@ -103,7 +104,7 @@ export const ChatPanelHeader = ({
 }: PanelHeaderProps): JSX.Element => {
   const chat = useChat();
   const activeThread = chat.threads.find((t) => t.id === chat.activeThreadId);
-  const title = activeThread?.generatedTitle ?? activeThread?.title ?? "Чат";
+  const title = threadDisplayTitle(activeThread);
   const headerRef = useHistoryDismiss(historyOpen, onToggleHistory);
   return (
     <div className="ai-top" ref={headerRef}>

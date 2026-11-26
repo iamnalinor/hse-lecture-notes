@@ -84,6 +84,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     a.setIsOpen(true);
   },
   draftError: a.draftError,
+  failedThread: a.thr.failedThread,
   degraded: a.auth.degraded,
   maxQuestionChars: a.auth.maxQuestionChars,
   docContext: a.docContext,
@@ -117,7 +118,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
       return;
     }
     detachThread(a, false);
-    void a.thr.loadThread(threadId);
+    void a.thr.openThread(threadId);
   },
   send: a.send,
   setDraft: a.setDraft,
