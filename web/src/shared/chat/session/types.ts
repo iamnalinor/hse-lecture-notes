@@ -23,7 +23,6 @@ export type ChatContextValue = {
   readonly draft: string;
   readonly draftError: null | string;
   readonly readingSource: boolean;
-  readonly returnFromSource: () => void;
   readonly closeForSource: () => void;
   readonly isCheckingBrowser: boolean;
   readonly isConfigured: boolean;

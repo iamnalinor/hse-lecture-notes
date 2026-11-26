@@ -143,7 +143,7 @@ const stubTouchDevice = (isTouch: boolean) => {
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query: string) => ({
-      matches: isTouch && query.includes("pointer: coarse"),
+      matches: isTouch && query.includes("(hover: none)") && query.includes("(pointer: coarse)"),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     })),

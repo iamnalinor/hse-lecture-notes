@@ -1107,53 +1107,6 @@
   right: 12px;
 }
 
-/* мобильный возврат к чату после перехода по ссылке из ответа */
-.ai-back {
-  position: fixed;
-  left: 50%;
-  bottom: max(20px, env(safe-area-inset-bottom));
-  z-index: 45;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 18px 0 14px;
-  border: 0;
-  border-radius: 22px;
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  box-shadow: var(--ai-shadow);
-  cursor: pointer;
-  opacity: 0;
-  transform: translate(-50%, 12px);
-  pointer-events: none;
-  visibility: hidden;
-  transition:
-    opacity 200ms ease-out,
-    transform 260ms var(--ai-ease),
-    visibility 0s linear 260ms;
-}
-.ai-back.is-on {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  pointer-events: auto;
-  visibility: visible;
-  transition:
-    opacity 200ms ease-out,
-    transform 260ms var(--ai-ease);
-}
-.ai-back svg {
-  width: 18px;
-  height: 18px;
-}
-/* The back bar (44 px tall, centred on a phone) owns the bottom edge: «К чату» stands right above it. */
-body:has(aside[aria-label="Возврат"]) .ai-back {
-  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 44px + 8px);
-}
-
 /* подсветка блока при переходе из ответа */
 .ai-flash-block {
   animation: ai-flash 1.6s ease-out;
@@ -1291,14 +1244,12 @@ body:has(aside[aria-label="Возврат"]) .ai-back {
   white-space: nowrap;
 }
 
-:where(.ai-back, .ai-modal) :focus-visible,
-.ai-back:focus-visible {
+:where(.ai-modal) :focus-visible {
   outline: 2px solid var(--def);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-back,
   .ai-modal,
   .ai-modal-card,
   .ai-ref-card,

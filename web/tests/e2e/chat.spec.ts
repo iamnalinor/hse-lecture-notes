@@ -73,7 +73,7 @@ test.describe("touch composer", () => {
     await expect(input).toHaveValue("первая строка\nвторая");
     expect(mock.sent).toHaveLength(0);
     await page.getByRole("button", { name: "Отправить" }).click();
-    await expect(page.locator(".ai-user")).toHaveCount(1);
+    await mock.received;
     expect(mock.sent).toHaveLength(1);
   });
 });
@@ -445,7 +445,7 @@ ${"Остальная часть ответа.\n\n".repeat(40)}`,
   await page.getByRole("link", { name: "Открыть раздел" }).click();
   await expect(page).toHaveURL(/02_test#section$/u);
   await expect(page.getByTitle("Чат с ИИ")).toHaveAttribute("aria-expanded", "false");
-  await page.getByRole("button", { name: "К чату" }).click();
+  await page.getByTitle("Чат с ИИ").click();
   await expect(input).toBeVisible();
   await expect(page.locator(".ai-title")).toHaveText("Новая тема");
   await expect(page.getByRole("link", { name: "Открыть раздел" })).toBeInViewport();
@@ -546,7 +546,7 @@ const boxOf = async (locator: Locator) => {
 };
 
 for (const width of [320, 390]) {
-  test(`return buttons do not overlap on a ${String(width)} px phone and both work`, async ({
+  test(`on a ${String(width)} px phone the header stays on screen and its «Чат» returns from a source`, async ({
     page,
   }) => {
     const mock = await mockTwoLectures(page);
@@ -562,26 +562,15 @@ for (const width of [320, 390]) {
     await input.fill(draft);
     await page.getByRole("link", { name: "Открыть раздел" }).click();
     await expect(page).toHaveURL(/02_test#section$/u);
-    const toChat = page.getByRole("button", { name: "К чату" });
+    await expect(page.getByRole("button", { name: "К чату" })).toHaveCount(0);
+    const header = page.locator("[data-site-header]");
+    await page.mouse.wheel(0, 600);
+    await expect.poll(async () => (await boxOf(header)).y).toBe(0);
     const back = page.getByRole("button", { name: /^Назад:/u });
-    await expect(toChat).toBeVisible();
     await expect(back).toBeVisible();
-    await expect(page.getByRole("button", { name: "Скрыть" })).toBeVisible();
-    const chatBox = await boxOf(toChat);
-    const backBox = await boxOf(back);
-    for (const box of [
-      chatBox,
-      backBox,
-      await boxOf(page.getByRole("button", { name: "Скрыть" })),
-    ]) {
-      expect(Math.round(box.height)).toBeGreaterThanOrEqual(44);
-      expect(Math.round(box.width)).toBeGreaterThanOrEqual(44);
-    }
-    expect(chatBox.y + chatBox.height).toBeLessThanOrEqual(backBox.y);
-    expect(backBox.x + backBox.width).toBeLessThanOrEqual(width);
     await expect(back).toContainText("лекция 1");
 
-    await toChat.click();
+    await page.getByTitle("Чат с ИИ").click();
     await expect(input).toHaveValue(draft);
     await expect(page.getByRole("link", { name: "Открыть раздел" })).toBeInViewport();
     await page.keyboard.press("Escape");

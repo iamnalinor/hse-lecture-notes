@@ -8,7 +8,6 @@ import { paths } from "#web/domain/paths.ts";
 import { findMaterialTarget, openTargetDetails } from "#web/shared/ui/dom.ts";
 
 import { ChatComposer } from "../composer/composer.tsx";
-import { SparklesIcon } from "../icons.tsx";
 import { ChatLog } from "../messages/log.tsx";
 import { isMaterialLink } from "../messages/markdown-parse.ts";
 import { ChatRefPreview } from "../messages/ref-preview.tsx";
@@ -128,24 +127,40 @@ const useJumpToBlock = (chat: ReturnType<typeof useChat>) => {
   );
 };
 
-const SourceReturnButton = ({
-  isVisible,
-  onReturn,
-}: {
-  readonly isVisible: boolean;
-  readonly onReturn: () => void;
-}) =>
-  createPortal(
-    <button className={isVisible ? "ai-back is-on" : "ai-back"} onClick={onReturn} type="button">
-      <SparklesIcon />К чату
-    </button>,
-    document.body,
-  );
-
-/** Back from a source the chat opened: the panel reopens at the scroll position it had. */
-const returnFromSource = (chat: ReturnType<typeof useChat>, restore: () => void): void => {
-  chat.returnFromSource();
-  globalThis.requestAnimationFrame(restore);
+/**
+Follows a source link from an answer, remembering where the chat was scrolled. Back from the source (the header's
+«Чат» on a phone) the panel reopens at that position. `readingSource` is read while the panel is closed, as
+opening it ends the visit.
+*/
+const useFollowSource = (
+  chat: ReturnType<typeof useChat>,
+  scrollerRef: React.RefObject<HTMLDivElement | null>,
+  restorePosition: (top: number) => void,
+) => {
+  const scrollTopRef = useRef(0);
+  const wasReadingRef = useRef(false);
+  const jumpToBlock = useJumpToBlock(chat);
+  const { isOpen, readingSource: isReadingSource } = chat;
+  useEffect(() => {
+    if (!isOpen) {
+      wasReadingRef.current = isReadingSource;
+      return;
+    }
+    if (!wasReadingRef.current) {
+      return;
+    }
+    wasReadingRef.current = false;
+    const frame = globalThis.requestAnimationFrame(() => {
+      restorePosition(scrollTopRef.current);
+    });
+    return () => {
+      globalThis.cancelAnimationFrame(frame);
+    };
+  }, [isOpen, isReadingSource, restorePosition]);
+  return async (blockId: string): Promise<void> => {
+    scrollTopRef.current = scrollerRef.current?.scrollTop ?? 0;
+    await jumpToBlock(blockId);
+  };
 };
 
 /** Props of a panel that mounts mid-opening (`entranceStyle`); dropped once played, as the keyframes would
@@ -167,7 +182,7 @@ const usePanelEntrance = (isOpen: boolean) => {
   };
 };
 
-/** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
+/** Exact `.ai-panel` right-side drawer + Turnstile modal from prototype.html. */
 export const ChatPanel = ({
   takeSelectionOrigin,
 }: {
@@ -175,7 +190,6 @@ export const ChatPanel = ({
 }): JSX.Element | null => {
   const chat = useChat();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const sourceScrollRef = useRef(0);
   const [panelEl, setPanelEl] = useState<HTMLElement | null>(null);
   const entrance = usePanelEntrance(chat.isOpen);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -188,11 +202,6 @@ export const ChatPanel = ({
       focusHeaderChatButton();
     }
   }, [chat]);
-  const jumpToBlock = useJumpToBlock(chat);
-  const followSource = (blockId: string) => {
-    sourceScrollRef.current = scrollerRef.current?.scrollTop ?? 0;
-    return jumpToBlock(blockId);
-  };
 
   usePanelEscapeKey({
     closeHistory: () => {
@@ -207,6 +216,7 @@ export const ChatPanel = ({
     messages: chat.messages,
     isLoading: chat.isThreadLoading,
   });
+  const followSource = useFollowSource(chat, scrollerRef, restorePosition);
 
   if (!chat.isConfigured) {
     return null;
@@ -241,14 +251,6 @@ export const ChatPanel = ({
         document.body,
       )}
       <ChatRefPreview onJumpToBlock={followSource} panelElement={panelEl} />
-      <SourceReturnButton
-        isVisible={chat.readingSource && !chat.isOpen}
-        onReturn={() => {
-          returnFromSource(chat, () => {
-            restorePosition(sourceScrollRef.current);
-          });
-        }}
-      />
     </>
   );
 };
