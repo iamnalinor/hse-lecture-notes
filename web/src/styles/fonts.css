@@ -1,3 +1,6 @@
+/* The middle dot «·» (U+00B7) in all four files is raised to the middle of the cap height:
+   the original sat ~0.05em low beside digits and capitals («Лекция 12 · 25.11»). Redo this
+   after replacing the fonts: translate glyph periodcentered by capHeight/2 − its bbox centre. */
 @font-face {
   font-family: "HSE Sans";
   font-weight: 400;
