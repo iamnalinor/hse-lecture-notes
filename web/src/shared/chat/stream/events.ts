@@ -1,4 +1,4 @@
-import type { WsStreamCallbacks } from "#web/api/chat/stream.ts";
+import type { ChatStreamCallbacks } from "#web/api/chat/stream.ts";
 import type { ChatStep } from "#web/domain/chat/model.ts";
 
 import type { SendArgs, StreamStateSetters } from "./types.ts";
@@ -13,9 +13,9 @@ import {
 } from "./helpers.ts";
 
 const guardStreamCallbacks = (
-  callbacks: WsStreamCallbacks,
+  callbacks: ChatStreamCallbacks,
   isCurrent: () => boolean,
-): WsStreamCallbacks => {
+): ChatStreamCallbacks => {
   const guard =
     <Args extends readonly unknown[]>(listener: (...args: Args) => void) =>
     (...args: Args): void => {
@@ -25,8 +25,8 @@ const guardStreamCallbacks = (
     };
   return {
     onCloseUnexpected: guard(callbacks.onCloseUnexpected),
-    onCancelledBeforeStart: guard(() => callbacks.onCancelledBeforeStart?.()),
     onDelta: guard(callbacks.onDelta),
+    onStopError: guard(callbacks.onStopError),
     onDone: guard(callbacks.onDone),
     onError: guard(callbacks.onError),
     onMeta: guard(callbacks.onMeta),
@@ -35,7 +35,7 @@ const guardStreamCallbacks = (
   };
 };
 
-type WsCallbackDeps = {
+type CallbackDeps = {
   readonly clientRequestId: string;
   readonly args: SendArgs;
   readonly clearActive: () => void;
@@ -43,9 +43,9 @@ type WsCallbackDeps = {
 };
 
 const failTurn = (
-  { setters, args }: WsCallbackDeps,
+  { setters, args }: CallbackDeps,
   runId: null | string,
-  error: Parameters<WsStreamCallbacks["onError"]>[0],
+  error: Parameters<ChatStreamCallbacks["onError"]>[0],
 ): void => {
   if (runId === null && args.retryMessage !== undefined) {
     rollbackOptimisticTurn(setters, args);
@@ -76,7 +76,7 @@ const failTurn = (
   );
 };
 
-const markUnconfirmed = ({ setters, args, clientRequestId }: WsCallbackDeps): void => {
+const markUnconfirmed = ({ setters, args, clientRequestId }: CallbackDeps): void => {
   setters.setIsStreaming(false);
   setters.setMessages((prev) =>
     patchLastAssistant(prev, (m) => ({
@@ -90,7 +90,7 @@ const markUnconfirmed = ({ setters, args, clientRequestId }: WsCallbackDeps): vo
 
 const finishTurn = (
   setters: StreamStateSetters,
-  payload: Parameters<WsStreamCallbacks["onDone"]>[0],
+  payload: Parameters<ChatStreamCallbacks["onDone"]>[0],
 ): void => {
   setters.setIsStreaming(payload.replayed === true);
   if (payload.replayed === true) {
@@ -113,25 +113,26 @@ const finishTurn = (
   );
 };
 
-const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
+const createStreamCallbacks = (deps: CallbackDeps): ChatStreamCallbacks => {
   const { args, clearActive, setters } = deps;
   let runId: null | string = null;
 
+  const onStopError = (errorMessage: null | string): void => {
+    setters.setMessages((prev) => patchLastAssistant(prev, (m) => ({ ...m, errorMessage })));
+  };
   return {
+    onStopError,
     onTitle: (threadId, title) => {
       setters.setThreads((prev) =>
         prev.map((t) => (t.id === threadId ? { ...t, title, generatedTitle: title } : t)),
       );
-    },
-    onCancelledBeforeStart: () => {
-      clearActive();
-      rejectOptimisticTurn(setters, args);
     },
     onCloseUnexpected: () => {
       clearActive();
       if (runId === null) {
         markUnconfirmed(deps);
       } else {
+        onStopError(null);
         setters.setPollRunId(runId);
       }
     },
@@ -146,9 +147,6 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
     },
     onError: (payload) => {
       clearActive();
-      if (payload.code === "question_too_long" && payload.maxQuestionChars !== undefined) {
-        setters.setQuestionLimit(payload.maxQuestionChars);
-      }
       if (payload.block !== undefined && payload.block !== null) {
         setters.setBlock(payload.block);
         if (runId === null) {
@@ -194,6 +192,6 @@ const buildWsCallbacks = (deps: WsCallbackDeps): WsStreamCallbacks => {
 };
 
 export const buildStreamCallbacks = (
-  deps: WsCallbackDeps,
+  deps: CallbackDeps,
   isCurrent: () => boolean,
-): WsStreamCallbacks => guardStreamCallbacks(buildWsCallbacks(deps), isCurrent);
+): ChatStreamCallbacks => guardStreamCallbacks(createStreamCallbacks(deps), isCurrent);

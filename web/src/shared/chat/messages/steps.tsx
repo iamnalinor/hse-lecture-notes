@@ -153,7 +153,7 @@ const StepsSummary = ({
 > & { readonly count: number }): JSX.Element => {
   if (!isRunningSteps) {
     const label = `${String(count)} ${pluralSteps(count)}`;
-    return <>{isStopped === true ? `${label} до остановки` : `Подготовил ответ за ${label}`}</>;
+    return <>{isStopped === true ? label : `Подготовил ответ за ${label}`}</>;
   }
   if (isCheckingBrowser) {
     return <>Проверяю браузер…</>;

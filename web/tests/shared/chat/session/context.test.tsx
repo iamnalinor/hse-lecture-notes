@@ -15,7 +15,7 @@ import {
   type ThreadResponse,
 } from "#web/api/chat/client.ts";
 import { readStoredAuth, saveDegraded } from "#web/api/chat/storage.ts";
-import { type ActiveWsStream, openChatMessageStream } from "#web/api/chat/stream.ts";
+import { type ActiveChatStream, openChatMessageStream } from "#web/api/chat/stream.ts";
 import { cancelActiveTurnstile } from "#web/api/chat/widgets.ts";
 import { ChatProvider, useChat } from "#web/shared/chat/session/context.tsx";
 import { makeAssistantMsg, makeUserMsg } from "#web/shared/chat/stream/helpers.ts";
@@ -74,7 +74,7 @@ it("detaches an active response for a new chat and ignores its late events", asy
   await act(() => chat.current.send("first"));
   const first = vi.mocked(openChatMessageStream).mock.calls[0]?.[2];
   const connection = vi.mocked(openChatMessageStream).mock.results[0]?.value as
-    | ActiveWsStream
+    | ActiveChatStream
     | undefined;
   act(() =>
     first?.onMeta({
@@ -346,7 +346,7 @@ it("keeps a refused question as unsent and unlocks a quota block at its deadline
   expect(chat.current.messages.at(-1)).toMatchObject({ contentTex: "draft", status: "error" });
 });
 
-it.each(["allowance", "websocket"])(
+it.each(["allowance", "stream"])(
   "sends the pending question once after a %s refusal and successful login",
   async (stage) => {
     const blocked = { code: "auth_required" } as const;
@@ -358,7 +358,7 @@ it.each(["allowance", "websocket"])(
       chat.current.toggle();
     });
     await act(() => chat.current.send("Мой вопрос"));
-    if (stage === "websocket") {
+    if (stage === "stream") {
       act(() =>
         vi
           .mocked(openChatMessageStream)
@@ -1189,26 +1189,28 @@ it("lets the reader edit the rejected question after sending their newer draft a
   ).toHaveLength(0);
 });
 
-it("uses the smaller live policy after the server rejects a cached allowance's longer question", async () => {
+it("keeps the issued limit until the next allowance and preserves a rejected draft", async () => {
   seedChatAuth({
     allowanceToken: "allowance",
     allowanceExpiresAt: Date.now() + 300_000,
     maxQuestionChars: 4000,
   });
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, maxQuestionChars: 4000 });
   const chat = mount();
   await act(() => chat.current.send("Длинный вопрос"));
-  await act(async () => {
+  act(() => {
     vi.mocked(openChatMessageStream).mock.calls[0]?.[2].onError({
       code: "question_too_long",
-      message: "Лимит изменился.",
-      maxQuestionChars: 9,
+      message: "Сократи вопрос.",
     });
-    await Promise.resolve();
   });
   expect(chat.current.draft).toBe("Длинный вопрос");
-  expect(chat.current.maxQuestionChars).toBe(9);
-  expect(readStoredAuth()).toMatchObject({ allowanceToken: null, maxQuestionChars: 9 });
+  expect(chat.current.maxQuestionChars).toBe(4000);
+  expect(readStoredAuth()).toMatchObject({ allowanceToken: "allowance", maxQuestionChars: 4000 });
+
+  vi.mocked(ensureChatAllowance).mockResolvedValueOnce({ ...allowance, maxQuestionChars: 9 });
   await act(() => chat.current.send());
+  expect(chat.current.maxQuestionChars).toBe(9);
   expect(openChatMessageStream).toHaveBeenCalledTimes(1);
 });
 
@@ -1244,7 +1246,7 @@ it("continues an open stream while the panel is closed and sends a stop only on 
   });
   await act(() => chat.current.send("Вопрос"));
   const stream = vi.mocked(openChatMessageStream);
-  const connection = stream.mock.results[0]?.value as ActiveWsStream | undefined;
+  const connection = stream.mock.results[0]?.value as ActiveChatStream | undefined;
   act(() => {
     chat.current.close();
     stream.mock.calls[0]?.[2].onDelta("Ответ в фоне");

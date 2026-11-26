@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-import { type ChatDegraded, resolveQuestionLimit } from "#web/domain/chat/model.ts";
+import type { ChatDegraded } from "#web/domain/chat/model.ts";
+
+import { TierSchema, UserSchema } from "./response-schemas.ts";
 
 const KEY_AUTH = "hse_chat_auth";
 const KEY_BROWSER = "hse_chat_browser_token";
@@ -11,14 +13,6 @@ const KEY_USER = "hse_chat_user";
 const KEY_TIER = "hse_chat_tier";
 const KEY_DEGRADED = "hse_chat_degraded:";
 
-const UserSchema = z.object({ id: z.number(), name: z.string() });
-const TierSchema = z.enum(["default", "extended", "student"]);
-export const TelegramSessionSchema = z.object({
-  browserToken: z.string().min(1),
-  sessionToken: z.string().min(1),
-  tier: TierSchema,
-  user: UserSchema,
-});
 const AuthSchema = z.object({
   browserToken: z.string().nullable(),
   sessionToken: z.string().nullable(),
@@ -185,10 +179,7 @@ export const replaceChatAuth = async (
   });
 };
 
-export const invalidateAllowance = async (
-  rejectedToken: string,
-  maxQuestionChars?: number,
-): Promise<void> => {
+export const invalidateAllowance = async (rejectedToken: string): Promise<void> => {
   await withChatLock("auth-update", () => {
     const auth = readStoredAuth();
     if (auth.allowanceToken === rejectedToken) {
@@ -196,7 +187,6 @@ export const invalidateAllowance = async (
         ...auth,
         allowanceToken: null,
         allowanceExpiresAt: 0,
-        maxQuestionChars: resolveQuestionLimit(maxQuestionChars, auth.maxQuestionChars),
       });
     }
   });

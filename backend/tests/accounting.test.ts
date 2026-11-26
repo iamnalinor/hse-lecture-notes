@@ -1,6 +1,9 @@
+import { handleAllowance } from "../src/auth";
+import { mintBrowserToken } from "../src/crypto";
+import type { Env } from "../src/types";
 import { expect, spyOn, test } from "bun:test";
 import { TrackedD1 } from "../src/db";
-import { admitRunAtomic, checkpointRound, finalizeRunAtomic, readBudgetSnapshot, type AdmitRunParams } from "../src/quotas";
+import { admitRunAtomic, checkpointRound, finalizeRunAtomic, readBudgetSnapshot, readRunAfterExpiry, type AdmitRunParams } from "../src/quotas";
 import initialPolicy from "../policy.json";
 import { SqliteD1Shim } from "./d1-shim";
 
@@ -174,3 +177,110 @@ test("continues one owned thread across home, course and document with per-turn 
   expect(shim.sqlite.query("SELECT COUNT(*) FROM chat_threads").values()).toEqual([[1]]);
   expect((await admit("other", { threadId })).kind).toBe("not_found");
 });
+
+for (const axis of ["browser", "ip", "fingerprint"] as const) {
+  test(`guest allowance reclaims only an expired fourth run sharing the ${axis} daily limit`, async () => {
+    const { db, shim, admit, finish, checkpoint } = fixture(1_000_000, 1_000_000);
+    const secret = "test-allowance-secret";
+    const browser = await mintBrowserToken(secret);
+    const ip = "192.0.2.8";
+    const fp = "same-fingerprint";
+    const trial = (state: "current" | "other", i: number) => ({
+      tier: "guest" as const, telegramId: null,
+      browserId: state === "current" && axis === "browser" ? browser.browserId : "other-browser-" + i,
+      ipAddress: state === "current" && axis === "ip" ? ip : "other-ip-" + i,
+      fingerprint: state === "current" && axis === "fingerprint" ? fp : "",
+    });
+    for (let i = 0; i < 3; i++) {
+      const run = await admit("q-" + i, { axes: trial("current", i) });
+      if (run.kind !== "admitted") throw new Error(run.kind);
+      await finish(run.runId);
+    }
+    const unrelated = await admit("unrelated", { axes: trial("other", 4) });
+    const fourth = await admit("fourth", { axes: trial("current", 3) });
+    if (fourth.kind !== "admitted" || unrelated.kind !== "admitted") throw new Error("fixture");
+    await checkpoint(fourth.runId);
+    const issue = (time: number) => handleAllowance(
+      { BROWSER_TOKEN_SECRET: secret, ALLOWANCE_JWT_SECRET: secret } as Env, db,
+      new Request("https://example.test", { headers: { "CF-Connecting-IP": ip } }),
+      { browserToken: browser.browserToken, fingerprint: axis === "fingerprint" ? fp : "", turnstileToken: "test" },
+      { nowMs: time, turnstileVerifier: async () => ({ ok: true }) },
+    );
+    expect((await issue(now)).body.block).toMatchObject({ code: "auth_required" });
+    const terminal = (id: string) => shim.sqlite.query<{ status: string; actual_cost_micros: number }, [string]>(
+      "SELECT status, actual_cost_micros FROM usage_runs WHERE id=?").get(id)!;
+    expect(terminal(fourth.runId).status).toBe("running");
+    const later = now + initialPolicy.staleRunTimeoutMs + 1;
+    const [a, b] = await Promise.all([issue(later), issue(later)]);
+    expect([a.body.block, b.body.block]).toEqual([null, null]);
+    const stale = terminal(fourth.runId);
+    expect(stale.status).toBe("error");
+    expect(stale.actual_cost_micros).toBeGreaterThanOrEqual(4000);
+    expect(terminal(unrelated.runId).status).toBe("running");
+    const budget = await readBudgetSnapshot(db, later);
+    expect(budget.guestActual24h).toBe(3 * 250 + stale.actual_cost_micros);
+    expect(budget.guestReserved).toBe(5000);
+    const spent = await admit("spent", { nowMs: later, axes: trial("current", 3) });
+    if (spent.kind !== "admitted") throw new Error(spent.kind);
+    await finish(spent.runId);
+    expect((await issue(later + 1)).body.block).toMatchObject({ code: "auth_required" });
+  });
+}
+
+for (const budget of ["dailyGuestUsdMicros", "weeklyGlobalUsdMicros"] as const) {
+  test(`a guest recovers an expired fourth attempt before the ${budget} reserve rejects it`, async () => {
+    const { db, shim, admit, finish } = fixture(1_000_000, 1_000_000);
+    const secret = "test-budget";
+    const browser = await mintBrowserToken(secret);
+    const axes = { tier: "guest" as const, telegramId: null, browserId: browser.browserId, ipAddress: "192.0.2.7", fingerprint: "" };
+    const issue = (time: number) => handleAllowance(
+      { BROWSER_TOKEN_SECRET: secret, ALLOWANCE_JWT_SECRET: secret } as Env, db,
+      new Request("https://example.test", { headers: { "CF-Connecting-IP": axes.ipAddress } }),
+      { browserToken: browser.browserToken, turnstileToken: "test" }, { nowMs: time, turnstileVerifier: async () => ({ ok: true }) });
+    for (let i = 0; i < 4; i++) {
+      const run = await admit("budget-" + i, { axes });
+      if (run.kind !== "admitted") throw new Error(run.kind);
+      if (i < 3) await finish(run.runId);
+    }
+    const limit = shim.sqlite.query("UPDATE service_config SET value_json=json_set(value_json, ?, ?) WHERE key='policy'");
+    const field = "$.budgets." + budget;
+    limit.run(field, 8_000);
+    const expectedBlock = budget === "dailyGuestUsdMicros" ? "guest_budget_exceeded" : "global_budget_exceeded";
+    expect((await issue(now)).body.block).toMatchObject({ code: expectedBlock });
+    const later = now + initialPolicy.staleRunTimeoutMs + 1;
+    expect((await issue(later)).body.block).toBeNull();
+    const snapshot = await readBudgetSnapshot(db, later);
+    expect(snapshot.guestReserved).toBe(0);
+    expect(snapshot.guestActual24h).toBeGreaterThan(750);
+    limit.run(field, snapshot.guestActual24h + initialPolicy.budgets.reserveLowMicros - 1);
+    expect((await issue(later)).body.block).toMatchObject({ code: expectedBlock });
+  });
+}
+
+for (const winner of ["completed", "extended"] as const) {
+  test(`stale status returns the committed state when another transaction ${winner} the run`, async () => {
+    const { db, shim, admit, finish } = fixture();
+    const run = await admit("racing-expiry");
+    if (run.kind !== "admitted") throw new Error(run.kind);
+    const at = now + initialPolicy.staleRunTimeoutMs + 1;
+    const batch = db.batch.bind(db);
+    let interleaved = false;
+    spyOn(db, "batch").mockImplementation(async <T>(stmts: D1PreparedStatement[]) => {
+      if (!interleaved) {
+        interleaved = true;
+        if (winner === "completed") await finish(run.runId);
+        else shim.sqlite.query("UPDATE usage_runs SET expires_at = ? WHERE id = ?").run(at + 1000, run.runId);
+      }
+      return batch<T>(stmts);
+    });
+    const committed = await readRunAfterExpiry(db, { id: run.runId, actual_cost_micros: 0 }, at);
+    expect(interleaved).toBe(true);
+    if (winner === "completed") {
+      expect(committed?.status).toBe("done");
+      expect(await readBudgetSnapshot(db, at)).toMatchObject({ guestActual24h: 250, guestReserved: 0 });
+    } else {
+      expect(committed).toEqual({ status: "running", expires_at: at + 1000 });
+      expect(await readBudgetSnapshot(db, at)).toMatchObject({ guestActual24h: 0, guestReserved: 5000 });
+    }
+  });
+}

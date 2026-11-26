@@ -160,7 +160,7 @@ export const formatDegradedCaption = (degraded: ChatDegraded, nowMs: number): nu
   return "Повышенное число запросов. Качество ответов временно снижено";
 };
 
-/** Backoff schedule for compact `GET /v1/runs/:runId/status` polling after WS drop. */
+/** Backoff schedule for compact `GET /v1/runs/:runId/status` polling after a stream disconnects. */
 export const nextRunPollDelayMs = (attempt: number): number => {
   if (attempt <= 1) {
     return 2000;

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 
-import { findMaterialTarget } from "#web/shared/ui/dom.ts";
+import { findMaterialTarget, openTargetDetails } from "#web/shared/ui/dom.ts";
 
 const flashTarget = (target: Element): Element => {
   // A section is too big to light up: flash its heading (or summary of a folded ticket) instead.
@@ -39,17 +39,7 @@ export const useScrollToHash = (): void => {
     if (target === null) {
       return;
     }
-    const ownTicket = target.querySelector(":scope > details[data-ticket]");
-    if (ownTicket instanceof HTMLDetailsElement) {
-      ownTicket.open = true;
-    }
-    for (
-      let node = target.closest("details");
-      node !== null;
-      node = node.parentElement?.closest("details") ?? null
-    ) {
-      node.open = true;
-    }
+    openTargetDetails(target);
     target.scrollIntoView({ block: "start" });
     flash(target);
   }, [hash, key, pathname]);

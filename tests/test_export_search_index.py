@@ -101,25 +101,29 @@ def test_collect_corpus_respects_vectorize_free_budget() -> None:
     assert vec_selected * 1024 < 5_000_000
 
 
-@pytest.mark.parametrize(("count", "exit_code"), [(4799, 0), (4800, 0), (4801, 2)])
-def test_vectorize_overflow_checks_all_blocks_before_selection(tmp_path, count, exit_code):
+@pytest.mark.parametrize("count", [1, 2, 3])
+def test_strict_export_reports_blocks_left_out_of_semantic_search(tmp_path, monkeypatch, capsys, count):
     course = tmp_path / "notes" / "algebra"
     course.mkdir(parents=True)
     (course / "lecture.md").write_text(
         "".join(f"::: {{.lemma #lem:{i}}}\nЛемма.\n:::\n" for i in range(count))
     )
-    cmd = [sys.executable, str(ROOT / "scripts/export_search_index.py"), "--root", str(tmp_path), "--dry-run"]
-    strict = subprocess.run([*cmd, "--fail-on-vectorize-overflow"], capture_output=True, text=True)
-    assert strict.returncode == exit_code
-    summary = json.loads(strict.stdout)
+    monkeypatch.setattr(esi, "VECTORIZE_FREE_MAX_VECTORS", 2)
+    command = ["export_search_index", "--root", str(tmp_path), "--dry-run"]
+    monkeypatch.setattr(sys, "argv", command)
+    esi.main()
+    summary = json.loads(capsys.readouterr().out)
     assert summary["blocks"] == count
-    assert summary["vectorize_omitted"] == max(0, count - 4800)
-    if count > 4800:
-        output = tmp_path / "export.json"
-        subprocess.run([*cmd, "--output-json", str(output)], check=True)
-        blocks = json.loads(output.read_text())["blocks"]
-        assert len(blocks) == 4801
-        assert sum(b["vectorize_candidate"] for b in blocks) == 4800
+    assert summary["vectorize_selected"] == min(count, 2)
+    assert summary["vectorize_omitted"] == max(0, count - 2)
+
+    monkeypatch.setattr(sys, "argv", [*command, "--fail-on-vectorize-overflow"])
+    if count <= 2:
+        esi.main()
+    else:
+        with pytest.raises(SystemExit) as error:
+            esi.main()
+        assert error.value.code == 2
 
 
 def test_partial_sync_preserves_course_ids_proofs_references_and_vector_budget(tmp_path: Path) -> None:

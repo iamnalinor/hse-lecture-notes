@@ -8,6 +8,7 @@ import {
 
 import { awaitWithSignal } from "./abort.ts";
 import { apiJson, describeApiFailure, getChatEnvConfig } from "./http.ts";
+import { parseAllowanceResponse } from "./response-schemas.ts";
 import {
   assertSameSession,
   readStoredAuth,
@@ -103,7 +104,7 @@ const refreshAllowance = async (context: AccessContext): Promise<ChatAccess> =>
       if (!res.ok) {
         throw new Error(describeApiFailure(res));
       }
-      const data = res.data as AllowanceResponse;
+      const data = parseAllowanceResponse(res.data);
       const maxQuestionChars = resolveQuestionLimit(
         data.maxQuestionChars,
         readStoredAuth().maxQuestionChars,

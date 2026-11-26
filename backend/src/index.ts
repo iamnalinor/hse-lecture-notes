@@ -7,11 +7,12 @@ import {
   verifyActiveSession,
 } from "./auth";
 import { ChatRunner } from "./chat/runner";
+import { postMessage } from "./chat/send-route";
 import { randomToken } from "./crypto";
 import { TrackedD1 } from "./db";
 import { logEvent } from "./logger";
 import { handleGetThread } from "./chat/thread-route";
-import { sweepExpiredRuns } from "./quotas";
+import { readRunAfterExpiry } from "./quotas";
 import type { Env } from "./types";
 
 export { ChatRunner };
@@ -74,11 +75,12 @@ function extractSessionToken(request: Request): string | null {
  * GET /v1/runs/:runId/status
  * Compact recovery status check: 1 PK read + owner verification, NO budget/quota recomputation.
  */
-async function handleGetRunStatus(
+async function handleRunRequest(
   env: Env,
   db: TrackedD1,
   request: Request,
   runId: string,
+  action: "status" | "stop",
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const btCheck = await resolveBrowserToken(
     env.BROWSER_TOKEN_SECRET,
@@ -94,6 +96,7 @@ async function handleGetRunStatus(
     id: string;
     status: string;
     expires_at: number;
+    actual_cost_micros: number;
     assistant_message_id: string;
     thread_id: string;
     telegram_id: number | null;
@@ -101,7 +104,7 @@ async function handleGetRunStatus(
   }>(
     db
       .prepare(
-        "SELECT id, status, expires_at, assistant_message_id, thread_id, telegram_id, browser_id FROM usage_runs WHERE id = ?",
+        "SELECT id, status, expires_at, actual_cost_micros, assistant_message_id, thread_id, telegram_id, browser_id FROM usage_runs WHERE id = ?",
       )
       .bind(runId),
   );
@@ -118,27 +121,25 @@ async function handleGetRunStatus(
     return { status: 403, body: { code: "forbidden", message: "Not owner of run" } };
   }
 
-  const nowMs = Date.now();
-  if (run.status === "running" && run.expires_at < nowMs) {
-    await sweepExpiredRuns(db, nowMs);
-    return {
-      status: 200,
-      body: {
-        runId: run.id,
-        status: "error",
-        expiresAt: run.expires_at,
-        assistantMessageId: run.assistant_message_id,
-        threadId: run.thread_id,
-      },
-    };
+  if (action === "stop") {
+    if (run.status === "running") {
+      await env.CHAT_RUNNER.get(env.CHAT_RUNNER.idFromName(run.id)).stopMessage();
+    }
+    return { status: 204, body: {} };
   }
+
+  const nowMs = Date.now();
+  const current = run.status === "running" && run.expires_at < nowMs
+    ? await readRunAfterExpiry(db, run, nowMs)
+    : run;
+  if (!current) return { status: 404, body: { code: "run_not_found", message: "Run not found" } };
 
   return {
     status: 200,
     body: {
       runId: run.id,
-      status: run.status,
-      expiresAt: run.expires_at,
+      status: current.status,
+      expiresAt: current.expires_at,
       assistantMessageId: run.assistant_message_id,
       threadId: run.thread_id,
     },
@@ -166,13 +167,16 @@ export default {
     ctx.waitUntil(stub.runDailyArchive());
   },
 
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    const isMessage = url.pathname === "/v1/messages";
+    const runRoute = /^\/v1\/runs\/([a-zA-Z0-9_-]+)\/(status|stop)$/.exec(url.pathname);
+    const chatError = isMessage || runRoute?.[2] === "stop" ? { type: "error" } : {};
     const error = configurationError(env);
     if (error) {
       logEvent("error", "configuration_error", { message: error });
-      return jsonResponse(503, { code: "configuration_error", message: error }, null);
+      return jsonResponse(503, { ...chatError, code: "configuration_error", message: error }, getAllowedOrigin(request, env));
     }
-    const url = new URL(request.url);
     const allowedOrigin = getAllowedOrigin(request, env);
 
     // CORS preflight
@@ -188,26 +192,21 @@ export default {
       return jsonResponse(200, { ok: true, service: "hse-lecture-notes-api" }, allowedOrigin);
     }
 
-    // WebSocket /v1/messages -> enforce Origin, then route to ChatRunner Durable Object
-    if (url.pathname === "/v1/messages") {
-      const origin = request.headers.get("Origin");
-      if (origin && !allowedOrigin) {
-        return jsonResponse(403, { code: "forbidden_origin", message: "Origin not allowed" }, null);
-      }
-      if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-        return jsonResponse(426, { code: "upgrade_required", message: "Expected WebSocket upgrade" }, allowedOrigin);
-      }
-      // One fresh ChatRunner instance per WebSocket run session (high horizontal scalability, zero contention)
-      const stub = env.CHAT_RUNNER.get(env.CHAT_RUNNER.newUniqueId());
-      return stub.fetch(request);
-    }
-
     // Enforce Origin on mutating endpoints when browser sends Origin header
     const origin = request.headers.get("Origin");
     if (origin && !allowedOrigin) {
-      return jsonResponse(403, { code: "forbidden_origin", message: "Origin not allowed" }, null);
+      return jsonResponse(403, { ...chatError, code: "forbidden_origin", message: "Origin not allowed" }, null);
     }
 
+    if (isMessage && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+      // Already-open pages use the old protocol. Send one actionable frame at the edge.
+      const { 0: client, 1: server } = new WebSocketPair();
+      server.accept();
+      server.send(JSON.stringify({ type: "error", code: "client_update_required",
+        message: "Обнови страницу, чтобы отправить вопрос в чат. Перед обновлением скопируй текст вопроса." }));
+      server.close(1000, "client_update_required");
+      return new Response(null, { status: 101, webSocket: client });
+    }
     const db = new TrackedD1(env.DB);
     const reqId = `req_${randomToken(8)}`;
     const reqStart = Date.now();
@@ -229,6 +228,16 @@ export default {
     };
 
     try {
+      if (isMessage) {
+        if (request.method !== "POST") return finish(405, { ...chatError, code: "method_not_allowed", message: "Используй POST для отправки сообщения." });
+        const admission = postMessage(env, db, request);
+        // Complete the D1 reservation and its handoff even if the reader leaves before meta.
+        ctx.waitUntil(admission.then(() => {}, () => {}));
+        const response = await admission;
+        logEvent("info", "chat_admission_telemetry", { reqId, status: response.status, ...db.telemetry.snapshot() });
+        return new Response(response.body, { status: response.status,
+          headers: withCorsHeaders(new Headers(response.headers), allowedOrigin) });
+      }
       if (url.pathname === "/v1/auth/telegram" && request.method === "POST") {
         const body = await readBoundedJson(request);
         if (!body) {
@@ -260,13 +269,13 @@ export default {
         return finish(res.status, res.body);
       }
 
-      const runStatusMatch = /^\/v1\/runs\/([a-zA-Z0-9_-]+)\/status$/.exec(url.pathname);
-      if (runStatusMatch && request.method === "GET") {
-        const res = await handleGetRunStatus(env, db, request, runStatusMatch[1]!);
-        return finish(res.status, res.body);
+      if (runRoute && (runRoute[2] === "status" && request.method === "GET" || runRoute[2] === "stop" && request.method === "POST")) {
+        const res = await handleRunRequest(env, db, request, runRoute[1]!, runRoute[2]);
+        if (res.status === 204) return new Response(null, { status: 204, headers: withCorsHeaders(new Headers(), allowedOrigin) });
+        return finish(res.status, { ...chatError, ...res.body });
       }
 
-      return finish(404, { code: "not_found", message: "Endpoint not found" });
+      return finish(404, { ...chatError, code: "not_found", message: "Endpoint not found" });
     } catch (err) {
       logEvent("error", "http_unhandled_error", {
         reqId,
@@ -280,7 +289,7 @@ export default {
       const failure = classifyError(err);
       return jsonResponse(
         failure.status,
-        { code: failure.code, message: failure.message, detail: failure.detail },
+        { ...chatError, code: failure.code, message: failure.message, detail: failure.detail },
         allowedOrigin,
       );
     }

@@ -280,6 +280,59 @@ it.each(["", "/algebra/exam1"])(
   },
 );
 
+it.each([
+  ["sec:exam1:nonzero-solution", false],
+  ["rem:exam1:proof-nonzero-solution", true],
+] as const)("reveals the exam citation %s before scrolling", (anchor, opensProof) => {
+  const path = "/algebra/exam1";
+  HTMLElement.prototype.scrollTo = vi.fn();
+  const originalPage = state.docContext;
+  const originalMessages = state.messages;
+  state.docContext = parseDocContext(path);
+  state.messages = [
+    {
+      ...makeAssistantMsg(state.docContext),
+      status: "done",
+      contentTex: `[Источник](${path}#${anchor})`,
+    },
+  ];
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  try {
+    const view = render(
+      <MemoryRouter initialEntries={[path]}>
+        <QueryClientProvider client={new QueryClient()}>
+          <section id="sec:exam1:nonzero-solution">
+            <details data-ticket="sec:exam1:nonzero-solution">
+              <summary>Критерий существования ненулевого решения</summary>
+              <details>
+                <summary>Доказательство</summary>
+                <p id="rem:exam1:proof-nonzero-solution">Шаг доказательства</p>
+              </details>
+            </details>
+          </section>
+          <ChatPanel />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+    const target = view.container.querySelector(`#${CSS.escape(anchor)}`);
+    if (target === null) {
+      throw new Error("Missing citation target");
+    }
+    const folds = [...view.container.querySelectorAll("details")];
+    const openFolds = () => folds.map((fold) => fold.open);
+    expect(openFolds()).toEqual([false, false]);
+    const scroll = vi.fn(openFolds);
+    target.scrollIntoView = scroll;
+    fireEvent.click(screen.getByRole("link", { name: "Источник" }));
+    expect(scroll).toHaveBeenCalledOnce();
+    expect(scroll).toHaveReturnedWith([true, opensProof]);
+  } finally {
+    state.docContext = originalPage;
+    state.messages = originalMessages;
+    vi.unstubAllGlobals();
+  }
+});
+
 it("shows the account switch caption only for an external account", () => {
   try {
     state.tier = "default";

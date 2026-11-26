@@ -1,4 +1,4 @@
-// Real Worker, Durable Object, WebSocket and D1. Only outbound services are replaced.
+// Real Worker, HTTP stream, Durable Object, legacy WebSocket and D1. Only outbound services are replaced.
 import assert from "node:assert/strict";
 import { readFile, readdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -17,6 +17,7 @@ execFileSync("bunx", ["wrangler", "deploy", "--dry-run", "--outdir", directory],
 });
 
 let providerCalls = 0;
+let pauseProvider = null;
 const modelInputs = [];
 let release;
 const gate = new Promise(resolve => { release = resolve; });
@@ -40,6 +41,7 @@ const options = {
     providerCalls++;
     modelInputs.push(JSON.stringify(body.input));
     await gate;
+    if (pauseProvider !== null) await pauseProvider;
     const topic = body.tool_choice?.name === "set_topic";
     const item = topic
       ? { type: "function_call", call_id: "call-topic", name: "set_topic", arguments: JSON.stringify({ title: "Арифметика" }) }
@@ -54,25 +56,32 @@ async function request(path, init = {}) {
   return mf.dispatchFetch(api + path, { ...init, headers: { origin, ...init.headers } });
 }
 
+async function send(frame) {
+  return request("/v1/messages", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(frame),
+  });
+}
+
 async function connect(frame, stopAt) {
-  const res = await request("/v1/messages", { headers: { upgrade: "websocket" } });
-  assert.equal(res.status, 101);
-  const socket = res.webSocket;
+  const response = await send(frame);
+  if (!response.ok) return response.json();
+  assert.equal(response.headers.get("content-type"), "application/x-ndjson; charset=utf-8");
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let pending = "";
   try {
-    return await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(Error("Timed out waiting for " + stopAt)), 10000);
-      socket.addEventListener("message", event => {
-        const value = JSON.parse(event.data);
-        if (value.type === stopAt || value.type === "error") {
-          clearTimeout(timer);
-          resolve(value);
-        }
-      });
-      socket.accept();
-      socket.send(JSON.stringify(frame));
-    });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) throw new Error("Missing " + stopAt);
+      pending += value;
+      let split;
+      while ((split = pending.indexOf("\n")) !== -1) {
+        const event = JSON.parse(pending.slice(0, split));
+        pending = pending.slice(split + 1);
+        if (event.type === stopAt || event.type === "error") return event;
+      }
+    }
   } finally {
-    socket.close(1000, "client disconnect");
+    await reader.cancel();
   }
 }
 
@@ -98,31 +107,57 @@ try {
   }
   await db.prepare("INSERT INTO service_config (key, value_json, updated_at) VALUES ('policy', ?, ?)")
     .bind(await readFile("policy.json", "utf8"), Date.now()).run();
-  const allowance = token => request("/v1/allowance", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turnstileToken: token }),
+  const allowance = (token, browserToken) => request("/v1/allowance", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turnstileToken: token, browserToken }),
   });
   assert.equal((await allowance("rejected")).status, 403);
   const issued = await allowance("local-challenge");
   assert.equal(issued.status, 200);
   const { browserToken, allowanceToken, maxQuestionChars } = await issued.json();
   const frame = { type: "send", course: "", docId: "", text: "Сколько будет два плюс два?", clientRequestId: "workerd-1", browserToken, allowanceToken };
-  const rejected = await connect({ ...frame, allowanceToken: "invalid" }, "error");
+  const legacy = await request("/v1/messages", { headers: { upgrade: "websocket" } });
+  assert.equal(legacy.status, 101);
+  const notice = new Promise(resolve => legacy.webSocket.addEventListener("message", ev => resolve(JSON.parse(ev.data)), { once: true }));
+  legacy.webSocket.accept();
+  assert.equal((await notice).code, "client_update_required");
+  legacy.webSocket.close();
+  const oversized = await send({ ...frame, text: "я".repeat(21_000) });
+  assert.equal(oversized.status, 413);
+  const malformed = await request("/v1/messages", { method: "POST", body: "{" });
+  assert.equal(malformed.status, 400);
+  assert.equal((await malformed.json()).code, "invalid_json");
+  const forbidden = await request("/v1/messages", { method: "POST", headers: { origin: "https://other.test" }, body: JSON.stringify(frame) });
+  assert.equal(forbidden.status, 403);
+  const rejectedResponse = await send({ ...frame, allowanceToken: "invalid" });
+  assert.equal(rejectedResponse.status, 401);
+  const rejected = await rejectedResponse.json();
+  assert.equal(rejected.type, "error");
   assert.equal(rejected.code, "allowance_expired");
   assert.equal(providerCalls, 0);
 
-  await db.prepare("UPDATE service_config SET value_json=json_set(value_json,'$.maxQuestionChars',17) WHERE key='policy'").run();
-  const limited = await connect(frame, "error");
+  const setQuestionLimit = limit => db.prepare(
+    "UPDATE service_config SET value_json=json_set(value_json,'$.maxQuestionChars',?) WHERE key='policy'",
+  ).bind(limit).run();
+  await setQuestionLimit(17);
+  const reduced = await (await allowance("local-challenge", browserToken)).json();
+  assert.equal(reduced.maxQuestionChars, 17);
+  const limitedFrame = { ...frame, allowanceToken: reduced.allowanceToken };
+  const limited = await connect(limitedFrame, "error");
   assert.equal(limited.code, "question_too_long");
-  assert.equal(limited.maxQuestionChars, 17);
+  assert.match(limited.message, /17/);
+  assert.equal("maxQuestionChars" in limited, false);
+  await setQuestionLimit(maxQuestionChars);
+  assert.equal((await connect(limitedFrame, "error")).code, "question_too_long");
+  const raised = await (await allowance("local-challenge", browserToken)).json();
+  assert.equal(raised.maxQuestionChars, maxQuestionChars);
+  await setQuestionLimit(17);
   assert.equal(providerCalls, 0);
-  await db.prepare("UPDATE service_config SET value_json=json_set(value_json,'$.maxQuestionChars',?) WHERE key='policy'")
-    .bind(maxQuestionChars).run();
 
   const quote = { label: "Конспект", tex: "Пример из исходной версии." };
   await db.prepare(`INSERT INTO course_documents (id, course, doc_kind, doc_id, title, outline_json, body_tex, content_hash, updated_at)
     VALUES ('fixture','algebra','lecture','01','Арифметика','[]',?,'fixture',1)`).bind(quote.tex).run();
   Object.assign(frame, { course: "algebra", docId: "01", quote });
-  const meta = await connect(frame, "meta");
+  const meta = await connect({ ...frame, allowanceToken: raised.allowanceToken }, "meta");
   assert.equal(meta.type, "meta", JSON.stringify(meta));
   const owned = { headers: { "X-Browser-Token": browserToken } };
   const statusPath = "/v1/runs/" + meta.runId + "/status";
@@ -151,7 +186,19 @@ try {
   assert.equal(providerCalls, 2);
 
   await db.prepare("DELETE FROM course_documents WHERE id='fixture'").run();
-  const retry = { ...frame, threadId: meta.threadId, retryAssistantMessageId: meta.assistantMessageId,
+  // The original POST was accepted, but its acknowledgement could have been lost.
+  await setQuestionLimit(1);
+  const renewed = await (await allowance("local-challenge", browserToken)).json();
+  const renewedFrame = { ...frame, allowanceToken: renewed.allowanceToken };
+  const recovered = await connect(renewedFrame, "done");
+  assert.equal(recovered.replayed, true, JSON.stringify(recovered));
+  assert.equal(recovered.runId, meta.runId);
+  assert.equal((await send({ ...frame, text: frame.text + "!" })).status, 409);
+  assert.equal((await connect({ ...renewedFrame, clientRequestId: "fresh-limited" }, "error")).code, "question_too_long");
+  assert.equal(providerCalls, 2);
+  await setQuestionLimit(maxQuestionChars);
+  assert.equal((await connect(frame, "done")).runId, meta.runId);
+  const retry = { ...renewedFrame, threadId: meta.threadId, retryAssistantMessageId: meta.assistantMessageId,
     clientRequestId: "stored-question", course: "other", docId: "unknown", text: "Другой вопрос",
     quote: { label: "Другое", tex: "Другая цитата" } };
   const foreign = await (await allowance("local-challenge")).json();
@@ -163,6 +210,34 @@ try {
   assert.equal(retried.status, "done");
   assert.match(modelInputs.at(-1), /Пример из исходной версии/);
   assert.doesNotMatch(modelInputs.at(-1), /Другая цитата|Другой вопрос|unknown/);
+  // Explicit stopping is owner-only and differs from simply detaching a reader.
+  const stopGate = Promise.withResolvers();
+  pauseProvider = stopGate.promise;
+  const stopFrame = { ...frame, course: "", docId: "", quote: null, clientRequestId: "explicit-stop" };
+  const stopResponse = await send(stopFrame);
+  assert.equal(stopResponse.status, 200);
+  const reader = stopResponse.body.pipeThrough(new TextDecoderStream()).getReader();
+  const first = await reader.read();
+  const stopMeta = JSON.parse(first.value.trim());
+  assert.equal(stopMeta.type, "meta");
+  const replayed = await connect(stopFrame, "done");
+  assert.equal(replayed.runId, stopMeta.runId);
+  assert.equal(replayed.replayed, true);
+  const stopPath = "/v1/runs/" + stopMeta.runId + "/stop";
+  assert.equal((await request(stopPath, { method: "POST" })).status, 401);
+  assert.equal((await request(stopPath, { method: "POST", headers: { "X-Browser-Token": foreign.browserToken } })).status, 403);
+  assert.equal((await request(stopPath, { method: "POST", ...owned })).status, 204);
+  stopGate.resolve();
+  let remainder = "";
+  while (true) {
+    const item = await reader.read();
+    if (item.done) break;
+    remainder += item.value;
+  }
+  assert.equal(JSON.parse(remainder.trim().split("\n").at(-1)).status, "stopped");
+  assert.equal((await request(stopPath, { method: "POST", ...owned })).status, 204);
+  assert.equal(await db.prepare("SELECT status FROM usage_runs WHERE id=?").bind(stopMeta.runId).first("status"), "stopped");
+  pauseProvider = null;
   await db.prepare("UPDATE chat_threads SET updated_at=1 WHERE id=?").bind(meta.threadId).run();
   const worker = await mf.getWorker();
   await worker.scheduled({ cron: "0 3 * * *" });
@@ -197,6 +272,17 @@ try {
     archivedIds.push(row.thread.id);
   }
   assert.deepEqual(archivedIds.sort(), [meta.threadId, "test-long", ...shortIds].sort());
+  // A status request for the twelfth expired run only settles that owned run.
+  await db.prepare(`WITH RECURSIVE seq(n) AS (VALUES(1) UNION ALL SELECT n+1 FROM seq WHERE n<12)
+    INSERT INTO usage_runs(id,owner_key,client_request_id,payload_hash,thread_id,user_message_id,assistant_message_id,
+      created_at,updated_at,expires_at,status,tier,quota_bucket,model,reasoning_effort,pricing_version,browser_id,ip_address,fingerprint)
+    SELECT 'old-'||n,owner_key,'stale-'||n,payload_hash,'stale-thr-'||n,'stale-user-'||n,'stale-asst-'||n,
+      1,1,n,'running',tier,quota_bucket,model,reasoning_effort,pricing_version,browser_id,ip_address,fingerprint
+    FROM seq JOIN usage_runs ON id=?`).bind(meta.runId).run();
+  const expired = await (await request("/v1/runs/old-12/status", owned)).json();
+  assert.equal(expired.status, "error");
+  assert.equal(await db.prepare("SELECT status FROM usage_runs WHERE id='old-12'").first("status"), "error");
+  assert.equal(await db.prepare("SELECT count(*) AS n FROM usage_runs WHERE id LIKE 'old-%' AND status='running'").first("n"), 11);
   console.log("workerd chat integration passed");
 } finally {
   release();

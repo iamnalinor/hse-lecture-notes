@@ -1,21 +1,15 @@
-import {
-  type ChatMessageStatus,
-  type ChatThread,
-  type ChatThreadSummary,
-  type ChatTier,
-  type ChatUser,
-  parseChatSuggestion,
+import type {
+  ChatMessageStatus,
+  ChatThread,
+  ChatThreadSummary,
+  ChatTier,
+  ChatUser,
 } from "#web/domain/chat/model.ts";
 
 import { ensureChatAllowance } from "./access.ts";
 import { apiJson, describeApiFailure, getChatEnvConfig } from "./http.ts";
-import {
-  assertSameSession,
-  readStoredAuth,
-  replaceChatAuth,
-  TelegramSessionSchema,
-  withChatLock,
-} from "./storage.ts";
+import { runStatusResponse, TelegramSessionSchema, threadResponse } from "./response-schemas.ts";
+import { assertSameSession, readStoredAuth, replaceChatAuth, withChatLock } from "./storage.ts";
 import { openTelegramLoginPopup, type TurnstileHooks } from "./widgets.ts";
 
 export { type ChatAccess, ensureChatAllowance } from "./access.ts";
@@ -62,33 +56,15 @@ export const fetchChatThread = async (
     return null;
   }
   const res = await apiJson(threadUrl(threadId, before, beforeSeq), { method: "GET" });
-  if (auth.sessionToken !== readStoredAuth().sessionToken || !res.ok) {
-    return null;
-  }
-  const data = res.data as ThreadResponse;
-  return {
-    ...data,
-    threads: data.threads.map((thread) => ({
-      ...thread,
-      contextLimited: thread.contextLimited === true,
-    })),
-    thread:
-      data.thread === null
-        ? null
-        : {
-            ...data.thread,
-            contextLimited: data.thread.contextLimited === true,
-            messages: data.thread.messages.map((message) => ({
-              ...message,
-              suggestion: parseChatSuggestion(message.suggestion),
-            })),
-          },
-  };
+  return auth.sessionToken === readStoredAuth().sessionToken && res.ok
+    ? (threadResponse.safeParse(res.data).data ?? null)
+    : null;
 };
 
 export const fetchChatRunStatus = async (runId: string): Promise<null | RunStatusResponse> => {
   const res = await apiJson(`/v1/runs/${encodeURIComponent(runId)}/status`, { method: "GET" });
-  return res.ok ? (res.data as RunStatusResponse) : null;
+  const parsed = res.ok ? runStatusResponse.safeParse(res.data).data : undefined;
+  return parsed?.runId === runId ? parsed : null;
 };
 
 const getLoginToken = async (hooks: TurnstileHooks, requiresBrowser: boolean): Promise<string> => {

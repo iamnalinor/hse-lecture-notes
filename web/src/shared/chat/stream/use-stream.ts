@@ -5,9 +5,9 @@ import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
 import { type ChatAccess, getChatEnvConfig } from "#web/api/chat/client.ts";
 import { invalidateAllowance, readStoredAuth } from "#web/api/chat/storage.ts";
 import {
-  type ActiveWsStream,
+  type ActiveChatStream,
+  type ChatStreamCallbacks,
   openChatMessageStream,
-  type WsStreamCallbacks,
 } from "#web/api/chat/stream.ts";
 import { resolveQuestionLimit } from "#web/domain/chat/model.ts";
 
@@ -27,8 +27,8 @@ export type ChatStreamController = {
 const connectStream = (
   args: SendArgs & { readonly clientRequestId: string },
   allowance: ChatAccess,
-  callbacks: WsStreamCallbacks,
-): ActiveWsStream | null => {
+  callbacks: ChatStreamCallbacks,
+): ActiveChatStream | null => {
   try {
     return openChatMessageStream(
       getChatEnvConfig().apiUrl,
@@ -49,8 +49,8 @@ const connectStream = (
       {
         ...callbacks,
         onError: (error) => {
-          if (error.code === "allowance_expired" || error.code === "question_too_long") {
-            void invalidateAllowance(allowance.allowanceToken, error.maxQuestionChars);
+          if (error.code === "allowance_expired") {
+            void invalidateAllowance(allowance.allowanceToken);
           }
           callbacks.onError(error);
         },
@@ -63,8 +63,8 @@ const connectStream = (
 };
 
 const useStreamConnection = () => {
-  const streamRef = useRef<ActiveWsStream | null>(null);
-  const abortedPreWsRef = useRef(false);
+  const streamRef = useRef<ActiveChatStream | null>(null);
+  const cancelledBeforeSendRef = useRef(false);
   const mountedRef = useRef(true);
   const sendingRef = useRef(false);
   const allowanceAbortRef = useRef<AbortController | null>(null);
@@ -97,7 +97,7 @@ const useStreamConnection = () => {
       streamRef.current.stop();
       return;
     }
-    abortedPreWsRef.current = true;
+    cancelledBeforeSendRef.current = true;
     allowanceAbortRef.current?.abort();
   }, []);
 
@@ -109,7 +109,7 @@ const useStreamConnection = () => {
 
   return {
     streamRef,
-    abortedPreWsRef,
+    cancelledBeforeSendRef,
     mountedRef,
     sendingRef,
     allowanceAbortRef,
@@ -131,7 +131,7 @@ const startStreamTurn = (
   const {
     generationRef,
     mountedRef,
-    abortedPreWsRef,
+    cancelledBeforeSendRef,
     sendingRef,
     allowanceAbortRef,
     detachRef,
@@ -144,10 +144,10 @@ const startStreamTurn = (
     mountedRef.current &&
     generationRef.current === generation &&
     userId === readStoredAuth().user?.id;
-  const isCurrent = (): boolean => isSameTurn() && !abortedPreWsRef.current;
+  const isCurrent = (): boolean => isSameTurn() && !cancelledBeforeSendRef.current;
   const clientRequestId = args.retryMessage?.pendingRequestId ?? crypto.randomUUID();
   sendingRef.current = true;
-  abortedPreWsRef.current = false;
+  cancelledBeforeSendRef.current = false;
   allowanceAbortRef.current = new AbortController();
   startOptimisticTurn(setters, args);
   detachRef.current = () => {
@@ -181,7 +181,7 @@ const finishAccessFailure = (
     readonly args: SendArgs;
     readonly setters: StreamStateSetters;
     readonly connection: ReturnType<typeof useStreamConnection>;
-    readonly callbacks: WsStreamCallbacks;
+    readonly callbacks: ChatStreamCallbacks;
   },
 ): void => {
   if (outcome.kind === "error") {

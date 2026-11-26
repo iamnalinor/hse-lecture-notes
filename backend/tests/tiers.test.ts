@@ -38,7 +38,8 @@ test("legacy guest allowances survive the session migration while legacy account
   const guestToken = await signHs256Jwt(secret, guest);
   expect(await verifyAllowanceToken(env, db, guestToken, "br", now)).toMatchObject({ tier: "guest" });
   expect(await verifyAllowanceToken(env, db, guestToken, "other", now)).toBeNull();
-  for (const change of [{ sid: "s", tgId: 42, tier: "student" }, { tgId: 42 }, { exp: undefined }]) {
+  for (const change of [{ sid: "s", tgId: 42, tier: "student" }, { tgId: 42 }, { exp: undefined },
+    { maxQuestionChars: 0 }, { maxQuestionChars: 1.5 }, { maxQuestionChars: "100" }, { maxQuestionChars: 50_000 }]) {
     const token = await signHs256Jwt(secret, { ...guest, ...change });
     expect(await verifyAllowanceToken(env, db, token, "br", now)).toBeNull();
   }

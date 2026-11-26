@@ -10,6 +10,7 @@ import {
   type JwksDocument,
 } from "./crypto";
 import type { TrackedD1 } from "./db";
+import { MAX_CHAT_BODY_BYTES } from "./request-json";
 import { loadAccountTier } from "./account-tiers";
 import { evaluateQuotasAndBudgets, loadPolicy } from "./quotas";
 import type {
@@ -66,6 +67,11 @@ export async function verifyActiveSession(
   };
 }
 
+export function policyQuestionLimit(configured: number): number {
+  if (!Number.isSafeInteger(configured) || configured < 1) throw new Error("Invalid policy.maxQuestionChars");
+  return Math.min(configured, MAX_CHAT_BODY_BYTES);
+}
+
 export async function verifyAllowanceToken(
   env: Pick<Env, "ALLOWANCE_JWT_SECRET">,
   db: TrackedD1,
@@ -79,6 +85,10 @@ export async function verifyAllowanceToken(
     nowMs,
   );
   if (!payload || payload.browserId !== expectedBrowserId || !Number.isSafeInteger(payload.exp)) {
+    return null;
+  }
+  const limit = payload.maxQuestionChars;
+  if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_CHAT_BODY_BYTES)) {
     return null;
   }
   if (payload.typ === "allowance") {
@@ -375,6 +385,7 @@ export async function handleAllowance(
   const tier: Tier = session ? await loadAccountTier(db, session.telegramId) : "guest";
 
   const policy = await loadPolicy(db);
+  const maxQuestionChars = policyQuestionLimit(policy.maxQuestionChars);
   const allowanceExpMs = Math.min(nowMs + policy.allowanceTtlMs, session?.expiresAt ?? Infinity);
 
   const allowanceToken = await signHs256Jwt<AllowanceJwtPayload>(env.ALLOWANCE_JWT_SECRET, {
@@ -384,6 +395,7 @@ export async function handleAllowance(
     tier,
     ip: ipAddress,
     fp: fingerprint,
+    maxQuestionChars,
     iat: Math.floor(nowMs / 1000),
     exp: Math.floor(allowanceExpMs / 1000),
   });
@@ -404,7 +416,7 @@ export async function handleAllowance(
       browserToken,
       allowanceToken,
       allowanceExpiresAt: allowanceExpMs,
-      maxQuestionChars: policy.maxQuestionChars,
+      maxQuestionChars,
       tier,
       user: session ? { id: session.telegramId, name: session.telegramName } : null,
       degraded: evalRes.degraded,

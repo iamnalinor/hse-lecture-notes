@@ -1,10 +1,10 @@
-import type { ClientWsFrame } from "../types";
+import type { ClientChatCommand } from "../types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function parseClientFrame(raw: string): ClientWsFrame {
+export function parseClientFrame(raw: string): ClientChatCommand {
   const frame: unknown = JSON.parse(raw);
   if (!isRecord(frame)) throw new Error("Сообщение должно быть объектом JSON.");
   if (frame.type === "stop") return { type: "stop" };
@@ -31,5 +31,5 @@ export function parseClientFrame(raw: string): ClientWsFrame {
   } else if (!String(frame.text).trim()) {
     throw new Error("Введи вопрос или выбери цитату.");
   }
-  return frame as Extract<ClientWsFrame, { type: "send" }>;
+  return frame as Extract<ClientChatCommand, { type: "send" }>;
 }

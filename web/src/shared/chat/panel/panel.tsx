@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 
 import { labelIndexQuery } from "#web/api/queries.ts";
 import { paths } from "#web/domain/paths.ts";
-import { findMaterialTarget } from "#web/shared/ui/dom.ts";
+import { findMaterialTarget, openTargetDetails } from "#web/shared/ui/dom.ts";
 
 import { ChatComposer } from "../composer/composer.tsx";
 import { SparklesIcon } from "../icons.tsx";
@@ -23,10 +23,7 @@ const isReducedMotion = (): boolean =>
   globalThis.window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const highlightTargetBlock = (target: Element): void => {
-  const details = target.closest("details");
-  if (details !== null && !details.open) {
-    details.open = true;
-  }
+  openTargetDetails(target);
   target.scrollIntoView({ behavior: isReducedMotion() ? "auto" : "smooth", block: "center" });
   target.classList.remove("ai-flash-block");
   target.getBoundingClientRect();

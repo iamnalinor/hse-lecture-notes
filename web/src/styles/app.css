@@ -433,3 +433,54 @@ details[open]::details-content {
     transition-delay: 0s !important;
   }
 }
+
+/*
+Home slogan (RotatingSlogan): in "words" mode the new slogan comes in word by word (400ms, 45ms apart), the
+old one fades out in 200ms; in "fade" mode they cross-fade in 600ms. Reduced motion: the swap is instant.
+*/
+@keyframes slogan-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.3em);
+  }
+}
+
+@keyframes slogan-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slogan-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.slogan-word {
+  animation: slogan-word-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 45ms);
+}
+
+.slogan-fade-in {
+  animation: slogan-fade-in 0.6s ease-in-out both;
+}
+
+[data-effect="words"] .slogan-leave {
+  animation: slogan-fade-out 0.2s ease-in forwards;
+}
+
+[data-effect="fade"] .slogan-leave {
+  animation: slogan-fade-out 0.6s ease-in-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slogan-word,
+  .slogan-fade-in {
+    animation: none;
+  }
+
+  .slogan-leave {
+    display: none;
+  }
+}

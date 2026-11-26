@@ -197,11 +197,12 @@ const AssistantContent = ({
           text={message.contentTex}
         />
       )}
-      {message.status === "done" && message.errorMessage !== null && (
-        <p className="ai-error-detail" role="status">
-          {message.errorMessage}
-        </p>
-      )}
+      {(message.status === "done" || message.status === "running") &&
+        message.errorMessage !== null && (
+          <p className="ai-error-detail" role="status">
+            {message.errorMessage}
+          </p>
+        )}
       {caption !== null && (
         <div className="ai-stopped ai-fade" role="status">
           {caption}

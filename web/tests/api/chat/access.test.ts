@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { ensureChatAllowance } from "#web/api/chat/access.ts";
-import { loginViaTelegram } from "#web/api/chat/client.ts";
+import { fetchChatRunStatus, fetchChatThread, loginViaTelegram } from "#web/api/chat/client.ts";
 import { readStoredAuth } from "#web/api/chat/storage.ts";
 import {
   getBrowserFingerprint,
@@ -401,4 +401,31 @@ it("retains the active question limit on cached allowances", async () => {
   await ensureChatAllowance(hooks);
   expect(await ensureChatAllowance(hooks)).toMatchObject({ maxQuestionChars: 3650 });
   expect(fetchMock).toHaveBeenCalledOnce();
+});
+
+it.each([() => Response.json({}), () => new Response("<html></html>")])(
+  "preserves the current session on a malformed successful allowance response",
+  async (response) => {
+    seedChatAuth({ browserToken: "existing-browser", sessionToken: "existing-session" });
+    const saved = readStoredAuth();
+    fetchMock.mockResolvedValueOnce(response());
+    await expect(ensureChatAllowance(hooks)).rejects.toThrow();
+    expect(readStoredAuth()).toEqual(saved);
+  },
+);
+
+it("treats malformed history and mismatched run status as unavailable", async () => {
+  seedChatAuth({ browserToken: "existing-browser" });
+  fetchMock.mockResolvedValueOnce(Response.json({ thread: { messages: "broken" } }));
+  await expect(fetchChatThread("t")).resolves.toBeNull();
+  fetchMock.mockResolvedValueOnce(
+    Response.json({
+      runId: "different",
+      threadId: "t",
+      status: "done",
+      expiresAt: 123,
+      assistantMessageId: "a",
+    }),
+  );
+  await expect(fetchChatRunStatus("r")).resolves.toBeNull();
 });

@@ -10,7 +10,7 @@ import type {
   Env,
   LlmRoundRequest,
   LlmRoundResult,
-  ServerWsFrame,
+  ChatStreamFrame,
 } from "../src/types";
 const topic = (title = "Тема") => ({
   callId: "t" + Math.random(),
@@ -85,7 +85,7 @@ async function fixture(
   });
   if (admit.kind !== "admitted") throw Error(admit.kind);
   if (hasTitle) shim.sqlite.query("UPDATE chat_threads SET generated_title='Existing'").run();
-  const frames: ServerWsFrame[] = [],
+  const frames: ChatStreamFrame[] = [],
     requests: LlmRoundRequest[] = [];
   await executeAgentRun({
     env,

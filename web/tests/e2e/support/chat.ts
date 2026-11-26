@@ -1,4 +1,6 @@
-import type { Page, WebSocketRoute } from "@playwright/test";
+import type { Page } from "@playwright/test";
+
+import { mockMessageStream } from "./chat-stream.ts";
 
 export const suggestion = "Какие правила блокирующего экзамена по алгебре?";
 const now = Date.now();
@@ -33,16 +35,14 @@ const thread = {
   updatedAt: now,
 };
 
-/** Real browser/UI and HTTP/WS contracts; external authentication/model services are deterministic fixtures. */
-export const mockChat = async (page: Page, isEmptyThread = false) => {
+/** Real browser/UI and HTTP streaming; external authentication/model services are deterministic fixtures. */
+export const mockChat = async (page: Page, isEmptyThread = false, shouldHoldMeta = false) => {
   await page.route("https://challenges.cloudflare.com/**", async (route) => {
     await route.fulfill({
       contentType: "application/javascript",
       body: "window.turnstile={ready:f=>f(),render:()=> 'e2e',execute:()=>{},reset:()=>{},remove:()=>{}};",
     });
   });
-  const sent: Record<string, unknown>[] = [];
-  let socket: undefined | WebSocketRoute;
   await page.addInitScript(() => {
     localStorage.setItem(
       "hse_chat_auth",
@@ -85,50 +85,27 @@ export const mockChat = async (page: Page, isEmptyThread = false) => {
       json,
     });
   });
-  await page.routeWebSocket("ws://127.0.0.1:8787/v1/messages", (route) => {
-    socket = route;
-    route.onMessage((message) => {
-      const request = JSON.parse(String(message)) as Record<string, unknown>;
-      sent.push(request);
-      route.send(
-        JSON.stringify({
-          type: "meta",
-          threadId: "t",
-          runId: "r",
-          assistantMessageId: "a",
-          userMessageId: "u",
-          threadTitle: "Вопрос",
-          generatedTitle: null,
-          degraded: { active: false },
-        }),
-      );
-      route.send(JSON.stringify({ type: "title", threadId: "t", title: "Новая тема" }));
-    });
-  });
+  const stream = await mockMessageStream(page, shouldHoldMeta);
   return {
-    sent,
+    ...stream,
     complete: (errorMessage?: string, answerText = "Готовый ответ на вопрос.") => {
-      if (socket === undefined) {
-        throw new Error("No message request received");
-      }
       const isError = errorMessage !== undefined;
       const text = isError ? "" : answerText;
       if (text !== "") {
-        socket.send(JSON.stringify({ type: "delta", text }));
+        stream.send({ type: "delta", text });
       }
-      socket.send(
-        JSON.stringify({
-          type: "done",
-          runId: "r",
-          status: isError ? "error" : "done",
-          text,
-          errorMessage: errorMessage ?? null,
-          steps: [],
-          block: null,
-          degraded: { active: false },
-          suggestion: isError ? null : suggestion,
-        }),
-      );
+      stream.send({
+        type: "done",
+        runId: "r",
+        status: isError ? "error" : "done",
+        text,
+        errorMessage: errorMessage ?? null,
+        steps: [],
+        block: null,
+        degraded: { active: false },
+        suggestion: isError ? null : suggestion,
+      });
+      stream.end();
     },
   };
 };

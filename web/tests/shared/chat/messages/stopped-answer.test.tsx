@@ -51,10 +51,7 @@ it.each(["", "Начнём с определения."])(
       { kind: "read", target: "Определение производной", state: "error" },
       { kind: "note", note: "служебно", state: "done" },
     ]);
-    expect(screen.getByRole("button", { name: "2 шага до остановки" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(screen.getByRole("button", { name: "2 шага" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("link", { name: "Правило степени" })).toHaveAttribute(
       "href",
       "/calculus/theory#power",
@@ -69,6 +66,7 @@ it.each(["", "Начнём с определения."])(
 
 it("keeps a historical stopped search idle and does not offer an unavailable retry", () => {
   showStopped("", [{ kind: "search", q: "предел", state: "running" }], false);
+  expect(screen.getByRole("button", { name: "1 шаг" })).toBeVisible();
   expect(screen.getByText(/Поиск не завершен/u)).toHaveTextContent("предел");
   expect(screen.queryByText(/Ищу в конспектах/u)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Повторить" })).not.toBeInTheDocument();

@@ -136,6 +136,7 @@ export interface AllowanceJwtPayload {
   tier: Tier;
   ip: string;
   fp: string;
+  maxQuestionChars?: number; // Absent on allowances issued before the limit was signed.
   iat: number;
   exp: number;
 }
@@ -237,10 +238,10 @@ export interface LlmProvider {
 }
 
 // =============================================================================
-// WebSocket protocol (/v1/messages)
+// Chat commands and streamed HTTP responses (/v1/messages)
 // =============================================================================
 
-export type ClientWsFrame =
+export type ClientChatCommand =
   | {
       type: "send";
       allowanceToken: string;
@@ -258,7 +259,7 @@ export type ClientWsFrame =
       type: "stop";
     };
 
-export type ServerWsFrame =
+export type ChatStreamFrame =
   | { type: "title"; threadId: string; title: string }
   | {
       type: "meta";
@@ -299,7 +300,6 @@ export type ServerWsFrame =
       type: "error";
       code: string;
       message: string;
-      maxQuestionChars?: number;
       block?: BlockInfo | null;
       retryAfterSec?: number;
     };

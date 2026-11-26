@@ -546,14 +546,10 @@ def collect_corpus(
     for block in all_blocks:
         block.content_hash = _sha256_hex(json.dumps([dataclasses.asdict(block), sorted(outgoing.get(block.id, []))]))
 
-    # Enforce Vectorize Free tier budget (<= max_vectorize vectors @ 1024 dim)
-    prioritized = sorted(
-        range(len(all_blocks)),
-        key=lambda i: (VECTORIZE_PRIORITY.get(all_blocks[i].block_kind, 9), all_blocks[i].id),
-    )
-    selected_vec = set(prioritized[:max_vectorize])
-    for i, b in enumerate(all_blocks):
-        b.vectorize_candidate = i in selected_vec
+    if len(all_blocks) > max_vectorize:
+        by_priority = sorted(all_blocks, key=lambda b: (VECTORIZE_PRIORITY.get(b.block_kind, 9), b.id))
+        for block in by_priority[max_vectorize:]:
+            block.vectorize_candidate = False
 
     return scope_corpus(docs, all_blocks, sorted(set(all_refs)), only_course)
 
@@ -1068,7 +1064,7 @@ def main() -> None:
     parser.add_argument("--output-json", type=Path, default=None)
     args = parser.parse_args()
 
-    corpus = collect_corpus(args.root)
+    corpus = collect_corpus(args.root, max_vectorize=VECTORIZE_FREE_MAX_VECTORS)
     docs, blocks, refs = scope_corpus(*corpus, args.only_course)
     vec_count = sum(1 for b in blocks if b.vectorize_candidate)
     stored_dims = vec_count * 1024
@@ -1085,14 +1081,10 @@ def main() -> None:
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
-    total_blocks = len(corpus[1])
-    if args.fail_on_vectorize_overflow and total_blocks > VECTORIZE_FREE_MAX_VECTORS:
-        print(
-            f"ERROR: {total_blocks} blocks exceed the vector selection limit of {VECTORIZE_FREE_MAX_VECTORS}. "
-            f"{total_blocks - VECTORIZE_FREE_MAX_VECTORS} blocks would have full-text search only.",
-            file=sys.stderr,
-        )
-        sys.exit(2)
+    if args.fail_on_vectorize_overflow:
+        omitted = sum(not block.vectorize_candidate for block in corpus[1])
+        if omitted:
+            parser.exit(2, f"Semantic search does not cover {omitted} blocks in the full corpus.\n")
 
     if args.output_json:
         args.output_json.write_text(

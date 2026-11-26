@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-// This suite never mocks content, HTTP or WebSocket responses. Run against a built
+// This suite never mocks content or HTTP responses. Run against a built
 // preview or deployment with `bun run test:e2e:live`. Chat uses short-lived tokens
 // for a dedicated smoke-test identity supplied by the operator, never real users.
 
@@ -133,12 +133,6 @@ test("real chat returns a usable suggestion, Tab fills it and history survives r
     errors.push(error.message);
   });
   await page.goto("/");
-  const frames: Record<string, unknown>[] = [];
-  page.on("websocket", (socket) =>
-    socket.on("framereceived", ({ payload }) => {
-      frames.push(JSON.parse(String(payload)) as Record<string, unknown>);
-    }),
-  );
   await page.getByTitle("Чат с ИИ").click();
   const input = page.getByRole("textbox", { name: "Сообщение в чат" });
   await input.fill(
@@ -149,12 +143,18 @@ test("real chat returns a usable suggestion, Tab fills it and history survives r
   const retry = page.getByRole("button", { name: "Повторить", exact: true });
   await expect(retry).toBeVisible();
   await page.context().setOffline(false);
+  const response = page.waitForResponse(
+    (res) => new URL(res.url()).pathname === "/v1/messages" && res.request().method() === "POST",
+    { timeout: 75_000 },
+  );
   await retry.click();
-  await expect
-    .poll(() => frames.find((frame) => frame["type"] === "done" || frame["type"] === "error"), {
-      timeout: 75_000,
-    })
-    .toBeTruthy();
+  const streamed = await response;
+  expect(streamed.ok()).toBe(true);
+  const frames = (await streamed.text())
+    .trim()
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
   const done = frames.find((frame) => frame["type"] === "done");
   expect(done, JSON.stringify(frames.filter((frame) => frame["type"] === "error"))).toBeDefined();
   expect(done?.["status"]).toBe("done");

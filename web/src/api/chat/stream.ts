@@ -7,12 +7,12 @@ import type {
 } from "#web/domain/chat/model.ts";
 
 import { parseStreamFrame, type StreamFrame } from "./stream-frame.ts";
+import { createStopController } from "./stream-stop.ts";
 
-export type WsStreamCallbacks = {
+export type ChatStreamCallbacks = {
+  readonly onStopError: (message: null | string) => void;
   readonly onTitle: (threadId: string, title: string) => void;
   readonly onCloseUnexpected: () => void;
-  /** The user stopped before the socket opened: nothing reached the server. */
-  readonly onCancelledBeforeStart?: () => void;
   readonly onDelta: (text: string) => void;
   readonly onDone: (payload: {
     readonly errorMessage?: null | string;
@@ -28,7 +28,7 @@ export type WsStreamCallbacks = {
   }) => void;
   readonly onError: (payload: {
     readonly block?: ChatBlock | null;
-    readonly maxQuestionChars?: number;
+    readonly retryAfterSec?: number;
     readonly code: string;
     readonly message: string;
   }) => void;
@@ -47,12 +47,12 @@ export type WsStreamCallbacks = {
   readonly onStep: (steps: readonly ChatStep[]) => void;
 };
 
-export type ActiveWsStream = {
+export type ActiveChatStream = {
   readonly disconnect: () => void;
   readonly stop: () => void;
 };
 
-export type SendWsParams = {
+export type SendChatParams = {
   readonly allowanceToken: string;
   readonly browserToken: string;
   readonly clientRequestId: string;
@@ -63,8 +63,6 @@ export type SendWsParams = {
   readonly text: string;
   readonly threadId: null | string;
 };
-
-const toWsUrl = (httpUrl: string): string => httpUrl.replace(/^http/, "ws");
 
 type StreamIdentity = { readonly threadId: null | string; readonly runId: null | string };
 
@@ -90,7 +88,7 @@ const isMatchingIdentity = (frame: StreamFrame, identity: StreamIdentity): boole
   }
 };
 
-const deliverFrame = (frame: StreamFrame, callbacks: WsStreamCallbacks): void => {
+const deliverFrame = (frame: StreamFrame, callbacks: ChatStreamCallbacks): void => {
   switch (frame.type) {
     case "meta": {
       callbacks.onMeta(frame);
@@ -122,68 +120,130 @@ const deliverFrame = (frame: StreamFrame, callbacks: WsStreamCallbacks): void =>
   }
 };
 
+/** A terminal frame can arrive before the HTTP connection closes. */
+const readLines = async (
+  body: NonNullable<Response["body"]>,
+  isTerminalLine: (line: string) => boolean,
+  signal: AbortSignal,
+): Promise<void> => {
+  const reader = body.pipeThrough(new TextDecoderStream(), { signal }).getReader();
+  let pending = "";
+  try {
+    for (;;) {
+      const chunk = await reader.read();
+      const lines = (pending + (chunk.value ?? "")).split("\n");
+      pending = chunk.done ? "" : (lines.pop() ?? "");
+      if (lines.some((line) => line.trim() !== "" && isTerminalLine(line)) || chunk.done) {
+        return;
+      }
+    }
+  } finally {
+    await reader.cancel();
+    reader.releaseLock();
+  }
+};
+
+const admissionError = async (
+  response: Response,
+): Promise<Extract<StreamFrame, { type: "error" }> | null> => {
+  const frame = parseStreamFrame(await response.text());
+  return frame?.type === "error" ? frame : null;
+};
+
+const postMessage = (
+  apiUrl: string,
+  params: SendChatParams,
+  signal: AbortSignal,
+): Promise<Response> =>
+  fetch(`${apiUrl}/v1/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+    body: JSON.stringify({ ...params, type: "send" }),
+    credentials: "omit",
+    redirect: "error",
+    signal,
+  });
+
 export const openChatMessageStream = (
   apiUrl: string,
-  params: SendWsParams,
-  callbacks: WsStreamCallbacks,
-): ActiveWsStream => {
-  const ws = new WebSocket(`${toWsUrl(apiUrl)}/v1/messages`);
+  params: SendChatParams,
+  callbacks: ChatStreamCallbacks,
+): ActiveChatStream => {
+  const controller = new AbortController();
+  let isDetached = false;
   let isFinished = false;
-  let isCancelledBeforeStart = false;
+  let hasResponse = false;
   let identity: StreamIdentity = { threadId: params.threadId, runId: null };
 
-  ws.addEventListener("open", () => {
-    if (!isFinished) {
-      ws.send(JSON.stringify({ ...params, type: "send" }));
+  const stopping = createStopController(apiUrl, params.browserToken, (message) => {
+    if (!isDetached && !isFinished) {
+      callbacks.onStopError(message);
     }
   });
 
-  ws.addEventListener("message", (event) => {
-    if (isFinished) {
-      return;
+  const releaseIfDetached = (): void => {
+    if (isDetached && hasResponse && !stopping.isWaitingForMeta()) {
+      controller.abort();
     }
-    const parsed = typeof event.data === "string" ? parseStreamFrame(event.data) : null;
-    if (parsed === null) {
-      isFinished = true;
-      callbacks.onError({
+  };
+  const isTerminalLine = (line: string): boolean => {
+    const frame =
+      parseStreamFrame(line) ??
+      ({
+        type: "error",
         code: "invalid_frame",
         message: "Не удалось прочитать ответ сервера. Попробуй еще раз.",
-      });
-      ws.close();
-      return;
+      } as const);
+    if (frame.type === "unknown" || !isMatchingIdentity(frame, identity)) {
+      return false;
     }
-    if (parsed.type === "unknown" || !isMatchingIdentity(parsed, identity)) {
-      return;
+    if (frame.type === "meta") {
+      identity = { threadId: frame.threadId, runId: frame.runId };
+      stopping.setRun(frame.runId);
+      releaseIfDetached();
     }
-    if (parsed.type === "meta") {
-      identity = { threadId: parsed.threadId, runId: parsed.runId };
+    isFinished = frame.type === "done" || frame.type === "error";
+    if (!isDetached) {
+      deliverFrame(frame, callbacks);
     }
-    isFinished = parsed.type === "done" || parsed.type === "error";
-    deliverFrame(parsed, callbacks);
-  });
-
-  ws.addEventListener("close", () => {
-    if (isCancelledBeforeStart && !isFinished) {
-      isFinished = true;
-      callbacks.onCancelledBeforeStart?.();
-      return;
+    return isFinished;
+  };
+  const receive = async (): Promise<void> => {
+    const response = await postMessage(apiUrl, params, controller.signal);
+    hasResponse = true;
+    releaseIfDetached();
+    if (!response.ok) {
+      const error = await admissionError(response);
+      // An unrecognized response may have been generated by a proxy after admission.
+      // Let the normal disconnect path keep the request ID for an idempotent retry.
+      isFinished = error !== null;
+      if (!isDetached && error !== null) {
+        deliverFrame(error, callbacks);
+      }
+    } else if (response.body !== null) {
+      await readLines(response.body, isTerminalLine, controller.signal);
     }
-    if (!isFinished) {
+  };
+  const monitor = async (): Promise<void> => {
+    try {
+      await receive();
+    } catch {
+      // A dropped response recovers via run status; a deliberate detach has no UI listener.
+    }
+    if (!isDetached && !isFinished) {
       callbacks.onCloseUnexpected();
     }
-  });
-
+    isFinished = true;
+  };
+  void monitor();
   return {
     disconnect: () => {
-      isFinished = true;
-      ws.close();
+      isDetached = true;
+      releaseIfDetached();
     },
     stop: () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "stop" }));
-      } else if (ws.readyState === WebSocket.CONNECTING) {
-        isCancelledBeforeStart = true;
-        ws.close();
+      if (!isFinished && !isDetached) {
+        stopping.stop();
       }
     },
   };

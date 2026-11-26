@@ -330,6 +330,7 @@ export default defineConfig([
             "^math-display$",
             "^math-inline$",
             "^flash$",
+            "^slogan-",
             "^table-cards$",
             "^ai-",
             "^is-(?:open|run|on|done|stop|clipped)$",

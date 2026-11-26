@@ -1,38 +1,6 @@
 import { z } from "zod";
 
-import { parseChatSuggestion } from "#web/domain/chat/model.ts";
-
-const degraded = z.object({
-  active: z.boolean(),
-  restoresAt: z.number().nullable().exactOptional(),
-});
-
-const block = z.object({
-  code: z.enum([
-    "auth_required",
-    "concurrent_run",
-    "global_budget_exceeded",
-    "guest_budget_exceeded",
-    "oauth_unavailable",
-    "rate_limited",
-    "service_unavailable",
-    "tier_quota_exceeded",
-  ]),
-  retryAfterSec: z.number().nullable().exactOptional(),
-  nextAvailableAt: z.number().nullable().exactOptional(),
-});
-
-const step = z.object({
-  kind: z.enum(["note", "read", "sample", "search"]),
-  state: z.enum(["done", "error", "running"]),
-  count: z.number().exactOptional(),
-  more: z.number().exactOptional(),
-  note: z.string().exactOptional(),
-  q: z.string().exactOptional(),
-  target: z.string().exactOptional(),
-  res: z.array(z.string()).exactOptional(),
-  links: z.array(z.string()).exactOptional(),
-});
+import { block, degraded, messageStatus, step, suggestion } from "./response-schemas.ts";
 
 const run = {
   runId: z.string(),
@@ -55,11 +23,11 @@ const frames = z.discriminatedUnion("type", [
     type: z.literal("done"),
     ...run,
     text: z.string(),
-    status: z.enum(["done", "error", "incomplete", "running", "stopped"]),
+    status: messageStatus,
     steps: z.array(step),
     block: block.nullable(),
     errorMessage: z.string().nullable().catch(null),
-    suggestion: z.unknown().transform(parseChatSuggestion).default(null),
+    suggestion,
   }),
   z.object({ type: z.literal("step"), steps: z.array(step) }),
   z.object({ type: z.literal("delta"), text: z.string() }),
@@ -68,7 +36,7 @@ const frames = z.discriminatedUnion("type", [
     type: z.literal("error"),
     code: z.string(),
     message: z.string().trim().min(1),
-    maxQuestionChars: z.number().int().positive().exactOptional(),
+    retryAfterSec: z.number().exactOptional(),
     block: block.nullable().exactOptional(),
   }),
 ]);

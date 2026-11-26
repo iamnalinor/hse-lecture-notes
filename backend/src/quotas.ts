@@ -153,6 +153,7 @@ export async function evaluateQuotasAndBudgets(
     checkConcurrency?: boolean;
     checkRateLimit?: boolean;
     forceLow?: boolean;
+    recoverExpiredGuestQuota?: boolean;
   } = {},
 ): Promise<QuotaEvaluation> {
   const checkConcurrency = options.checkConcurrency ?? true;
@@ -420,47 +421,37 @@ export async function evaluateQuotasAndBudgets(
     globalProjected >=
     Math.floor(policy.budgets.weeklyGlobalUsdMicros * policy.budgets.weeklyWarnRatio);
 
-  // Check global 7d budget
-  if (globalProjected > policy.budgets.weeklyGlobalUsdMicros) {
-    return {
-      allowed: false,
-      bucket,
-      reserveMicros,
-      degraded,
-      block: { code: "global_budget_exceeded" },
-      weeklyWarnTriggered: true,
-      budget,
-    };
+  const guestProjected = budget.guestActual24h + budget.guestReserved + reserveMicros;
+  const globalBlocked = globalProjected > policy.budgets.weeklyGlobalUsdMicros;
+  const guestBlocked = isGuest && guestProjected > policy.budgets.dailyGuestUsdMicros;
+  const budgetBlock: BlockInfo | null = globalBlocked ? { code: "global_budget_exceeded" } :
+    guestBlocked ? { code: "guest_budget_exceeded" } : null;
+  // Even settling every reservation cannot help when actual usage already exhausts the budget.
+  const recoverReserve = budgetBlock !== null &&
+    budget.globalActual7d + reserveMicros <= policy.budgets.weeklyGlobalUsdMicros &&
+    budget.guestActual24h + reserveMicros <= policy.budgets.dailyGuestUsdMicros;
+  if (isGuest && options.recoverExpiredGuestQuota !== false && (recoverReserve || (!budgetBlock && quotaBlock))) {
+    const candidates: D1PreparedStatement[] = [];
+    const expired = "status = 'running' AND expires_at < ? AND created_at >= ? LIMIT 10";
+    // Match the predicates of the blocked day window. Each lookup is bounded to this
+    // identity's index range, even when there are many expired runs elsewhere.
+    if (recoverReserve || getCount("low_br").cnt >= lowLimit) candidates.push(db.prepare(
+      `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_browser
+       WHERE browser_id = ? AND quota_bucket = 'low' AND ${expired}`).bind(axes.browserId, nowMs, dayCutoff));
+    if (recoverReserve || getCount("low_ip").cnt >= lowLimit) candidates.push(db.prepare(
+      `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_ip
+       WHERE ip_address = ? AND ${expired}`).bind(axes.ipAddress, nowMs, dayCutoff));
+    if (useFp && (recoverReserve || getCount("low_fp").cnt >= lowLimit)) candidates.push(db.prepare(
+      `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_fp
+       WHERE fingerprint = ? AND fingerprint != '' AND ${expired}`).bind(axes.fingerprint, nowMs, dayCutoff));
+    const matches = await db.batch<ExpiredRun>(candidates);
+    const unique = new Map(matches.flatMap(page => page.results).map(row => [row.id, row]));
+    await finalizeExpiredRuns(db, [...unique.values()].slice(0, 10), nowMs);
+    // A concurrent finalizer can win between the count and the lookup, leaving zero matches.
+    return evaluateQuotasAndBudgets(db, policy, axes, nowMs, { ...options, recoverExpiredGuestQuota: false });
   }
-
-  // Check guest 24h budget
-  if (isGuest) {
-    const guestProjected = budget.guestActual24h + budget.guestReserved + reserveMicros;
-    if (guestProjected > policy.budgets.dailyGuestUsdMicros) {
-      return {
-        allowed: false,
-        bucket,
-        reserveMicros,
-        degraded,
-        block: { code: "guest_budget_exceeded" },
-        weeklyWarnTriggered,
-        budget,
-      };
-    }
-  }
-
-  // Check tier/guest daily quota
-  if (quotaBlock) {
-    return {
-      allowed: false,
-      bucket,
-      reserveMicros,
-      degraded,
-      block: quotaBlock,
-      weeklyWarnTriggered,
-      budget,
-    };
-  }
+  const block = budgetBlock ?? quotaBlock;
+  if (block) return { allowed: false, bucket, reserveMicros, degraded, block, weeklyWarnTriggered, budget };
 
   // Check active concurrency (1 running)
   if (checkConcurrency) {
@@ -553,11 +544,14 @@ interface FinalizeRunInput {
  */
 export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput): Promise<boolean> {
   const nowMs = input.nowMs ?? Date.now();
+  const expiring = input.errorCode === "run_expired";
+  const condition = "id = ? AND status = 'running'" + (expiring ? " AND expires_at < ?" : "");
+  const runBindings = expiring ? [input.runId, nowMs] : [input.runId];
   const existing = await db.first<{ model: string; pricing_version: number }>(
     db
       .prepare(`SELECT model, pricing_version FROM usage_runs
-                WHERE id = ? AND status = 'running'`)
-      .bind(input.runId),
+                WHERE ${condition}`)
+      .bind(...runBindings),
   );
   if (!existing) return false;
 
@@ -578,17 +572,17 @@ export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput):
 
   // Keep the run running until all accounting has been applied in this transaction.
   // A competing finalizer sees no running row; a failure rolls back the entire batch.
-  const running = "FROM usage_runs WHERE id = ? AND status = 'running'";
+  const running = `FROM usage_runs WHERE ${condition}`;
   const result = await db.batch([
     db
       .prepare(`UPDATE usage_runs SET actual_cost_micros = MAX(?,
       actual_cost_micros + CASE WHEN ? AND actual_cost_micros = 0 THEN 0 ELSE ? END)
-      WHERE id = ? AND status = 'running'`)
+      WHERE ${condition}`)
       .bind(
         Math.ceil(input.actualCostMicros),
         mightBeEmptyError ? 1 : 0,
         uncertainFloor,
-        input.runId,
+        ...runBindings,
       ),
     db
       .prepare(`UPDATE chat_messages SET status = ?, content_tex = COALESCE(?, content_tex),
@@ -602,13 +596,13 @@ export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput):
         input.finalStatus === "done" ? (input.metadata?.suggestion ?? null) : null,
         input.errorMessage ?? null,
         nowMs,
-        input.runId,
+        ...runBindings,
       ),
     db
       .prepare(
         `UPDATE chat_threads SET updated_at = ?, context_revision = context_revision + 1 WHERE id = (SELECT thread_id ${running})`,
       )
-      .bind(nowMs, input.runId),
+      .bind(nowMs, ...runBindings),
     db
       .prepare(`INSERT INTO budget_hourly (hour_ts, global_actual_micros, guest_actual_micros, updated_at)
       SELECT created_at - created_at % ?, actual_cost_micros,
@@ -617,7 +611,7 @@ export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput):
         global_actual_micros = budget_hourly.global_actual_micros + excluded.global_actual_micros,
         guest_actual_micros = budget_hourly.guest_actual_micros + excluded.guest_actual_micros,
         updated_at = excluded.updated_at`)
-      .bind(HOUR_MS, nowMs, input.runId),
+      .bind(HOUR_MS, nowMs, ...runBindings),
     db
       .prepare(`UPDATE budget_reserves SET
       global_reserved_micros = MAX(0, global_reserved_micros - run.reserved_cost_micros),
@@ -625,14 +619,14 @@ export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput):
         CASE WHEN run.tier = 'guest' THEN run.reserved_cost_micros ELSE 0 END),
       updated_at = ? FROM (SELECT tier, reserved_cost_micros ${running}) AS run
       WHERE budget_reserves.id = 1`)
-      .bind(nowMs, input.runId),
+      .bind(nowMs, ...runBindings),
     db
       .prepare(`UPDATE usage_runs SET status = ?, finished_at = ?, updated_at = ?,
       reserved_cost_micros = 0, is_cost_uncertain = MAX(is_cost_uncertain, ?),
       input_tokens = COALESCE(?, input_tokens), cached_tokens = COALESCE(?, cached_tokens),
       cache_write_tokens = COALESCE(?, cache_write_tokens), output_tokens = COALESCE(?, output_tokens),
       tool_rounds = COALESCE(?, tool_rounds), tool_calls = COALESCE(?, tool_calls), error_code = ?
-      WHERE id = ? AND status = 'running'`)
+      WHERE ${condition}`)
       .bind(
         input.finalStatus,
         nowMs,
@@ -645,14 +639,19 @@ export async function finalizeRunAtomic(db: TrackedD1, input: FinalizeRunInput):
         input.toolRounds ?? null,
         input.toolCalls ?? null,
         input.errorCode ?? null,
-        input.runId,
+        ...runBindings,
       ),
   ]);
   return result.at(-1)?.meta.changes === 1;
 }
 
+interface ExpiredRun {
+  id: string;
+  actual_cost_micros: number;
+}
+
 export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<number> {
-  const expired = await db.all<{ id: string; actual_cost_micros: number }>(
+  const expired = await db.all<ExpiredRun>(
     db
       .prepare(
         "SELECT id, actual_cost_micros FROM usage_runs WHERE status = 'running' AND expires_at < ? LIMIT 10",
@@ -660,8 +659,12 @@ export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<nu
       .bind(nowMs),
   );
 
+  return finalizeExpiredRuns(db, expired.results, nowMs);
+}
+
+async function finalizeExpiredRuns(db: TrackedD1, expired: ExpiredRun[], nowMs: number): Promise<number> {
   let swept = 0;
-  for (const row of expired.results) {
+  for (const row of expired) {
     const ok = await finalizeRunAtomic(db, {
       runId: row.id,
       finalStatus: "error",
@@ -675,6 +678,14 @@ export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<nu
     if (ok) swept += 1;
   }
   return swept;
+}
+
+/** Settle only the polled run, then return the state committed by the winning finalizer. */
+export async function readRunAfterExpiry(db: TrackedD1, run: ExpiredRun, nowMs: number) {
+  await finalizeExpiredRuns(db, [run], nowMs);
+  return db.first<{ status: RunStatus; expires_at: number }>(
+    db.prepare("SELECT status,expires_at FROM usage_runs WHERE id = ?").bind(run.id),
+  );
 }
 
 // Used inside the write transaction for both initial reservations and top-ups.
@@ -882,11 +893,12 @@ export async function admitRunAtomic(
   db: TrackedD1,
   policy: ServicePolicy,
   params: AdmitRunParams,
+  validateNewRequest?: () => Promise<void>,
 ): Promise<AdmitRunResult> {
   // A second transaction may have occupied the last slot after the preflight.
   // Re-evaluation returns its precise block or chooses the next available bucket.
   for (let attempt = 0; attempt < 3; attempt++) {
-    const result = await tryAdmitRun(db, policy, params);
+    const result = await tryAdmitRun(db, policy, params, validateNewRequest);
     if (result.kind !== "reevaluate") return result;
   }
   return {
@@ -941,6 +953,7 @@ async function tryAdmitRun(
   db: TrackedD1,
   policy: ServicePolicy,
   params: AdmitRunParams,
+  validateNewRequest?: () => Promise<void>,
 ): Promise<AdmitRunResult | { kind: "reevaluate" }> {
   const nowMs = params.nowMs ?? Date.now();
   const isGuest = params.axes.tier === "guest" || params.axes.telegramId === null;
@@ -1020,6 +1033,9 @@ async function tryAdmitRun(
       model: idempRow.model,
     };
   }
+
+  // Existing requests survive changes to current source and policy.
+  await validateNewRequest?.();
 
   // 2. Sweep any expired running slots before evaluating limits
   await sweepExpiredRuns(db, nowMs);

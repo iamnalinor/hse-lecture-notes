@@ -29,3 +29,20 @@
   font-display: swap;
   src: url("./fonts/hse-sans-900.woff2") format("woff2");
 }
+
+/* Match the first slogan's advance width to HSE Bold while the webfont loads.
+   The ascent and descent retain HSE Sans's line metrics after size adjustment. */
+@font-face {
+  font-family: "HSE Sans Slogan Fallback";
+  font-weight: 700;
+  font-style: normal;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold");
+  size-adjust: 90.5%;
+  ascent-override: 114.92%;
+  descent-override: 34.48%;
+  line-gap-override: 0%;
+}
+
+[data-first-slogan] {
+  font-family: "HSE Sans", "HSE Sans Slogan Fallback", "Helvetica Neue", arial, sans-serif;
+}

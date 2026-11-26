@@ -63,6 +63,118 @@ test("topic arrives before the answer and one submitted question stays in histor
   expect(mock.sent).toHaveLength(1);
 });
 
+test("an early stop waits for meta while the answer stream remains readable", async ({ page }) => {
+  const mock = await mockChat(page, true, true);
+  const stopped = Promise.withResolvers<Record<string, string>>();
+  await page.route("**/v1/runs/r/stop", async (route) => {
+    stopped.resolve(await route.request().allHeaders());
+    await route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*" } });
+  });
+  const input = await openChat(page);
+  await input.fill("Объясни правило");
+  await input.press("Enter");
+  await mock.received;
+  expect(mock.sent).toHaveLength(1);
+  await page.getByRole("button", { name: "Остановить ответ" }).click();
+  mock.sendMeta();
+  const headers = await stopped.promise;
+  expect(headers["x-browser-token"]).toBe("browser-e2e");
+  expect(headers["x-session-token"]).toBe("session-e2e");
+  const text = "Первые слова ответа";
+  mock.send({ type: "delta", text });
+  await expect(page.getByText(text, { exact: true })).toBeVisible();
+  await expect(page.getByText("Вы остановили ответ")).toHaveCount(0);
+  mock.send({
+    type: "done",
+    runId: "r",
+    status: "stopped",
+    text,
+    steps: [],
+    block: null,
+    degraded: { active: false },
+  });
+  mock.end();
+  await expect(page.getByText("Вы остановили ответ")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Повторить", exact: true })).toBeEnabled();
+});
+
+test("a refused stop leaves the answer streaming and allows a second click", async ({
+  page,
+}, info) => {
+  const mock = await mockChat(page, true);
+  let stopCount = 0;
+  await page.route("**/v1/runs/r/stop", async (route) => {
+    stopCount += 1;
+    await route.fulfill({
+      status: stopCount < 3 ? 503 : 204,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  const input = await openChat(page);
+  await input.fill("Как найти корни квадратного уравнения?");
+  await input.press("Enter");
+  await expect(page.locator(".ai-title")).toHaveText("Новая тема");
+  const initial = "Сначала вычислим дискриминант.";
+  mock.send({ type: "delta", text: initial });
+  await expect(page.getByText(initial)).toBeVisible();
+  const stop = page.getByRole("button", { name: "Остановить ответ" });
+  await stop.click();
+  const warning = page.getByRole("status").filter({ hasText: "Не удалось остановить ответ" });
+  await expect(warning).toBeVisible();
+  expect(stopCount).toBe(2);
+  const more = " Если он положителен, у уравнения два действительных корня.";
+  mock.send({ type: "delta", text: more });
+  await expect(page.getByText(initial + more, { exact: true })).toBeVisible();
+  await expect(stop).toBeEnabled();
+  await page.locator("#ai-panel").screenshot({ path: info.outputPath("stop-refused.png") });
+  await stop.click();
+  await expect(warning).toBeHidden();
+  expect(stopCount).toBe(3);
+  mock.send({
+    type: "done",
+    runId: "r",
+    status: "stopped",
+    text: initial + more,
+    steps: [],
+    block: null,
+    degraded: { active: false },
+  });
+  mock.end();
+  await expect(page.getByText("Вы остановили ответ")).toBeVisible();
+});
+
+test("retry after a gateway error before meta reuses the original request ID", async ({ page }) => {
+  const mock = await mockChat(page, true);
+  let unconfirmedId: unknown;
+  await page.route(
+    "**/v1/messages",
+    async (route) => {
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      unconfirmedId = payload["clientRequestId"];
+      await route.fulfill({
+        status: 502,
+        contentType: "text/html",
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: "<h1>Bad gateway</h1>",
+      });
+    },
+    { times: 1 },
+  );
+  const input = await openChat(page);
+  await input.fill("Объясни правило.");
+  await input.press("Enter");
+  await expect(
+    page.getByText("Соединение прервано до подтверждения. Можно повторить запрос."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Повторить", exact: true }).click();
+  await mock.received;
+  expect(typeof unconfirmedId).toBe("string");
+  expect(mock.sent[0]?.["clientRequestId"]).toBe(unconfirmedId);
+  mock.complete();
+  await expect(page.getByText("Готовый ответ на вопрос.")).toBeVisible();
+  await expect(page.locator(".ai-user")).toHaveCount(1);
+});
+
 test("server errors show their reason instead of an invented timeout", async ({ page }) => {
   const mock = await mockChat(page, true);
   const input = await openChat(page);
@@ -80,20 +192,20 @@ test("an incompatible first frame shows a readable error and keeps the chat usab
   page,
 }) => {
   await mockChat(page, true);
-  await page.routeWebSocket("ws://127.0.0.1:8787/v1/messages", (socket) => {
-    socket.onMessage(() => {
-      socket.send(
-        JSON.stringify({
-          type: "meta",
-          threadId: "t",
-          runId: "r",
-          assistantMessageId: "a",
-          userMessageId: "u",
-          threadTitle: "Вопрос",
-        }),
-      );
-    });
-  });
+  await page.route("**/v1/messages", (route) =>
+    route.fulfill({
+      contentType: "application/x-ndjson",
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: `${JSON.stringify({
+        type: "meta",
+        threadId: "t",
+        runId: "r",
+        assistantMessageId: "a",
+        userMessageId: "u",
+        threadTitle: "Вопрос",
+      })}\n`,
+    }),
+  );
   const input = await openChat(page);
   await input.fill("Почему?");
   await input.press("Enter");

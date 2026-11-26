@@ -19,10 +19,12 @@ import {
   encryptJsonAesGcm,
   mintBrowserToken,
   normalizeIpAddress,
+  signHs256Jwt,
   type JwksDocument,
 } from "../src/crypto";
 import { ProxyConnectError, ResponseEofError } from "../src/llm/socks5-fetch";
 import { TrackedD1 } from "../src/db";
+import { postMessage } from "../src/chat/send-route";
 import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
 import {
   admitRunAtomic,
@@ -35,7 +37,7 @@ import {
 } from "../src/quotas";
 import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
 import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateAssistantQuote, validateQuoteAgainstCourse } from "../src/chat/tools";
-import { type Env, type LlmProvider, type ServerWsFrame } from "../src/types";
+import { type Env, type LlmProvider, type ChatStreamFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
 
 function makeTestEnv(db: D1Database): Env {
@@ -58,6 +60,66 @@ function makeTestEnv(db: D1Database): Env {
     OWNER_TELEGRAM_ID: "999001",
   };
 }
+
+test("only a newly admitted HTTP question allocates a ChatRunner", async () => {
+  const shim = new SqliteD1Shim();
+  const db = new TrackedD1(shim.asD1());
+  const env = makeTestEnv(shim.asD1());
+  const allocations: string[] = [];
+  env.CHAT_RUNNER = {
+    idFromName: (runId: string) => runId,
+    get: (runId: string) => {
+      allocations.push(runId);
+      return { startMessage: async () => { throw new Error("RPC disconnected"); } };
+    },
+  } as unknown as Env["CHAT_RUNNER"];
+  const issue = await handleAllowance(env, db, new Request("https://site.test"), { turnstileToken: "fixture" },
+    { turnstileVerifier: async () => ({ ok: true }) });
+  const frame = { type: "send", text: "Вопрос", course: "", docId: "", clientRequestId: "once",
+    allowanceToken: issue.body.allowanceToken, browserToken: issue.body.browserToken };
+  const send = (changes: Record<string, unknown>) => postMessage(env, db,
+    new Request("https://site.test/v1/messages", { method: "POST", body: JSON.stringify({ ...frame, ...changes }) }));
+  expect((await send({ browserToken: "missing" })).status).toBe(401);
+  expect((await send({ allowanceToken: "missing" })).status).toBe(401);
+  expect((await send({ text: 123 })).status).toBe(400);
+  expect((await send({ text: "ы".repeat(21_000) })).status).toBe(413);
+  expect(allocations).toHaveLength(0);
+  const accepted = await send({});
+  expect(accepted.status).toBe(200);
+  expect(allocations).toHaveLength(1);
+  // A lost RPC acknowledgement returns the admitted run for polling rather than starting it twice.
+  const first = JSON.parse((await accepted.text()).trim().split("\n")[0]!);
+  expect(first).toMatchObject({ type: "meta", replayed: true, runId: allocations[0] });
+  const duplicate = await send({});
+  const replay = (await duplicate.text()).trim().split("\n").map(line => JSON.parse(line));
+  expect(replay.map(f => [f.type, f.runId, f.replayed])).toEqual([
+    ["meta", allocations[0], true], ["done", allocations[0], true],
+  ]);
+  expect((await send({ text: "Новый текст со старым идентификатором" })).status).toBe(409);
+  expect((await send({ clientRequestId: "second" })).status).toBe(429);
+  expect(allocations).toHaveLength(1);
+});
+
+test("a pre-limit allowance uses the current question limit for new sends", async () => {
+  const shim = new SqliteD1Shim();
+  const db = new TrackedD1(shim.asD1());
+  const env = makeTestEnv(shim.asD1());
+  const { browserId, browserToken } = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
+  const allowanceToken = await signHs256Jwt(env.ALLOWANCE_JWT_SECRET, {
+    typ: "allowance", tier: "guest", browserId, ip: "", fp: "", exp: Math.floor(Date.now() / 1000) + 60,
+  });
+  const send = () => postMessage(env, db, new Request("https://site.test/v1/messages", {
+    method: "POST", body: JSON.stringify({ type: "send", browserToken, allowanceToken,
+      course: "", docId: "", text: "Вопрос", clientRequestId: "legacy-limit" }),
+  }));
+  const setLimit = shim.sqlite.query("UPDATE service_config SET value_json = json_set(value_json, '$.maxQuestionChars', ?) WHERE key = 'policy'");
+  setLimit.run(5);
+  expect(await (await send()).json()).toEqual({
+    type: "error", code: "question_too_long", message: "Сократи вопрос до 5 символов.",
+  });
+  setLimit.run(6);
+  expect((await send()).status).toBe(200);
+});
 
 function makeSseStream(chunks: string[]): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
@@ -1018,7 +1080,7 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
       },
     };
 
-    const frames: ServerWsFrame[] = [];
+    const frames: ChatStreamFrame[] = [];
     await executeAgentRun({
       env,
       db,

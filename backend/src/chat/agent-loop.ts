@@ -30,7 +30,7 @@ import type {
   QuotaBucket,
   QuotePayload,
   RunStatus,
-  ServerWsFrame,
+  ChatStreamFrame,
   ServicePolicy,
   Tier,
 } from "../types";
@@ -61,7 +61,7 @@ export interface AgentLoopParams {
   quote: QuotePayload | null;
   signal: AbortSignal;
   isStoppedByUser: () => boolean;
-  sendFrame: (frame: ServerWsFrame) => void;
+  sendFrame: (frame: ChatStreamFrame) => void;
 }
 function preview(raw: string, field: string): string {
   try {

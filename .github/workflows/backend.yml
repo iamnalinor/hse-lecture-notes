@@ -42,7 +42,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: Verify Worker, WebSocket Durable Object and D1 together
+      - name: Verify HTTP streaming, Durable Objects and D1 together
         working-directory: backend
         run: node integration/chat-workerd.mjs
 
