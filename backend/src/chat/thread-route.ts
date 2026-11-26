@@ -27,8 +27,20 @@ export async function handleGetThread(
   const requestedThreadId = url.searchParams.get("threadId")?.trim() || null;
   const cursorSeq = url.searchParams.get("beforeSeq");
   const beforeSeq = cursorSeq === null ? null : Number(cursorSeq);
-  if (cursorSeq !== null && (!requestedThreadId || !/^\d+$/.test(cursorSeq) || !Number.isSafeInteger(beforeSeq) || Number(beforeSeq) < 1)) {
-    return { status: 400, body: { code: "invalid_cursor", message: "Expected a positive message sequence and threadId" } };
+  if (
+    cursorSeq !== null &&
+    (!requestedThreadId ||
+      !/^\d+$/.test(cursorSeq) ||
+      !Number.isSafeInteger(beforeSeq) ||
+      Number(beforeSeq) < 1)
+  ) {
+    return {
+      status: 400,
+      body: {
+        code: "invalid_cursor",
+        message: "Expected a positive message sequence and threadId",
+      },
+    };
   }
   const beforeUpdatedAtRaw = url.searchParams.get("beforeUpdatedAt");
   const beforeUpdatedAt =
@@ -51,10 +63,23 @@ export async function handleGetThread(
   const owner = session ? "telegram_id = ?" : "browser_id = ? AND telegram_id IS NULL";
   const ownerId = session?.telegramId ?? btCheck.browserId;
   const beforeId = url.searchParams.get("beforeId");
-  const cursor = beforeUpdatedAt === null ? "" : beforeId ? "AND (updated_at, id) < (?, ?)" : "AND updated_at < ?";
-  const bounds = beforeUpdatedAt === null ? [] : beforeId ? [beforeUpdatedAt, beforeId] : [beforeUpdatedAt];
-  const threadsRes = await db.all<{ id: string; first_question: string | null; generated_title: string | null; context_limited: number; updated_at: number }>(
-    db.prepare(`SELECT id, ${firstQuestionSql} AS first_question, generated_title, context_limited, updated_at FROM chat_threads
+  const cursor =
+    beforeUpdatedAt === null
+      ? ""
+      : beforeId
+        ? "AND (updated_at, id) < (?, ?)"
+        : "AND updated_at < ?";
+  const bounds =
+    beforeUpdatedAt === null ? [] : beforeId ? [beforeUpdatedAt, beforeId] : [beforeUpdatedAt];
+  const threadsRes = await db.all<{
+    id: string;
+    first_question: string | null;
+    generated_title: string | null;
+    context_limited: number;
+    updated_at: number;
+  }>(
+    db
+      .prepare(`SELECT id, ${firstQuestionSql} AS first_question, generated_title, context_limited, updated_at FROM chat_threads
                 WHERE ${owner} ${cursor} ORDER BY updated_at DESC, id DESC LIMIT ?`)
       .bind(ownerId, ...bounds, pageSize + 1),
   );
@@ -67,15 +92,18 @@ export async function handleGetThread(
     updatedAt: t.updated_at,
   }));
 
-  const targetThreadId = requestedThreadId ?? (beforeUpdatedAt === null ? threads[0]?.id : null) ?? null;
+  const targetThreadId =
+    requestedThreadId ?? (beforeUpdatedAt === null ? threads[0]?.id : null) ?? null;
   let thread: Record<string, unknown> | null = null;
   let requestedThreadMissing = false;
 
   if (targetThreadId) {
     // Verify ownership + fetch last 50 messages (WITHOUT agent_items_json) in 1 batch
     const [thrRes, msgRes] = await db.batch<Record<string, unknown>>([
-      db.prepare(`SELECT id, ${firstQuestionSql} AS first_question, generated_title, context_limited, created_at, updated_at
-                  FROM chat_threads WHERE id = ? AND ${owner}`).bind(targetThreadId, ownerId),
+      db
+        .prepare(`SELECT id, ${firstQuestionSql} AS first_question, generated_title, context_limited, created_at, updated_at
+                  FROM chat_threads WHERE id = ? AND ${owner}`)
+        .bind(targetThreadId, ownerId),
       db
         .prepare(
           `SELECT id, seq, role, status, course, doc_id, content_tex, quote_json, steps_json, suggestion, error_message, run_id, created_at, updated_at
@@ -89,28 +117,38 @@ export async function handleGetThread(
     ]);
 
     const thrRow = thrRes?.results[0] as
-      | { id: string; first_question: string | null; generated_title: string | null; context_limited: number; created_at: number; updated_at: number }
+      | {
+          id: string;
+          first_question: string | null;
+          generated_title: string | null;
+          context_limited: number;
+          created_at: number;
+          updated_at: number;
+        }
       | undefined;
 
     if (!thrRow) {
       if (requestedThreadId) requestedThreadMissing = true;
     } else {
       const rows = msgRes?.results ?? [];
-      const messages = rows.slice(0, 50).reverse().map((m) => ({
-        id: m.id,
-        seq: m.seq,
-        page: { course: m.course, docId: m.doc_id },
-        role: m.role,
-        status: m.status,
-        contentTex: m.content_tex,
-        quote: typeof m.quote_json === "string" ? safeJsonParse(m.quote_json) : null,
-        suggestion: typeof m.suggestion === "string" ? m.suggestion : null,
-        steps: typeof m.steps_json === "string" ? safeJsonParse(m.steps_json) : [],
-        errorMessage: m.error_message ?? null,
-        runId: m.run_id ?? null,
-        createdAt: m.created_at,
-        updatedAt: m.updated_at,
-      }));
+      const messages = rows
+        .slice(0, 50)
+        .reverse()
+        .map((m) => ({
+          id: m.id,
+          seq: m.seq,
+          page: { course: m.course, docId: m.doc_id },
+          role: m.role,
+          status: m.status,
+          contentTex: m.content_tex,
+          quote: typeof m.quote_json === "string" ? safeJsonParse(m.quote_json) : null,
+          suggestion: typeof m.suggestion === "string" ? m.suggestion : null,
+          steps: typeof m.steps_json === "string" ? safeJsonParse(m.steps_json) : [],
+          errorMessage: m.error_message ?? null,
+          runId: m.run_id ?? null,
+          createdAt: m.created_at,
+          updatedAt: m.updated_at,
+        }));
       thread = {
         id: thrRow.id,
         title: displayThreadTitle(thrRow.generated_title, thrRow.first_question),

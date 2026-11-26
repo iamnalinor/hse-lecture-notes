@@ -5,6 +5,7 @@ Cloudflare Workers Free backend for the AI study assistant on `hse.nalinor.dev`.
 Address: `https://hse-api.nalinor.dev` (custom domain in the `nalinor.dev` zone, `routes` in `wrangler.jsonc`); the site gets it from the `VITE_CHAT_API_URL` repository variable. The Worker serves the API exclusively on its custom domain.
 
 ## Architecture
+
 - **HTTP Worker (`src/index.ts`)**: `/v1/health`, `/v1/auth/telegram`, `/v1/allowance`, `/v1/thread`, `/v1/runs/:runId/status`.
 - **Streaming chat**: `POST /v1/messages` accepts one JSON send command. The HTTP Worker verifies the browser and allowance, validates the question and atomically checks quota and idempotency before creating a `ChatRunner`. Question length is fixed when the allowance is issued. Changes to that limit take effect on its next renewal. Rejections return a non-2xx JSON error. An admitted response streams newline-delimited JSON (`application/x-ndjson`). Existing pages using WebSocket receive an update notice.
 - **SQLite-backed Durable Object (`ChatRunner`)**: Each admitted run has a named object that owns generation for up to 90 seconds. Detaching the HTTP stream leaves generation running. `POST /v1/runs/:runId/stop` checks the same browser/session ownership as the status endpoint and explicitly stops the provider. A duplicate client request returns the existing run for recovery.

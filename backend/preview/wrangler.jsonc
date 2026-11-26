@@ -1,5 +1,5 @@
-// Router of hse-preview.nalinor.dev (see src/index.ts). Deploy: `npx wrangler deploy -c preview/wrangler.jsonc`
-// from the repository root (`.github/workflows/backend.yml` does it on main when preview/ changes).
+// Router of hse-preview.nalinor.dev (see src/index.ts). Deploy: `bunx wrangler deploy -c preview/wrangler.jsonc`
+// from `backend/` (`.github/workflows/backend.yml` does it on main when backend/ changes).
 {
   "name": "hse-preview-router",
   "main": "src/index.ts",

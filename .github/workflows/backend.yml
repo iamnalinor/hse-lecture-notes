@@ -1,18 +1,16 @@
 name: Backend API
 
 # Tests, migrates D1, and deploys the Cloudflare Worker (`hse-lecture-notes-api`) on main;
-# also the router of hse-preview.nalinor.dev (`preview/`).
+# also the router of hse-preview.nalinor.dev (`backend/preview/`).
 on:
   push:
     branches: [main]
     paths:
       - "backend/**"
-      - "preview/**"
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
       - "backend/**"
-      - "preview/**"
       - ".github/workflows/backend.yml"
   workflow_dispatch:
 
@@ -37,8 +35,6 @@ jobs:
       - name: Typecheck & test
         working-directory: backend
         run: bun run typecheck && bun test
-      - name: Test the preview router
-        run: bun test preview/tests
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -80,4 +76,4 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bunx wrangler deploy -c ../preview/wrangler.jsonc
+        run: bunx wrangler deploy -c preview/wrangler.jsonc

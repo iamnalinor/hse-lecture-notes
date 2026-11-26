@@ -26,10 +26,7 @@ function getAllowedOrigin(request: Request, env: Env): string | null {
   return allowed.includes(origin) ? origin : null;
 }
 
-function withCorsHeaders(
-  headers: Headers,
-  allowedOrigin: string | null,
-): Headers {
+function withCorsHeaders(headers: Headers, allowedOrigin: string | null): Headers {
   if (allowedOrigin) {
     headers.set("Access-Control-Allow-Origin", allowedOrigin);
     // Older clients still use credentials: "include"; browser cookies remain ignored.
@@ -69,7 +66,6 @@ function extractSessionToken(request: Request): string | null {
   }
   return null;
 }
-
 
 /**
  * GET /v1/runs/:runId/status
@@ -113,9 +109,10 @@ async function handleRunRequest(
     return { status: 404, body: { code: "run_not_found", message: "Run not found" } };
   }
 
-  const ownsRun = run.telegram_id === null
-    ? run.browser_id === btCheck.browserId
-    : run.telegram_id === session?.telegramId;
+  const ownsRun =
+    run.telegram_id === null
+      ? run.browser_id === btCheck.browserId
+      : run.telegram_id === session?.telegramId;
 
   if (!ownsRun) {
     return { status: 403, body: { code: "forbidden", message: "Not owner of run" } };
@@ -129,9 +126,10 @@ async function handleRunRequest(
   }
 
   const nowMs = Date.now();
-  const current = run.status === "running" && run.expires_at < nowMs
-    ? await readRunAfterExpiry(db, run, nowMs)
-    : run;
+  const current =
+    run.status === "running" && run.expires_at < nowMs
+      ? await readRunAfterExpiry(db, run, nowMs)
+      : run;
   if (!current) return { status: 404, body: { code: "run_not_found", message: "Run not found" } };
 
   return {
@@ -146,10 +144,13 @@ async function handleRunRequest(
   };
 }
 
-
-
 function configurationError(env: Env): string | null {
-  for (const name of ["TELEGRAM_CLIENT_ID", "BROWSER_TOKEN_SECRET", "ALLOWANCE_JWT_SECRET", "TURNSTILE_SECRET_KEY"] as const) {
+  for (const name of [
+    "TELEGRAM_CLIENT_ID",
+    "BROWSER_TOKEN_SECRET",
+    "ALLOWANCE_JWT_SECRET",
+    "TURNSTILE_SECRET_KEY",
+  ] as const) {
     if (!env[name]?.trim()) return `Required Worker secret ${name} is missing or empty`;
   }
   if (env.LLM_PROVIDER?.trim() === "openai" && !env.OPENAI_API_KEY?.trim()) {
@@ -159,7 +160,11 @@ function configurationError(env: Env): string | null {
 }
 
 export default {
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(
+    _controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<void> {
     const error = configurationError(env);
     if (error) throw new Error(error);
     // Delegate immediately to SQLite-backed DO (30s CPU budget instead of 10ms Free Cron limit)
@@ -175,7 +180,11 @@ export default {
     const error = configurationError(env);
     if (error) {
       logEvent("error", "configuration_error", { message: error });
-      return jsonResponse(503, { ...chatError, code: "configuration_error", message: error }, getAllowedOrigin(request, env));
+      return jsonResponse(
+        503,
+        { ...chatError, code: "configuration_error", message: error },
+        getAllowedOrigin(request, env),
+      );
     }
     const allowedOrigin = getAllowedOrigin(request, env);
 
@@ -195,25 +204,36 @@ export default {
     // Enforce Origin on mutating endpoints when browser sends Origin header
     const origin = request.headers.get("Origin");
     if (origin && !allowedOrigin) {
-      return jsonResponse(403, { ...chatError, code: "forbidden_origin", message: "Origin not allowed" }, null);
+      return jsonResponse(
+        403,
+        { ...chatError, code: "forbidden_origin", message: "Origin not allowed" },
+        null,
+      );
     }
 
-    if (isMessage && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+    if (
+      isMessage &&
+      request.method === "GET" &&
+      request.headers.get("Upgrade")?.toLowerCase() === "websocket"
+    ) {
       // Already-open pages use the old protocol. Send one actionable frame at the edge.
       const { 0: client, 1: server } = new WebSocketPair();
       server.accept();
-      server.send(JSON.stringify({ type: "error", code: "client_update_required",
-        message: "Обнови страницу, чтобы отправить вопрос в чат. Перед обновлением скопируй текст вопроса." }));
+      server.send(
+        JSON.stringify({
+          type: "error",
+          code: "client_update_required",
+          message:
+            "Обнови страницу, чтобы отправить вопрос в чат. Перед обновлением скопируй текст вопроса.",
+        }),
+      );
       server.close(1000, "client_update_required");
       return new Response(null, { status: 101, webSocket: client });
     }
     const db = new TrackedD1(env.DB);
     const reqId = `req_${randomToken(8)}`;
     const reqStart = Date.now();
-    const finish = (
-      status: number,
-      body: Record<string, unknown>,
-    ): Response => {
+    const finish = (status: number, body: Record<string, unknown>): Response => {
       logEvent(status >= 500 ? "error" : status >= 400 ? "warn" : "info", "http_request", {
         reqId,
         method: request.method,
@@ -229,21 +249,42 @@ export default {
 
     try {
       if (isMessage) {
-        if (request.method !== "POST") return finish(405, { ...chatError, code: "method_not_allowed", message: "Используй POST для отправки сообщения." });
+        if (request.method !== "POST")
+          return finish(405, {
+            ...chatError,
+            code: "method_not_allowed",
+            message: "Используй POST для отправки сообщения.",
+          });
         const admission = postMessage(env, db, request);
         // Complete the D1 reservation and its handoff even if the reader leaves before meta.
-        ctx.waitUntil(admission.then(() => {}, () => {}));
+        ctx.waitUntil(
+          admission.then(
+            () => {},
+            () => {},
+          ),
+        );
         const response = await admission;
-        logEvent("info", "chat_admission_telemetry", { reqId, status: response.status, ...db.telemetry.snapshot() });
-        return new Response(response.body, { status: response.status,
-          headers: withCorsHeaders(new Headers(response.headers), allowedOrigin) });
+        logEvent("info", "chat_admission_telemetry", {
+          reqId,
+          status: response.status,
+          ...db.telemetry.snapshot(),
+        });
+        return new Response(response.body, {
+          status: response.status,
+          headers: withCorsHeaders(new Headers(response.headers), allowedOrigin),
+        });
       }
       if (url.pathname === "/v1/auth/telegram" && request.method === "POST") {
         const body = await readBoundedJson(request);
         if (!body) {
           return finish(400, { code: "invalid_json", message: "Invalid JSON body" });
         }
-        const res = await handleTelegramLogin(env, db, request, body as { telegramIdToken?: string });
+        const res = await handleTelegramLogin(
+          env,
+          db,
+          request,
+          body as { telegramIdToken?: string },
+        );
         return finish(res.status, res.body);
       }
 
@@ -257,7 +298,7 @@ export default {
           sessionToken:
             typeof body.sessionToken === "string"
               ? body.sessionToken
-              : extractSessionToken(request) ?? undefined,
+              : (extractSessionToken(request) ?? undefined),
           browserToken: typeof body.browserToken === "string" ? body.browserToken : undefined,
           fingerprint: typeof body.fingerprint === "string" ? body.fingerprint : undefined,
         });
@@ -269,9 +310,17 @@ export default {
         return finish(res.status, res.body);
       }
 
-      if (runRoute && (runRoute[2] === "status" && request.method === "GET" || runRoute[2] === "stop" && request.method === "POST")) {
+      if (
+        runRoute &&
+        ((runRoute[2] === "status" && request.method === "GET") ||
+          (runRoute[2] === "stop" && request.method === "POST"))
+      ) {
         const res = await handleRunRequest(env, db, request, runRoute[1]!, runRoute[2]);
-        if (res.status === 204) return new Response(null, { status: 204, headers: withCorsHeaders(new Headers(), allowedOrigin) });
+        if (res.status === 204)
+          return new Response(null, {
+            status: 204,
+            headers: withCorsHeaders(new Headers(), allowedOrigin),
+          });
         return finish(res.status, { ...chatError, ...res.body });
       }
 

@@ -79,7 +79,9 @@ test("preparation freezes context and preserves original snapshot on retry", asy
     route: { provider: "openai", model: "m", effort: "low" },
     limits: { maxHistoryMessages: 15, maxHistoryChars: 50_000 },
   });
-  expect(JSON.stringify(prepared.snapshot.contextItems)).not.toContain("Private conversation title");
+  expect(JSON.stringify(prepared.snapshot.contextItems)).not.toContain(
+    "Private conversation title",
+  );
   expect(prepared.history.logicalMessages).toBe(1);
   expect(prepared.history.items.at(-1)).toEqual(prepared.snapshot.userItem);
   expect(prepared.snapshot.contextItems[0]?.type).toBe("message");
@@ -167,17 +169,15 @@ test("replays compatible reasoning and full tool pairs, falls back whole exchang
   ).toContain("OPAQUE");
   // Even a compatible chain can exceed the SQL read bound. Preserve the small
   // visible exchange rather than loading opaque ciphertext or dropping its answer.
-  shim.sqlite
-    .query("UPDATE chat_messages SET agent_items_json=? WHERE id=?")
-    .run(
-      JSON.stringify({
-        version: 1,
-        complete: true,
-        provenance: first.preparedContext.provenance,
-        items: [{ type: "reasoning", encrypted_content: "x".repeat(60_000) }, ...items.slice(1)],
-      }),
-      first.assistantMessageId,
-    );
+  shim.sqlite.query("UPDATE chat_messages SET agent_items_json=? WHERE id=?").run(
+    JSON.stringify({
+      version: 1,
+      complete: true,
+      provenance: first.preparedContext.provenance,
+      items: [{ type: "reasoning", encrypted_content: "x".repeat(60_000) }, ...items.slice(1)],
+    }),
+    first.assistantMessageId,
+  );
   const oversizedCompatible = await prepareTurnContext(db, args);
   expect(JSON.stringify(oversizedCompatible.history.items)).toContain('"text":"answer"');
   expect(JSON.stringify(oversizedCompatible.history.items)).not.toContain("encrypted_content");
@@ -194,9 +194,17 @@ test("replays compatible reasoning and full tool pairs, falls back whole exchang
   const legacy = structuredClone(first.preparedContext.snapshot);
   const state = legacy.contextItems[0];
   if (state?.type !== "message") throw Error("missing context");
-  state.content[0]!.text = state.content[0]!.text.replace('{"page":', '{"title":"Old private topic","page":');
-  shim.sqlite.query("UPDATE chat_messages SET prompt_context_json=? WHERE id=?").run(JSON.stringify(legacy), first.userMessageId);
-  const replay = await prepareTurnContext(db, { ...args, retryAssistantMessageId: first.assistantMessageId });
+  state.content[0]!.text = state.content[0]!.text.replace(
+    '{"page":',
+    '{"title":"Old private topic","page":',
+  );
+  shim.sqlite
+    .query("UPDATE chat_messages SET prompt_context_json=? WHERE id=?")
+    .run(JSON.stringify(legacy), first.userMessageId);
+  const replay = await prepareTurnContext(db, {
+    ...args,
+    retryAssistantMessageId: first.assistantMessageId,
+  });
   expect(JSON.stringify(replay.history.items)).not.toContain("Old private topic");
   expect(retry.history.logicalMessages).toBe(1);
 });

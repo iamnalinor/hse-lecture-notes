@@ -19,8 +19,17 @@ export class OpenAIResponsesProvider implements LlmProvider {
     } catch {
       throw new Error("OPENAI_BASE_URL must be an absolute HTTP(S) URL");
     }
-    if (/[?#]/.test(baseUrl) || !["https:", "http:"].includes(parsed.protocol) || parsed.search || parsed.hash || parsed.username || parsed.password) {
-      throw new Error("OPENAI_BASE_URL must be an HTTP(S) URL without credentials, query or fragment");
+    if (
+      /[?#]/.test(baseUrl) ||
+      !["https:", "http:"].includes(parsed.protocol) ||
+      parsed.search ||
+      parsed.hash ||
+      parsed.username ||
+      parsed.password
+    ) {
+      throw new Error(
+        "OPENAI_BASE_URL must be an HTTP(S) URL without credentials, query or fragment",
+      );
     }
     const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
     if (parsed.protocol === "http:" && !loopback) {
@@ -39,15 +48,19 @@ export class OpenAIResponsesProvider implements LlmProvider {
       const response = await this.fetchImpl(this.responsesUrl, {
         method: "POST",
         redirect: "manual",
-        headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json", Accept: "text/event-stream" },
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
         body: JSON.stringify({
           model: req.model,
           reasoning: { effort: req.effort },
           instructions: req.instructions,
           input: req.input,
           // Existing tools have optional parameters; keep their semantics in Responses.
-          tools: req.tools.map(tool => ({ ...tool, strict: tool.strict ?? false })),
-          ...(req.toolChoice ? {tool_choice: req.toolChoice} : {}),
+          tools: req.tools.map((tool) => ({ ...tool, strict: tool.strict ?? false })),
+          ...(req.toolChoice ? { tool_choice: req.toolChoice } : {}),
           parallel_tool_calls: req.parallelToolCalls ?? true,
           store: false,
           stream: true,
@@ -57,14 +70,23 @@ export class OpenAIResponsesProvider implements LlmProvider {
       });
       if (!response.ok) {
         await response.body?.cancel().catch(() => {});
-        throw new LlmUpstreamError(response.status,
+        throw new LlmUpstreamError(
+          response.status,
           response.status === 429 ? "openai_rate_limited" : "openai_upstream_error",
-          `OpenAI API HTTP ${response.status}`);
+          `OpenAI API HTTP ${response.status}`,
+        );
       }
-      if (!response.body) throw new LlmUpstreamError(502, "openai_empty_body", "OpenAI API returned empty stream");
+      if (!response.body)
+        throw new LlmUpstreamError(502, "openai_empty_body", "OpenAI API returned empty stream");
       // Never replay a possibly billable request automatically after an HTTP/stream failure.
-      return await parseResponsesSseStream(response.body, req.maxResponseChars, req.onDelta,
-        () => localAbort.abort("max_response_chars"), "openai", { enforceProtocol: Boolean(req.toolChoice), hideText: req.hideText });
+      return await parseResponsesSseStream(
+        response.body,
+        req.maxResponseChars,
+        req.onDelta,
+        () => localAbort.abort("max_response_chars"),
+        "openai",
+        { enforceProtocol: Boolean(req.toolChoice), hideText: req.hideText },
+      );
     } finally {
       req.signal.removeEventListener("abort", onAbort);
     }

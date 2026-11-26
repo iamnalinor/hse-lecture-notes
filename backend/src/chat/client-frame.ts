@@ -25,8 +25,14 @@ export function parseClientFrame(raw: string): ClientChatCommand {
   if (frame.docId && !String(frame.course).trim()) throw new Error("Для страницы требуется курс.");
   const quote = frame.quote;
   if (quote != null) {
-    if (!isRecord(quote) || typeof quote.tex !== "string" || typeof quote.label !== "string" ||
-      ["messageId", "blockId", "sectionId"].some(k => quote[k] !== undefined && typeof quote[k] !== "string"))
+    if (
+      !isRecord(quote) ||
+      typeof quote.tex !== "string" ||
+      typeof quote.label !== "string" ||
+      ["messageId", "blockId", "sectionId"].some(
+        (k) => quote[k] !== undefined && typeof quote[k] !== "string",
+      )
+    )
       throw new Error("Не удалось прочитать цитату.");
   } else if (!String(frame.text).trim()) {
     throw new Error("Введи вопрос или выбери цитату.");

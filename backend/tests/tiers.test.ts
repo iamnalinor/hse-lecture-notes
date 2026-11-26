@@ -15,17 +15,31 @@ const secret = "test-tier-signing-secret";
 
 const env = { ALLOWANCE_JWT_SECRET: secret, BROWSER_TOKEN_SECRET: secret } as Env;
 const sessionClaims = {
-  typ: "session_v2", tgId: 42, tgName: "User", browserId: "br",
-  iat: now / 1000, exp: (now + 60_000) / 1000,
+  typ: "session_v2",
+  tgId: 42,
+  tgName: "User",
+  browserId: "br",
+  iat: now / 1000,
+  exp: (now + 60_000) / 1000,
 };
 
 test("sessions require a valid signature, matching browser, account claims, and unexpired token", async () => {
   const token = await signHs256Jwt(secret, sessionClaims);
-  expect(await verifyActiveSession(env, token, "br", now)).toMatchObject({ telegramId: 42, telegramName: "User" });
+  expect(await verifyActiveSession(env, token, "br", now)).toMatchObject({
+    telegramId: 42,
+    telegramName: "User",
+  });
   expect(await verifyActiveSession(env, token, "other", now)).toBeNull();
   expect(await verifyActiveSession(env, token, "br", now + 60_000)).toBeNull();
-  expect(await verifyActiveSession(env, await signHs256Jwt("wrong", sessionClaims), "br", now)).toBeNull();
-  for (const change of [{ exp: undefined }, { tgId: 0 }, { tgName: null }, { typ: "session", sid: "s" }]) {
+  expect(
+    await verifyActiveSession(env, await signHs256Jwt("wrong", sessionClaims), "br", now),
+  ).toBeNull();
+  for (const change of [
+    { exp: undefined },
+    { tgId: 0 },
+    { tgName: null },
+    { typ: "session", sid: "s" },
+  ]) {
     const invalid = await signHs256Jwt(secret, { ...sessionClaims, ...change });
     expect(await verifyActiveSession(env, invalid, "br", now)).toBeNull();
   }
@@ -34,12 +48,28 @@ test("sessions require a valid signature, matching browser, account claims, and 
 test("legacy guest allowances survive the session migration while legacy account allowances expire", async () => {
   const shim = new SqliteD1Shim();
   const db = new TrackedD1(shim.asD1());
-  const guest = { typ: "allowance", tier: "guest", browserId: "br", ip: "", fp: "", exp: now / 1000 + 60 };
+  const guest = {
+    typ: "allowance",
+    tier: "guest",
+    browserId: "br",
+    ip: "",
+    fp: "",
+    exp: now / 1000 + 60,
+  };
   const guestToken = await signHs256Jwt(secret, guest);
-  expect(await verifyAllowanceToken(env, db, guestToken, "br", now)).toMatchObject({ tier: "guest" });
+  expect(await verifyAllowanceToken(env, db, guestToken, "br", now)).toMatchObject({
+    tier: "guest",
+  });
   expect(await verifyAllowanceToken(env, db, guestToken, "other", now)).toBeNull();
-  for (const change of [{ sid: "s", tgId: 42, tier: "student" }, { tgId: 42 }, { exp: undefined },
-    { maxQuestionChars: 0 }, { maxQuestionChars: 1.5 }, { maxQuestionChars: "100" }, { maxQuestionChars: 50_000 }]) {
+  for (const change of [
+    { sid: "s", tgId: 42, tier: "student" },
+    { tgId: 42 },
+    { exp: undefined },
+    { maxQuestionChars: 0 },
+    { maxQuestionChars: 1.5 },
+    { maxQuestionChars: "100" },
+    { maxQuestionChars: 50_000 },
+  ]) {
     const token = await signHs256Jwt(secret, { ...guest, ...change });
     expect(await verifyAllowanceToken(env, db, token, "br", now)).toBeNull();
   }
@@ -97,10 +127,22 @@ test("manual tier changes apply to existing sessions and allowance tokens", asyn
   const shim = new SqliteD1Shim();
   const db = new TrackedD1(shim.asD1());
   const browser = await mintBrowserToken(secret);
-  const sessionToken = await signHs256Jwt(secret, { ...sessionClaims, browserId: browser.browserId });
-  const issueAllowance = () => handleAllowance(env, db, new Request("https://test.invalid"), {
-    sessionToken, browserToken: browser.browserToken, turnstileToken: "ok",
-  }, { nowMs: now, turnstileVerifier: async () => ({ ok: true }) });
+  const sessionToken = await signHs256Jwt(secret, {
+    ...sessionClaims,
+    browserId: browser.browserId,
+  });
+  const issueAllowance = () =>
+    handleAllowance(
+      env,
+      db,
+      new Request("https://test.invalid"),
+      {
+        sessionToken,
+        browserToken: browser.browserToken,
+        turnstileToken: "ok",
+      },
+      { nowMs: now, turnstileVerifier: async () => ({ ok: true }) },
+    );
   const firstAllowance = await issueAllowance();
   expect(firstAllowance.body.tier).toBe("default");
   expect(firstAllowance.body.allowanceExpiresAt).toBe(now + 60_000);
@@ -124,7 +166,13 @@ test("a guest over the limit is told when the window really drops below it, not 
   const policy = await loadPolicy(db);
   Object.assign(policy.buckets.low.limits, { guest: 5 });
   policy.rateLimitPerMinute = 100;
-  const axes = { tier: "guest" as const, telegramId: null, browserId: "br", ipAddress: "ip", fingerprint: "" };
+  const axes = {
+    tier: "guest" as const,
+    telegramId: null,
+    browserId: "br",
+    ipAddress: "ip",
+    fingerprint: "",
+  };
   const hour = 3_600_000;
   for (let i = 0; i < 5; i++) {
     const at = now + i * hour;

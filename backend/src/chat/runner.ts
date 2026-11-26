@@ -29,7 +29,11 @@ export class ChatRunner extends DurableObject<Env> {
     await this.runDailyArchive();
   }
 
-  async startMessage({ admit, policy, tier }: AcceptedMessage): Promise<ReadableStream<Uint8Array>> {
+  async startMessage({
+    admit,
+    policy,
+    tier,
+  }: AcceptedMessage): Promise<ReadableStream<Uint8Array>> {
     const db = new TrackedD1(this.env.DB);
     const provider = createLlmProvider(this.env, db);
     const abort = new AbortController();
@@ -37,11 +41,18 @@ export class ChatRunner extends DurableObject<Env> {
     // A replay can expose the run ID while the original request is handing it off.
     if (this.stopRequested) abort.abort("user_stop");
     let sink: ReadableByteStreamController | null = null;
-    const stream = new ReadableStream({
-      type: "bytes",
-      start(controller) { sink = controller; },
-      cancel() { sink = null; },
-    }, { highWaterMark: 1024 * 1024 });
+    const stream = new ReadableStream(
+      {
+        type: "bytes",
+        start(controller) {
+          sink = controller;
+        },
+        cancel() {
+          sink = null;
+        },
+      },
+      { highWaterMark: 1024 * 1024 },
+    );
     const sendFrame = (frame: ChatStreamFrame) => {
       if (!sink) return;
       if ((sink.desiredSize ?? 0) <= 0) {
@@ -54,20 +65,43 @@ export class ChatRunner extends DurableObject<Env> {
     sendFrame(metaFrame(admit, tier));
     // The run owns the provider request. Closing the browser's reader only detaches its sink.
     const run = executeAgentRun({
-      env: this.env, db, provider, policy, tier, ...admit.question, requestTitle: admit.requestTitle,
-      generatedTitle: admit.generatedTitle, preparedContext: admit.preparedContext, contextLimited: admit.contextLimited,
-      questionCreatedAt: admit.questionCreatedAt, runId: admit.runId, threadId: admit.threadId,
-      excludeMessageIds: [admit.userMessageId, admit.assistantMessageId], bucket: admit.bucket,
-      route: admit.route, initialReserveMicros: admit.reserveMicros, degraded: admit.degraded,
-      signal: abort.signal, isStoppedByUser: () => abort.signal.aborted, sendFrame,
-    }).catch(error => {
-      const failure = classifyError(error);
-      sendFrame({ type: "error", code: failure.code, message: failure.message });
-    }).finally(() => {
-      this.active = null;
-      sink?.close();
-      console.log(JSON.stringify({ event: "chat_run_telemetry", runId: admit.runId, ...db.telemetry.snapshot() }));
-    });
+      env: this.env,
+      db,
+      provider,
+      policy,
+      tier,
+      ...admit.question,
+      requestTitle: admit.requestTitle,
+      generatedTitle: admit.generatedTitle,
+      preparedContext: admit.preparedContext,
+      contextLimited: admit.contextLimited,
+      questionCreatedAt: admit.questionCreatedAt,
+      runId: admit.runId,
+      threadId: admit.threadId,
+      excludeMessageIds: [admit.userMessageId, admit.assistantMessageId],
+      bucket: admit.bucket,
+      route: admit.route,
+      initialReserveMicros: admit.reserveMicros,
+      degraded: admit.degraded,
+      signal: abort.signal,
+      isStoppedByUser: () => abort.signal.aborted,
+      sendFrame,
+    })
+      .catch((error) => {
+        const failure = classifyError(error);
+        sendFrame({ type: "error", code: failure.code, message: failure.message });
+      })
+      .finally(() => {
+        this.active = null;
+        sink?.close();
+        console.log(
+          JSON.stringify({
+            event: "chat_run_telemetry",
+            runId: admit.runId,
+            ...db.telemetry.snapshot(),
+          }),
+        );
+      });
     this.ctx.waitUntil(run);
     return stream;
   }

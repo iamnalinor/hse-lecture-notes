@@ -16,10 +16,20 @@ test("the D1 daily limit is named, not hidden behind a generic 500 (2026-11-25)"
 });
 
 test("other storage, search and model failures get their own codes and safe details", () => {
-  expect(classifyError(new Error("D1_ERROR: database is overloaded")).code).toBe("storage_unavailable");
-  expect(classifyError(new Error("VECTOR_QUERY_ERROR (code = 40006)")).code).toBe("search_unavailable");
-  const upstream = classifyError(new LlmUpstreamError(429, "insufficient_quota", "secret payload body"));
-  expect(upstream).toMatchObject({ status: 502, code: "upstream_error", detail: "HTTP 429 insufficient_quota" });
+  expect(classifyError(new Error("D1_ERROR: database is overloaded")).code).toBe(
+    "storage_unavailable",
+  );
+  expect(classifyError(new Error("VECTOR_QUERY_ERROR (code = 40006)")).code).toBe(
+    "search_unavailable",
+  );
+  const upstream = classifyError(
+    new LlmUpstreamError(429, "insufficient_quota", "secret payload body"),
+  );
+  expect(upstream).toMatchObject({
+    status: 502,
+    code: "upstream_error",
+    detail: "HTTP 429 insufficient_quota",
+  });
   expect(JSON.stringify(upstream)).not.toContain("secret payload");
   const unknown = classifyError(new TypeError("cannot read x of private-thing"));
   expect(unknown).toMatchObject({ status: 500, code: "internal_error", detail: "TypeError" });

@@ -11,10 +11,12 @@ export interface ArchiveStoragePort {
 export function r2ToArchiveStorage(bucket: R2Bucket): ArchiveStoragePort {
   return {
     async putIfAbsent(key, body) {
-      return (await bucket.put(key, body, {
-        onlyIf: new Headers({ "If-None-Match": "*" }),
-        httpMetadata: { contentType: "application/gzip" },
-      })) !== null;
+      return (
+        (await bucket.put(key, body, {
+          onlyIf: new Headers({ "If-None-Match": "*" }),
+          httpMetadata: { contentType: "application/gzip" },
+        })) !== null
+      );
     },
     async getBytes(key) {
       const obj = await bucket.get(key);
@@ -71,8 +73,14 @@ interface ThreadSnapshot {
   updated_at: number;
 }
 
-async function writeVerified(storage: ArchiveStoragePort, directory: string, records: unknown[]): Promise<string> {
-  const raw = new TextEncoder().encode(records.map(record => JSON.stringify(record)).join("\n") + "\n");
+async function writeVerified(
+  storage: ArchiveStoragePort,
+  directory: string,
+  records: unknown[],
+): Promise<string> {
+  const raw = new TextEncoder().encode(
+    records.map((record) => JSON.stringify(record)).join("\n") + "\n",
+  );
   const compressed = await gzipBytes(raw);
   const digest = await sha256HexBytes(compressed);
   const key = `${directory}/${digest}.jsonl.gz`;
@@ -84,13 +92,29 @@ async function writeVerified(storage: ArchiveStoragePort, directory: string, rec
   return key;
 }
 
-async function readMessagePage(db: TrackedD1, threadId: string, afterSeq: number | null, maxSeq: number) {
+async function readMessagePage(
+  db: TrackedD1,
+  threadId: string,
+  afterSeq: number | null,
+  maxSeq: number,
+) {
   // Inspect sizes before copying payloads into the Worker. A single large row
   // is a page of its own, bounded by D1's row limit.
-  const size = ["content_tex", "quote_json", "steps_json", "agent_items_json", "prompt_context_json", "error_message", "suggestion"]
-    .map(column => `coalesce(length(CAST(${column} AS BLOB)),0)`).join(" + ");
+  const size = [
+    "content_tex",
+    "quote_json",
+    "steps_json",
+    "agent_items_json",
+    "prompt_context_json",
+    "error_message",
+    "suggestion",
+  ]
+    .map((column) => `coalesce(length(CAST(${column} AS BLOB)),0)`)
+    .join(" + ");
   const after = afterSeq === null ? "" : "AND seq > ?";
-  const page = await db.all<Record<string, unknown> & { seq: number }>(db.prepare(`
+  const page = await db.all<Record<string, unknown> & { seq: number }>(
+    db
+      .prepare(`
     WITH candidates AS MATERIALIZED (
       SELECT seq, ${size} AS bytes FROM chat_messages WHERE thread_id = ? ${after} AND seq <= ?
       ORDER BY seq LIMIT ?
@@ -101,7 +125,16 @@ async function readMessagePage(db: TrackedD1, threadId: string, afterSeq: number
            m.error_message,m.agent_items_json,m.prompt_context_json,m.suggestion,m.run_id,m.created_at,m.updated_at
     FROM sizes JOIN chat_messages m ON m.thread_id = ? AND m.seq = sizes.seq
     WHERE sizes.n = 1 OR sizes.total <= ? ORDER BY m.seq
-  `).bind(threadId, ...(afterSeq === null ? [] : [afterSeq]), maxSeq, PAGE_ROWS, threadId, PAGE_BYTES));
+  `)
+      .bind(
+        threadId,
+        ...(afterSeq === null ? [] : [afterSeq]),
+        maxSeq,
+        PAGE_ROWS,
+        threadId,
+        PAGE_BYTES,
+      ),
+  );
   return page.results;
 }
 
@@ -119,7 +152,12 @@ export async function runArchiveBatch(
   const cutoff = now - Math.max(options.archiveAfterDays ?? 30, 1) * DAY_MS;
   const batchLimit = Math.min(50, Math.max(0, options.batchLimit ?? 50));
   const stats: ArchiveBatchStats = {
-    threadsFound: 0, threadsDeleted: 0, threadsSkippedRace: 0, runsFound: 0, runsDeleted: 0, archivesWritten: 0,
+    threadsFound: 0,
+    threadsDeleted: 0,
+    threadsSkippedRace: 0,
+    runsFound: 0,
+    runsDeleted: 0,
+    archivesWritten: 0,
     needsContinuation: false,
   };
   if (!storage) {
@@ -127,8 +165,15 @@ export async function runArchiveBatch(
     return stats;
   }
 
-  const threads = await db.all<ThreadSnapshot & { max_seq: number | null; last_seq: number | null; last_part_key: string | null }>(
-    db.prepare(`WITH candidates AS MATERIALIZED (
+  const threads = await db.all<
+    ThreadSnapshot & {
+      max_seq: number | null;
+      last_seq: number | null;
+      last_part_key: string | null;
+    }
+  >(
+    db
+      .prepare(`WITH candidates AS MATERIALIZED (
       SELECT id, COALESCE(generated_title,title) AS title, generated_title, context_limited, context_revision,
              browser_id, telegram_id, created_at, updated_at,
              (SELECT MAX(seq) FROM chat_messages WHERE thread_id = chat_threads.id) AS max_seq
@@ -138,7 +183,8 @@ export async function runArchiveBatch(
     )
     SELECT c.*,p.last_seq,p.last_part_key FROM candidates c LEFT JOIN archive_thread_progress p
       ON p.thread_id = c.id AND p.snapshot_updated_at = c.updated_at AND p.snapshot_revision = c.context_revision AND p.max_seq = c.max_seq
-    ORDER BY c.updated_at,c.id`).bind(cutoff, Math.min(batchLimit, MAX_THREAD_PAGES)),
+    ORDER BY c.updated_at,c.id`)
+      .bind(cutoff, Math.min(batchLimit, MAX_THREAD_PAGES)),
   );
   stats.threadsFound = threads.results.length;
   let pagesLeft = MAX_THREAD_PAGES;
@@ -150,7 +196,8 @@ export async function runArchiveBatch(
     let previousPart = last_part_key;
     while (pagesLeft > 0) {
       pagesLeft--;
-      const messages = max_seq === null ? [] : await readMessagePage(db, thread.id, cursor, max_seq);
+      const messages =
+        max_seq === null ? [] : await readMessagePage(db, thread.id, cursor, max_seq);
       const last = messages.at(-1)?.seq;
       if (max_seq === null || last === max_seq) {
         const record = previousPart
@@ -158,7 +205,9 @@ export async function runArchiveBatch(
           : { kind: "thread", thread, messages };
         await writeVerified(storage, `archives/${day}`, [record]);
         stats.archivesWritten++;
-        const deleted = await db.run(db.prepare(`DELETE FROM chat_threads WHERE ${unchangedThread}`).bind(...snapshot));
+        const deleted = await db.run(
+          db.prepare(`DELETE FROM chat_threads WHERE ${unchangedThread}`).bind(...snapshot),
+        );
         if (deleted.meta.changes) stats.threadsDeleted++;
         else stats.threadsSkippedRace++;
         break;
@@ -171,14 +220,18 @@ export async function runArchiveBatch(
         { kind: "thread_part", threadId: thread.id, previousPart, messages },
       ]);
       stats.archivesWritten++;
-      const saved = await db.run(db.prepare(`
+      const saved = await db.run(
+        db
+          .prepare(`
         INSERT INTO archive_thread_progress(thread_id,snapshot_updated_at,snapshot_revision,max_seq,last_seq,last_part_key)
         SELECT id,updated_at,context_revision,?,?,? FROM chat_threads WHERE ${unchangedThread}
         ON CONFLICT(thread_id) DO UPDATE SET snapshot_updated_at=excluded.snapshot_updated_at,
           snapshot_revision=excluded.snapshot_revision,max_seq=excluded.max_seq,
           last_seq=excluded.last_seq,last_part_key=excluded.last_part_key
         WHERE snapshot_updated_at != excluded.snapshot_updated_at OR snapshot_revision != excluded.snapshot_revision
-          OR max_seq != excluded.max_seq OR last_seq < excluded.last_seq`).bind(max_seq,last,key,...snapshot));
+          OR max_seq != excluded.max_seq OR last_seq < excluded.last_seq`)
+          .bind(max_seq, last, key, ...snapshot),
+      );
       if (!saved.meta.changes) {
         stats.threadsSkippedRace++;
         break;
@@ -190,8 +243,13 @@ export async function runArchiveBatch(
     if (!pagesLeft) break;
   }
 
-  const runs = await db.all<Record<string, unknown> & { id: string; created_at: number; updated_at: number }>(
-    db.prepare(`SELECT * FROM usage_runs WHERE created_at < ? AND status != 'running' ORDER BY created_at,id LIMIT ?`)
+  const runs = await db.all<
+    Record<string, unknown> & { id: string; created_at: number; updated_at: number }
+  >(
+    db
+      .prepare(
+        `SELECT * FROM usage_runs WHERE created_at < ? AND status != 'running' ORDER BY created_at,id LIMIT ?`,
+      )
       .bind(cutoff, batchLimit * 4),
   );
   stats.runsFound = runs.results.length;
@@ -203,14 +261,21 @@ export async function runArchiveBatch(
     byDay.set(day, group);
   }
   for (const [day, group] of [...byDay].slice(0, MAX_RUN_DAYS)) {
-    await writeVerified(storage, `archives/${day}`, group.map(run => ({ kind: "usage_run", run })));
+    await writeVerified(
+      storage,
+      `archives/${day}`,
+      group.map((run) => ({ kind: "usage_run", run })),
+    );
     stats.archivesWritten++;
     for (let i = 0; i < group.length; i += 40) {
       const chunk = group.slice(i, i + 40);
       const pairs = chunk.map(() => "(?,?)").join(",");
-      const deleted = await db.run(db.prepare(`DELETE FROM usage_runs
+      const deleted = await db.run(
+        db
+          .prepare(`DELETE FROM usage_runs
         WHERE (id,updated_at) IN (VALUES ${pairs}) AND status != 'running'`)
-        .bind(...chunk.flatMap(run => [run.id,run.updated_at])));
+          .bind(...chunk.flatMap((run) => [run.id, run.updated_at])),
+      );
       stats.runsDeleted += deleted.meta.changes;
     }
   }

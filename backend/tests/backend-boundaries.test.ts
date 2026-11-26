@@ -9,29 +9,58 @@ import { SqliteD1Shim } from "./d1-shim";
 
 test("JSON limit counts bytes across chunks, cancels oversized bodies and accepts exact UTF-8 boundary", async () => {
   const bytes = new TextEncoder().encode('{"text":"я"}');
-  const makeRequest = (onCancel: () => void, close: boolean) => new Request("https://test.invalid", {
-    method: "POST",
-    body: new ReadableStream({
-      start(controller) {
-        for (const byte of bytes) controller.enqueue(Uint8Array.of(byte));
-        if (close) controller.close();
-      },
-      cancel: onCancel,
-    }),
-  });
+  const makeRequest = (onCancel: () => void, close: boolean) =>
+    new Request("https://test.invalid", {
+      method: "POST",
+      body: new ReadableStream({
+        start(controller) {
+          for (const byte of bytes) controller.enqueue(Uint8Array.of(byte));
+          if (close) controller.close();
+        },
+        cancel: onCancel,
+      }),
+    });
   let cancelled = false;
-  expect(await readBoundedJson(makeRequest(() => { cancelled = true; }, false), bytes.length - 1)).toBeNull();
+  expect(
+    await readBoundedJson(
+      makeRequest(() => {
+        cancelled = true;
+      }, false),
+      bytes.length - 1,
+    ),
+  ).toBeNull();
   expect(cancelled).toBe(true);
-  expect(await readBoundedJson(makeRequest(() => {}, true), bytes.length)).toEqual({ text: "я" });
+  expect(
+    await readBoundedJson(
+      makeRequest(() => {}, true),
+      bytes.length,
+    ),
+  ).toEqual({ text: "я" });
 });
 
 test("WebSocket parser validates command and quote fields and accepts extension fields", () => {
-  const send = { type: "send" as const, clientRequestId: "r", browserToken: "b", allowanceToken: "a",
-    course: "", docId: "", text: "q", extension: 1 };
+  const send = {
+    type: "send" as const,
+    clientRequestId: "r",
+    browserToken: "b",
+    allowanceToken: "a",
+    course: "",
+    docId: "",
+    text: "q",
+    extension: 1,
+  };
   expect(parseClientFrame(JSON.stringify(send))).toEqual(send);
   expect(parseClientFrame('{"type":"stop","extension":1}')).toEqual({ type: "stop" });
-  for (const value of [null, [], 1, {}, { ...send, clientRequestId: "" },
-    { ...send, threadId: {} }, { ...send, quote: [] }, { ...send, quote: { tex: "", label: "", blockId: 4 } }]) {
+  for (const value of [
+    null,
+    [],
+    1,
+    {},
+    { ...send, clientRequestId: "" },
+    { ...send, threadId: {} },
+    { ...send, quote: [] },
+    { ...send, quote: { tex: "", label: "", blockId: 4 } },
+  ]) {
     expect(() => parseClientFrame(JSON.stringify(value))).toThrow();
   }
 });
@@ -41,10 +70,11 @@ test("failed alert retries after a short lease and confirmed alerts share an ato
   const env = { TELEGRAM_BOT_TOKEN: "test", OWNER_TELEGRAM_ID: "1" };
   let calls = 0;
   const pending = Promise.withResolvers<Response>();
-  const send = (now: number) => sendOwnerAlert(env, db, "lastWeeklyWarnAt", "warning", now, async () => {
-    calls++;
-    return calls === 1 ? pending.promise : Response.json({ ok: true });
-  });
+  const send = (now: number) =>
+    sendOwnerAlert(env, db, "lastWeeklyWarnAt", "warning", now, async () => {
+      calls++;
+      return calls === 1 ? pending.promise : Response.json({ ok: true });
+    });
   const now = Date.now();
   const first = send(now);
   expect(await send(now + 1)).toBe(false);
@@ -59,10 +89,18 @@ test("failed alert retries after a short lease and confirmed alerts share an ato
 test("policy accepts published routes and rejects invalid counters, ratios and rate cards", () => {
   expect(() => validatePolicy(defaults)).not.toThrow();
   for (const mutate of [
-    (p: typeof defaults) => { p.buckets.high.model = "unknown"; },
-    (p: typeof defaults) => { p.buckets.low.pricingVersion = 42; },
-    (p: typeof defaults) => { p.buckets.high.limits.student = 2.5; },
-    (p: typeof defaults) => { p.budgets.weeklyWarnRatio = 1.01; },
+    (p: typeof defaults) => {
+      p.buckets.high.model = "unknown";
+    },
+    (p: typeof defaults) => {
+      p.buckets.low.pricingVersion = 42;
+    },
+    (p: typeof defaults) => {
+      p.buckets.high.limits.student = 2.5;
+    },
+    (p: typeof defaults) => {
+      p.budgets.weeklyWarnRatio = 1.01;
+    },
   ]) {
     const policy = structuredClone(defaults);
     mutate(policy);
@@ -77,15 +115,31 @@ test("generation may run for 90 seconds with a separate finalization window", ()
 });
 
 test("existing installations update only the old timeout defaults", async () => {
-  const sql = await Bun.file(new URL("../migrations/0003_run_timeouts.sql", import.meta.url)).text();
+  const sql = await Bun.file(
+    new URL("../migrations/0003_run_timeouts.sql", import.meta.url),
+  ).text();
   const db = new SqliteD1Shim();
   const change = db.sqlite.query("UPDATE service_config SET value_json=? WHERE key='policy'");
-  const read = db.sqlite.query<{ value_json: string }, []>("SELECT value_json FROM service_config WHERE key='policy'");
-  for (const [max, stale, nextMax, nextStale] of [[60000, 75000, 90000, 105000], [70000, 85000, 70000, 85000]] as const) {
-    const policy = { ...defaults, maxQuestionChars: 1873, maxRunDurationMs: max, staleRunTimeoutMs: stale };
+  const read = db.sqlite.query<{ value_json: string }, []>(
+    "SELECT value_json FROM service_config WHERE key='policy'",
+  );
+  for (const [max, stale, nextMax, nextStale] of [
+    [60000, 75000, 90000, 105000],
+    [70000, 85000, 70000, 85000],
+  ] as const) {
+    const policy = {
+      ...defaults,
+      maxQuestionChars: 1873,
+      maxRunDurationMs: max,
+      staleRunTimeoutMs: stale,
+    };
     change.run(JSON.stringify(policy));
     db.sqlite.exec(sql);
     db.sqlite.exec(sql);
-    expect(JSON.parse(read.get()!.value_json)).toEqual({ ...policy, maxRunDurationMs: nextMax, staleRunTimeoutMs: nextStale });
+    expect(JSON.parse(read.get()!.value_json)).toEqual({
+      ...policy,
+      maxRunDurationMs: nextMax,
+      staleRunTimeoutMs: nextStale,
+    });
   }
 });

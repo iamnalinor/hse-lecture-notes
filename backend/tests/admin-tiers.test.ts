@@ -30,7 +30,13 @@ test("default removes an assignment and notes are SQL escaped", () => {
 });
 
 test("invalid IDs and tier names are rejected before executing SQL", () => {
-  for (const id of ["0", "-2", "1.5", "9007199254740992", "1); DELETE FROM telegram_account_tiers;"])
+  for (const id of [
+    "0",
+    "-2",
+    "1.5",
+    "9007199254740992",
+    "1); DELETE FROM telegram_account_tiers;",
+  ])
     expect(() => assignmentSql(id, "student", 1)).toThrow();
   expect(() => assignmentSql("42", "admin", 1)).toThrow();
   expect(() => parseTelegramIds("42,invalid")).toThrow();

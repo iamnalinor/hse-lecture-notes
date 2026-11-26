@@ -2,12 +2,7 @@ import { SYSTEM_PROMPT } from "./system-prompt";
 import { runSampleProblems, SAMPLE_PROBLEMS_TOOL } from "./bank-tool";
 import type { TrackedD1 } from "../db";
 import { buildFtsMatchQuery, tokenizeAndStem } from "../stemmer";
-import type {
-  ChatStep,
-  CodexFunctionTool,
-  Env,
-  QuotePayload,
-} from "../types";
+import type { ChatStep, CodexFunctionTool, Env, QuotePayload } from "../types";
 
 // =============================================================================
 // Quote canonicalization & validation against D1 course materials
@@ -99,27 +94,47 @@ export async function validateAssistantQuote(
   browserId: string,
   telegramId?: number,
 ): Promise<boolean> {
-  if (!threadId || typeof quote.messageId !== "string" || !quote.messageId || quote.blockId || quote.sectionId) return false;
-  const owner = telegramId === undefined ? "t.telegram_id IS NULL AND t.browser_id = ?" : "t.telegram_id = ?";
+  if (
+    !threadId ||
+    typeof quote.messageId !== "string" ||
+    !quote.messageId ||
+    quote.blockId ||
+    quote.sectionId
+  )
+    return false;
+  const owner =
+    telegramId === undefined ? "t.telegram_id IS NULL AND t.browser_id = ?" : "t.telegram_id = ?";
   const row = await db.first<{ content_tex: string }>(
-    db.prepare(`SELECT m.content_tex FROM chat_messages m JOIN chat_threads t ON t.id = m.thread_id
+    db
+      .prepare(`SELECT m.content_tex FROM chat_messages m JOIN chat_threads t ON t.id = m.thread_id
       WHERE m.id = ? AND t.id = ? AND m.role = 'assistant' AND m.status IN ('done','stopped','incomplete')
-      AND ${owner}`).bind(quote.messageId, threadId, telegramId ?? browserId),
+      AND ${owner}`)
+      .bind(quote.messageId, threadId, telegramId ?? browserId),
   );
   if (!row) return false;
   const normalize = (s: string) => s.replace(/\s+/gu, " ").trim();
   const needle = normalize(quote.tex);
   if (needle.length < 2) return false;
   if (normalize(row.content_tex).includes(needle)) return true;
-  const visible = row.content_tex.split("```").map((part, index) => {
-    if (index % 2) return part.slice(part.indexOf("\n") + 1);
-    const blocks = part.replace(/^ {0,3}#{1,6}[ \t]+|^\s*(?:[-*•]|\d+\.)[ \t]+/gmu, "");
-    const mathNormalized = blocks.replace(/`[^`]*`|\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]/gu,
-      (raw, inline, display) => inline !== undefined || display !== undefined ? `$${(inline ?? display).trim()}$` : raw);
-    return mathNormalized.replace(/\$\$([^$]+)\$\$|(\$[^$]+\$)|`([^`]+)`|\[([^\]]+)\]\((?:#|\/)[^)]*\)|\[\[[^|\]]+\|([^\]]+)\]\]|\*\*([^*]+)\*\*|\*(\S(?:[^*]*?\S)?)\*|(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+)(?<!\s)_(?![\p{L}\p{N}_])/gu,
-      (_match, display, math, code, link, wiki, bold, italic, underscore) =>
-        display !== undefined ? `$${display.trim()}$` : math ?? code ?? link ?? wiki ?? bold ?? italic ?? underscore);
-  }).join(" ");
+  const visible = row.content_tex
+    .split("```")
+    .map((part, index) => {
+      if (index % 2) return part.slice(part.indexOf("\n") + 1);
+      const blocks = part.replace(/^ {0,3}#{1,6}[ \t]+|^\s*(?:[-*•]|\d+\.)[ \t]+/gmu, "");
+      const mathNormalized = blocks.replace(
+        /`[^`]*`|\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]/gu,
+        (raw, inline, display) =>
+          inline !== undefined || display !== undefined ? `$${(inline ?? display).trim()}$` : raw,
+      );
+      return mathNormalized.replace(
+        /\$\$([^$]+)\$\$|(\$[^$]+\$)|`([^`]+)`|\[([^\]]+)\]\((?:#|\/)[^)]*\)|\[\[[^|\]]+\|([^\]]+)\]\]|\*\*([^*]+)\*\*|\*(\S(?:[^*]*?\S)?)\*|(?<![\p{L}\p{N}_])_(?!\s)([^_\n]+)(?<!\s)_(?![\p{L}\p{N}_])/gu,
+        (_match, display, math, code, link, wiki, bold, italic, underscore) =>
+          display !== undefined
+            ? `$${display.trim()}$`
+            : (math ?? code ?? link ?? wiki ?? bold ?? italic ?? underscore),
+      );
+    })
+    .join(" ");
   return normalize(visible).includes(needle);
 }
 
@@ -155,9 +170,7 @@ export async function validateQuoteAgainstCourse(
   // 2. Check the full source document body (covers cross-block selections & plain prose)
   const doc = await db.first<{ body_tex: string }>(
     db
-      .prepare(
-        "SELECT body_tex FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1",
-      )
+      .prepare("SELECT body_tex FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1")
       .bind(course, docId),
   );
   if (!doc) return false;
@@ -172,20 +185,29 @@ export async function buildSystemPrompt(
   db: TrackedD1,
   course: string,
   docId: string,
-): Promise<{ instructions: string; context: string; outline: string; currentDocOrder: number; currentDocTitle: string }> {
-  const docsRes = course === "" ? { results: [] } : await db.all<{
-    doc_kind: string;
-    doc_id: string;
-    order_index: number;
-    title: string;
-    date: string | null;
-  }>(
-    db
-      .prepare(
-        "SELECT doc_kind, doc_id, order_index, title, date FROM course_documents WHERE course = ? ORDER BY doc_kind, order_index",
-      )
-      .bind(course),
-  );
+): Promise<{
+  instructions: string;
+  context: string;
+  outline: string;
+  currentDocOrder: number;
+  currentDocTitle: string;
+}> {
+  const docsRes =
+    course === ""
+      ? { results: [] }
+      : await db.all<{
+          doc_kind: string;
+          doc_id: string;
+          order_index: number;
+          title: string;
+          date: string | null;
+        }>(
+          db
+            .prepare(
+              "SELECT doc_kind, doc_id, order_index, title, date FROM course_documents WHERE course = ? ORDER BY doc_kind, order_index",
+            )
+            .bind(course),
+        );
 
   let currentDocOrder = 0;
   let currentDocTitle = docId;
@@ -201,8 +223,11 @@ export async function buildSystemPrompt(
     outlineLines.push(`- [${d.doc_kind}] ${d.doc_id}: ${d.title}${marker}`);
   }
 
-  const outlineSection = outlineLines.length ? `\n\nПЛАН КУРСА (${course}):\n${outlineLines.join("\n")}` : "";
-  let pageContext = "Студент на главной странице. Курс и документ не выбраны. По умолчанию поиск охватывает все курсы. Для read_document указывай курс из результатов поиска.";
+  const outlineSection = outlineLines.length
+    ? `\n\nПЛАН КУРСА (${course}):\n${outlineLines.join("\n")}`
+    : "";
+  let pageContext =
+    "Студент на главной странице. Курс и документ не выбраны. По умолчанию поиск охватывает все курсы. Для read_document указывай курс из результатов поиска.";
   if (docId) {
     pageContext = `Студент открыл документ «${currentDocTitle}» (${course}/${docId}). Отдавай приоритет текущей и более ранним лекциям. Если блок помечен later_in_course, предупреди, что это будет позже в курсе.`;
   } else if (course) {
@@ -211,7 +236,13 @@ export async function buildSystemPrompt(
 
   const instructions = SYSTEM_PROMPT;
 
-  return { instructions, context: pageContext, outline: outlineSection, currentDocOrder, currentDocTitle };
+  return {
+    instructions,
+    context: pageContext,
+    outline: outlineSection,
+    currentDocOrder,
+    currentDocTitle,
+  };
 }
 
 // =============================================================================
@@ -233,7 +264,8 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
         },
         course: {
           type: "string",
-          description: "Алгебра — algebra, матанализ (матан) — calculus, дискретная математика — discrete, алгоритмы — aiya. all — все курсы.",
+          description:
+            "Алгебра — algebra, матанализ (матан) — calculus, дискретная математика — discrete, алгоритмы — aiya. all — все курсы.",
         },
         doc_kind: {
           type: "string",
@@ -270,7 +302,10 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
     parameters: {
       type: "object",
       properties: {
-        id: { type: "string", description: "ID блока или ссылка из refs банка задач в формате /курс/документ#метка." },
+        id: {
+          type: "string",
+          description: "ID блока или ссылка из refs банка задач в формате /курс/документ#метка.",
+        },
         include_proof: {
           type: "boolean",
           description: "Включить ли доказательство/решение блока (по умолчанию true).",
@@ -288,7 +323,12 @@ export const AGENT_TOOLS: CodexFunctionTool[] = [
     parameters: {
       type: "object",
       properties: {
-        course: { type: "string", enum: ["algebra", "calculus", "discrete", "aiya"], description: "Код курса: calculus — математический анализ (матан), algebra — алгебра, discrete — дискретная математика, aiya — алгоритмы." },
+        course: {
+          type: "string",
+          enum: ["algebra", "calculus", "discrete", "aiya"],
+          description:
+            "Код курса: calculus — математический анализ (матан), algebra — алгебра, discrete — дискретная математика, aiya — алгоритмы.",
+        },
         doc_id: { type: "string", description: "ID документа (например, 07_oct16_primes_fta)." },
         section_id: { type: "string", description: "Опциональный ID раздела внутри документа." },
       },
@@ -359,21 +399,28 @@ type PreparationPage = {
 };
 
 function titleTerms(text: string): Set<string> {
-  return new Set([...tokenizeAndStem(text).filter(word => word.length > 2), ...(text.match(/\d+/g) ?? [])]);
+  return new Set([
+    ...tokenizeAndStem(text).filter((word) => word.length > 2),
+    ...(text.match(/\d+/g) ?? []),
+  ]);
 }
 
 async function searchPreparationPages(db: TrackedD1, course: string, query: string) {
   const words = titleTerms(query);
   const rows = await db.all<PreparationPage>(
-    db.prepare(`SELECT course, doc_id, title, date FROM course_documents
+    db
+      .prepare(`SELECT course, doc_id, title, date FROM course_documents
       WHERE doc_kind = 'prep' AND (? IN ('', 'all') OR course = ?)
-      ORDER BY date, course, doc_id`).bind(course, course),
+      ORDER BY date, course, doc_id`)
+      .bind(course, course),
   );
-  return rows.results.map(page => {
-    const titleWords = titleTerms(page.title);
-    const score = [...words].filter(word => titleWords.has(word)).length;
-    return { page, score };
-  }).filter(hit => hit.score > 0)
+  return rows.results
+    .map((page) => {
+      const titleWords = titleTerms(page.title);
+      const score = [...words].filter((word) => titleWords.has(word)).length;
+      return { page, score };
+    })
+    .filter((hit) => hit.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 5)
     .map(({ page }) => ({ ...page, url: `/${page.course}/${page.doc_id}` }));
@@ -401,20 +448,26 @@ export class AgentToolRunner {
       this.ctx.maxTotalToolOutputChars - this.totalOutputChars,
     );
     if (limit <= 0) {
-      return { output: "", step: { kind: "note", state: "error", note: "Лимит инструментов" }, fromCache: false };
+      return {
+        output: "",
+        step: { kind: "note", state: "error", note: "Лимит инструментов" },
+        fromCache: false,
+      };
     }
     const capped = (output: string): string => {
       const suffix = "\n...[truncated]";
-      const text = output.length <= limit
-        ? output
-        : output.slice(0, Math.max(0, limit - suffix.length)) + suffix.slice(0, limit);
+      const text =
+        output.length <= limit
+          ? output
+          : output.slice(0, Math.max(0, limit - suffix.length)) + suffix.slice(0, limit);
       this.totalOutputChars += text.length;
       return text;
     };
     let args: Record<string, unknown> = {};
     try {
       const parsed: unknown = rawArgs ? JSON.parse(rawArgs) : {};
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+        throw new Error("not an object");
       args = parsed as Record<string, unknown>;
     } catch {
       return {
@@ -454,9 +507,10 @@ export class AgentToolRunner {
     args: Record<string, unknown>,
   ): Promise<{ output: string; step: ChatStep }> {
     const query = String(args.query ?? "").trim();
-    const course = typeof args.course === "string" && args.course.trim()
-      ? courseCode(args.course)
-      : this.ctx.currentCourse;
+    const course =
+      typeof args.course === "string" && args.course.trim()
+        ? courseCode(args.course)
+        : this.ctx.currentCourse;
     const docKind = typeof args.doc_kind === "string" ? args.doc_kind.trim() : null;
     const blockKind = typeof args.block_kind === "string" ? args.block_kind.trim() : null;
 
@@ -486,7 +540,13 @@ export class AgentToolRunner {
         const item = this.formatSearchItem(exact);
         return {
           output: JSON.stringify({ results: [item], source: "exact_id" }),
-          step: { kind: "search", q: query, state: "done", res: [exact.title || exact.id], links: [materialLink(exact)] },
+          step: {
+            kind: "search",
+            q: query,
+            state: "done",
+            res: [exact.title || exact.id],
+            links: [materialLink(exact)],
+          },
         };
       }
     }
@@ -545,9 +605,13 @@ export class AgentToolRunner {
     if (!hasExactTitleMatch && this.ctx.env.VECTORIZE && this.ctx.env.AI) {
       this.ctx.signal?.throwIfAborted();
       try {
-        const emb = (await this.ctx.env.AI.run("@cf/baai/bge-m3" as keyof AiModels, {
-          text: [query],
-        } as Record<string, unknown>, { signal: this.ctx.signal })) as { data?: number[][] };
+        const emb = (await this.ctx.env.AI.run(
+          "@cf/baai/bge-m3" as keyof AiModels,
+          {
+            text: [query],
+          } as Record<string, unknown>,
+          { signal: this.ctx.signal },
+        )) as { data?: number[][] };
         this.ctx.signal?.throwIfAborted();
         const vector = emb?.data?.[0];
         if (vector && vector.length > 0) {
@@ -624,11 +688,13 @@ export class AgentToolRunner {
       .map((entry) => this.formatSearchItem(entry.row));
 
     this.ctx.signal?.throwIfAborted();
-    const pages = !blockKind && (!docKind || docKind === "prep")
-      ? await searchPreparationPages(this.ctx.db, course, query) : [];
+    const pages =
+      !blockKind && (!docKind || docKind === "prep")
+        ? await searchPreparationPages(this.ctx.db, course, query)
+        : [];
     const hits = [
-      ...pages.map(page => ({ label: page.title, url: page.url })),
-      ...merged.map(block => ({ label: block.title || block.id, url: materialLink(block) })),
+      ...pages.map((page) => ({ label: page.title, url: page.url })),
+      ...merged.map((block) => ({ label: block.title || block.id, url: materialLink(block) })),
     ];
     const visible = hits.slice(0, 3);
     const more = hits.length - visible.length;
@@ -643,8 +709,8 @@ export class AgentToolRunner {
         kind: "search",
         q: query,
         state: "done",
-        res: visible.map(hit => hit.label),
-        links: visible.map(hit => hit.url),
+        res: visible.map((hit) => hit.label),
+        links: visible.map((hit) => hit.url),
         ...(more > 0 ? { more } : {}),
       },
     };
@@ -692,7 +758,8 @@ export class AgentToolRunner {
       const course = source?.[1] ?? this.ctx.currentCourse;
       const doc = source?.[2] ?? null;
       const match = await this.ctx.db.first<{ id: string }>(
-        this.ctx.db.prepare(`SELECT id FROM course_blocks
+        this.ctx.db
+          .prepare(`SELECT id FROM course_blocks
           WHERE course = ? AND anchor_id = ? AND (? IS NULL OR doc_id = ?)
           ORDER BY (doc_id = ?) DESC, id LIMIT 1`)
           .bind(course, source?.[3] ?? id, doc, doc, this.ctx.currentDocId),
@@ -836,9 +903,9 @@ export class AgentToolRunner {
       };
     }
 
-    const outline = JSON.parse(doc.outline_json) as Array<{id: string; level: number}>;
+    const outline = JSON.parse(doc.outline_json) as Array<{ id: string; level: number }>;
     const sectionIds = [sectionId];
-    const index = outline.findIndex(heading => heading.id === sectionId);
+    const index = outline.findIndex((heading) => heading.id === sectionId);
     if (index >= 0) {
       const level = outline[index]!.level;
       for (const heading of outline.slice(index + 1)) {
@@ -889,7 +956,9 @@ export class AgentToolRunner {
       block_kind: b.block_kind,
       title: b.title,
       statement_tex:
-        b.statement_tex.length > 600 ? `${b.statement_tex.slice(0, 599).trimEnd()}…` : b.statement_tex,
+        b.statement_tex.length > 600
+          ? `${b.statement_tex.slice(0, 599).trimEnd()}…`
+          : b.statement_tex,
     }));
 
     return {
@@ -911,7 +980,11 @@ export class AgentToolRunner {
         outline,
         blocks: compactBlocks,
       }),
-      step: { kind: "read", target: sectionId ? `${doc.title} (${sectionId})` : doc.title, state: "done" },
+      step: {
+        kind: "read",
+        target: sectionId ? `${doc.title} (${sectionId})` : doc.title,
+        state: "done",
+      },
     };
   }
 }

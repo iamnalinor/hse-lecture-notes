@@ -214,7 +214,14 @@ export async function evaluateQuotasAndBudgets(
     if (checkRateLimit) {
       add(
         "rate_br",
-        windowCount(db, "browser_id", axes.browserId, ANY_BUCKET, minCutoff, policy.rateLimitPerMinute),
+        windowCount(
+          db,
+          "browser_id",
+          axes.browserId,
+          ANY_BUCKET,
+          minCutoff,
+          policy.rateLimitPerMinute,
+        ),
       );
       add(
         "rate_ip",
@@ -223,7 +230,14 @@ export async function evaluateQuotasAndBudgets(
       if (useFp) {
         add(
           "rate_fp",
-          windowCount(db, "fingerprint", axes.fingerprint, "", minCutoff, policy.rateLimitPerMinute),
+          windowCount(
+            db,
+            "fingerprint",
+            axes.fingerprint,
+            "",
+            minCutoff,
+            policy.rateLimitPerMinute,
+          ),
         );
       }
     }
@@ -258,19 +272,10 @@ export async function evaluateQuotasAndBudgets(
     }
 
     // 24h guest quota (low bucket) — failed runs (status = 'error') never consume user quota
-    add(
-      "low_br",
-      dayWindow(db, "browser_id", axes.browserId, "low", dayCutoff, lowLimit),
-    );
-    add(
-      "low_ip",
-      dayWindow(db, "ip_address", axes.ipAddress, null, dayCutoff, lowLimit),
-    );
+    add("low_br", dayWindow(db, "browser_id", axes.browserId, "low", dayCutoff, lowLimit));
+    add("low_ip", dayWindow(db, "ip_address", axes.ipAddress, null, dayCutoff, lowLimit));
     if (useFp) {
-      add(
-        "low_fp",
-        dayWindow(db, "fingerprint", axes.fingerprint, null, dayCutoff, lowLimit),
-      );
+      add("low_fp", dayWindow(db, "fingerprint", axes.fingerprint, null, dayCutoff, lowLimit));
     }
   } else {
     const tgId = axes.telegramId!;
@@ -281,7 +286,14 @@ export async function evaluateQuotasAndBudgets(
       );
       add(
         "rate_br",
-        windowCount(db, "browser_id", axes.browserId, ANY_BUCKET, minCutoff, policy.rateLimitPerMinute),
+        windowCount(
+          db,
+          "browser_id",
+          axes.browserId,
+          ANY_BUCKET,
+          minCutoff,
+          policy.rateLimitPerMinute,
+        ),
       );
     }
 
@@ -304,24 +316,12 @@ export async function evaluateQuotasAndBudgets(
       );
     }
 
-    add(
-      "low_tg",
-      dayWindow(db, "telegram_id", tgId, "low", dayCutoff, lowLimit),
-    );
-    add(
-      "low_br",
-      dayWindow(db, "browser_id", axes.browserId, "low", dayCutoff, lowLimit),
-    );
+    add("low_tg", dayWindow(db, "telegram_id", tgId, "low", dayCutoff, lowLimit));
+    add("low_br", dayWindow(db, "browser_id", axes.browserId, "low", dayCutoff, lowLimit));
 
     if (axes.tier === "student" || axes.tier === "extended") {
-      add(
-        "high_tg",
-        dayWindow(db, "telegram_id", tgId, "high", dayCutoff, highLimit),
-      );
-      add(
-        "high_br",
-        dayWindow(db, "browser_id", axes.browserId, "high", dayCutoff, highLimit),
-      );
+      add("high_tg", dayWindow(db, "telegram_id", tgId, "high", dayCutoff, highLimit));
+      add("high_br", dayWindow(db, "browser_id", axes.browserId, "high", dayCutoff, highLimit));
     }
   }
 
@@ -424,34 +424,64 @@ export async function evaluateQuotasAndBudgets(
   const guestProjected = budget.guestActual24h + budget.guestReserved + reserveMicros;
   const globalBlocked = globalProjected > policy.budgets.weeklyGlobalUsdMicros;
   const guestBlocked = isGuest && guestProjected > policy.budgets.dailyGuestUsdMicros;
-  const budgetBlock: BlockInfo | null = globalBlocked ? { code: "global_budget_exceeded" } :
-    guestBlocked ? { code: "guest_budget_exceeded" } : null;
+  const budgetBlock: BlockInfo | null = globalBlocked
+    ? { code: "global_budget_exceeded" }
+    : guestBlocked
+      ? { code: "guest_budget_exceeded" }
+      : null;
   // Even settling every reservation cannot help when actual usage already exhausts the budget.
-  const recoverReserve = budgetBlock !== null &&
+  const recoverReserve =
+    budgetBlock !== null &&
     budget.globalActual7d + reserveMicros <= policy.budgets.weeklyGlobalUsdMicros &&
     budget.guestActual24h + reserveMicros <= policy.budgets.dailyGuestUsdMicros;
-  if (isGuest && options.recoverExpiredGuestQuota !== false && (recoverReserve || (!budgetBlock && quotaBlock))) {
+  if (
+    isGuest &&
+    options.recoverExpiredGuestQuota !== false &&
+    (recoverReserve || (!budgetBlock && quotaBlock))
+  ) {
     const candidates: D1PreparedStatement[] = [];
     const expired = "status = 'running' AND expires_at < ? AND created_at >= ? LIMIT 10";
     // Match the predicates of the blocked day window. Each lookup is bounded to this
     // identity's index range, even when there are many expired runs elsewhere.
-    if (recoverReserve || getCount("low_br").cnt >= lowLimit) candidates.push(db.prepare(
-      `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_browser
-       WHERE browser_id = ? AND quota_bucket = 'low' AND ${expired}`).bind(axes.browserId, nowMs, dayCutoff));
-    if (recoverReserve || getCount("low_ip").cnt >= lowLimit) candidates.push(db.prepare(
-      `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_ip
-       WHERE ip_address = ? AND ${expired}`).bind(axes.ipAddress, nowMs, dayCutoff));
-    if (useFp && (recoverReserve || getCount("low_fp").cnt >= lowLimit)) candidates.push(db.prepare(
-      `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_fp
-       WHERE fingerprint = ? AND fingerprint != '' AND ${expired}`).bind(axes.fingerprint, nowMs, dayCutoff));
+    if (recoverReserve || getCount("low_br").cnt >= lowLimit)
+      candidates.push(
+        db
+          .prepare(
+            `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_browser
+       WHERE browser_id = ? AND quota_bucket = 'low' AND ${expired}`,
+          )
+          .bind(axes.browserId, nowMs, dayCutoff),
+      );
+    if (recoverReserve || getCount("low_ip").cnt >= lowLimit)
+      candidates.push(
+        db
+          .prepare(
+            `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_ip
+       WHERE ip_address = ? AND ${expired}`,
+          )
+          .bind(axes.ipAddress, nowMs, dayCutoff),
+      );
+    if (useFp && (recoverReserve || getCount("low_fp").cnt >= lowLimit))
+      candidates.push(
+        db
+          .prepare(
+            `SELECT id,actual_cost_micros FROM usage_runs INDEXED BY idx_usage_runs_fp
+       WHERE fingerprint = ? AND fingerprint != '' AND ${expired}`,
+          )
+          .bind(axes.fingerprint, nowMs, dayCutoff),
+      );
     const matches = await db.batch<ExpiredRun>(candidates);
-    const unique = new Map(matches.flatMap(page => page.results).map(row => [row.id, row]));
+    const unique = new Map(matches.flatMap((page) => page.results).map((row) => [row.id, row]));
     await finalizeExpiredRuns(db, [...unique.values()].slice(0, 10), nowMs);
     // A concurrent finalizer can win between the count and the lookup, leaving zero matches.
-    return evaluateQuotasAndBudgets(db, policy, axes, nowMs, { ...options, recoverExpiredGuestQuota: false });
+    return evaluateQuotasAndBudgets(db, policy, axes, nowMs, {
+      ...options,
+      recoverExpiredGuestQuota: false,
+    });
   }
   const block = budgetBlock ?? quotaBlock;
-  if (block) return { allowed: false, bucket, reserveMicros, degraded, block, weeklyWarnTriggered, budget };
+  if (block)
+    return { allowed: false, bucket, reserveMicros, degraded, block, weeklyWarnTriggered, budget };
 
   // Check active concurrency (1 running)
   if (checkConcurrency) {
@@ -662,7 +692,11 @@ export async function sweepExpiredRuns(db: TrackedD1, nowMs: number): Promise<nu
   return finalizeExpiredRuns(db, expired.results, nowMs);
 }
 
-async function finalizeExpiredRuns(db: TrackedD1, expired: ExpiredRun[], nowMs: number): Promise<number> {
+async function finalizeExpiredRuns(
+  db: TrackedD1,
+  expired: ExpiredRun[],
+  nowMs: number,
+): Promise<number> {
   let swept = 0;
   for (const row of expired) {
     const ok = await finalizeRunAtomic(db, {
@@ -1100,13 +1134,19 @@ async function tryAdmitRun(
     threadId = `thr_${randomToken(12)}`;
   }
 
-  const evaluateLow = () => evaluateQuotasAndBudgets(db, policy, params.axes, nowMs, { forceLow: true });
+  const evaluateLow = () =>
+    evaluateQuotasAndBudgets(db, policy, params.axes, nowMs, { forceLow: true });
   let possibleLow: QuotaEvaluation | undefined;
   if (contextLimited) {
     evalRes = await evaluateLow();
-  } else if (evalRes.bucket === "high" && evalRes.block?.code === "global_budget_exceeded" &&
-    evalRes.budget.globalActual7d + evalRes.budget.globalReserved + policy.budgets.reserveLowMicros <=
-      policy.budgets.weeklyGlobalUsdMicros) {
+  } else if (
+    evalRes.bucket === "high" &&
+    evalRes.block?.code === "global_budget_exceeded" &&
+    evalRes.budget.globalActual7d +
+      evalRes.budget.globalReserved +
+      policy.budgets.reserveLowMicros <=
+      policy.budgets.weeklyGlobalUsdMicros
+  ) {
     // Only a permitted smaller reservation can overturn this denial during history routing.
     possibleLow = await evaluateLow();
   }
@@ -1122,7 +1162,10 @@ async function tryAdmitRun(
   let retryAssistantSeq: number | null = null;
   const expiresAt = nowMs + policy.staleRunTimeoutMs;
   let question = {
-    course: params.course, docId: params.docId, questionText: params.questionText, quote: params.quote,
+    course: params.course,
+    docId: params.docId,
+    questionText: params.questionText,
+    quote: params.quote,
   };
 
   if (params.retryAssistantMessageId) {
@@ -1187,7 +1230,7 @@ async function tryAdmitRun(
   if (!contextLimited && preparedContext.history.limitReached) {
     contextLimited = true;
     const candidateBucket = evalRes.bucket;
-    evalRes = possibleLow ?? await evaluateLow();
+    evalRes = possibleLow ?? (await evaluateLow());
     if (candidateBucket !== "low" && !evalRes.block) preparedContext = await prepare("low");
     if (
       !creatingThread &&

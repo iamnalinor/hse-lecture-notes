@@ -56,11 +56,13 @@ export const SAMPLE_PROBLEMS_TOOL: CodexFunctionTool = {
       mode: {
         type: "string",
         enum: ["random", "variant"],
-        description: "random — count случайных задач (с фильтрами); variant — целый вариант, как в генераторе.",
+        description:
+          "random — count случайных задач (с фильтрами); variant — целый вариант, как в генераторе.",
       },
       kind: {
         type: "string",
-        description: "Тип задачи (номер варианта): kind из ticket банка. Неизвестный kind вернет список доступных.",
+        description:
+          "Тип задачи (номер варианта): kind из ticket банка. Неизвестный kind вернет список доступных.",
       },
       topic: { type: "string", description: "Тема (topic) задач банка." },
       count: {
@@ -80,22 +82,27 @@ export const SAMPLE_PROBLEMS_TOOL: CodexFunctionTool = {
 
 /** Bank HTML (Pandoc) back to text with `$…$`: the model reads and writes TeX. */
 export function bankHtmlToTex(html: string): string {
-  return html
-    .replace(/<span\s+class="math display">([\s\S]*?)<\/span>/g, (_m, tex: string) => `$$${tex}$$`)
-    .replace(/<span\s+class="math inline">([\s\S]*?)<\/span>/g, (_m, tex: string) => `$${tex}$`)
-    .replace(/<\/p>\s*<p>/g, "\n\n")
-    .replace(/<li>/g, "\n- ")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, "&")
-    .split("\n\n")
-    // Pandoc wraps lines inside a paragraph; list items keep their own lines.
-    .map((para) => para.replace(/[ \t]*\n(?!- )[ \t]*/g, " "))
-    .join("\n\n")
-    .trim();
+  return (
+    html
+      .replace(
+        /<span\s+class="math display">([\s\S]*?)<\/span>/g,
+        (_m, tex: string) => `$$${tex}$$`,
+      )
+      .replace(/<span\s+class="math inline">([\s\S]*?)<\/span>/g, (_m, tex: string) => `$${tex}$`)
+      .replace(/<\/p>\s*<p>/g, "\n\n")
+      .replace(/<li>/g, "\n- ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&")
+      .split("\n\n")
+      // Pandoc wraps lines inside a paragraph; list items keep their own lines.
+      .map((para) => para.replace(/[ \t]*\n(?!- )[ \t]*/g, " "))
+      .join("\n\n")
+      .trim()
+  );
 }
 
 /** Random order: sort by a random key per item (fine for a few hundred problems). */
@@ -157,11 +164,17 @@ export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number =
     a.mode === "variant" && a.kind === undefined
       ? bank.ticket
           .flatMap((t) =>
-            "one_of" in t ? (t.one_of[Math.min(Math.floor(random() * t.one_of.length), t.one_of.length - 1)] ?? []) : [t],
+            "one_of" in t
+              ? (t.one_of[Math.min(Math.floor(random() * t.one_of.length), t.one_of.length - 1)] ??
+                [])
+              : [t],
           )
           .flatMap((t) =>
-          shuffled(pool.filter((q) => q.kind === t.kind), random).slice(0, t.count),
-        )
+            shuffled(
+              pool.filter((q) => q.kind === t.kind),
+              random,
+            ).slice(0, t.count),
+          )
       : shuffled(pool, random).slice(0, a.count);
   const titles = new Map(allParts.map((t) => [t.kind, t.title]));
   const sourceLink = (ref: NonNullable<BankQuestion["refs"]>[number]): string => {
@@ -190,7 +203,11 @@ const COURSE_DATIVE: Readonly<Record<string, string>> = {
   calculus: "матанализу",
   discrete: "дискретке",
 };
-const PREP_GENITIVE: Readonly<Record<string, string>> = { kr: "КР", colloq: "коллоквиума", exam: "экзамена" };
+const PREP_GENITIVE: Readonly<Record<string, string>> = {
+  kr: "КР",
+  colloq: "коллоквиума",
+  exam: "экзамена",
+};
 
 /** «КР 1 по алгебре»: what the chat shows next to the generated problems. */
 export function bankTitle(course: string, prepId: string): string {
@@ -207,7 +224,10 @@ export async function runSampleProblems(
 ): Promise<{ output: string; step: ChatStep }> {
   const parsed = parseSampleArgs(args);
   if ("error" in parsed) {
-    return { output: JSON.stringify(parsed), step: { kind: "sample", target: "генератор вариантов", state: "error" } };
+    return {
+      output: JSON.stringify(parsed),
+      step: { kind: "sample", target: "генератор вариантов", state: "error" },
+    };
   }
   const target = bankTitle(parsed.course, parsed.prepId);
   try {

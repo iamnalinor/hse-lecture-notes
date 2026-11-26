@@ -47,7 +47,13 @@
     "crons": ["17 3 * * *"]
   },
   "secrets": {
-    "required": ["TELEGRAM_CLIENT_ID", "BROWSER_TOKEN_SECRET", "ALLOWANCE_JWT_SECRET", "TURNSTILE_SECRET_KEY", "OPENAI_API_KEY"]
+    "required": [
+      "TELEGRAM_CLIENT_ID",
+      "BROWSER_TOKEN_SECRET",
+      "ALLOWANCE_JWT_SECRET",
+      "TURNSTILE_SECRET_KEY",
+      "OPENAI_API_KEY"
+    ]
   },
   "vars": {
     "LLM_PROVIDER": "openai",

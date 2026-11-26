@@ -217,32 +217,41 @@ test("truncated and exhausted tool outputs remain text and do not crash the run"
     true,
     20,
   );
-  expect(r.message).toMatchObject({status:"done"});
+  expect(r.message).toMatchObject({ status: "done" });
   const outputs = r.requests[1]!.input.filter((i) => i.type === "function_call_output");
   expect(outputs).toHaveLength(2);
   expect(outputs[0]!.output).toContain("truncated");
   expect(outputs[1]!.output).toContain("tool_output_limit");
 });
 
-test("oversized optional suggestion is discarded while preserving a complete answer",async()=>{
- const r=await fixture([round("Ответ",[suggest("x".repeat(5000))])],6,true);
- expect(r.message).toMatchObject({status:"done",suggestion:null,content_tex:"Ответ"});
- expect(r.requests).toHaveLength(1);
+test("oversized optional suggestion is discarded while preserving a complete answer", async () => {
+  const r = await fixture([round("Ответ", [suggest("x".repeat(5000))])], 6, true);
+  expect(r.message).toMatchObject({ status: "done", suggestion: null, content_tex: "Ответ" });
+  expect(r.requests).toHaveLength(1);
 });
-
 
 test("exhausted material output forces the next answer and stays out of public steps", async () => {
-  const read = (callId: string) => ({ callId, name: "read_document", arguments: '{"course":"algebra"}' });
-  const r = await fixture([round("", [read("b1"), read("b2")]), round("Ответ по найденному")], 8, true, 20);
+  const read = (callId: string) => ({
+    callId,
+    name: "read_document",
+    arguments: '{"course":"algebra"}',
+  });
+  const r = await fixture(
+    [round("", [read("b1"), read("b2")]), round("Ответ по найденному")],
+    8,
+    true,
+    20,
+  );
   expect(r.requests[1]?.toolChoice).toBe("none");
-  expect(r.message).toMatchObject({status: "done", content_tex: "Ответ по найденному"});
-  const outputs = r.requests[1]!.input.filter(i => i.type === "function_call_output");
+  expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ по найденному" });
+  const outputs = r.requests[1]!.input.filter((i) => i.type === "function_call_output");
   expect(outputs[1]!.output).toContain("tool_output_limit");
   expect(JSON.stringify(r.frames)).not.toContain("Лимит инструментов");
-  const stored = r.shim.sqlite.query("SELECT steps_json FROM chat_messages WHERE role='assistant'").get() as {steps_json:string};
+  const stored = r.shim.sqlite
+    .query("SELECT steps_json FROM chat_messages WHERE role='assistant'")
+    .get() as { steps_json: string };
   expect(stored.steps_json).not.toContain("Лимит инструментов");
 });
-
 
 test("suggestion before the answer in its own round survives until successful completion", async () => {
   const suggestion = "Помоги составить план подготовки";
@@ -295,15 +304,26 @@ test("a hung tool settles once at the deadline or on explicit stop and ignores l
       return late.promise;
     });
     try {
-      const state = await fixture([round("Часть ответа", [{ name: "search_materials", callId: "find", arguments: "{}" }])],
-        6, true, 1000, 40, stop);
-      expect(state.message).toMatchObject({ status: manual ? "stopped" : "incomplete", content_tex: "Часть ответа" });
-      const done = state.frames.filter(f => f.type === "done");
+      const state = await fixture(
+        [round("Часть ответа", [{ name: "search_materials", callId: "find", arguments: "{}" }])],
+        6,
+        true,
+        1000,
+        40,
+        stop,
+      );
+      expect(state.message).toMatchObject({
+        status: manual ? "stopped" : "incomplete",
+        content_tex: "Часть ответа",
+      });
+      const done = state.frames.filter((f) => f.type === "done");
       expect(done).toHaveLength(1);
       expect(done[0]?.steps[0]?.state).toBe("error");
-      expect(state.shim.sqlite.query("SELECT global_reserved_micros FROM budget_reserves").get()).toEqual({global_reserved_micros: 0});
+      expect(
+        state.shim.sqlite.query("SELECT global_reserved_micros FROM budget_reserves").get(),
+      ).toEqual({ global_reserved_micros: 0 });
       const count = state.frames.length;
-      late.resolve({fromCache: false, output: "late", step: {kind: "search", state: "done"}});
+      late.resolve({ fromCache: false, output: "late", step: { kind: "search", state: "done" } });
       await Promise.resolve();
       expect(state.frames).toHaveLength(count);
     } finally {
@@ -311,3 +331,32 @@ test("a hung tool settles once at the deadline or on explicit stop and ignores l
     }
   }
 });
+
+type Fixture = Awaited<ReturnType<typeof fixture>>;
+const storedReplay = (r: Fixture) =>
+  r.shim.sqlite
+    .query("SELECT agent_items_json AS json FROM chat_messages WHERE role='assistant'")
+    .get() as { json: string | null };
+const finalizedRun = (r: Fixture) =>
+  r.shim.sqlite.query("SELECT status, reserved_cost_micros FROM usage_runs").get();
+
+test("a normal answer keeps the continuation context", async () => {
+  const r = await fixture([round("Ответ")], 6, true);
+  expect(JSON.parse(storedReplay(r).json!)).toMatchObject({ complete: true });
+  expect(finalizedRun(r)).toEqual({ status: "done", reserved_cost_micros: 0 });
+});
+
+test.each([
+  ["ASCII", "a", 1_000_001],
+  // 600k characters stay below the cap as a string length but are 1.2 MB as UTF-8.
+  ["Cyrillic", "ж", 600_000],
+])(
+  "an oversized %s continuation is dropped while the answer is saved",
+  async (_name, char, count) => {
+    const text = char.repeat(count);
+    const r = await fixture([round(text)], 6, true);
+    expect(storedReplay(r).json).toBeNull();
+    expect(r.message).toMatchObject({ status: "done", content_tex: text });
+    expect(finalizedRun(r)).toEqual({ status: "done", reserved_cost_micros: 0 });
+  },
+);
