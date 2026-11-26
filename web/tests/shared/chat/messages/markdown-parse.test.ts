@@ -202,3 +202,9 @@ it("keeps a heading with a pipe as a heading even when a separator row follows",
     { kind: "paragraph", value: "|---|---|" },
   ]);
 });
+
+it("keeps a NUL inside a cell as text, not as a boundary", () => {
+  expect(parseChatBlocks("| a | b |\n|---|---|\n| x\0y | z |")).toEqual([
+    { kind: "table", align: [null, null], header: ["a", "b"], rows: [["x\0y", "z"]] },
+  ]);
+});

@@ -32,23 +32,21 @@ const stripOuterPipes = (line: string): string => {
   return backslashes % 2 === 0 ? beforePipe : head;
 };
 
-/** Marks a cell boundary while the row is reassembled; a chat answer never holds this control character. */
-const BOUNDARY = "\0";
-
-/** A bare `|` is a boundary, an escaped `\|` is a literal pipe. */
-const SPECIAL_TOKENS: ReadonlyMap<string, string> = new Map([
-  ["|", BOUNDARY],
-  ["\\|", "|"],
-]);
-
 /** Splits a row on `|`; the outer pipes of `| a | b |` are optional, as in GFM. */
-export const splitRow = (line: string): string[] =>
+export const splitRow = (line: string): string[] => {
   // A spread array, not `matchAll(…)` helpers: iterator helpers are missing before Safari 18.4.
-  [...stripOuterPipes(line).matchAll(TOKEN)]
-    .map(([token]) => SPECIAL_TOKENS.get(token) ?? token)
-    .join("")
-    .split(BOUNDARY)
-    .map((cell) => cell.trim());
+  const tokens = [...stripOuterPipes(line).matchAll(TOKEN)].map(([token]) => token);
+  const boundaries = tokens
+    .map((token, index) => (token === "|" ? index : -1))
+    .filter((index) => index !== -1);
+  return [-1, ...boundaries].map((start, cell) =>
+    tokens
+      .slice(start + 1, boundaries[cell] ?? tokens.length)
+      .map((token) => (token === "\\|" ? "|" : token))
+      .join("")
+      .trim(),
+  );
+};
 
 const SEPARATOR_CELL = /^:?-+:?$/u;
 
