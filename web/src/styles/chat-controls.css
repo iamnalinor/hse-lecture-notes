@@ -96,6 +96,28 @@ decoration, «Чат» says what the button opens. */
   color: var(--ai-accent);
 }
 
+/* The sparkle's place while the chat code downloads: the same 18 px box, so the button keeps its size. */
+.ai-head-spinner {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--rule);
+  border-top-color: var(--ai-accent);
+  border-radius: 50%;
+  animation: ai-head-spin 800ms linear infinite;
+}
+@keyframes ai-head-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-head-spinner {
+    animation: none;
+  }
+}
+
 /* ---------- плавающее действие у выделения ---------- */
 .ai-sel-btn {
   position: absolute;
