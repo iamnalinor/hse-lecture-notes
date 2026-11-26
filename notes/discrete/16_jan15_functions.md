@@ -54,6 +54,8 @@ title: Функции
 \end{tikzpicture}
 ```
 
+### Определения четырех свойств
+
 ::: {.definition #def:lec16:functional-injective title="функциональное и инъективное отношение"}
 Отношение $R$ называется
 

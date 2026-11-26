@@ -93,6 +93,8 @@ $$y_1 = f(x_0 - \varepsilon), \qquad y_2 = f(x_0 + \varepsilon).$$
 $$\sin x_2 - \sin x_1 = 2 \sin\frac{x_2 - x_1}{2} \cos\frac{x_1 + x_2}{2} > 0,$$
 так как $0 < \frac{x_2 - x_1}{2} \le \frac\pi2$ и $-\frac\pi2 < \frac{x_1 + x_2}{2} < \frac\pi2$. Синус непрерывен (утверждение [-@prop:lec10:elementary]), $\sin\left(\pm\frac\pi2\right) = \pm 1$. По теореме об обратной функции [-@thm:lec11:inverse-continuous] обратная функция существует, определена на $[-1;\ 1]$, строго возрастает и непрерывна — «бесплатно». Так же поступаем с косинусом, тангенсом и котангенсом.
 
+### Определение
+
 ::: {.definition #def:lec11:arc title="обратные тригонометрические функции"}
 1. $\arcsin y$ — обратная к $\sin x$ на $\left[-\frac\pi2;\ \frac\pi2\right]$: для $y \in [-1;\ 1]$ это единственное $x \in \left[-\frac\pi2;\ \frac\pi2\right]$ с $\sin x = y$.
 2. $\arccos y$ — обратная к $\cos x$ на $[0;\ \pi]$: для $y \in [-1;\ 1]$ единственное $x \in [0;\ \pi]$ с $\cos x = y$.
@@ -101,6 +103,8 @@ $$\sin x_2 - \sin x_1 = 2 \sin\frac{x_2 - x_1}{2} \cos\frac{x_1 + x_2}{2} > 0,$$
 :::
 
 Почему именно эти промежутки. Промежуток должен быть таким, чтобы функция на нём была строго монотонна (иначе обратной нет) и принимала все свои значения (иначе обратная определена не на всём $[-1;\ 1]$ или $\R$). Для синуса годится и $\left[\frac\pi2;\ \frac{3\pi}{2}\right]$, но договорились брать промежуток, содержащий $0$. Для косинуса $\left[-\frac\pi2;\ \frac\pi2\right]$ не годится: там $\cos(-x) = \cos x$, и инъективности нет. Поэтому у косинуса промежуток $[0;\ \pi]$, где он строго убывает.
+
+### Свойства
 
 ::: {.proposition #prop:lec11:arc title="свойства обратных тригонометрических"}
 1. $\arcsin$ непрерывна и строго возрастает на $[-1;\ 1]$, множество значений $\left[-\frac\pi2;\ \frac\pi2\right]$; $\arccos$ непрерывна и строго убывает на $[-1;\ 1]$, множество значений $[0;\ \pi]$.
@@ -118,6 +122,8 @@ $$\sin x_2 - \sin x_1 = 2 \sin\frac{x_2 - x_1}{2} \cos\frac{x_1 + x_2}{2} > 0,$$
 
 4. Пусть $x = \arcsin y \in \left[-\frac\pi2;\ \frac\pi2\right]$. Тогда $\frac\pi2 - x \in [0;\ \pi]$ и $\cos\left(\frac\pi2 - x\right) = \sin x = y$, то есть $\frac\pi2 - x = \arccos y$. Для пары $\operatorname{arctg}$, $\operatorname{arcctg}$ — так же через $\operatorname{ctg}\left(\frac\pi2 - x\right) = \operatorname{tg} x$.
 :::
+
+### Графики
 
 Графики — на рис. [-@fig:lec11:arcsin] и [-@fig:lec11:arctg]. По пункту 2 прямые $y = \frac\pi2$ и $y = -\frac\pi2$ — горизонтальные асимптоты графика $y = \operatorname{arctg} x$ при $x \to +\infty$ и $x \to -\infty$ (определение [-@def:lec09:asymptotes]). Значения в стандартных точках берутся из таблицы синусов: $\arcsin\frac12 = \frac\pi6$, $\arccos\left(-\frac12\right) = \pi - \frac\pi3 = \frac{2\pi}{3}$, $\operatorname{arctg} 1 = \frac\pi4$, $\operatorname{arctg}\left(-\sqrt3\right) = -\frac\pi3$, $\operatorname{arcctg} 0 = \frac\pi2$.
 
@@ -165,6 +171,8 @@ $$\sin x_2 - \sin x_1 = 2 \sin\frac{x_2 - x_1}{2} \cos\frac{x_1 + x_2}{2} > 0,$$
 ::: {.remark #rem:lec11:arcsin-sin tag="подводный камень"}
 Равенство $\sin(\arcsin y) = y$ верно при всех $y \in [-1;\ 1]$, а $\arcsin(\sin x) = x$ — только при $x \in \left[-\frac\pi2;\ \frac\pi2\right]$: $\arcsin$ возвращает значение из этого отрезка (по определению [-@def:lec10:inverse] равенство $f^{-1}(f(x)) = x$ верно лишь на той области, где $f$ обращали). Например, $\arcsin(\sin \pi) = \arcsin 0 = 0 \ne \pi$. Чтобы найти $\arcsin(\sin x)$, ищут точку $t \in \left[-\frac\pi2;\ \frac\pi2\right]$ с $\sin t = \sin x$, пользуясь периодичностью и формулой $\sin(\pi - x) = \sin x$. Так, $\arcsin(\sin 3) = \pi - 3 \approx 0{,}14$, потому что $\sin(\pi - 3) = \sin 3$ и $\pi - 3 \in \left[-\frac\pi2;\ \frac\pi2\right]$. Аналогично $\operatorname{arctg}(\operatorname{tg} 2) = 2 - \pi$: тангенс имеет период $\pi$, и $2 - \pi \approx -1{,}14$ лежит в $\left(-\frac\pi2;\ \frac\pi2\right)$.
 :::
+
+### Пределы арксинуса и арктангенса
 
 Непрерывность $\arcsin$ и $\operatorname{arctg}$ дает еще два классических предела.
 
