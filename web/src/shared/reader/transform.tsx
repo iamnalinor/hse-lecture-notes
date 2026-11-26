@@ -28,7 +28,8 @@ export type TransformOptions = {
   readonly slots: ReadonlyMap<string, ReactNode>;
   /**
   The theory page is a flat list of headings, notes have parts and numbered sections. On the program
-  page wide tables turn into cards on a phone (`table-cards` in `prose.css`).
+  page wide tables turn into cards on a phone, a label-and-value table stacks its rows (`table-cards`,
+  `table-pairs` in `prose.css`).
   */
   readonly variant: "notes" | "prep" | "program" | "theory";
 };
@@ -160,11 +161,22 @@ const image: Handler = (node, options) => {
 /** A table of three or more columns does not fit a phone: it is read as a stack of cards. */
 const CARD_COLUMNS = 3;
 
+const tableClass = (isCards: boolean, isPairs: boolean): string => {
+  if (isCards) {
+    return "table-cards my-5 overflow-x-auto";
+  }
+  return isPairs ? "table-pairs my-5 overflow-x-auto" : "my-5 overflow-x-auto";
+};
+
 const table: Handler = (node, options, replace) => {
   const isProgram = options.variant === "program";
-  const isCards = isProgram && headerLabels(node).length >= CARD_COLUMNS;
+  const columns = isProgram ? headerLabels(node).length : 0;
+  const isCards = columns >= CARD_COLUMNS;
+  // «О курсе»: a table without a header, a label and its value in every row.
+  const isPairs = isProgram && columns === 0;
+  const className = tableClass(isCards, isPairs);
   return (
-    <div className={isCards ? "table-cards my-5 overflow-x-auto" : "my-5 overflow-x-auto"}>
+    <div className={className}>
       <table role={isProgram ? "table" : undefined}>{children(node, replace)}</table>
     </div>
   );

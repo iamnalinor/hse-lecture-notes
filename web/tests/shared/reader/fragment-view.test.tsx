@@ -166,6 +166,30 @@ describe("FragmentView tables", () => {
   });
 });
 
+describe("FragmentView label-and-value tables", () => {
+  const PAIRS =
+    "<table><tbody><tr><td>Лектор</td><td>Иван</td></tr><tr><td>Язык</td><td>русский</td></tr></tbody></table>";
+
+  it("stacks the rows of a headerless program table on a narrow screen", () => {
+    renderWithApp(
+      <FragmentView
+        course="calculus"
+        docId="program"
+        html={PAIRS}
+        lecture={undefined}
+        variant="program"
+      />,
+    );
+    expect(document.querySelector(".table-pairs")).not.toBeNull();
+    expect(document.querySelector(".table-cards")).toBeNull();
+  });
+
+  it("leaves lecture tables alone", () => {
+    view(PAIRS);
+    expect(document.querySelector(".table-pairs")).toBeNull();
+  });
+});
+
 describe("FragmentView slots", () => {
   it("mounts React content at the end of the section with that id", () => {
     renderWithApp(
