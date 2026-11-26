@@ -820,6 +820,11 @@
   border-color: color-mix(in srgb, var(--paper) 35%, transparent);
   border-top-color: var(--paper);
 }
+/* the secondary button is card-on-ink, so its spinner follows the text, not the primary fill */
+.ai-btn-2 .ai-spin {
+  border-color: color-mix(in srgb, var(--ink) 25%, transparent);
+  border-top-color: var(--ink);
+}
 
 /* ---------- низ панели: поле ввода или плашка вместо него ---------- */
 .ai-question-count {

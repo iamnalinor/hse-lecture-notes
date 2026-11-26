@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { type JSX, useCallback, useEffect, useRef, useState } from "react";
+import { type AnimationEvent, type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 
@@ -12,6 +12,7 @@ import { SparklesIcon } from "../icons.tsx";
 import { ChatLog } from "../messages/log.tsx";
 import { isMaterialLink } from "../messages/markdown-parse.ts";
 import { ChatRefPreview } from "../messages/ref-preview.tsx";
+import { entranceStyle } from "../open-state.ts";
 import { useChat } from "../session/context.tsx";
 import { ChatPanelHeader } from "./parts.tsx";
 import { ChatResizeHandle } from "./resize-handle.tsx";
@@ -141,6 +142,27 @@ const SourceReturnButton = ({
     document.body,
   );
 
+/** Back from a source the chat opened: the panel reopens at the scroll position it had. */
+const returnFromSource = (chat: ReturnType<typeof useChat>, restore: () => void): void => {
+  chat.returnFromSource();
+  globalThis.requestAnimationFrame(restore);
+};
+
+/** Props of a panel that mounts mid-opening (`entranceStyle`); dropped once played, as the keyframes would
+override the closing transition. */
+const usePanelEntrance = () => {
+  const [style, setStyle] = useState(entranceStyle);
+  return {
+    className: style === null ? "ai-panel" : "ai-panel ai-panel-enter",
+    onAnimationEnd: (event: AnimationEvent<HTMLElement>) => {
+      if (event.target === event.currentTarget) {
+        setStyle(null);
+      }
+    },
+    style: style ?? undefined,
+  };
+};
+
 /** Exact `.ai-panel` right-side drawer + mobile `.ai-back` pill + Turnstile modal from prototype.html. */
 export const ChatPanel = ({
   takeSelectionOrigin,
@@ -151,6 +173,7 @@ export const ChatPanel = ({
   const [historyOpen, setHistoryOpen] = useState(false);
   const sourceScrollRef = useRef(0);
   const [panelEl, setPanelEl] = useState<HTMLElement | null>(null);
+  const entrance = usePanelEntrance();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   useMobileFocus(chat.isOpen, panelEl, takeSelectionOrigin);
@@ -161,7 +184,6 @@ export const ChatPanel = ({
       focusHeaderChatButton();
     }
   }, [chat]);
-
   const jumpToBlock = useJumpToBlock(chat);
   const followSource = (blockId: string) => {
     sourceScrollRef.current = scrollerRef.current?.scrollTop ?? 0;
@@ -191,7 +213,7 @@ export const ChatPanel = ({
       {createPortal(
         <aside
           aria-label="Чат с ИИ"
-          className="ai-panel"
+          {...entrance}
           id="ai-panel"
           inert={!chat.isOpen}
           ref={setPanelEl}
@@ -218,8 +240,7 @@ export const ChatPanel = ({
       <SourceReturnButton
         isVisible={chat.readingSource && !chat.isOpen}
         onReturn={() => {
-          chat.returnFromSource();
-          globalThis.requestAnimationFrame(() => {
+          returnFromSource(chat, () => {
             restorePosition(sourceScrollRef.current);
           });
         }}

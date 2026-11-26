@@ -412,14 +412,15 @@ details[open]::details-content {
   }
 }
 
-/* A page appears with a short fade (the keyed wrapper in `app-shell.tsx`). */
+/* A page appears with a short fade (the keyed wrapper in `app-shell.tsx`); not the entry page, which is
+   already on screen when React mounts (`useIsEntryPage`). */
 @keyframes page-in {
   from {
     opacity: 0;
   }
 }
 
-[data-page] {
+[data-page=""] {
   animation: page-in 180ms ease-out;
 }
 

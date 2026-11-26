@@ -201,7 +201,7 @@ const useChatSessionValue = ({
   });
   useLoginResume({
     pending: drafts.migration?.resume ?? null,
-    ready: canResumeLogin({ isOpen, auth, tgAuth }, thr),
+    ready: canResumeLogin({ isOpen, auth }, thr),
     draft,
     quote,
     activeThreadId: thr.activeThreadId,

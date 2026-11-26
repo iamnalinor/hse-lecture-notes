@@ -209,8 +209,10 @@ html.ai-open .ai-panel {
 }
 
 /* ---------- оболочка и скелет ---------- */
-/* Оболочка появляется вместе с `html.ai-open`, у настоящей панели переход идет по `transform`. */
-.ai-panel-shell {
+/* Оболочка появляется вместе с `html.ai-open`, у настоящей панели переход идет по `transform`.
+   Настоящая панель, смонтированная уже открытой, доигрывает тот же въезд (`open-state.ts`, `entranceStyle`). */
+.ai-panel-shell,
+.ai-panel-enter {
   animation: ai-shell-in 260ms var(--ai-ease) both;
 }
 @keyframes ai-shell-in {
@@ -219,7 +221,8 @@ html.ai-open .ai-panel {
   }
 }
 @media (max-width: 720px) {
-  .ai-panel-shell {
+  .ai-panel-shell,
+  .ai-panel-enter {
     animation-duration: 240ms;
     animation-timing-function: ease-out;
   }
@@ -327,6 +330,7 @@ html.ai-open .ai-panel {
     transition: none !important;
   }
   .ai-panel-shell,
+  .ai-panel-enter,
   .ai-sk-block {
     animation: none !important;
   }

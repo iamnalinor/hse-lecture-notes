@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Outlet, ScrollRestoration, useLocation, useNavigation } from "react-router";
 
 import { isDocumentPath } from "#web/domain/paths.ts";
@@ -32,6 +32,19 @@ export const ShellFallback = () => (
 );
 
 /**
+True until the first route change. The entry page is already on screen when React takes over (the prerendered
+HTML, then `ShellFallback`), so fading it in from transparent would blink the whole page once after load.
+*/
+const useIsEntryPage = (pathname: string): boolean => {
+  const [entry] = useState(pathname);
+  const [hasLeft, setHasLeft] = useState(false);
+  if (!hasLeft && pathname !== entry) {
+    setHasLeft(true);
+  }
+  return !hasLeft;
+};
+
+/**
 The skeleton appears the moment a link is clicked: while the route code loads (`navigation`) and,
 via a Suspense boundary keyed by the path, while the page's data loads — the old page never
 lingers on screen.
@@ -41,6 +54,7 @@ export const AppShell = () => {
   const navigation = useNavigation();
   const pending = navigation.location?.pathname;
   const isSwitching = pending !== undefined && pending !== location.pathname;
+  const isEntryPage = useIsEntryPage(location.pathname);
   useCanonicalUrl(location.pathname);
   useUpdateOnNavigation();
 
@@ -66,7 +80,7 @@ export const AppShell = () => {
           <Skeleton pathname={pending} />
         ) : (
           <Suspense fallback={<Skeleton pathname={location.pathname} />} key={location.pathname}>
-            <div data-page="">
+            <div data-page={isEntryPage ? "entry" : ""}>
               <Outlet />
             </div>
           </Suspense>

@@ -69,3 +69,17 @@ it("hides internal notes and excludes them from the material step count", () => 
   expect(screen.queryByText("Лимит инструментов")).not.toBeInTheDocument();
   expect(screen.getAllByRole("listitem")).toHaveLength(1);
 });
+
+it("shows a search query bare, without quotes (owner's decision)", () => {
+  renderWithApp(
+    <ChatStepsBlock
+      isBackgroundResponse={false}
+      isCheckingBrowser={false}
+      isRunningSteps
+      onJumpToBlock={vi.fn()}
+      steps={[{ kind: "search", state: "done", q: "ряд Тейлора" }]}
+    />,
+  );
+  const label = document.querySelector(".ai-step-label");
+  expect(label?.textContent).toBe("Поиск ряд Тейлора");
+});

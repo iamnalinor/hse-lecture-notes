@@ -2,6 +2,7 @@ import type { TurnstileHooks } from "#web/api/chat/widgets.ts";
 import type { ChatBlock, ChatDegraded, ChatTier, ChatUser } from "#web/domain/chat/model.ts";
 
 import { type ChatAccess, ensureChatAllowance } from "#web/api/chat/client.ts";
+import { TurnstileError } from "#web/api/chat/turnstile.ts";
 
 export type AllowanceSetters = {
   readonly setQuestionLimit: (limit: number | undefined) => void;
@@ -26,6 +27,15 @@ const applyAccess = (setters: AllowanceSetters, allowance: ChatAccess): void => 
   }
 };
 
+const describeAllowanceError = (error: unknown): string => {
+  if (error instanceof TurnstileError) {
+    const code = error.code === null ? "" : ` (код Cloudflare ${error.code})`;
+    return `Не удалось проверить браузер${code}. Повтори через минуту; если не поможет, отключи блокировщик рекламы или смени сеть (VPN, мобильный интернет).`;
+  }
+  const detail = error instanceof Error ? error.message : String(error);
+  return `Ошибка доступа к чату: ${detail}`;
+};
+
 export const fetchAllowanceOutcome = async (
   turnstileHooks: TurnstileHooks,
   setters: AllowanceSetters,
@@ -48,14 +58,10 @@ export const fetchAllowanceOutcome = async (
     }
     return { allowance, kind: "ok" };
   } catch (error) {
-    if (
-      context.signal.aborted ||
+    return context.signal.aborted ||
       (error instanceof Error && error.message === "Turnstile cancelled")
-    ) {
-      return { kind: "cancelled" };
-    }
-    const detail = error instanceof Error ? error.message : String(error);
-    return { kind: "error", message: `Ошибка доступа к чату: ${detail}` };
+      ? { kind: "cancelled" }
+      : { kind: "error", message: describeAllowanceError(error) };
   } finally {
     context.onChecked();
   }
