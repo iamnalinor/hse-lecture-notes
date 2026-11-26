@@ -3,7 +3,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router/dom";
 
-import { macrosQuery } from "#web/api/queries.ts";
 import { registerServiceWorker } from "#web/shared/offline/sw-registration.ts";
 
 import { createQueryClient } from "./app/query-client.ts";
@@ -17,20 +16,10 @@ if (root === null) {
 
 const queryClient = createQueryClient();
 
-/** Every formula needs the macros: start fetching before the first page asks. */
-const warmUp = async (): Promise<void> => {
-  try {
-    await queryClient.query(macrosQuery);
-  } catch {
-    // The page that needs them reports the failure.
-  }
-};
-void warmUp();
-
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={createAppRouter()} />
+      <RouterProvider router={createAppRouter(queryClient)} />
     </QueryClientProvider>
   </StrictMode>,
 );
