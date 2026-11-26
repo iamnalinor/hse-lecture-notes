@@ -1,4 +1,5 @@
 import { findCourse } from "../courses.ts";
+import { plural } from "../text.ts";
 
 declare const CHAT_DEFAULT_QUESTION_LIMIT: number;
 
@@ -117,28 +118,13 @@ export const parseDocContext = (pathname: string): ChatDocContext => {
     : { course: course.id, docId };
 };
 
-const russianPlural = (n: number, forms: readonly [string, string, string]): string => {
-  const abs = Math.abs(n) % 100;
-  if (abs >= 11 && abs <= 19) {
-    return forms[2];
-  }
-  const last = abs % 10;
-  if (last === 1) {
-    return forms[0];
-  }
-  if (last >= 2 && last <= 4) {
-    return forms[1];
-  }
-  return forms[2];
-};
-
 /** Formats remaining time until `targetMs` in Russian, e.g. «12 часов 37 минут». */
 export const formatRemainingDuration = (targetMs: number, nowMs: number): string => {
   const diffMin = Math.max(1, Math.ceil((targetMs - nowMs) / 60_000));
   const hours = Math.floor(diffMin / 60);
   const mins = diffMin % 60;
-  const hWord = russianPlural(hours, ["час", "часа", "часов"]);
-  const mWord = russianPlural(mins, ["минуту", "минуты", "минут"]);
+  const hWord = plural(hours, ["час", "часа", "часов"]);
+  const mWord = plural(mins, ["минуту", "минуты", "минут"]);
   if (hours > 0 && mins > 0) {
     return `${hours} ${hWord} ${mins} ${mWord}`;
   }

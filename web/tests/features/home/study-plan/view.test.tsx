@@ -20,6 +20,18 @@ describe("StudyPlan", () => {
     );
   });
 
+  it("declines «контактный час» after each module total (65, 60, 113, 93)", () => {
+    renderWithApp(<StudyPlan curriculum={SAMPLE} today="2027-01-05" />, "/");
+    for (const title of [
+      "65 контактных часов в 1 модуле",
+      "60 контактных часов в 2 модуле",
+      "113 контактных часов в 3 модуле",
+      "93 контактных часа в 4 модуле",
+    ]) {
+      expect(screen.getByTitle(title)).toBeInTheDocument();
+    }
+  });
+
   it("hints the share of the module on a bar, without attestation dots", () => {
     renderWithApp(<StudyPlan curriculum={SAMPLE} today="2027-01-05" />, "/");
     expect(

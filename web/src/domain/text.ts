@@ -52,13 +52,19 @@ export const readingMinutes = (html: string): number => {
   return Math.ceil(total / WORDS_PER_MINUTE);
 };
 
-/** Russian plural form: `plural(3, ["конспект", "конспекта", "конспектов"])` → «конспекта». */
+/**
+Russian plural form: `plural(3, ["конспект", "конспекта", "конспектов"])` → «конспекта». A fraction
+takes the genitive singular, the second form («1,5 часа», «0,5 балла»); the sign does not matter.
+*/
 export const plural = (n: number, forms: readonly [string, string, string]): string => {
-  const tens = n % 100;
+  if (!Number.isSafeInteger(n)) {
+    return forms[1];
+  }
+  const tens = Math.abs(n) % 100;
   if (tens >= 11 && tens <= 14) {
     return forms[2];
   }
-  const ones = n % 10;
+  const ones = Math.abs(n) % 10;
   if (ones === 1) {
     return forms[0];
   }
