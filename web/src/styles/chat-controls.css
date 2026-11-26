@@ -86,21 +86,13 @@
   height: 18px;
   color: var(--ai-accent);
 }
-/* Phones: as tall as the search field (40 px, the tap area 44 px as `.hit-44`), and the word stays: an
-unlabeled sparkle reads as decoration, «Чат» says what the button opens. */
+/* Phones: as tall as the search field (40 px; the 44 px tap area is the `hit-44` utility on the button), and the
+word stays: an unlabeled sparkle reads as decoration, «Чат» says what the button opens. */
 @media (width < 640px) {
   .ai-head-btn {
-    position: relative;
-    isolation: isolate;
     gap: 6px;
     padding: 0 11px 0 9px;
     font-size: 14px;
-  }
-  .ai-head-btn::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    z-index: -1;
   }
   .ai-head-btn svg {
     width: 16px;

@@ -75,7 +75,7 @@ export const SearchField = ({
     ) : (
       <button
         aria-label="Очистить"
-        className="absolute right-0 flex h-10 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink"
+        className="absolute -top-0.5 right-0 flex h-11 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink"
         onClick={onClear}
         type="button"
       >

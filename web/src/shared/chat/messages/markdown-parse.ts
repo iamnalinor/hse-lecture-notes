@@ -239,9 +239,11 @@ const appendParagraphs = (trimmed: string, blocks: BlockSegment[]): void => {
   let pending: string[] = [];
   let index = 0;
   while (index < all.length) {
-    const table = readTable(all, index);
     const line = all[index] ?? "";
-    const block = table?.block ?? headingOf(line);
+    const heading = headingOf(line);
+    // A heading line is never a table header, even with a `|` in it.
+    const table = heading === null ? readTable(all, index) : null;
+    const block = heading ?? table?.block ?? null;
     if (block === null) {
       pending.push(line);
     } else {

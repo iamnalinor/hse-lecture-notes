@@ -21,8 +21,37 @@ it("leaves the MathML copy and formulas without Greek letters as they are", () =
   expect(html).toContain("<mi>α</mi>");
 });
 
-it("covers the lowercase and uppercase alphabet", () => {
-  expect(GREEK_NAMES.get("λ")).toBe("лямбда");
-  expect(GREEK_NAMES.get("Σ")).toBe("сигма");
-  expect(GREEK_NAMES.get("ς")).toBe("сигма");
+it("names the whole alphabet, capitals and variant forms included", () => {
+  const names = [
+    "альфа",
+    "бета",
+    "гамма",
+    "дельта",
+    "эпсилон",
+    "дзета",
+    "эта",
+    "тета",
+    "йота",
+    "каппа",
+    "лямбда",
+    "мю",
+    "ню",
+    "кси",
+    "омикрон",
+    "пи",
+    "ро",
+    "сигма",
+    "тау",
+    "ипсилон",
+    "фи",
+    "хи",
+    "пси",
+    "омега",
+  ];
+  const lower = Array.from("αβγδεζηθικλμνξοπρστυφχψω", (char) => GREEK_NAMES.get(char));
+  const upper = Array.from("ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ", (char) => GREEK_NAMES.get(char));
+  const variants = Array.from("ϵϑϰϖϱςϕϒ", (char) => GREEK_NAMES.get(char));
+  expect(lower).toEqual(names);
+  expect(upper).toEqual(names);
+  expect(variants).toEqual(["эпсилон", "тета", "каппа", "пи", "ро", "сигма", "фи", "ипсилон"]);
 });

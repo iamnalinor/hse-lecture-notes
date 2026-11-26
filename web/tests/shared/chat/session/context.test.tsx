@@ -854,6 +854,12 @@ it("shows the signed-in account while browser verification is pending and after 
   expect(chat.current.user).toEqual(account);
   expect(chat.current.checkingLogin).toBe(true);
   expect(chat.current.isLoginBusy).toBe(true);
+  // A question sent meanwhile does not end the check: the login controls stay busy until it settles.
+  act(() => {
+    void chat.current.send("Вопрос");
+  });
+  expect(chat.current.checkingLogin).toBe(true);
+  expect(chat.current.isLoginBusy).toBe(true);
   await act(async () => {
     pending.reject(new Error("cancelled"));
     await login;

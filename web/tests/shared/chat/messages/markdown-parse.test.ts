@@ -183,13 +183,22 @@ it("pads short rows and drops extra cells, so every row has the header's width",
   ]);
 });
 
-it("treats a pipe after an even run of backslashes as a cell boundary", () => {
-  expect(parseChatBlocks(["| a | b |", "|---|---|", String.raw`| x\\ | y\\|`].join("\n"))).toEqual([
+it("treats a pipe right after an even run of backslashes as a cell boundary", () => {
+  expect(
+    parseChatBlocks(["| a | b | c |", "|---|---|---|", String.raw`| x\\| y | z\\|`].join("\n")),
+  ).toEqual([
     {
       kind: "table",
-      align: [null, null],
-      header: ["a", "b"],
-      rows: [[String.raw`x\\`, String.raw`y\\`]],
+      align: [null, null, null],
+      header: ["a", "b", "c"],
+      rows: [[String.raw`x\\`, "y", String.raw`z\\`]],
     },
+  ]);
+});
+
+it("keeps a heading with a pipe as a heading even when a separator row follows", () => {
+  expect(parseChatBlocks("### A | B\n|---|---|")).toEqual([
+    { kind: "heading", tag: "h3", value: "A | B" },
+    { kind: "paragraph", value: "|---|---|" },
   ]);
 });
