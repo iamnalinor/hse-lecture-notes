@@ -1,6 +1,6 @@
 import { sha256Hex } from "../crypto";
 import type { TrackedD1 } from "../db";
-import { buildSystemPrompt } from "./tools";
+import { buildSystemPrompt } from "./page-context";
 import type {
   AgentReplayEnvelope,
   CodexInputItem,

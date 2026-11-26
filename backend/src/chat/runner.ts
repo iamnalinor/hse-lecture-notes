@@ -78,7 +78,6 @@ export class ChatRunner extends DurableObject<Env> {
       questionCreatedAt: admit.questionCreatedAt,
       runId: admit.runId,
       threadId: admit.threadId,
-      excludeMessageIds: [admit.userMessageId, admit.assistantMessageId],
       bucket: admit.bucket,
       route: admit.route,
       initialReserveMicros: admit.reserveMicros,

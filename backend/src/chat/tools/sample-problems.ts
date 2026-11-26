@@ -3,7 +3,7 @@
 built into `data/<course>/<id>/bank.json` on the site). The Worker reads the published JSON, so a bank
 reaches the chat as soon as Pages deploys it: no D1 or Vectorize sync.
 */
-import type { ChatStep, CodexFunctionTool } from "../types";
+import type { ChatStep, CodexFunctionTool } from "../../types";
 
 export const BANK_DATA_URL = "https://hse.nalinor.dev/data/";
 /** The banks that exist: course → prep ids. A new `*-bank.yaml` goes here too. */
