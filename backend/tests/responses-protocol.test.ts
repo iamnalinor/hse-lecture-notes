@@ -54,7 +54,7 @@ async function run(
   );
   return { result, seen: seen.join("") };
 }
-test("separate text messages preserve paragraph boundaries in streaming and final text", async () => {
+test("only the first text message is the answer: later messages are cut from streaming and final text", async () => {
   const { result, seen } = await run(
     [msg("Ответ"), msg("Исправляю"), topic],
     [
@@ -66,8 +66,9 @@ test("separate text messages preserve paragraph boundaries in streaming and fina
       { type: "response.output_text.delta", output_index: 1, item_id: "m2", delta: "Исправляю" },
     ],
   );
-  expect(seen).toBe("Ответ\n\nИсправляю");
-  expect(result.text).toBe(seen);
+  expect(seen).toBe("Ответ");
+  expect(result.text).toBe("Ответ");
+  expect(JSON.stringify(result.outputItems)).not.toContain("Исправляю");
   expect(result.protocolViolations).toEqual([]);
 });
 test("initial topic service stage hides all text without rejecting a valid call", async () => {
