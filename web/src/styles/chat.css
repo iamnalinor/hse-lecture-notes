@@ -1322,6 +1322,10 @@ html.ai-open .ai-panel {
   width: 18px;
   height: 18px;
 }
+/* The back bar (44 px tall, centred on a phone) owns the bottom edge: «К чату» stands right above it. */
+body:has(aside[aria-label="Возврат"]) .ai-back {
+  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 44px + 8px);
+}
 
 /* подсветка блока при переходе из ответа */
 .ai-flash-block {

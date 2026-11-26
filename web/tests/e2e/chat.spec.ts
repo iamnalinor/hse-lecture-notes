@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import { mockChat, suggestion } from "./support/chat.ts";
 import { mockSiteData } from "./support/site-data.ts";
@@ -270,9 +270,7 @@ test("mobile chat keeps keyboard focus inside and returns it to the header", asy
   await expect(page.getByTitle("Чат с ИИ")).toBeFocused();
 });
 
-test("a citation opens the other lecture on mobile and contents stay reachable on a laptop", async ({
-  page,
-}) => {
+const mockTwoLectures = async (page: Page) => {
   const mock = await mockChat(page, true);
   const lectures = [1, 2].map((n) => ({
     date: "2026-09-03",
@@ -300,6 +298,13 @@ test("a citation opens the other lecture on mobile and contents stay reachable o
       body: '<section id="section"><h2>Раздел</h2><p style="text-align:right">Правый край</p><a href="#section">Следующая ссылка</a></section>',
     }),
   );
+  return mock;
+};
+
+test("a citation opens the other lecture on mobile and contents stay reachable on a laptop", async ({
+  page,
+}) => {
+  const mock = await mockTwoLectures(page);
   await page.setViewportSize({ width: 320, height: 780 });
   await page.goto("/algebra/01_test");
   await expect(page.locator("[data-page] h1")).toBeVisible();
@@ -438,3 +443,56 @@ test("guest login waits for the SDK, then opens Telegram from the first enabled 
   await (await popup).close();
   await expect(page.locator("body")).toHaveAttribute("data-telegram-activation", "true");
 });
+
+const boxOf = async (locator: Locator) => {
+  const box = await locator.boundingBox();
+  if (box === null) {
+    throw new Error("element has no box");
+  }
+  return box;
+};
+
+for (const width of [320, 390]) {
+  test(`return buttons do not overlap on a ${String(width)} px phone and both work`, async ({
+    page,
+  }) => {
+    const mock = await mockTwoLectures(page);
+    await page.setViewportSize({ width, height: 780 });
+    await page.goto("/algebra/01_test");
+    await page.getByTitle("Чат с ИИ").click();
+    const input = page.getByRole("textbox", { name: "Сообщение в чат" });
+    await input.fill("Вопрос");
+    await input.press("Enter");
+    mock.complete(undefined, "[Открыть раздел](/algebra/02_test#section)");
+    const draft = "Черновик до перехода";
+    await input.fill(draft);
+    await page.getByRole("link", { name: "Открыть раздел" }).click();
+    await expect(page).toHaveURL(/02_test#section$/u);
+    const toChat = page.getByRole("button", { name: "К чату" });
+    const back = page.getByRole("button", { name: /^Назад:/u });
+    await expect(toChat).toBeVisible();
+    await expect(back).toBeVisible();
+    await expect(page.getByRole("button", { name: "Скрыть" })).toBeVisible();
+    const chatBox = await boxOf(toChat);
+    const backBox = await boxOf(back);
+    for (const box of [
+      chatBox,
+      backBox,
+      await boxOf(page.getByRole("button", { name: "Скрыть" })),
+    ]) {
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+    }
+    expect(chatBox.y + chatBox.height).toBeLessThanOrEqual(backBox.y);
+    expect(backBox.x + backBox.width).toBeLessThanOrEqual(width);
+    await expect(back).toContainText("лекция 1");
+
+    await toChat.click();
+    await expect(input).toHaveValue(draft);
+    await expect(page.getByRole("link", { name: "Открыть раздел" })).toBeInViewport();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTitle("Чат с ИИ")).toHaveAttribute("aria-expanded", "false");
+    await page.getByRole("button", { name: /^Назад:/u }).click();
+    await expect(page).toHaveURL(/01_test$/u);
+  });
+}
