@@ -350,3 +350,17 @@ export async function listPreparationPages(
   );
   return rows.results;
 }
+
+/** The course (and, when given, the document) exists in the synced materials. */
+export async function courseContextExists(
+  db: TrackedD1,
+  course: string,
+  docId: string,
+): Promise<boolean> {
+  const statement = docId
+    ? db
+        .prepare("SELECT 1 FROM course_documents WHERE course = ? AND doc_id = ? LIMIT 1")
+        .bind(course, docId)
+    : db.prepare("SELECT 1 FROM course_documents WHERE course = ? LIMIT 1").bind(course);
+  return Boolean(await db.first(statement));
+}
