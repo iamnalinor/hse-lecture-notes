@@ -51,6 +51,24 @@ test.describe("touch composer", () => {
   });
 });
 
+test("with the chat open on desktop the header keeps the courses and history is a narrow dropdown", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await mockChat(page);
+  await openChat(page);
+  await expect(page.getByRole("navigation", { name: "Курсы" })).toBeVisible();
+  const row = page.locator("header > div").first();
+  expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  const trigger = page.getByRole("button", { name: "История чатов" });
+  await trigger.click();
+  const menu = await boxOf(page.getByRole("group", { name: "История чатов" }));
+  const button = await boxOf(trigger);
+  expect(menu.width).toBeLessThanOrEqual(360);
+  expect(menu.x + menu.width).toBeGreaterThan(button.x);
+  expect(menu.y).toBeGreaterThan(button.y + button.height);
+});
+
 test("history closes outside and with Escape while chat stays open", async ({ page }) => {
   await mockChat(page);
   const input = await openChat(page);

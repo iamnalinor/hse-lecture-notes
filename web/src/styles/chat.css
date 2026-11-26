@@ -152,6 +152,17 @@
   white-space: nowrap;
 }
 
+@media (min-width: 721px) {
+  /* Выпадающий список под своей кнопкой, а не во всю ширину панели. */
+  .ai-hist-menu {
+    left: auto;
+    right: 44px;
+    width: min(360px, calc(100% - 56px));
+    max-height: 60vh;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+  }
+}
+
 /* пустое состояние */
 .ai-empty {
   padding-top: 12px;
@@ -1298,6 +1309,12 @@ body:has(aside[aria-label="Возврат"]) .ai-back {
   }
   html.ai-open header label:has(input[type="search"]) kbd {
     display: none;
+  }
+}
+/* Названия курсов остаются в шапке, пока им хватает места рядом с панелью чата. */
+@container (min-width: 50rem) {
+  html.ai-open [data-course-nav] {
+    display: flex;
   }
 }
 @container (max-width: 36rem) {
