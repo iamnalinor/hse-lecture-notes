@@ -4,28 +4,51 @@ import { shuffledRound, type Slogan, SLOGANS, toChunks, toWords } from "#web/dom
 
 /** How long a slogan stays on screen. */
 const HOLD_MS = 10_000;
-/** The old slogan leaves for this long (it is removed from the DOM after that). */
-const LEAVE_MS = 650;
+/**
+How long the old slogan is kept in the "off" state, and so how long its exit transition may run. In "words" mode
+the new slogan enters only after the old words have left (200ms plus slack); in "fade" mode both overlap for the
+whole 600ms cross-fade.
+*/
+const SETTLE_MS = { fade: 650, words: 220 } as const;
 
-const TYPE = "text-large leading-[1.05] font-bold tracking-tight text-balance sm:text-display";
-const CELL = "col-start-1 row-start-1";
-
-type Effect = "fade" | "words";
+type Effect = keyof typeof SETTLE_MS;
 
 type State = {
-  /** The slogan on screen. */
+  /** The slogan that is (or, during the gap, is about to be) on screen. */
   readonly current: number;
-  /** The slogan that is fading out, if any. */
+  /** "words" only: the old slogan has left, the new one has not come in yet. */
+  readonly gap: boolean;
+  /** The slogan that is leaving, if any. A transition is under way while this is set. */
   readonly leaving: null | number;
   /** The shuffled rest of the round. */
   readonly queue: readonly number[];
-  /** False until the first change: the first slogan is static, without an entrance animation. */
-  readonly moved: boolean;
 };
 
+type LayerState = "idle" | "off" | "on";
+
+const TYPE = "text-large leading-[1.05] font-bold tracking-tight text-balance sm:text-display";
 const NBSP = "\u{A0}";
 
-const Words = ({ animate, slogan }: { readonly animate: boolean; readonly slogan: Slogan }) =>
+const layerState = (index: number, { current, gap, leaving }: State): LayerState => {
+  if (index === current && !gap) {
+    return "on";
+  }
+  return index === leaving ? "off" : "idle";
+};
+
+const isReducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const next = (state: State, effect: Effect): State => {
+  const round = state.queue.length > 0 ? state.queue : shuffledRound(state.current, SLOGANS.length);
+  const [head = 0, ...rest] = round;
+  return isReducedMotion()
+    ? { current: head, gap: false, leaving: null, queue: rest }
+    : { current: head, gap: effect === "words", leaving: state.current, queue: rest };
+};
+
+const settle = (state: State): State => ({ ...state, gap: false, leaving: null });
+
+const Words = ({ slogan }: { readonly slogan: Slogan }) =>
   toChunks(toWords(slogan)).map((chunk, c) => (
     <Fragment key={chunk[0]?.key}>
       {c > 0 && " "}
@@ -34,7 +57,7 @@ const Words = ({ animate, slogan }: { readonly animate: boolean; readonly slogan
           <Fragment key={word.key}>
             {i > 0 && NBSP}
             <span
-              className={`${animate ? "slogan-word " : ""}inline-block${word.accent ? " text-thm" : ""}`}
+              className={`slogan-word inline-block${word.accent ? " text-thm" : ""}`}
               style={{ "--i": word.key } as CSSProperties}
             >
               {word.text}
@@ -46,27 +69,8 @@ const Words = ({ animate, slogan }: { readonly animate: boolean; readonly slogan
     </Fragment>
   ));
 
-const next = (state: State): State => {
-  const round = state.queue.length > 0 ? state.queue : shuffledRound(state.current, SLOGANS.length);
-  const [head = 0, ...rest] = round;
-  return { current: head, leaving: state.current, moved: true, queue: rest };
-};
-
-/**
-The h1 of the home page: a slogan that changes every HOLD_MS, in random order, the first one on load. Only the
-current slogan is in the heading. Under it sits an invisible copy of all slogans in one grid cell, so the block
-always has the height of the longest one and the text below never jumps.
-*/
-export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect }) => {
-  const [state, setState] = useState<State>({ current: 0, leaving: null, moved: false, queue: [] });
-  const [paused, setPaused] = useState(false);
+const useIsDocumentVisible = () => {
   const [visible, setVisible] = useState(true);
-  const { current, leaving, moved } = state;
-
-  const advance = useCallback(() => {
-    setState(next);
-  }, []);
-
   useEffect(() => {
     const onChange = () => {
       setVisible(!document.hidden);
@@ -76,41 +80,52 @@ export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect 
       document.removeEventListener("visibilitychange", onChange);
     };
   }, []);
+  return visible;
+};
+
+/**
+The h1 of the home page: a slogan that changes every HOLD_MS, in random order, the first one on load. All slogans
+are persistent layers in one grid cell, so the block always has the height of the longest one and the text below
+never jumps; CSS transitions on `data-state` do the animation (see `.slogan-*` in app.css). Only the current layer
+is exposed to assistive technology.
+*/
+export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect }) => {
+  const [state, setState] = useState<State>({ current: 0, gap: false, leaving: null, queue: [] });
+  const [paused, setPaused] = useState(false);
+  const isVisible = useIsDocumentVisible();
+  const { current, leaving } = state;
+
+  const advance = useCallback(() => {
+    setState((s) => (s.leaving === null ? next(s, effect) : s));
+  }, [effect]);
 
   useEffect(() => {
-    if (paused || !visible) {
+    if (paused || !isVisible || leaving !== null) {
       return;
     }
     const id = setTimeout(advance, HOLD_MS);
     return () => {
       clearTimeout(id);
     };
-  }, [advance, current, paused, visible]);
+  }, [advance, current, leaving, paused, isVisible]);
 
   useEffect(() => {
     if (leaving === null) {
       return;
     }
     const id = setTimeout(() => {
-      setState((s) => ({ ...s, leaving: null }));
-    }, LEAVE_MS);
+      setState(settle);
+    }, SETTLE_MS[effect]);
     return () => {
       clearTimeout(id);
     };
-  }, [leaving]);
-
-  const slogan = SLOGANS[current] ?? [];
-  const old = leaving === null ? undefined : SLOGANS[leaving];
+  }, [effect, leaving]);
 
   return (
     <div
-      className="mb-6 grid cursor-pointer items-start select-none"
+      className="mb-6 cursor-pointer select-none"
       data-effect={effect}
-      onClick={() => {
-        if (leaving === null) {
-          advance();
-        }
-      }}
+      onClick={advance}
       onPointerEnter={(e) => {
         if (e.pointerType === "mouse") {
           setPaused(true);
@@ -120,26 +135,18 @@ export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect 
         setPaused(false);
       }}
     >
-      <h1 className={`${CELL} ${TYPE}`} data-first-slogan={moved ? undefined : true}>
-        <span
-          className={moved && effect === "fade" ? "slogan-fade-in block" : "block"}
-          key={current}
-        >
-          <Words animate={moved && effect === "words"} slogan={slogan} />
-        </span>
-      </h1>
-      {old !== undefined && (
-        <div aria-hidden="true" className={`${CELL} ${TYPE} slogan-leave pointer-events-none`}>
-          <Words animate={false} slogan={old} />
-        </div>
-      )}
-      <div aria-hidden="true" className={`${CELL} invisible grid ${TYPE}`}>
-        {SLOGANS.map((s) => (
-          <span className={`${CELL} block`} key={s.map(([text]) => text).join("")}>
-            <Words animate={false} slogan={s} />
+      <h1 className="grid items-start">
+        {SLOGANS.map((slogan, index) => (
+          <span
+            aria-hidden={index === current ? undefined : true}
+            className={`slogan-layer ${TYPE}`}
+            data-state={layerState(index, state)}
+            key={slogan.map(([text]) => text).join("")}
+          >
+            <Words slogan={slogan} />
           </span>
         ))}
-      </div>
+      </h1>
     </div>
   );
 };

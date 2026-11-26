@@ -435,52 +435,58 @@ details[open]::details-content {
 }
 
 /*
-Home slogan (RotatingSlogan): in "words" mode the new slogan comes in word by word (400ms, 45ms apart), the
-old one fades out in 200ms; in "fade" mode they cross-fade in 600ms. Reduced motion: the swap is instant.
+Home slogan (RotatingSlogan). Every slogan is a persistent layer in one grid cell with data-state on / off / idle
+(idle layers are invisible but keep the height). "words": the old words leave one by one upwards (200ms), then the
+new ones rise in 45ms apart (400ms). "fade": the layers cross-fade in 600ms. Reduced motion: the swap is instant.
 */
-@keyframes slogan-word-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.3em);
-  }
+.slogan-layer {
+  grid-area: 1 / 1;
+  visibility: hidden;
 }
 
-@keyframes slogan-fade-in {
-  from {
-    opacity: 0;
-  }
+.slogan-layer[data-state="on"],
+.slogan-layer[data-state="off"] {
+  visibility: visible;
 }
 
-@keyframes slogan-fade-out {
-  to {
-    opacity: 0;
-  }
+[data-effect="words"] .slogan-word {
+  opacity: 0;
+  transform: translateY(0.3em);
 }
 
-.slogan-word {
-  animation: slogan-word-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--i) * 45ms);
+[data-effect="words"] .slogan-layer[data-state="on"] .slogan-word {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.4s ease-out calc(var(--i) * 45ms),
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i) * 45ms);
 }
 
-.slogan-fade-in {
-  animation: slogan-fade-in 0.6s ease-in-out both;
+[data-effect="words"] .slogan-layer[data-state="off"] .slogan-word {
+  opacity: 0;
+  transform: translateY(-0.3em);
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in;
 }
 
-[data-effect="words"] .slogan-leave {
-  animation: slogan-fade-out 0.2s ease-in forwards;
+[data-effect="fade"] .slogan-layer {
+  opacity: 0;
 }
 
-[data-effect="fade"] .slogan-leave {
-  animation: slogan-fade-out 0.6s ease-in-out forwards;
+[data-effect="fade"] .slogan-layer[data-state="on"] {
+  opacity: 1;
+  transition: opacity 0.6s ease-in-out;
+}
+
+[data-effect="fade"] .slogan-layer[data-state="off"] {
+  transition: opacity 0.6s ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slogan-word,
-  .slogan-fade-in {
-    animation: none;
-  }
-
-  .slogan-leave {
-    display: none;
+  .slogan-layer,
+  .slogan-word {
+    transition: none !important;
+    transform: none !important;
   }
 }
