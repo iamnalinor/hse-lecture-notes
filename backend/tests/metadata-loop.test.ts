@@ -311,3 +311,29 @@ test("a hung tool settles once at the deadline or on explicit stop and ignores l
     }
   }
 });
+
+type Fixture = Awaited<ReturnType<typeof fixture>>;
+const storedReplay = (r: Fixture) =>
+  r.shim.sqlite
+    .query("SELECT agent_items_json AS json FROM chat_messages WHERE role='assistant'")
+    .get() as { json: string | null };
+const finalizedRun = (r: Fixture) =>
+  r.shim.sqlite.query("SELECT status, reserved_cost_micros FROM usage_runs").get();
+
+test("a normal answer keeps the continuation context", async () => {
+  const r = await fixture([round("Ответ")], 6, true);
+  expect(JSON.parse(storedReplay(r).json!)).toMatchObject({ complete: true });
+  expect(finalizedRun(r)).toEqual({ status: "done", reserved_cost_micros: 0 });
+});
+
+test.each([
+  ["ASCII", "a", 1_000_001],
+  // 600k characters stay below the cap as a string length but are 1.2 MB as UTF-8.
+  ["Cyrillic", "ж", 600_000],
+])("an oversized %s continuation is dropped while the answer is saved", async (_name, char, count) => {
+  const text = char.repeat(count);
+  const r = await fixture([round(text)], 6, true);
+  expect(storedReplay(r).json).toBeNull();
+  expect(r.message).toMatchObject({ status: "done", content_tex: text });
+  expect(finalizedRun(r)).toEqual({ status: "done", reserved_cost_micros: 0 });
+});

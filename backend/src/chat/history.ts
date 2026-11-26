@@ -73,6 +73,22 @@ export function selectHistoryWindow(
   };
 }
 
+/**
+ * D1 rejects a row above 2,000,000 bytes. The replay envelope shares its row with the
+ * visible answer, steps and prompt snapshot, so it gets half of that limit.
+ */
+export const MAX_REPLAY_ENVELOPE_BYTES = 1_000_000;
+
+/**
+ * Serializes the model-side continuation for storage. Returns null when it does not
+ * fit the byte cap: the next turn then replays the visible text instead.
+ */
+export function encodeEnvelope(envelope: AgentReplayEnvelope): string | null {
+  const json = JSON.stringify(envelope);
+  // Counted in UTF-8 bytes: Cyrillic is two bytes per character, so string length lies.
+  return new TextEncoder().encode(json).length <= MAX_REPLAY_ENVELOPE_BYTES ? json : null;
+}
+
 function decodeSnapshot(raw: string | null): TurnContextSnapshot | null {
   try {
     const s = JSON.parse(raw ?? "null") as TurnContextSnapshot | null;

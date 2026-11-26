@@ -6,7 +6,7 @@ import {
   parseTopicArguments,
   parseSuggestionArguments,
 } from "./metadata-tools";
-import { prepareTurnContext, type PreparedTurnContext } from "./history";
+import { encodeEnvelope, prepareTurnContext, type PreparedTurnContext } from "./history";
 import { CodexAuthError } from "../llm/codex-auth";
 import { ProxyConnectError, ResponseEofError } from "../llm/socks5-fetch";
 import { LlmUpstreamError } from "../llm/responses-stream";
@@ -425,7 +425,7 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     messageStatus: finalStatus,
     contentTex: text,
     stepsJson: JSON.stringify(steps),
-    agentItemsJson: JSON.stringify({
+    agentItemsJson: encodeEnvelope({
       version: 1,
       complete: finalStatus === "done",
       provenance: prepared?.provenance ?? null,
