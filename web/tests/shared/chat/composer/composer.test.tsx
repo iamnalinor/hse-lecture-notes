@@ -137,3 +137,35 @@ it("lets a question go while the browser is checked after login, without caption
   expect(screen.queryByText(/повторим проверку/u)).toBeNull();
   Object.assign(state, { verificationError: false });
 });
+
+/** A device whose main input is a finger (phone, tablet): `(hover: none) and (pointer: coarse)` matches. */
+const stubTouchDevice = (isTouch: boolean) => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query: string) => ({
+      matches: isTouch && query.includes("pointer: coarse"),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+};
+
+it("Enter sends from a hardware keyboard", () => {
+  stubTouchDevice(false);
+  state.draft = "Вопрос";
+  render(<ChatComposer />);
+  const isNotPrevented = fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+  expect(isNotPrevented).toBe(false);
+  expect(state.send).toHaveBeenCalledOnce();
+  vi.unstubAllGlobals();
+});
+
+it("Enter on a phone keyboard starts a new line: a question goes only with the send button", () => {
+  stubTouchDevice(true);
+  state.draft = "Вопрос";
+  render(<ChatComposer />);
+  const isNotPrevented = fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+  expect(isNotPrevented).toBe(true);
+  expect(state.send).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
+});

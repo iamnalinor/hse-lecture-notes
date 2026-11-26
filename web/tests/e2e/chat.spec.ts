@@ -63,6 +63,19 @@ test.describe("touch composer", () => {
     expect(field?.height).toBe(button?.height);
     expect(field?.y).toBe(button?.y);
   });
+
+  test("Enter on the on-screen keyboard starts a new line; the button sends", async ({ page }) => {
+    const mock = await mockChat(page, true);
+    const input = await openChat(page);
+    await input.fill("первая строка");
+    await input.press("Enter");
+    await input.pressSequentially("вторая");
+    await expect(input).toHaveValue("первая строка\nвторая");
+    expect(mock.sent).toHaveLength(0);
+    await page.getByRole("button", { name: "Отправить" }).click();
+    await expect(page.locator(".ai-user")).toHaveCount(1);
+    expect(mock.sent).toHaveLength(1);
+  });
 });
 
 test("with the chat open on desktop the header keeps the courses and history is a narrow dropdown", async ({

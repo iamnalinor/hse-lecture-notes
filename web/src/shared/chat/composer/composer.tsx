@@ -2,6 +2,8 @@ import { type ChangeEvent, type JSX, type KeyboardEvent, useEffect, useRef, useS
 
 import type { ChatQuote } from "#web/domain/chat/model.ts";
 
+import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
+
 import { SendIcon, StopIcon } from "../icons.tsx";
 import { ChatQuoteCard } from "../messages/quote-card.tsx";
 import { useChat } from "../session/context.tsx";
@@ -110,8 +112,15 @@ const isPlainTab = (event: KeyboardEvent<HTMLTextAreaElement>): boolean =>
   !event.nativeEvent.isComposing &&
   ![event.shiftKey, event.altKey, event.ctrlKey, event.metaKey].some(Boolean);
 
+/**
+A device whose main input is a finger. Its on-screen keyboard has no Shift+Enter, so Enter is the only way to
+start a new line there, as in a messenger; the question goes with the send button.
+*/
+const TOUCH_QUERY = "(hover: none) and (pointer: coarse)";
+
 const useComposerKeyDown = (canSend: boolean, suggestion: null | string, consume: () => void) => {
   const { send, setDraft } = useChat();
+  const isTouch = useIsMatching(TOUCH_QUERY);
   return (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (suggestion !== null && isPlainTab(event)) {
       event.preventDefault();
@@ -119,7 +128,7 @@ const useComposerKeyDown = (canSend: boolean, suggestion: null | string, consume
       consume();
       return;
     }
-    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
+    if (isTouch || event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
       return;
     }
     event.preventDefault();
