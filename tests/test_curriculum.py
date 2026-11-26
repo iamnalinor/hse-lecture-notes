@@ -11,7 +11,7 @@ import yaml
 from test_pipeline import ROOT, build, demo, lint  # noqa: F401  (demo — фикстура)
 
 sys.path.insert(0, str(ROOT / "scripts"))
-import curriculum  # noqa: E402
+import curriculum
 
 PLAN = ROOT / curriculum.FILE
 
@@ -58,12 +58,20 @@ def test_build_writes_curriculum_json(demo: Path):  # noqa: F811 (фикстур
     assert sum(x["credits"] for x in out["excluded"] if not x["in_plan_total"]) == 8
     assert [s["module"] for s in out["module_spans"]] == [1, 2, 3, 4]
     assert out["module_spans"][1] == {
-        "module": 2, "from": "2026-11-01", "study_to": "2026-12-20", "to": "2026-12-30", "weeks": 7.1,
+        "module": 2,
+        "from": "2026-11-01",
+        "study_to": "2026-12-20",
+        "to": "2026-12-30",
+        "weeks": 7.1,
     }
     # учебные дни / 7: 55, 50, 75, 81 − 7 каникулярных дней весны = 74
     assert [s["weeks"] for s in out["module_spans"]] == [7.9, 7.1, 10.7, 10.6]
     assert "breaks" not in out
-    assert [c["label"] for c in out["categories"]] == ["Математика", "Программирование", "Непрофильные дисциплины"]
+    assert [c["label"] for c in out["categories"]] == [
+        "Математика",
+        "Программирование",
+        "Непрофильные дисциплины",
+    ]
 
 
 def test_build_without_plan_has_no_file(demo: Path):  # noqa: F811 (фикстура pytest)
@@ -109,7 +117,10 @@ def test_curriculum_errors(demo: Path, old: str, new: str, expected: str):  # no
 
 
 def spans_data(**over) -> dict:
-    return {"module_spans": [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}], **over}
+    return {
+        "module_spans": [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}],
+        **over,
+    }
 
 
 def test_weeks_count_teaching_days_minus_breaks():
@@ -127,12 +138,36 @@ def test_weeks_ignore_break_days_outside_the_teaching_days():
     ("spans", "breaks", "expected"),
     [
         ([{"module": 1, "from": "2026-09-01", "to": "2026-09-20"}], [], "study_to"),
-        ([{"module": 1, "from": "2026-09-01", "study_to": "2026-08-31", "to": "2026-09-20"}], [], "from ≤ study_to ≤ to"),
-        ([{"module": 1, "from": "2026-09-01", "study_to": "2026-09-21", "to": "2026-09-20"}], [], "from ≤ study_to ≤ to"),
-        ([{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}], [{"from": "2026-09-08", "to": "2026-09-05"}], "breaks"),
-        ([{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}], [{"from": "2026-09-08"}], "breaks"),
-        ([{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}], [{"from": "2026-10-01", "to": "2026-10-02"}], "вне учебных дней"),
-        ([{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}], "no", "breaks — список"),
+        (
+            [{"module": 1, "from": "2026-09-01", "study_to": "2026-08-31", "to": "2026-09-20"}],
+            [],
+            "from ≤ study_to ≤ to",
+        ),
+        (
+            [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-21", "to": "2026-09-20"}],
+            [],
+            "from ≤ study_to ≤ to",
+        ),
+        (
+            [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}],
+            [{"from": "2026-09-08", "to": "2026-09-05"}],
+            "breaks",
+        ),
+        (
+            [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}],
+            [{"from": "2026-09-08"}],
+            "breaks",
+        ),
+        (
+            [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}],
+            [{"from": "2026-10-01", "to": "2026-10-02"}],
+            "вне учебных дней",
+        ),
+        (
+            [{"module": 1, "from": "2026-09-01", "study_to": "2026-09-14", "to": "2026-09-20"}],
+            "no",
+            "breaks — список",
+        ),
     ],
 )
 def test_span_and_break_errors(spans, breaks, expected):
@@ -143,7 +178,12 @@ def test_span_and_break_errors(spans, breaks, expected):
 def test_real_plan_has_spring_break_in_module_4():
     data = curriculum.load(PLAN)
     assert data["breaks"] == [{"from": "2027-05-02", "to": "2027-05-08"}]
-    assert [s["study_to"] for s in data["module_spans"]] == ["2026-10-25", "2026-12-20", "2027-03-24", "2027-06-20"]
+    assert [s["study_to"] for s in data["module_spans"]] == [
+        "2026-10-25",
+        "2026-12-20",
+        "2027-03-24",
+        "2027-06-20",
+    ]
 
 
 def test_yaml_is_plain_data():

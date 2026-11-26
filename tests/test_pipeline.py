@@ -3,14 +3,22 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+import pymupdf
+import pypandoc
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from build import PREP_IDS  # noqa: E402
+from site_search import search_entries  # noqa: E402
+
 DEMO = ROOT / "tests" / "fixtures" / "demo"
 HAS_TEX = (
     shutil.which("xelatex") is not None
@@ -24,6 +32,7 @@ def run(script: str, *args: str) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         cwd=ROOT,
+        check=False,
     )
 
 
@@ -190,9 +199,6 @@ def test_html_blocks_and_refs(demo: Path):
 
 
 def test_search_entries():
-    sys.path.insert(0, str(ROOT / "scripts"))
-    from build import search_entries
-
     frag = (
         '<section id="s1" class="level1"><h1>Раздел</h1><p>Текст <span class="math inline">x^2</span>, '
         'дальше.</p><span class="math display">\\[ y \\]</span>'
@@ -221,8 +227,6 @@ def test_search_entries():
 
 
 def to_latex(demo: Path, week_id: str) -> str:
-    import pypandoc
-
     return pypandoc.convert_file(
         str(demo / "notes" / "algebra" / f"{week_id}.md"),
         "latex",
@@ -361,7 +365,10 @@ def test_lint_catches(demo: Path, old: str, new: str, expected: str):
 @pytest.mark.parametrize("value", ["[lecture]", "[lecture, seminars]"])
 def test_lint_accepts_synced_lists(demo: Path, value: str):
     p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
-    p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-09-03", f"date: 2026-09-03\nsynced: {value}", 1), encoding="utf-8")
+    p.write_text(
+        p.read_text(encoding="utf-8").replace("date: 2026-09-03", f"date: 2026-09-03\nsynced: {value}", 1),
+        encoding="utf-8",
+    )
     res = lint(demo)
     assert res.returncode == 0, res.stdout
 
@@ -395,10 +402,22 @@ def test_lint_theory_catches(demo: Path, old: str, new: str, expected: str):
         ("#rem:kr1:order", "#prob:kr1:order", "префикс rem:"),
         ('ref="thm:lec01:assoc"', 'ref="thm:lec01:nope"', "не найден в конспектах"),
         ("::: solution\nПеремножаем", "::: remark\nПеремножаем", "должно идти ::: solution"),
-        ("::: solution\nПеремножаем", "::: answer\n$2$\n:::\n\n::: solution\nПеремножаем", "блока ::: answer больше нет"),
+        (
+            "::: solution\nПеремножаем",
+            "::: answer\n$2$\n:::\n\n::: solution\nПеремножаем",
+            "блока ::: answer больше нет",
+        ),
         ("# О контрольной", "# Про контрольную", "первый раздел"),
-        ("## Как решать", "## Вопросы для самопроверки\n\nПочему?\n\n## Как решать", "тренируются генератором"),
-        ("# Пробный вариант", "# Блиц: формулировки\n\nТекст.\n\n# Пробный вариант", "тренируются генератором"),
+        (
+            "## Как решать",
+            "## Вопросы для самопроверки\n\nПочему?\n\n## Как решать",
+            "тренируются генератором",
+        ),
+        (
+            "# Пробный вариант",
+            "# Блиц: формулировки\n\nТекст.\n\n# Пробный вариант",
+            "тренируются генератором",
+        ),
         ("::: {.theorem ref=", "::: {.theorem #thm:kr1:x title=", "без ref="),
         ("course: algebra", "course: calculus", "лежит в prep/algebra/"),
         ("date: 2026-11-07", 'date: "7 ноября"', "не в формате YYYY-MM-DD"),
@@ -454,7 +473,12 @@ def test_synced_reaches_site_and_header(demo: Path, value, expected, suffix):
     """synced: список частей → courses.json (упорядоченный список) и колонтитул PDF."""
     if value:
         p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
-        p.write_text(p.read_text(encoding="utf-8").replace("date: 2026-09-03", f"date: 2026-09-03\nsynced: {value}", 1), encoding="utf-8")
+        p.write_text(
+            p.read_text(encoding="utf-8").replace(
+                "date: 2026-09-03", f"date: 2026-09-03\nsynced: {value}", 1
+            ),
+            encoding="utf-8",
+        )
     res = build(demo, "--no-pdf")
     assert res.returncode == 0, res.stderr
     site = demo / "build" / "site-data"
@@ -501,7 +525,9 @@ def test_prep_new_scheme_tasks(demo: Path):
     """КР по новой схеме (context/prompts/prep.md): задачи — в «# Задачи» по типам, «## Прототипы» нет."""
     p = demo / "prep" / "algebra" / "kr1.md"
     text = p.read_text(encoding="utf-8")
-    new = text.replace("# Умножение матриц {#sec:kr1:product}", "# Задачи\n\n## 1. Умножение матриц {#sec:kr1:product}")
+    new = text.replace(
+        "# Умножение матриц {#sec:kr1:product}", "# Задачи\n\n## 1. Умножение матриц {#sec:kr1:product}"
+    )
     p.write_text(new.replace("## Прототипы", "Примеры:"), encoding="utf-8")
     res = lint(demo)
     assert res.returncode == 0, res.stdout
@@ -527,7 +553,10 @@ def test_lint_exclamation_only_in_prose(demo: Path):
     """«!» в тексте — предупреждение, а оператор C в `коде` (`!=`, `!x`) — нет."""
     p = demo / "notes" / "algebra" / "01_sep03_matrices.md"
     src = p.read_text(encoding="utf-8")
-    p.write_text(src.replace("Первая лекция курса", "Условие `a != 0` и `!x`. Первая лекция курса", 1), encoding="utf-8")
+    p.write_text(
+        src.replace("Первая лекция курса", "Условие `a != 0` и `!x`. Первая лекция курса", 1),
+        encoding="utf-8",
+    )
     assert "восклицательный знак" not in lint(demo).stdout
     p.write_text(src.replace("Первая лекция курса", "Отлично! Первая лекция курса", 1), encoding="utf-8")
     assert "восклицательный знак" in lint(demo).stdout
@@ -745,7 +774,7 @@ def test_prep_tickets_requires_h2(demo: Path):
     """Раздел «# Билеты» без заголовков «## » (например, только «### ») не проходит линтер."""
     p = demo / "prep" / "algebra" / "exam1.md"
     p.write_text(
-        "---\ncourse: algebra\ntitle: \"Подготовка к экзамену 1\"\n---\n\n"
+        '---\ncourse: algebra\ntitle: "Подготовка к экзамену 1"\n---\n\n'
         "# Об экзамене\n\nТекст.\n\n# Билеты\n\n### 1. Вопрос\n\nОтвет.\n",
         encoding="utf-8",
     )
@@ -808,12 +837,17 @@ def test_quiz_number_required_for_quiz_only(demo: Path):
     path = make_quiz(demo)
     ok = path.read_text(encoding="utf-8")
     for bad in ("quiz_number: 4\n", "quiz_number: 0\n", "quiz_number: два\n"):
-        path.write_text(ok.replace("quiz_number: 4\n", "" if bad == "quiz_number: 4\n" else bad), encoding="utf-8")
+        path.write_text(
+            ok.replace("quiz_number: 4\n", "" if bad == "quiz_number: 4\n" else bad), encoding="utf-8"
+        )
         res = lint(demo)
         assert res.returncode != 0 and "quiz_number" in res.stdout, bad
     path.write_text(ok, encoding="utf-8")
     kr = demo / "prep" / "algebra" / "kr1.md"
-    kr.write_text(kr.read_text(encoding="utf-8").replace("date: 2026-11-07", "quiz_number: 4\ndate: 2026-11-07"), encoding="utf-8")
+    kr.write_text(
+        kr.read_text(encoding="utf-8").replace("date: 2026-11-07", "quiz_number: 4\ndate: 2026-11-07"),
+        encoding="utf-8",
+    )
     res = lint(demo)
     assert res.returncode != 0 and "quiz_number" in res.stdout
 
@@ -1056,8 +1090,6 @@ def test_lint_bank_catches(demo: Path, old: str, new: str, expected: str):
 
 def squash_html(text: str) -> str:
     """Переносы строк pandoc → пробел; неразрывные пробелы остаются."""
-    import re
-
     return re.sub(r"[ \t\n]+", " ", text).strip()
 
 
@@ -1197,11 +1229,6 @@ def test_lint_bank_by_path(demo: Path):
 
 def test_prep_ids_match_site():
     """Имена подготовок, которые принимает сборка, = маршруты сайта (PREP_IDS в web/src/domain/preps.ts)."""
-    import re
-
-    sys.path.insert(0, str(ROOT / "scripts"))
-    from build import PREP_IDS
-
     ts = (ROOT / "web" / "src" / "domain" / "preps.ts").read_text(encoding="utf-8")
     m = re.search(r"export const PREP_IDS = \[([^\]]*)\]", ts)
     assert m, "PREP_IDS не найден в preps.ts"
@@ -1210,8 +1237,6 @@ def test_prep_ids_match_site():
 
 def test_pdf_inline_code_preserves_quote_comma(demo: Path):
     """babel-russian не должен съедать сочетание `",` внутри инлайн-кода в PDF."""
-    import pymupdf
-
     note = demo / "notes" / "algebra" / "01_sep03_matrices.md"
     note.write_text(
         note.read_text(encoding="utf-8") + '\n\nПроверка кода: `printf("%d", x)`.\n',
@@ -1258,6 +1283,8 @@ active_until: 2026-12-30
     assert res.returncode == 0, res.stdout
     res_b = build(demo, "--no-pdf", "--only", "prep/algebra/exam1.md")
     assert res_b.returncode == 0, res_b.stderr
-    meta = json.loads((demo / "build" / "site-data" / "algebra" / "exam1" / "meta.json").read_text(encoding="utf-8"))
+    meta = json.loads(
+        (demo / "build" / "site-data" / "algebra" / "exam1" / "meta.json").read_text(encoding="utf-8")
+    )
     assert "Подготовка к экзамену 1" in meta["header_line"]
     assert "21.12–30.12.2026" in meta["header_line"]

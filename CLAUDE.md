@@ -9,6 +9,8 @@
 uv run scripts/lint.py          # схема конспектов
 uv run scripts/build.py         # PDF и site-data в build/
 uv run pytest -q                # тесты фильтра, сборки, линтера
+uv run ruff check . && uv run ruff format --check .   # стиль Python
+uv run ty check                 # типы Python (scripts/, tests/)
 ```
 
 ## Окружение в новой сессии

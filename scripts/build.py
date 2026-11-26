@@ -33,16 +33,18 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
-from html.parser import HTMLParser
 from pathlib import Path
+from typing import Protocol
 
 import pypandoc
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import curriculum  # noqa: E402
-import ticket_bank  # noqa: E402
+import curriculum
+import ticket_bank
+from site_search import search_entries
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "templates"
@@ -137,7 +139,7 @@ def write_json(path: Path, data) -> None:
 
 def read_front_matter(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
-    m = re.match(r"^---\n(.*?)\n(---|\.\.\.)\n", text, re.S)
+    m = re.match(r"^---\n(.*?)\n(---|\.\.\.)\n", text, re.DOTALL)
     if not m:
         raise BuildError(f"{path}: нет YAML front matter")
     return yaml.safe_load(m.group(1)) or {}
@@ -187,7 +189,7 @@ def run_pandoc(doc: Doc, to: str, out: Path, extra: list[str]) -> None:
         f"notes_config={CONFIG}",
         *extra,
     ]
-    res = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
+    res = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT, check=False)
     if res.stderr.strip():
         sys.stderr.write(f"--- pandoc {doc.rel} ({to}) ---\n{res.stderr}")
     if res.returncode != 0:
@@ -205,7 +207,9 @@ def check_lecture_numbers(docs: list[Doc]) -> None:
             continue
         key = (doc.course, doc.week_id[:2])
         if key in seen:
-            raise BuildError(f"две лекции с номером {key[1]} в курсе {doc.course}: {seen[key]} и {doc.week_id}")
+            raise BuildError(
+                f"две лекции с номером {key[1]} в курсе {doc.course}: {seen[key]} и {doc.week_id}"
+            )
         seen[key] = doc.week_id
 
 
@@ -264,17 +268,63 @@ def build_index(docs: list[Doc], jobs: int) -> dict:
     shutil.rmtree(idx_dir, ignore_errors=True)
     tmp = BUILD / f"index.json.{os.getpid()}"
     write_json(tmp, index)
-    os.replace(tmp, BUILD / "index.json")
+    tmp.replace(BUILD / "index.json")
     return index
 
 
 # ----------------------------------------------------------------------------- PDF
 
 OVERFULL_RE = re.compile(r"Overfull \\[hv]box \(([\d.]+)pt too (?:wide|high)\)[^\n]*lines? (\d+)")
+OVERFULL_TOLERANCE_PT = 1.0
+LATEX_ERROR_LINES = 30
+
+
+def is_fresh(pdf_out: Path, stamp: Path, digest: str) -> bool:
+    """PDF уже собран из этих же исходников (хеш лежит рядом)."""
+    return pdf_out.exists() and stamp.exists() and stamp.read_text() == digest
+
+
+def run_latexmk(
+    tex: Path, out_dir: Path, cwd: Path, env: dict[str, str]
+) -> tuple[subprocess.CompletedProcess[str], Path, str]:
+    """latexmk -xelatex; возвращает результат, путь к логу и его текст."""
+    res = subprocess.run(
+        [
+            "latexmk",
+            "-xelatex",
+            "-interaction=nonstopmode",
+            "-halt-on-error",
+            "-file-line-error",
+            f"-outdir={out_dir}",
+            str(tex),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=cwd,
+        check=False,
+    )
+    log = out_dir / f"{tex.stem}.log"
+    return res, log, log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+
+
+def latex_failure(rel: str, res: subprocess.CompletedProcess[str], log: Path, log_text: str) -> BuildError:
+    errs = [ln for ln in log_text.splitlines() if ln.startswith("!") or ".tex:" in ln]
+    tail = "\n".join(errs[:LATEX_ERROR_LINES]) or res.stdout[-3000:]
+    return BuildError(f"xelatex упал на {rel}:\n{tail}\n(полный лог: {log})")
+
+
+def overfull_warnings(rel: str, log_text: str, tex_name: str | None = None) -> list[str]:
+    warnings = []
+    for m in OVERFULL_RE.finditer(log_text):
+        pt = float(m.group(1))
+        if pt > OVERFULL_TOLERANCE_PT:
+            where = f" в {tex_name}" if tex_name else ""
+            warnings.append(f"{rel}: overfull box {pt}pt (строка {m.group(2)}{where})")
+    return warnings
 
 
 def build_pdf(doc: Doc) -> list[str]:
-    warnings = []
     tex_dir = TEX_DIR / doc.course
     tex = tex_dir / f"{doc.out_name}.tex"
     tmp = tex.with_suffix(".tex.new")
@@ -297,37 +347,17 @@ def build_pdf(doc: Doc) -> list[str]:
         hashlib.sha1(p.read_bytes()).hexdigest() for p in sorted(TEMPLATES.glob("*")) if p.is_file()
     )
     digest = hashlib.sha1(tmp.read_bytes() + deps.encode()).hexdigest()
-    if pdf_out.exists() and stamp.exists() and stamp.read_text() == digest:
+    if is_fresh(pdf_out, stamp, digest):
         tmp.unlink()
-        return warnings
+        return []
     tmp.replace(tex)
-    res = subprocess.run(
-        [
-            "latexmk",
-            "-xelatex",
-            "-interaction=nonstopmode",
-            "-halt-on-error",
-            "-file-line-error",
-            f"-outdir={tex_dir}",
-            str(tex),
-        ],
-        capture_output=True,
-        text=True,
-        env=tex_env(),
-        cwd=tex_dir,
-    )
-    log = tex.with_suffix(".log")
-    log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+    res, log, log_text = run_latexmk(tex, tex_dir, tex_dir, tex_env())
     if res.returncode != 0:
-        errs = [ln for ln in log_text.splitlines() if ln.startswith("!") or ".tex:" in ln]
-        tail = "\n".join(errs[:30]) or res.stdout[-3000:]
-        raise BuildError(f"xelatex упал на {doc.rel}:\n{tail}\n(полный лог: {log})")
+        raise latex_failure(doc.rel, res, log, log_text)
+    warnings = []
     if "There were undefined references" in log_text or "Hyper reference" in log_text:
         warnings.append(f"{doc.rel}: в PDF есть неразрешенные ссылки (см. {log.name})")
-    for m in OVERFULL_RE.finditer(log_text):
-        pt = float(m.group(1))
-        if pt > 1.0:
-            warnings.append(f"{doc.rel}: overfull box {pt}pt (строка {m.group(2)} в {tex.name})")
+    warnings += overfull_warnings(doc.rel, log_text, tex.name)
     pdf_out.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(tex.with_suffix(".pdf"), pdf_out)
     stamp.write_text(digest)
@@ -378,47 +408,24 @@ def build_cheatsheet(cs: Cheatsheet) -> list[str]:
     digest = hashlib.sha1(
         cs.path.name.encode() + b"".join(p.read_bytes() for p in sorted(src_dir.glob("*.tex")))
     ).hexdigest()
-    if pdf_out.exists() and stamp.exists() and stamp.read_text() == digest:
+    if is_fresh(pdf_out, stamp, digest):
         return []
     tex_dir.mkdir(parents=True, exist_ok=True)
     env = tex_env()
     env["TEXINPUTS"] = f"{src_dir}{os.pathsep}{env['TEXINPUTS']}"
-    res = subprocess.run(
-        [
-            "latexmk",
-            "-xelatex",
-            "-interaction=nonstopmode",
-            "-halt-on-error",
-            "-file-line-error",
-            f"-outdir={tex_dir}",
-            str(cs.path),
-        ],
-        capture_output=True,
-        text=True,
-        env=env,
-        cwd=src_dir,
-    )
-    log = tex_dir / f"{cs.path.stem}.log"
-    log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+    res, log, log_text = run_latexmk(cs.path, tex_dir, src_dir, env)
     if res.returncode != 0:
-        errs = [ln for ln in log_text.splitlines() if ln.startswith("!") or ".tex:" in ln]
-        tail = "\n".join(errs[:30]) or res.stdout[-3000:]
-        raise BuildError(f"xelatex упал на {cs.rel}:\n{tail}\n(полный лог: {log})")
+        raise latex_failure(cs.rel, res, log, log_text)
     pages = [int(n) for n in PAGES_RE.findall(log_text)]
     want = CHEATSHEET_PAGES[cs.variant]
     if pages[-1:] != [want]:
         raise BuildError(
             f"{cs.rel}: {pages[-1] if pages else '?'} стр., а вариант {cs.variant} — ровно {want}"
         )
-    warnings = []
-    for m in OVERFULL_RE.finditer(log_text):
-        pt = float(m.group(1))
-        if pt > 1.0:
-            warnings.append(f"{cs.rel}: overfull box {pt}pt (строка {m.group(2)})")
     pdf_out.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(tex_dir / f"{cs.path.stem}.pdf", pdf_out)
     stamp.write_text(digest)
-    return warnings
+    return overfull_warnings(cs.rel, log_text)
 
 
 # ----------------------------------------------------------------------------- HTML
@@ -448,6 +455,7 @@ def compile_tikz(code: str, digest: str) -> Path:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     if res.returncode != 0:
         errs = [ln for ln in res.stdout.splitlines() if ln.startswith("!")]
@@ -458,6 +466,7 @@ def compile_tikz(code: str, digest: str) -> Path:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     if res.returncode != 0 or not svg.exists():
         raise BuildError(f"TikZ → SVG: dvisvgm упал ({digest}): {res.stderr[-500:]}")
@@ -506,24 +515,29 @@ def build_html(doc: Doc) -> dict:
 def export_bank(doc: Doc, meta: dict, page_dir: Path) -> None:
     """prep/<course>/<prep>-bank.yaml → bank.json рядом с фрагментом страницы (только сайт, не PDF)."""
     path = ticket_bank.bank_path(doc.path)
-    rel = path.relative_to(SRC).as_posix()
+    try:
+        data = bank_site_data(doc, meta, page_dir, path)
+    except ticket_bank.BankError as e:
+        raise BuildError(
+            f"{path.relative_to(SRC).as_posix()}: {e} (подробнее — uv run scripts/lint.py)"
+        ) from e
+    write_json(page_dir / "bank.json", data)
+
+
+def bank_site_data(doc: Doc, meta: dict, page_dir: Path, path: Path) -> dict:
     notes = json.loads((BUILD / "index.json").read_text(encoding="utf-8"))["labels"].get(doc.course, {})
     own = meta.get("labels") or []
-    try:
-        bank = ticket_bank.load(path)
-        labels = ticket_bank.Labels(notes, {e["id"]: e["type"] for e in own})
-        errors, _ = ticket_bank.check_schema(bank, doc.week_id, labels)
-        if errors:
-            raise ticket_bank.BankError("; ".join(errors))
-        ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), MARKDOWN)
-        errors = ticket_bank.check_snippets(ast)
-        if errors:
-            raise ticket_bank.BankError("; ".join(errors))
-        rendered = ticket_bank.split_rendered(render_bank_texts(doc, bank, page_dir))
-        data = ticket_bank.export(bank, doc.week_id, notes, own, rendered)
-    except ticket_bank.BankError as e:
-        raise BuildError(f"{rel}: {e} (подробнее — uv run scripts/lint.py)") from e
-    write_json(page_dir / "bank.json", data)
+    bank = ticket_bank.load(path)
+    labels = ticket_bank.Labels(notes, {e["id"]: e["type"] for e in own})
+    errors, _ = ticket_bank.check_schema(bank, doc.week_id, labels)
+    if errors:
+        raise ticket_bank.BankError("; ".join(errors))
+    ast = ticket_bank.snippet_ast(ticket_bank.snippets_markdown(bank), MARKDOWN)
+    errors = ticket_bank.check_snippets(ast)
+    if errors:
+        raise ticket_bank.BankError("; ".join(errors))
+    rendered = ticket_bank.split_rendered(render_bank_texts(doc, bank, page_dir))
+    return ticket_bank.export(bank, doc.week_id, notes, own, rendered)
 
 
 def render_bank_texts(doc: Doc, bank: dict, page_dir: Path) -> str:
@@ -567,101 +581,6 @@ def write_preview(page_dir: Path, meta: dict) -> None:
     (page_dir / "index.html").write_text(page, encoding="utf-8")
 
 
-BLOCK_TAGS = {"p", "div", "li", "section", "br", "td", "th", "tr", "figcaption", "summary", "blockquote"}
-# ответы прячутся под спойлер — в сниппете поиска их быть не должно
-SEARCH_SKIP = {"nb-answers", "nb-solution"}
-
-
-class SearchChunks(HTMLParser):
-    """Плоский текст фрагмента по якорям: ближайший `<section id>` или `div.nb[id]`.
-
-    Заголовок раздела или имя блока идут в `heading`, остальное — в `text`. Inline-формулы
-    остаются как `$…$`; display-формулы, ответы и копии блоков в теории (`reg-…`, оригинал
-    уже есть в лекции) выкидываются.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.chunks: dict[str, dict] = {}
-        self.stack: list[tuple[str, str | None]] = []  # (тег, что открыл: anchor | heading | math | skip)
-        self.anchors: list[str] = []
-        self.heading = 0
-        self.skip = 0
-
-    def handle_starttag(self, tag, attrs):
-        if tag in BLOCK_TAGS or re.fullmatch(r"h[1-6]", tag):
-            self.handle_data(" ")
-        a = dict(attrs)
-        classes = (a.get("class") or "").split()
-        role = None
-        if SEARCH_SKIP & set(classes) or (a.get("id") or "").startswith("reg-"):
-            self.skip += 1
-            role = "skip"
-        elif a.get("id") and (tag == "section" or "nb" in classes):
-            self.anchors.append(a["id"])
-            self.chunks.setdefault(a["id"], {"heading": [], "text": []})
-            role = "anchor"
-        elif re.fullmatch(r"h[1-6]", tag) or "nb-name" in classes:
-            self.heading += 1
-            role = "heading"
-        elif "math" in classes and "display" in classes:
-            self.skip += 1
-            role = "skip"
-        elif "math" in classes:
-            self.handle_data("$")
-            role = "math"
-        if tag not in ("br", "img", "hr", "input"):
-            self.stack.append((tag, role))
-
-    def handle_endtag(self, tag):
-        if tag in BLOCK_TAGS:
-            self.handle_data(" ")
-        while self.stack:
-            open_tag, role = self.stack.pop()
-            if role == "anchor":
-                self.anchors.pop()
-            elif role == "heading":
-                self.heading -= 1
-            elif role == "skip":
-                self.skip -= 1
-            elif role == "math":
-                self.handle_data("$")
-            if open_tag == tag:
-                break
-
-    def handle_data(self, data):
-        if self.skip or not self.anchors:
-            return
-        chunk = self.chunks[self.anchors[-1]]
-        chunk["heading" if self.heading else "text"].append(data)
-
-
-def squash(parts: list[str]) -> str:
-    text = re.sub(r"\s+", " ", "".join(parts)).strip()
-    text = re.sub(r"\$\s*(.*?)\s*\$", r"$\1$", text)
-    return re.sub(r"\s+([,.;:!?)])", r"\1", text)
-
-
-def search_entries(course: str, doc: str, lecture: int, fragment: str) -> list[dict]:
-    parser = SearchChunks()
-    parser.feed(fragment)
-    entries = []
-    for anchor, chunk in parser.chunks.items():
-        heading, text = squash(chunk["heading"]), squash(chunk["text"])
-        if heading or text:
-            entries.append(
-                {
-                    "course": course,
-                    "doc": doc,
-                    "lecture": lecture,
-                    "anchor": anchor,
-                    "heading": heading,
-                    "text": text,
-                }
-            )
-    return entries
-
-
 HIGHLIGHT_DAYS = 14
 
 
@@ -685,10 +604,9 @@ def export_curriculum() -> None:
         raise BuildError(f"{curriculum.FILE.as_posix()}: {e}") from e
 
 
-def write_site_data(index: dict, metas: list[dict]) -> None:
-    SITE.mkdir(parents=True, exist_ok=True)
-    write_json(SITE / "index.json", index["labels"])
-    preps: dict[str, list] = {}
+def prep_entries(metas: list[dict]) -> dict[str, list[dict]]:
+    """Подготовки к КР, коллоквиумам, экзаменам и квизам по курсам, в порядке дат."""
+    preps: dict[str, list[dict]] = {}
     for m in sorted(metas, key=lambda m: (m.get("date") or "", m["week_id"])):
         if m.get("kind") == "prep":
             preps.setdefault(m["course"], []).append(
@@ -710,6 +628,42 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
                 | ({"quiz_topic": m["quiz_topic"]} if m.get("quiz_topic") else {})
                 | ({"quiz_number": int(m["quiz_number"])} if m.get("quiz_number") else {})
             )
+    return preps
+
+
+def search_index(metas: list[dict]) -> list[dict]:
+    entries = []
+    for m in sorted(metas, key=lambda m: (m["course"], m["kind"], m["lecture"], m["week_id"])):
+        fragment = (SITE / m["course"] / m["week_id"] / "fragment.html").read_text(encoding="utf-8")
+        entries += search_entries(m["course"], m["week_id"], m["lecture"], fragment)
+    return entries
+
+
+def review_links(index: dict, preps: dict[str, list[dict]]) -> list[str]:
+    """Список страниц для ревью html-версии."""
+    links = []
+    for course, lst in sorted(index["lectures"].items()):
+        links.append(f"<h2>{html.escape(course)}</h2><ul>")
+        links.extend(
+            f'<li><a href="{course}/{lec["week_id"]}/">{lec["lecture"]}. {html.escape(lec["title"] or "")}</a></li>'
+            for lec in lst
+        )
+        if (SITE / course / "theory").exists():
+            links.append(f'<li><a href="{course}/theory/">Теория</a></li>')
+        if (SITE / course / "program").exists():
+            links.append(f'<li><a href="{course}/program/">План учебной дисциплины</a></li>')
+        links.extend(
+            f'<li><a href="{course}/{p["id"]}/">{html.escape(p["title"] or "")}</a></li>'
+            for p in preps.get(course, [])
+        )
+        links.append("</ul>")
+    return links
+
+
+def write_site_data(index: dict, metas: list[dict]) -> None:
+    SITE.mkdir(parents=True, exist_ok=True)
+    write_json(SITE / "index.json", index["labels"])
+    preps = prep_entries(metas)
     write_json(
         SITE / "courses.json",
         {
@@ -722,31 +676,11 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
     )
     write_json(SITE / "katex-macros.json", katex_macros())
     export_curriculum()
-    search = []
-    for m in sorted(metas, key=lambda m: (m["course"], m["kind"], m["lecture"])):
-        fragment = (SITE / m["course"] / m["week_id"] / "fragment.html").read_text(encoding="utf-8")
-        search += search_entries(m["course"], m["week_id"], m["lecture"], fragment)
-    (SITE / "search.json").write_text(json.dumps(search, ensure_ascii=False), encoding="utf-8")
-    # список страниц для ревью html-версии
-    links = []
-    for course, lst in sorted(index["lectures"].items()):
-        links.append(f"<h2>{html.escape(course)}</h2><ul>")
-        for lec in lst:
-            links.append(
-                f'<li><a href="{course}/{lec["week_id"]}/">{lec["lecture"]}. '
-                f"{html.escape(lec['title'] or '')}</a></li>"
-            )
-        if (SITE / course / "theory").exists():
-            links.append(f'<li><a href="{course}/theory/">Теория</a></li>')
-        if (SITE / course / "program").exists():
-            links.append(f'<li><a href="{course}/program/">План учебной дисциплины</a></li>')
-        for p in preps.get(course, []):
-            links.append(f'<li><a href="{course}/{p["id"]}/">{html.escape(p["title"] or "")}</a></li>')
-        links.append("</ul>")
+    (SITE / "search.json").write_text(json.dumps(search_index(metas), ensure_ascii=False), encoding="utf-8")
     (SITE / "index.html").write_text(
         "<!doctype html><meta charset='utf-8'><title>Конспекты — превью</title>"
         "<body style='font-family:sans-serif;max-width:40em;margin:2em auto'>"
-        "<h1>Превью html-версии</h1>" + "".join(links),
+        "<h1>Превью html-версии</h1>" + "".join(review_links(index, preps)),
         encoding="utf-8",
     )
 
@@ -754,8 +688,15 @@ def write_site_data(index: dict, metas: list[dict]) -> None:
 # ----------------------------------------------------------------------------- main
 
 
-def run_parallel(kind: str, fn, targets: list[Doc], jobs: int, failures: list[str]) -> list:
-    """fn(doc) для всех targets в пуле; ошибки сборки копятся в failures, результаты — в порядке готовности."""
+class Target(Protocol):
+    @property
+    def rel(self) -> str: ...
+
+
+def run_parallel[T: Target, R](
+    kind: str, fn: Callable[[T], R], targets: list[T], jobs: int, failures: list[str]
+) -> list[R]:
+    """fn(target) для всех targets в пуле; ошибки сборки копятся в failures, результаты — в порядке готовности."""
     results = []
     with cf.ThreadPoolExecutor(jobs) as ex:
         futs = {ex.submit(fn, d): d for d in targets}
@@ -767,6 +708,37 @@ def run_parallel(kind: str, fn, targets: list[Doc], jobs: int, failures: list[st
                 failures.append(str(e))
                 print(f"{kind} FAIL {futs[f].rel}")
     return results
+
+
+def select_targets(docs: list[Doc], only: list[str]) -> list[Doc]:
+    """Документы, чьи пути подходят под glob-и `--only`; банк билетов собирается вместе со своей страницей."""
+    patterns = [
+        p.removesuffix(ticket_bank.BANK_SUFFIX) + ".md" if p.endswith(ticket_bank.BANK_SUFFIX) else p
+        for p in only
+    ]
+    targets = [d for d in docs if any(fnmatch.fnmatch(d.rel, pat) or d.rel == pat for pat in patterns)]
+    if not targets:
+        raise BuildError(f"--only {patterns}: ни одного файла")
+    return targets
+
+
+def build_all(args: argparse.Namespace, failures: list[str]) -> list[str]:
+    """Собирает выбранное; возвращает предупреждения, ошибки отдельных страниц копит в failures."""
+    docs = discover()
+    index = build_index(docs, args.jobs)
+    targets = select_targets(docs, args.only) if args.only else docs
+    warnings: list[str] = []
+    if not args.no_pdf:
+        sheets = [c for d in targets if d.kind == "prep" for c in find_cheatsheets(d.course, d.week_id)]
+        for doc_warnings in run_parallel("PDF", build_pdf, targets, args.jobs, failures):
+            warnings += doc_warnings
+        for doc_warnings in run_parallel("PDF", build_cheatsheet, sheets, args.jobs, failures):
+            warnings += doc_warnings
+    if not args.no_html:
+        metas = run_parallel("HTML", build_html, targets, args.jobs, failures)
+        if not args.only:
+            write_site_data(index, metas)
+    return warnings
 
 
 def main() -> int:
@@ -781,34 +753,9 @@ def main() -> int:
     args = ap.parse_args()
     set_dirs(args.src, args.out or args.src / "build")
 
+    failures: list[str] = []
     try:
-        docs = discover()
-        index = build_index(docs, args.jobs)
-        targets = docs
-        if args.only:
-            # банк билетов собирается вместе со своей страницей: colloq1-bank.yaml → colloq1.md
-            args.only = [
-                p.removesuffix(ticket_bank.BANK_SUFFIX) + ".md" if p.endswith(ticket_bank.BANK_SUFFIX) else p
-                for p in args.only
-            ]
-            targets = [
-                d for d in docs if any(fnmatch.fnmatch(d.rel, pat) or d.rel == pat for pat in args.only)
-            ]
-            if not targets:
-                raise BuildError(f"--only {args.only}: ни одного файла")
-        warnings: list[str] = []
-        failures: list[str] = []
-
-        if not args.no_pdf:
-            sheets = [c for d in targets if d.kind == "prep" for c in find_cheatsheets(d.course, d.week_id)]
-            for doc_warnings in run_parallel("PDF", build_pdf, targets, args.jobs, failures):
-                warnings += doc_warnings
-            for doc_warnings in run_parallel("PDF", build_cheatsheet, sheets, args.jobs, failures):
-                warnings += doc_warnings
-        if not args.no_html:
-            metas = run_parallel("HTML", build_html, targets, args.jobs, failures)
-            if not args.only:
-                write_site_data(index, metas)
+        warnings = build_all(args, failures)
     except BuildError as e:
         print(f"\nОШИБКА: {e}", file=sys.stderr)
         return 1
@@ -817,9 +764,7 @@ def main() -> int:
         print(f"WARNING: {w}", file=sys.stderr)
     for e in failures:
         print(f"\nОШИБКА: {e}", file=sys.stderr)
-    if failures or (args.strict and warnings):
-        return 1
-    return 0
+    return 1 if failures or (args.strict and warnings) else 0
 
 
 if __name__ == "__main__":
