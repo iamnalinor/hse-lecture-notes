@@ -3,6 +3,7 @@
 @import "./fonts.css";
 @import "./prose.css";
 @import "./chat-controls.css";
+@import "./chat-frame.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 

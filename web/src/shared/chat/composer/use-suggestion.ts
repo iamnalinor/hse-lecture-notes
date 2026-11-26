@@ -27,7 +27,13 @@ const useConsumedSuggestions = (next: Scope) => {
 };
 
 const resolveSuggestion = (chat: ChatContextValue): null | string => {
-  if (chat.draft !== "" || chat.quote !== null || chat.isStreaming || chat.isThreadLoading) {
+  if (
+    chat.draft !== "" ||
+    chat.quote !== null ||
+    chat.isStreaming ||
+    chat.isThreadLoading ||
+    chat.isThreadFailed
+  ) {
     return null;
   }
   const last = chat.messages.at(-1);

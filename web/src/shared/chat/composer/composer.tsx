@@ -1,5 +1,7 @@
 import { type ChangeEvent, type JSX, type KeyboardEvent, useEffect, useRef, useState } from "react";
 
+import type { ChatQuote } from "#web/domain/chat/model.ts";
+
 import { SendIcon, StopIcon } from "../icons.tsx";
 import { ChatQuoteCard } from "../messages/quote-card.tsx";
 import { useChat } from "../session/context.tsx";
@@ -235,6 +237,9 @@ const VerificationStatus = () => {
   );
 };
 
+const hasSendableDraft = (draft: string, quote: ChatQuote | null, maxChars: number): boolean =>
+  draft.trim().length <= maxChars && (draft.trim() !== "" || quote !== null);
+
 /** Exact `.ai-bottom` (composer / limit plate / status caption) from prototype.html. */
 export const ChatComposer = (): JSX.Element => {
   const {
@@ -243,6 +248,7 @@ export const ChatComposer = (): JSX.Element => {
     degraded,
     draft,
     isStreaming,
+    isThreadFailed,
     isThreadLoading,
     maxQuestionChars,
     quote,
@@ -251,16 +257,16 @@ export const ChatComposer = (): JSX.Element => {
   const { suggestion, consume } = useComposerSuggestion();
   const nowMs = useClockTicker(rateLimitUntil, degraded.active);
   const mode = resolveBottomMode(block);
+  const isThreadUnready = isThreadLoading || isThreadFailed;
   const rateRemainSec =
     rateLimitUntil > nowMs ? Math.max(0, Math.ceil((rateLimitUntil - nowMs) / 1000)) : 0;
   const canSend =
     checkingLogin !== true &&
-    !isThreadLoading &&
+    !isThreadUnready &&
     !isStreaming &&
     mode === "composer" &&
     rateRemainSec === 0 &&
-    draft.trim().length <= maxQuestionChars &&
-    (draft.trim() !== "" || quote !== null);
+    hasSendableDraft(draft, quote, maxQuestionChars);
 
   return (
     <div className="ai-bottom">

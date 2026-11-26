@@ -9,6 +9,11 @@ Library included, or the components would run on a second copy of React).
 const setup = async () => {
   vi.resetModules();
   vi.stubEnv("VITE_CHAT_API_URL", "https://api.test");
+  vi.stubGlobal("matchMedia", () => ({
+    addEventListener: vi.fn(),
+    matches: false,
+    removeEventListener: vi.fn(),
+  }));
   let isReachable = false;
   const runtime = { attempts: 0, canLoad: false };
   vi.doMock(RUNTIME_MODULE, () => {
@@ -80,30 +85,38 @@ it("starts the download on hover and focus, before the click", async () => {
   cleanup();
 });
 
-it("marks the button busy while the chunk downloads and shows the panel after", async () => {
+const FAILURE = "Не удалось загрузить чат";
+
+it("opens a skeleton shell at once and swaps it for the panel when the chunk arrives", async () => {
   const { act, cleanup, fireEvent, runtime, screen, toggle } = await setup();
   runtime.canLoad = true;
   fireEvent.click(toggle);
-  expect(toggle).toHaveAttribute("aria-busy", "true");
-  expect(toggle).toHaveAccessibleName("Чат");
-  expect(await screen.findByText("Панель чата")).toBeInTheDocument();
+  const shell = screen.getByRole("complementary", { name: "Чат с ИИ" });
+  expect(shell).toHaveAttribute("aria-busy", "true");
+  expect(screen.getByRole("status")).toHaveTextContent("Загружаю чат");
   expect(toggle).not.toHaveAttribute("aria-busy");
+  expect(await screen.findByText("Панель чата")).toBeInTheDocument();
+  expect(shell).not.toBeInTheDocument();
+  expect(screen.queryByText("Загружаю чат")).toBeNull();
   await act(async () => {
     await Promise.resolve();
   });
-  expect(screen.queryByText("Открываю чат…")).toBeNull();
   cleanup();
 });
 
-it("offers a retry when the chunk fails, and opens the chat after it", async () => {
+it("shows a centered failure with a retry when the chunk fails, and opens the chat after it", async () => {
   const { cleanup, fireEvent, runtime, screen, toggle } = await setup();
   fireEvent.click(toggle);
-  expect(await screen.findByRole("status")).toHaveTextContent("Чат не загрузился: нет связи.");
-  expect(toggle).not.toHaveAttribute("aria-busy");
+  expect(await screen.findByRole("alert")).toHaveTextContent(FAILURE);
+  expect(screen.getByText("Проверь подключение и попробуй еще раз")).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Чат с ИИ" })).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
   runtime.canLoad = true;
   fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
   expect(await screen.findByText("Панель чата")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
+  expect(screen.queryByText(FAILURE)).toBeNull();
   expect(screen.getByTestId("open-probe")).toHaveTextContent("open");
   cleanup();
 });
@@ -114,6 +127,7 @@ it("offers a reload when a retry fails while the site answers", async () => {
   fireEvent.click(toggle);
   fireEvent.click(await screen.findByRole("button", { name: "Повторить" }));
   expect(await screen.findByRole("button", { name: "Обновить страницу" })).toBeInTheDocument();
+  expect(screen.getByText("Похоже, вышла новая версия сайта")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
   cleanup();
 });
@@ -133,8 +147,8 @@ it("waits for the network when offline and opens the chat when it returns", asyn
   setOnline(false);
   fireEvent.click(toggle);
   expect(
-    await screen.findAllByText("Нет сети — открою чат, когда связь вернётся."),
-  ).not.toHaveLength(0);
+    await screen.findByText("Нет сети. Чат откроется, когда связь вернется"),
+  ).toBeInTheDocument();
   runtime.canLoad = true;
   setOnline(true);
   await act(async () => {
@@ -145,32 +159,26 @@ it("waits for the network when offline and opens the chat when it returns", asyn
   cleanup();
 });
 
-it("closes on Escape and drops the wish to open, so the return of the network does nothing", async () => {
-  const { act, cleanup, fireEvent, runtime, screen, toggle } = await setup();
-  fireEvent.click(toggle);
-  await screen.findByRole("button", { name: "Повторить" });
-  fireEvent.keyDown(document, { key: "Escape" });
-  expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
-  expect(toggle).toHaveFocus();
-  expect(toggle).toHaveAttribute("aria-expanded", "false");
-  runtime.canLoad = true;
-  await act(async () => {
-    globalThis.dispatchEvent(new Event("online"));
-    await Promise.resolve();
-  });
-  expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
-  expect(toggle).toHaveAttribute("aria-expanded", "false");
-  cleanup();
-});
-
-it("closes on a press outside, but not on the button itself", async () => {
-  const { cleanup, fireEvent, screen, toggle } = await setup();
-  fireEvent.click(toggle);
-  await screen.findByRole("button", { name: "Повторить" });
-  fireEvent.pointerDown(toggle);
-  expect(screen.getByRole("button", { name: "Повторить" })).toBeInTheDocument();
-  fireEvent.pointerDown(document.body);
-  expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
-  expect(toggle).toHaveAttribute("aria-expanded", "false");
-  cleanup();
-});
+it.each(["Escape", "the close button"])(
+  "closes the shell with %s and drops the wish to open",
+  async (how) => {
+    const { act, cleanup, fireEvent, runtime, screen, toggle } = await setup();
+    fireEvent.click(toggle);
+    await screen.findByRole("button", { name: "Повторить" });
+    if (how === "Escape") {
+      fireEvent.keyDown(document, { key: "Escape" });
+    } else {
+      fireEvent.click(screen.getByRole("button", { name: "Закрыть чат" }));
+    }
+    expect(screen.queryByRole("complementary")).toBeNull();
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    runtime.canLoad = true;
+    await act(async () => {
+      globalThis.dispatchEvent(new Event("online"));
+      await Promise.resolve();
+    });
+    expect(screen.queryByRole("complementary")).toBeNull();
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    cleanup();
+  },
+);

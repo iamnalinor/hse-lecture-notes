@@ -47,122 +47,6 @@
   display: flow-root;
 }
 
-/* ---------- панель ---------- */
-.ai-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-  width: var(--ai-w);
-  display: flex;
-  flex-direction: column;
-  background: var(--card);
-  color: var(--ink);
-  border-left: 1px solid var(--rule);
-  font-size: 15px;
-  line-height: 24px;
-  transform: translateX(100%);
-  visibility: hidden;
-  will-change: transform;
-  transition:
-    transform 260ms var(--ai-ease),
-    visibility 0s linear 260ms;
-}
-html.ai-open .ai-panel {
-  transform: none;
-  visibility: visible;
-  transition: transform 260ms var(--ai-ease);
-}
-@media (max-width: 720px) {
-  .ai-panel {
-    width: 100%;
-    border-left: 0;
-    transform: translateY(16px);
-    opacity: 0;
-    transition:
-      transform 240ms ease-out,
-      opacity 200ms ease-out,
-      visibility 0s linear 240ms;
-  }
-  html.ai-open .ai-panel {
-    transform: none;
-    opacity: 1;
-    transition:
-      transform 240ms ease-out,
-      opacity 200ms ease-out;
-  }
-}
-
-.ai-top {
-  position: relative;
-  flex: none;
-  height: calc(3.75rem + 1px);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px 0 20px;
-  border-bottom: 1px solid var(--rule);
-}
-.ai-title {
-  font-weight: 600;
-  font-size: 15px;
-  margin-right: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.ai-title span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ai-title svg {
-  width: 18px;
-  height: 18px;
-  color: var(--ai-accent);
-  flex: none;
-}
-@media (max-width: 720px) {
-  .ai-top {
-    height: 56px;
-    padding-left: 16px;
-  }
-}
-
-.ai-icon-btn {
-  width: 36px;
-  height: 36px;
-  display: inline-grid;
-  place-items: center;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out,
-    opacity 150ms ease-out;
-}
-.ai-icon-btn:hover {
-  background: var(--wash);
-  color: var(--ink);
-}
-.ai-icon-btn svg {
-  width: 18px;
-  height: 18px;
-}
-.ai-icon-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-  background: none;
-  color: var(--muted);
-}
-.ai-icon-btn[hidden] {
-  display: none;
-}
 .ai-text-btn {
   display: inline-flex;
   align-items: center;
@@ -266,27 +150,6 @@ html.ai-open .ai-panel {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.ai-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 20px 14px 8px 20px;
-  scroll-padding-bottom: 16px;
-  scrollbar-gutter: stable;
-}
-@media (max-width: 720px) {
-  .ai-scroll {
-    padding: 16px 16px 8px;
-    scrollbar-gutter: auto;
-  }
-}
-@media (hover: none) {
-  .ai-scroll {
-    scrollbar-gutter: auto;
-    padding-right: 20px;
-  }
 }
 
 /* пустое состояние */
@@ -398,53 +261,6 @@ html.ai-open .ai-panel {
   height: 18px;
 }
 
-/* сообщения */
-.ai-skeleton {
-  padding-top: 4px;
-  animation: ai-skeleton-pulse 1.8s ease-in-out infinite;
-}
-.ai-skeleton-line {
-  display: block;
-  height: 12px;
-  border-radius: 4px;
-  background: var(--rule);
-}
-.ai-skeleton-question {
-  width: 76%;
-  padding-block: 15px;
-}
-.ai-skeleton-question .ai-skeleton-line + .ai-skeleton-line {
-  margin-top: 9px;
-  width: 64%;
-}
-.ai-skeleton-short {
-  width: 52%;
-}
-.ai-skeleton-summary {
-  width: 30%;
-  height: 10px;
-  margin-bottom: 20px;
-}
-.ai-skeleton-paragraph {
-  display: grid;
-  gap: 11px;
-  margin-block: 0 24px;
-}
-.ai-skeleton-paragraph .ai-skeleton-line:nth-child(2) {
-  width: 94%;
-}
-.ai-skeleton-paragraph .ai-skeleton-line:last-child {
-  width: 68%;
-}
-@keyframes ai-skeleton-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
 .ai-msg {
   margin-bottom: 24px;
 }
@@ -982,59 +798,12 @@ html.ai-open .ai-panel {
   color: var(--faint);
 }
 
-.ai-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--ink);
-  color: var(--paper);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    opacity 150ms ease-out;
-}
-.ai-btn:hover {
-  background: color-mix(in srgb, var(--ink) 85%, var(--paper));
-}
-.ai-btn:disabled {
-  opacity: 0.7;
-  cursor: default;
-}
-.ai-btn svg {
-  width: 18px;
-  height: 18px;
-}
-.ai-btn-2 {
-  background: var(--card);
-  color: var(--ink);
-  border: 1px solid var(--rule);
-}
-.ai-btn-2:hover {
-  background: var(--wash);
-}
 .ai-btn .ai-spin {
   border-color: color-mix(in srgb, var(--paper) 35%, transparent);
   border-top-color: var(--paper);
 }
 
 /* ---------- низ панели: поле ввода или плашка вместо него ---------- */
-.ai-bottom {
-  flex: none;
-  padding: 8px 16px 16px;
-}
-@media (max-width: 720px) {
-  .ai-bottom {
-    padding: 8px 12px max(12px, env(safe-area-inset-bottom));
-  }
-}
 .ai-question-count {
   margin: 4px 8px;
   text-align: right;
@@ -1044,15 +813,6 @@ html.ai-open .ai-panel {
 }
 .ai-question-count-over {
   color: var(--red);
-}
-.ai-composer {
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  background: var(--card);
-  transition: border-color 150ms ease-out;
-}
-.ai-composer:focus-within {
-  border-color: color-mix(in srgb, var(--ink) 35%, var(--rule));
 }
 .ai-draft-quote {
   padding: 8px 8px 0;
@@ -1464,15 +1224,13 @@ body:has(aside[aria-label="Возврат"]) .ai-back {
   white-space: nowrap;
 }
 
-:where(.ai-panel, .ai-back, .ai-modal) :focus-visible,
+:where(.ai-back, .ai-modal) :focus-visible,
 .ai-back:focus-visible {
   outline: 2px solid var(--def);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-panel,
-  html.ai-open .ai-panel,
   .ai-back,
   .ai-modal,
   .ai-modal-card,
@@ -1484,7 +1242,6 @@ body:has(aside[aria-label="Возврат"]) .ai-back {
     transition: none !important;
   }
   .ai-enter,
-  .ai-skeleton,
   .ai-fade,
   .ai-step-enter,
   .ai-step-ic > *,

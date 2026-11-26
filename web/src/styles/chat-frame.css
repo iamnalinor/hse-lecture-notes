@@ -1,0 +1,333 @@
+/* Рамка чата и всё, что нужно оболочке до загрузки чата: она живёт в основном бандле (`shared/chat/shell`),
+   а настоящая панель (`chat.css`, ленивый чанк) берёт те же правила, поэтому при подмене ничего не прыгает. */
+
+/* ---------- панель ---------- */
+.ai-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  width: var(--ai-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  color: var(--ink);
+  border-left: 1px solid var(--rule);
+  font-size: 15px;
+  line-height: 24px;
+  transform: translateX(100%);
+  visibility: hidden;
+  will-change: transform;
+  transition:
+    transform 260ms var(--ai-ease),
+    visibility 0s linear 260ms;
+}
+html.ai-open .ai-panel {
+  transform: none;
+  visibility: visible;
+  transition: transform 260ms var(--ai-ease);
+}
+@media (max-width: 720px) {
+  .ai-panel {
+    width: 100%;
+    border-left: 0;
+    transform: translateY(16px);
+    opacity: 0;
+    transition:
+      transform 240ms ease-out,
+      opacity 200ms ease-out,
+      visibility 0s linear 240ms;
+  }
+  html.ai-open .ai-panel {
+    transform: none;
+    opacity: 1;
+    transition:
+      transform 240ms ease-out,
+      opacity 200ms ease-out;
+  }
+}
+
+.ai-top {
+  position: relative;
+  flex: none;
+  height: calc(3.75rem + 1px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 0 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.ai-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ai-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--ai-accent);
+  flex: none;
+}
+@media (max-width: 720px) {
+  .ai-top {
+    height: 56px;
+    padding-left: 16px;
+  }
+}
+
+.ai-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+.ai-icon-btn:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+.ai-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.ai-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: none;
+  color: var(--muted);
+}
+.ai-icon-btn[hidden] {
+  display: none;
+}
+
+.ai-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 14px 8px 20px;
+  scroll-padding-bottom: 16px;
+  scrollbar-gutter: stable;
+}
+@media (max-width: 720px) {
+  .ai-scroll {
+    padding: 16px 16px 8px;
+    scrollbar-gutter: auto;
+  }
+}
+@media (hover: none) {
+  .ai-scroll {
+    scrollbar-gutter: auto;
+    padding-right: 20px;
+  }
+}
+
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+.ai-btn:hover {
+  background: color-mix(in srgb, var(--ink) 85%, var(--paper));
+}
+.ai-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.ai-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.ai-btn-2 {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+}
+.ai-btn-2:hover {
+  background: var(--wash);
+}
+
+.ai-bottom {
+  flex: none;
+  padding: 8px 16px 16px;
+}
+@media (max-width: 720px) {
+  .ai-bottom {
+    padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+.ai-composer {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+  transition: border-color 150ms ease-out;
+}
+.ai-composer:focus-within {
+  border-color: color-mix(in srgb, var(--ink) 35%, var(--rule));
+}
+
+:where(.ai-panel) :focus-visible {
+  outline: 2px solid var(--def);
+  outline-offset: 2px;
+}
+
+/* ---------- оболочка и скелет ---------- */
+/* Оболочка появляется вместе с `html.ai-open`, у настоящей панели переход идёт по `transform`. */
+.ai-panel-shell {
+  animation: ai-shell-in 260ms var(--ai-ease) both;
+}
+@keyframes ai-shell-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@media (max-width: 720px) {
+  .ai-panel-shell {
+    animation-duration: 240ms;
+    animation-timing-function: ease-out;
+  }
+  @keyframes ai-shell-in {
+    from {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+  }
+}
+
+.ai-sk {
+  padding-top: 4px;
+}
+.ai-sk-block {
+  --ai-sk-base: color-mix(in srgb, var(--wash) 70%, var(--rule));
+  display: block;
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--card) 55%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 250% 100% no-repeat var(--ai-sk-base);
+  animation: ai-sk-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes ai-sk-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.ai-sk-line {
+  height: 14px;
+}
+.ai-sk-user {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 28px;
+}
+.ai-sk-bubble {
+  width: 62%;
+  height: 44px;
+  border-radius: 12px;
+}
+.ai-sk-text {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.ai-sk-text .ai-sk-line:nth-child(2) {
+  width: 94%;
+}
+.ai-sk-text .ai-sk-line:last-child {
+  width: 58%;
+}
+.ai-sk-composer {
+  height: 50px;
+  background: var(--card);
+}
+
+/* Сообщение об ошибке посреди области переписки; общее для оболочки и ленты. */
+.ai-scroll:has(.ai-load-error),
+.ai-scroll:has(.ai-load-error) .ai-log {
+  display: grid;
+}
+.ai-load-error {
+  place-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 300px;
+  padding-bottom: 32px;
+  text-align: center;
+}
+.ai-load-error-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--wash);
+  color: var(--muted);
+}
+.ai-load-error-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.ai-load-error b {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.ai-load-error p {
+  margin: 4px 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 19px;
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-panel,
+  html.ai-open .ai-panel {
+    transition: none !important;
+  }
+  .ai-panel-shell,
+  .ai-sk-block {
+    animation: none !important;
+  }
+}

@@ -18,12 +18,16 @@ type SendHookDeps = {
   readonly thr: ReturnType<typeof useThreadState>;
 };
 
+/** Nothing is sent while an answer streams or the thread is not on screen (still loading or failed). */
+const isBusy = (thr: SendHookDeps["thr"]): boolean =>
+  thr.isStreaming || thr.isThreadLoading || thr.isThreadFailed;
+
 const retryAnswer = async (
   assistantMsgId: string,
   thr: SendHookDeps["thr"],
   stream: ChatStreamController,
 ): Promise<void> => {
-  if (thr.isStreaming || thr.isThreadLoading) {
+  if (isBusy(thr)) {
     return;
   }
   const idx = thr.messages.findIndex((m) => m.id === assistantMsgId);
@@ -58,7 +62,7 @@ export const chatSendActions = ({
   tgAuth,
 }: SendHookDeps) => {
   const send = async (overrideText?: string): Promise<void> => {
-    if (thr.isStreaming || thr.isThreadLoading) {
+    if (isBusy(thr)) {
       return;
     }
     const text = (overrideText ?? draft).trim();
@@ -78,8 +82,7 @@ export const chatSendActions = ({
         block !== null ||
         unsent.threadId !== thr.activeThreadId ||
         tgAuth.checkingLogin ||
-        thr.isStreaming ||
-        thr.isThreadLoading
+        isBusy(thr)
       ) {
         return;
       }
