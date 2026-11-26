@@ -3,7 +3,8 @@ import type { Plugin } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { renderToString } from "katex";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { defineConfig } from "vitest/config";
 import { z } from "zod";
 
@@ -18,6 +19,22 @@ const chatPolicy = z
   .parse(JSON.parse(policyText));
 
 const GA_ID = "G-0FYSMRT6KK";
+
+/** The id of this build: shown in the footer, and in `version.json` for the chat's «new version» check. */
+const BUILD_TIME = new Date().toISOString();
+
+/** `version.json` in the build: the deployed copy tells a page that lost its chunks whether it is old. */
+const buildVersion = (): Plugin => ({
+  apply: "build",
+  name: "build-version",
+  writeBundle: (options) => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- the build's own output directory
+    writeFileSync(
+      path.join(options.dir ?? "dist", "version.json"),
+      JSON.stringify({ id: BUILD_TIME }),
+    );
+  },
+});
 
 /** Google Analytics only in the production build: `bun dev` and tests do not count as visits. */
 const analytics = (): Plugin => ({
@@ -71,12 +88,12 @@ export default defineConfig({
   base: process.env["BASE_PATH"] ?? "/",
   build: { chunkSizeWarningLimit: 700, sourcemap: false },
   define: {
-    "import.meta.env.BUILD_TIME": JSON.stringify(new Date().toISOString()),
+    "import.meta.env.BUILD_TIME": JSON.stringify(BUILD_TIME),
     CHAT_DEFAULT_QUESTION_LIMIT: JSON.stringify(chatPolicy.maxQuestionChars),
     HOME_STATEMENTS: JSON.stringify(countStatements()),
     HOME_MATH_HTML: JSON.stringify(homeMathHtml),
   },
-  plugins: [react(), tailwindcss(), analytics()],
+  plugins: [react(), tailwindcss(), analytics(), buildVersion()],
   resolve: { alias: { "#web": new URL("src", import.meta.url).pathname } },
   test: {
     css: false,

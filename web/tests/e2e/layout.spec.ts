@@ -80,12 +80,15 @@ test("the header search at 390 px shows the start of a long query", async ({ pag
   expect(state.scrollWidth).toBeLessThanOrEqual(state.clientWidth);
 });
 
-
 for (const width of [320, 390, 768, 1280]) {
   test(`${String(width)} px: the home slogan reserves its height, nothing moves when the other layers mount`, async ({
     page,
   }) => {
-    type SloganSnapshot = { readonly layers: number; readonly heading: number; readonly below: number };
+    type SloganSnapshot = {
+      readonly layers: number;
+      readonly heading: number;
+      readonly below: number;
+    };
     await page.setViewportSize({ height: 900, width });
     await mockSiteData(page);
     // Every change of the h1 is measured right where it happens (forced layout in the observer).

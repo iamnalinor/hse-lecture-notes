@@ -14,7 +14,7 @@ const setup = async () => {
     matches: false,
     removeEventListener: vi.fn(),
   }));
-  let isReachable = false;
+  let deployed: string | undefined;
   const runtime = { attempts: 0, canLoad: false };
   vi.doMock(RUNTIME_MODULE, () => {
     runtime.attempts += 1;
@@ -26,9 +26,9 @@ const setup = async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(() =>
-      isReachable
-        ? Promise.resolve(new Response(null, { status: 404 }))
-        : Promise.reject(new TypeError("Failed to fetch")),
+      deployed === undefined
+        ? Promise.reject(new TypeError("Failed to fetch"))
+        : Promise.resolve(Response.json({ id: deployed })),
     ),
   );
   const { act, cleanup, fireEvent, render, screen } = await import("@testing-library/react");
@@ -53,8 +53,9 @@ const setup = async () => {
     runtime,
     screen,
     toggle: screen.getByRole("button", { name: "Чат" }),
-    setReachable: (isNowReachable: boolean) => {
-      isReachable = isNowReachable;
+    /** The build id `version.json` answers with; none: the check fails. */
+    setDeployed: (id: string | undefined) => {
+      deployed = id;
     },
   };
 };
@@ -121,18 +122,31 @@ it("shows a centered failure with a retry when the chunk fails, and opens the ch
   cleanup();
 });
 
-it("offers a reload when a retry fails while the site answers", async () => {
-  const { cleanup, fireEvent, screen, setReachable, toggle } = await setup();
-  setReachable(true);
+it("offers a reload when version.json names another build", async () => {
+  const { cleanup, fireEvent, screen, setDeployed, toggle } = await setup();
+  setDeployed("a-newer-build");
   fireEvent.click(toggle);
-  fireEvent.click(await screen.findByRole("button", { name: "Повторить" }));
   expect(await screen.findByRole("button", { name: "Обновить страницу" })).toBeInTheDocument();
   expect(screen.getByText("Похоже, вышла новая версия сайта")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
   cleanup();
 });
 
-it("keeps offering a retry when the second failure comes with no answer from the site", async () => {
+it("keeps offering a retry while version.json names this build, however many retries fail", async () => {
+  const { cleanup, fireEvent, screen, setDeployed, toggle } = await setup();
+  setDeployed(import.meta.env.BUILD_TIME);
+  fireEvent.click(toggle);
+  for (let retry = 0; retry < 3; retry += 1) {
+    fireEvent.click(await screen.findByRole("button", { name: "Повторить" }));
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Повторить" })).toBeInTheDocument();
+    });
+  }
+  expect(screen.queryByRole("button", { name: "Обновить страницу" })).toBeNull();
+  cleanup();
+});
+
+it("keeps offering a retry when the version check itself fails", async () => {
   const { cleanup, fireEvent, screen, toggle } = await setup();
   fireEvent.click(toggle);
   fireEvent.click(await screen.findByRole("button", { name: "Повторить" }));
