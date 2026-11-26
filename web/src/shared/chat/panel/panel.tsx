@@ -150,8 +150,12 @@ const returnFromSource = (chat: ReturnType<typeof useChat>, restore: () => void)
 
 /** Props of a panel that mounts mid-opening (`entranceStyle`); dropped once played, as the keyframes would
 override the closing transition. */
-const usePanelEntrance = () => {
+const usePanelEntrance = (isOpen: boolean) => {
   const [style, setStyle] = useState(entranceStyle);
+  // Closed mid-entrance (Esc right after opening): drop the keyframes now, so the closing transition runs at once.
+  if (!isOpen && style !== null) {
+    setStyle(null);
+  }
   return {
     className: style === null ? "ai-panel" : "ai-panel ai-panel-enter",
     onAnimationEnd: (event: AnimationEvent<HTMLElement>) => {
@@ -173,7 +177,7 @@ export const ChatPanel = ({
   const [historyOpen, setHistoryOpen] = useState(false);
   const sourceScrollRef = useRef(0);
   const [panelEl, setPanelEl] = useState<HTMLElement | null>(null);
-  const entrance = usePanelEntrance();
+  const entrance = usePanelEntrance(chat.isOpen);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   useMobileFocus(chat.isOpen, panelEl, takeSelectionOrigin);

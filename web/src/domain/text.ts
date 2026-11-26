@@ -44,8 +44,9 @@ const proseText = (html: string): string =>
 
 /** Rough reading time of an HTML document, in whole minutes: prose words plus the weight of the formulas. */
 export const readingMinutes = (html: string): number => {
-  const inline = html.matchAll(INLINE_MATH_RE).toArray().length;
-  const display = html.matchAll(DISPLAY_MATH_RE).toArray().length;
+  // Spread, not `.toArray()`: iterator helpers are missing before Safari 18.4.
+  const inline = [...html.matchAll(INLINE_MATH_RE)].length;
+  const display = [...html.matchAll(DISPLAY_MATH_RE)].length;
   const text = proseText(html.replaceAll(INLINE_MATH_RE, "").replaceAll(DISPLAY_MATH_RE, ""));
   const words = text.split(/\s+/u).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
   const total = words + inline * INLINE_FORMULA_WORDS + display * DISPLAY_FORMULA_WORDS;

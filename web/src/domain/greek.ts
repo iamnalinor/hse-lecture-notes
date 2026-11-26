@@ -30,6 +30,18 @@ export const GREEK_NAMES: ReadonlyMap<string, string> = new Map(
   LETTERS.flatMap(([chars, name]) => chars.map((char) => [char, name] as const)),
 );
 
+/*
+A plain loop, not `keys().some()`: iterator helpers are missing before Safari 18.4, and this runs for every formula.
+*/
+const hasGreek = (text: string): boolean => {
+  for (const char of GREEK_NAMES.keys()) {
+    if (text.includes(char)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const MATHML_END = "</math></span>";
 
 const titleText = (text: string): string =>
@@ -52,11 +64,11 @@ export const withGreekTitles = (html: string): string => {
   const cut = html.indexOf(MATHML_END);
   const start = cut === -1 ? 0 : cut + MATHML_END.length;
   const visible = html.slice(start);
-  return GREEK_NAMES.keys().every((char) => !visible.includes(char))
-    ? html
-    : html.slice(0, start) +
+  return hasGreek(visible)
+    ? html.slice(0, start) +
         visible
           .split("<")
           .map((piece) => titlePiece(piece))
-          .join("<");
+          .join("<")
+    : html;
 };
