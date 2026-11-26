@@ -1,5 +1,5 @@
 /**
- * Deterministic Russian Snowball stemmer (identical algorithm to `scripts/export_search_index.py`).
+ * Deterministic Russian Snowball stemmer (identical algorithm to `scripts/search_stemmer.py`).
  * Used for FTS5 `lemmas` query normalization without external dependencies.
  */
 
