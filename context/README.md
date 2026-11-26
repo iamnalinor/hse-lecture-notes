@@ -12,7 +12,7 @@
 
 | Задача | Читать (по порядку) |
 | --- | --- |
-| Написать конспект | `workflow.md` (он ведёт по остальным: `courses/<course>.md` → `conventions.md` → `recommendations.md` → `style/writing-ru.md` → `markup.md` → `prompts/generate.md`) |
+| Написать конспект | `workflow.md` (он ведет по остальным: `courses/<course>.md` → `conventions.md` → `recommendations.md` → `style/writing-ru.md` → `markup.md` → `prompts/generate.md`) |
 | Отревьюить конспект | `prompts/facts.md` → `prompts/review.md` → `recommendations.md` (чеклист) → `style/writing-ru.md` → `conventions.md` → `markup.md` → `courses/<course>.md` |
 | Перевести прогноз в конспект по лекции | `prompts/normalize.md` → `workflow.md` |
 | Добавить лекцию в план, поменять дату | `workflow.md` §1 и §10 |
@@ -31,8 +31,8 @@
 | Файл | Что внутри |
 | --- | --- |
 | `debt.md` | долги: что решено, но отложено (подготовка к КР по новой схеме, мелочи дизайна) |
-| `process.md` | как работать: план, доказательство перед «готово», тест вперёд, отладка, ревью сабагентом, сабагенты и лимиты |
-| `style/writing-ru.md` | Т1–Т26: русский текст без признаков нейросети, с примерами из матана |
+| `process.md` | как работать: план, доказательство перед «готово», тест вперед, отладка, ревью сабагентом, сабагенты и лимиты |
+| `style/writing-ru.md` | Т1–Т27: русский текст без признаков нейросети, с примерами из матана |
 | `style/design.md` | Д1–Д74: дизайн и удобство сайта, сценарии «удобство на деле» |
 | `prompts/facts.md` | фактчекинг утверждений о курсе; страница — справочник, а не пересказ |
 
@@ -59,6 +59,7 @@
 | --- | --- |
 | `prompts/theory.md`, `prompts/prep.md`, `prompts/prep-review.md`, `prompts/cheatsheet.md`, `prompts/program.md` | теория курса, подготовка к КР и коллоквиуму, её ревью, читлист, ПУД |
 | `site.md` | требования к сайту и формат данных сборки |
+| `../chat-suggestions/README.md` | стартовые вопросы чата в YAML и их сборка в JSON |
 
 ## Инструменты (из корня репозитория)
 

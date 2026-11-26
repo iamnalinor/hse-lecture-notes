@@ -36,12 +36,12 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 20px; font-size: 30px; font-weight: 600; color: #5f5f63; }
 .logo {
-  width: 64px; height: 64px; border-radius: 14px; background: #0f2d69; color: #fff;
-  display: grid; place-items: center; font-size: 28px; font-weight: 900;
+  width: 64px; height: 64px; border-radius: 14px; background: #0f2d69;
+  display: grid; place-items: center;
 }
 .symbol { position: absolute; top: 58px; right: 72px; color: #727276; }
-.kicker { margin-top: auto; font-size: 30px; font-weight: 600; color: #2a58a6; }
-h1 { margin-top: 18px; max-width: 900px; line-height: 1; font-weight: 900; }
+.brand small { font-size: inherit; font-weight: 400; color: #727276; }
+h1 { margin-top: auto; max-width: 900px; line-height: 1; font-weight: 900; }
 .note { margin-top: 26px; font-size: 34px; color: #5f5f63; }
 footer {
   margin-top: 48px; padding-top: 26px; border-top: 2px solid #e4e4e1;
@@ -53,20 +53,24 @@ footer b { color: #0f2d69; font-weight: 600; }
 const tex = (source: string): string => renderToString(source, { throwOnError: true });
 
 type Card = {
-  readonly kicker: string;
+  /** Said after the site's name in the brand line, in brackets (the site card: the year of study). */
+  readonly brandNote?: string;
   readonly note: string;
   /** What the site has for the card's course (or for all of them): the footer line. */
   readonly offer: string;
   readonly symbol: string;
-  /** Font size of the symbol in px: the site card fits every course's symbol beside the brand. */
+  /** Font size of a course symbol in px. */
   readonly symbolSize?: number;
   readonly title: string;
   /** Font size of the title in px: a long course name must fit in two lines. */
   readonly titleSize?: number;
 };
 
+const symbolHtml = (symbol: string, size: number): string =>
+  symbol === "" ? "" : `<div class="symbol" style="font-size: ${String(size)}px">${symbol}</div>`;
+
 const html = ({
-  kicker,
+  brandNote,
   note,
   offer,
   symbol,
@@ -78,9 +82,8 @@ const html = ({
 <link rel="stylesheet" href="${fileUrl("../node_modules/katex/dist/katex.min.css")}">
 <style>${STYLE}</style></head>
 <body>
-  <div class="brand"><span class="logo">ПИ</span>${SITE_NAME} ВШЭ</div>
-  <div class="symbol" style="font-size: ${String(symbolSize)}px">${symbol}</div>
-  <div class="kicker">${kicker}</div>
+  <div class="brand"><span class="logo"><svg viewBox="0 0 32 32" width="64" height="64"><path fill="#fff" d="M10.43 8.69Q10.43 8.2 10.92 8.2L21.08 8.2Q21.57 8.2 21.57 8.69L21.57 10.23Q21.57 10.72 21.08 10.72L14.26 10.72Q13.77 10.72 14.18 10.99Q16.68 13.39 19.83 14.83Q20.23 15.11 20.23 15.6L20.23 16.4Q20.23 16.89 19.83 17.17Q16.68 18.61 14.18 21.01Q13.77 21.28 14.26 21.28L21.08 21.28Q21.57 21.28 21.57 21.77L21.57 23.31Q21.57 23.8 21.08 23.8L10.92 23.8Q10.43 23.8 10.43 23.31L10.43 20.32Q10.43 19.83 10.83 19.56Q12.93 17.44 15.67 16.28Q16.07 16 15.67 15.72Q12.93 14.56 10.83 12.44Q10.43 12.17 10.43 11.68L10.43 8.69Z"/></svg></span><span>${SITE_NAME} ВШЭ${brandNote === undefined ? "" : ` <small>(${brandNote})</small>`}</span></div>
+  ${symbolHtml(symbol, symbolSize)}
   <h1 style="font-size: ${String(titleSize)}px">${title}</h1>
   <p class="note">${note}</p>
   <footer><b>hse.nalinor.dev</b><span>${offer}</span></footer>
@@ -99,7 +102,6 @@ const OFFER: Readonly<Record<CourseId, string>> = {
 };
 
 const courseCard = (course: CourseInfo): Card => ({
-  kicker: "Конспекты лекций · 2026/27",
   note: `Лектор — ${course.lecturer}`,
   offer: OFFER[course.id],
   symbol: tex(course.symbol),
@@ -109,11 +111,10 @@ const courseCard = (course: CourseInfo): Card => ({
 });
 
 const siteCard: Card = {
-  kicker: "1 курс · 2026/27",
+  brandNote: "1 курс 2026/27",
   note: COURSES.map((course) => course.name).join(" · "),
   offer: "Теория · ПУД · подготовка к КР и коллоквиумам",
-  symbol: tex(COURSES.map((course) => course.symbol).join(String.raw`\quad `)),
-  symbolSize: 38,
+  symbol: "",
   title: "Конспекты лекций",
 };
 
@@ -123,7 +124,9 @@ const cards = new Map<OgImageId, Card>([
 ]);
 
 const workDir = await mkdtemp(path.join(tmpdir(), "og-images-"));
-const browser = await chromium.launch();
+// PLAYWRIGHT_CHROMIUM: a Chromium of another Playwright version (e.g. a preinstalled one).
+const executablePath = process.env["PLAYWRIGHT_CHROMIUM"];
+const browser = await chromium.launch(executablePath === undefined ? {} : { executablePath });
 try {
   const page = await browser.newPage({ viewport: OG_IMAGE_SIZE });
   for (const [id, card] of cards) {

@@ -29,4 +29,5 @@ blader/humanizer            a32f24407364c74c812b43c15926d638bee1e072
 smixs/humanizer-ru          ff990df404f78fb1a43fc574a725490bd1be8070
 codemistake/human-writing   3d06941d99d78bb495d11a98f6cd30eeec7a701b
 thevseprod/humanizer-ru     b94180f1cffc7e6665cd74aa4f530c495303ad15
+deanpeters/Product-Manager-Skills 476ae12917b8e77609eb956bcc2203a4e4ec857d
 EOF

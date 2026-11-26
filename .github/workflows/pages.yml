@@ -35,6 +35,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Full history, file contents on demand: sitemap lastmod and page dates come from git log.
+          fetch-depth: 0
+          filter: blob:none
       - uses: ./.github/actions/setup-web
 
       - name: Find the notes build to publish
@@ -64,11 +67,6 @@ jobs:
       - name: Drop the review pages of the notes build (the site renders the fragments itself)
         run: find web/public/data -name index.html -delete
 
-      - name: Keep old PDF links of the theory working (<course>-registry.pdf before the rename)
-        run: |
-          shopt -s nullglob
-          for f in web/public/pdf/*-theory.pdf; do cp "$f" "${f%-theory.pdf}-registry.pdf"; done
-
       - uses: actions/configure-pages@v6
         id: pages
 
@@ -77,7 +75,10 @@ jobs:
         env:
           # "" on a custom domain (hse.nalinor.dev), "/<repo>" on <owner>.github.io/<repo>
           BASE_PATH: ${{ steps.pages.outputs.base_path }}/
-        run: bun run build
+          VITE_CHAT_API_URL: ${{ vars.VITE_CHAT_API_URL }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+          VITE_TELEGRAM_CLIENT_ID: ${{ vars.VITE_TELEGRAM_CLIENT_ID }}
+        run: bun run scripts/validate-chat-config.ts && bun run build
 
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -105,16 +106,16 @@ jobs:
           curl --fail --silent "${URL}" | grep -q '<div id="root">'
           # A page copy of the shell (served with 200 and its own title), not the 404.html fallback
           curl --fail --silent "${URL}algebra/theory/" | grep -q '<title>Алгебра: теория'
-          curl --fail --silent --head "${URL}pdf/algebra-theory.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/algebra_theory.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/kr1/" | grep -q '<title>Подготовка к КР-1'
-          curl --fail --silent --head "${URL}pdf/calculus-kr1.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/calculus_kr1.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/colloq1/" | grep -q '<title>Подготовка к коллоквиуму 1'
-          curl --fail --silent --head "${URL}pdf/calculus-colloq1.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/calculus_colloq1.pdf" >/dev/null
           curl --fail --silent "${URL}calculus/program/" | grep -q '<title>План учебной дисциплины: математический анализ'
-          curl --fail --silent --head "${URL}pdf/calculus-program.pdf" >/dev/null
-          curl --fail --silent --head "${URL}pdf/discrete-program.pdf" >/dev/null
-          curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-1side.pdf" >/dev/null
-          curl --fail --silent --head "${URL}pdf/discrete-kr1-cheatsheet-2side.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/calculus_program.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete_program.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete_kr1_cheatsheet_1side.pdf" >/dev/null
+          curl --fail --silent --head "${URL}pdf/discrete_kr1_cheatsheet_2side.pdf" >/dev/null
           curl --fail --silent "${URL}algebra/theory/" | grep -q '<link rel="canonical" href="https://hse.nalinor.dev/algebra/theory/"'
           curl --fail --silent "${URL}calculus/kr1/" | grep -q '<meta property="og:image" content="https://hse.nalinor.dev/og/calculus.png"'
           curl --fail --silent --head "${URL}og/calculus.png" >/dev/null
@@ -123,8 +124,16 @@ jobs:
           curl --fail --silent "${URL}aiya/program/" | grep -q '<title>План учебной дисциплины: алгоритмы и алгоритмические языки'
           curl --fail --silent "${URL}sitemap.xml" | grep -q '<loc>https://hse.nalinor.dev/calculus/kr1/</loc>'
           curl --fail --silent "${URL}robots.txt" | grep -q 'Sitemap: https://hse.nalinor.dev/sitemap.xml'
-          curl --fail --silent "${URL}llms.txt" | grep -q 'raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/notes/'
+          curl --fail --silent "${URL}llms.txt" | grep -q '(https://hse.nalinor.dev/algebra/theory.md)'
+          # Every page has its Markdown at <path>.md; the home page at index.md
+          curl --fail --silent "${URL}algebra/theory.md" | grep -q '^course: algebra'
+          curl --fail --silent "${URL}calculus.md" | grep -q 'https://hse.nalinor.dev/calculus/kr1.md'
+          curl --fail --silent "${URL}index.md" | grep -q '^# Конспекты ПИ ФКН'
+          # Dates from git history: a shallow checkout would leave the sitemap without lastmod
+          curl --fail --silent "${URL}sitemap.xml" | grep -q '<loc>https://hse.nalinor.dev/calculus/kr1/</loc><lastmod>'
+          curl --fail --silent --head "${URL}favicon.ico" >/dev/null
+          curl --fail --silent --head "${URL}favicon-120.png" >/dev/null
           # Clients without JS get the Markdown link inside #root (converters drop <noscript>)
-          curl --fail --silent "${URL}algebra/theory/" | grep -q '<div id="root"><div class="static-fallback">.*raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/theory/algebra.md'
+          curl --fail --silent "${URL}algebra/theory/" | grep -q '<div id="root"><div class="static-fallback">.*https://hse.nalinor.dev/algebra/theory.md'
           curl --fail --silent "${URL}sw.js" >/dev/null
           curl --fail --silent "${URL}offline-manifest.json" | grep -q '"precache"'

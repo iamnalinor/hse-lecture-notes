@@ -1,0 +1,11 @@
+// Router of hse-preview.nalinor.dev (see src/index.ts). Deploy: `bunx wrangler deploy -c preview/wrangler.jsonc`
+// from `backend/` (`.github/workflows/backend.yml` does it on main when backend/ changes).
+{
+  "name": "hse-preview-router",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "hse-preview.nalinor.dev", "custom_domain": true }],
+  "observability": { "enabled": true }
+}

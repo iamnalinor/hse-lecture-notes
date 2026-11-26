@@ -5,9 +5,8 @@ import type { PdfDoc } from "#web/domain/preps.ts";
 import { useDocMeta, useFragment } from "#web/api/queries.ts";
 import { readingMinutes } from "#web/domain/text.ts";
 import { DocPage } from "#web/shared/ui/doc-page.tsx";
-import { DocToc, WIDE_QUERY } from "#web/shared/ui/doc-toc.tsx";
-import { TocSheet } from "#web/shared/ui/toc-sheet.tsx";
-import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
+import { DocToc, useIsWideToc } from "#web/shared/ui/toc/document.tsx";
+import { TocSheet } from "#web/shared/ui/toc/sheet.tsx";
 
 import { FragmentView } from "./fragment-view.tsx";
 import { useScrollToHash } from "./use-scroll-to-hash.ts";
@@ -19,7 +18,8 @@ type Props = {
   readonly docId: string;
   /** More PDFs next to the document's own (cheatsheets of a test). */
   readonly downloads?: readonly PdfDoc[];
-  readonly note: string;
+  /** Link next to the PDF button to a section of the page. */
+  readonly jump?: undefined | { readonly hash: string; readonly label: string };
   /** Crumb and title: «Теория», «План учебной дисциплины», «Подготовка к КР-1». */
   readonly pageName: string;
   /** TOC caption when the page name is long and would repeat the crumb right next to it: «КР-1». */
@@ -35,7 +35,7 @@ export const CourseDocument = ({
   courseName,
   docId,
   downloads,
-  note,
+  jump,
   pageName,
   slots,
   tocCaption = pageName,
@@ -44,7 +44,7 @@ export const CourseDocument = ({
   const meta = useDocMeta(course, docId);
   const html = useFragment(course, docId);
   useScrollToHash();
-  const isWide = useIsMatching(WIDE_QUERY);
+  const isWide = useIsWideToc();
 
   return (
     <DocPage
@@ -54,7 +54,7 @@ export const CourseDocument = ({
       course={course}
       courseName={courseName}
       downloads={downloads}
-      note={note}
+      jump={jump}
       pageName={pageName}
       pdfDoc={docId}
     >

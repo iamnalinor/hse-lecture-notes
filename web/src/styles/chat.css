@@ -1,0 +1,1391 @@
+/* ---------- общие анимации ---------- */
+@keyframes ai-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes ai-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ai-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes ai-step-in {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+    overflow: hidden;
+  }
+  99% {
+    max-height: 160px;
+    overflow: hidden;
+  }
+  to {
+    max-height: none;
+    overflow: visible;
+  }
+}
+@keyframes ai-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.ai-enter {
+  animation: ai-in 280ms var(--ai-ease) both;
+}
+.ai-fade {
+  animation: ai-fade-in 220ms ease-out both;
+}
+.ai-flow {
+  display: flow-root;
+}
+
+.ai-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--def);
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+.ai-text-btn:hover {
+  background: color-mix(in srgb, var(--def) 10%, transparent);
+}
+.ai-text-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.ai-text-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.ai-text-btn .ai-spin {
+  width: 12px;
+  height: 12px;
+  border-color: color-mix(in srgb, var(--def) 30%, transparent);
+  border-top-color: var(--def);
+}
+
+/* история чатов */
+.ai-hist-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--ai-shadow-lg);
+}
+.ai-hist-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease-out,
+    color 120ms ease-out;
+}
+.ai-hist-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ai-hist-item:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+.ai-hist-retry,
+.ai-hist-retry:hover {
+  gap: 6px;
+  color: var(--red-deep);
+  font-weight: 600;
+}
+.ai-hist-retry:hover {
+  background: var(--red-soft);
+}
+.ai-hist-retry svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.ai-hist-item.is-on {
+  background: var(--wash);
+  color: var(--ink);
+  font-weight: 600;
+}
+.ai-hist-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 721px) {
+  /* Выпадающий список под своей кнопкой, а не во всю ширину панели. */
+  .ai-hist-menu {
+    left: auto;
+    right: 44px;
+    width: min(360px, calc(100% - 56px));
+    max-height: 60vh;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+  }
+}
+
+/* пустое состояние */
+.ai-empty {
+  padding-top: 12px;
+}
+.ai-empty h2 {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.ai-empty p {
+  color: var(--muted);
+  margin: 0 0 20px;
+  text-wrap: pretty;
+}
+.ai-sugg {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+.ai-sugg button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  min-height: 48px;
+  padding: 10px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+.ai-sugg button:hover {
+  color: var(--def);
+}
+.ai-sugg button svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--faint);
+  margin-left: auto;
+  transition: transform 150ms ease-out;
+}
+.ai-sugg button:hover svg {
+  transform: translateX(2px);
+}
+
+/* ссылка для чужого ИИ: подпись над полем, адрес и квадратная кнопка копирования (как «Поделиться») */
+.ai-agent {
+  margin-top: 32px;
+}
+.ai-agent-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.ai-agent-field {
+  display: flex;
+  align-items: stretch;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+}
+.ai-agent-url {
+  align-self: center;
+  min-width: 0;
+  padding: 0 12px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-agent-url.is-done {
+  color: var(--ex);
+}
+.ai-agent-copy {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+.ai-agent-copy:hover {
+  background: var(--wash);
+}
+.ai-agent-copy:focus-visible {
+  outline: 2px solid var(--def);
+  outline-offset: -2px;
+}
+.ai-agent-copy .ai-ico-swap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ai-msg {
+  margin-bottom: 24px;
+}
+.ai-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.ai-bubble {
+  max-width: 88%;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: var(--wash);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-unsent {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--faint);
+  font-size: 13px;
+  line-height: 18px;
+}
+/* A text link on the status line: a full button beside 13px text looked like a stray box. */
+.ai-unsent-retry {
+  color: var(--def);
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.ai-unsent-retry:hover {
+  text-decoration: underline;
+}
+
+.ai-quote {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+.ai-user .ai-quote {
+  max-width: 88%;
+  width: auto;
+  cursor: pointer;
+  transition: border-color 150ms ease-out;
+}
+.ai-user .ai-quote:hover {
+  border-color: color-mix(in srgb, var(--def) 45%, var(--rule));
+}
+.ai-quote-src {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--faint);
+  margin-bottom: 3px;
+}
+.ai-quote-src svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+.ai-quote-src b {
+  font-weight: 600;
+  color: var(--muted);
+}
+.ai-quote-txt {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.ai-quote-txt .katex {
+  font-size: 1.08em;
+}
+
+/* ответ */
+.ai-answer {
+  font-size: 15px;
+  line-height: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+.ai-answer :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 0.4em;
+  font-size: 1em;
+  font-weight: 650;
+}
+.ai-answer p {
+  margin: 0 0 12px;
+}
+.ai-answer p:last-child {
+  margin-bottom: 0;
+}
+.ai-answer ol {
+  margin: 0 0 12px;
+  padding-left: 1.4em;
+  list-style: decimal;
+}
+.ai-answer ul {
+  margin: 0 0 12px;
+  padding-left: 1.4em;
+  list-style: disc;
+}
+.ai-answer li {
+  margin-bottom: 6px;
+}
+.ai-answer strong {
+  font-weight: 600;
+}
+.ai-answer :not(pre) > code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--wash);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+}
+.ai-code {
+  margin: 8px 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--wash);
+  overflow: hidden;
+}
+.ai-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px 6px 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--faint);
+}
+.ai-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+.ai-code-copy:hover {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+}
+.ai-code-copy.is-done {
+  color: var(--ex);
+}
+.ai-code-copy svg {
+  width: 13px;
+  height: 13px;
+}
+.ai-code pre {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 19px;
+  tab-size: 2;
+  color: var(--ink);
+}
+.ai-code pre code {
+  font: inherit;
+  background: none;
+  padding: 0;
+}
+.ai-answer .ai-math {
+  margin: 4px 0 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+.ai-answer .ai-math .katex-display {
+  margin: 0;
+}
+.ai-answer .katex {
+  font-size: 1.05em;
+  line-height: 0;
+}
+.ai-answer .ref {
+  cursor: pointer;
+}
+.ai-tok {
+  animation: ai-tok-in 260ms ease-out both;
+}
+.ai-tok .ref {
+  animation: ai-ref-in 260ms ease-out both;
+}
+.ai-math.ai-tok {
+  animation: ai-math-in 280ms ease-out both;
+}
+@keyframes ai-tok-in {
+  from {
+    color: transparent;
+  }
+}
+@keyframes ai-ref-in {
+  from {
+    color: transparent;
+    text-decoration-color: transparent;
+  }
+}
+@keyframes ai-math-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ai-stopped {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+/* шаги агента */
+.ai-steps {
+  margin: 0 0 12px;
+}
+.ai-steps-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+.ai-steps-toggle:hover:not(:disabled) {
+  color: var(--ink);
+}
+.ai-steps-toggle:disabled {
+  cursor: default;
+  color: var(--muted);
+}
+.ai-steps-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition:
+    transform 240ms var(--ai-ease),
+    opacity 200ms ease-out;
+}
+.ai-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 20px;
+  color: var(--ai-accent);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 18px;
+  line-height: 1;
+}
+.ai-status-icon::before {
+  content: "✻";
+  animation: ai-status-frames 2.16s step-end infinite;
+}
+/* Claude Code's ping-pong sequence: six glyphs forward and back, 180 ms per frame. */
+@keyframes ai-status-frames {
+  0%,
+  91.6667%,
+  100% {
+    content: "·";
+  }
+  8.3333%,
+  83.3333% {
+    content: "✢";
+  }
+  16.6667%,
+  75% {
+    content: "✳\FE0E";
+  }
+  25%,
+  66.6667% {
+    content: "✶";
+  }
+  33.3333%,
+  58.3333% {
+    content: "✻";
+  }
+  41.6667%,
+  50% {
+    content: "✽";
+  }
+}
+.ai-steps.is-open .ai-steps-toggle .ai-chev {
+  transform: rotate(90deg);
+}
+.ai-steps.is-run .ai-steps-toggle .ai-chev {
+  opacity: 0;
+}
+.ai-steps.is-run .ai-steps-sum {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--muted) 35%,
+    var(--ink) 50%,
+    var(--muted) 65%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ai-shimmer 1.8s linear infinite;
+}
+.ai-steps-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 300ms var(--ai-ease),
+    opacity 220ms ease-out;
+}
+.ai-steps.is-open .ai-steps-body {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.ai-steps-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.ai-steplist {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  position: relative;
+}
+.ai-steplist li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  column-gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+.ai-steplist li + li::before {
+  content: "";
+  position: absolute;
+  left: 9.5px;
+  top: -6px;
+  height: 9px;
+  width: 1px;
+  background: var(--rule);
+}
+.ai-step-enter {
+  animation: ai-step-in 320ms var(--ai-ease) both;
+}
+.ai-step-ic {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+}
+.ai-step-ic > * {
+  animation: ai-pop 220ms var(--ai-ease) both;
+}
+.ai-step-ic svg {
+  width: 14px;
+  height: 14px;
+}
+.ai-step-main {
+  min-width: 0;
+  padding-top: 1px;
+}
+.ai-step-label {
+  color: var(--muted);
+  transition: color 200ms ease-out;
+}
+.ai-step-query {
+  color: var(--ink);
+}
+.ai-step-res {
+  display: block;
+  color: var(--faint);
+  margin-top: 1px;
+  animation: ai-fade-in 260ms ease-out both;
+}
+.ai-step-res a {
+  color: var(--def);
+  text-decoration: none;
+  cursor: pointer;
+}
+.ai-step-res a:hover {
+  text-decoration: underline;
+}
+.ai-step.is-run .ai-step-label {
+  color: var(--ink);
+}
+
+.ai-spin {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule);
+  border-top-color: var(--ink);
+  animation: ai-spin 700ms linear infinite;
+}
+@keyframes ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-actions {
+  display: flex;
+  gap: 2px;
+  margin: 8px 0 0 -8px;
+}
+.ai-actions-stopped {
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+.ai-actions .ai-icon-btn {
+  width: 32px;
+  height: 32px;
+  color: var(--faint);
+}
+.ai-actions .ai-icon-btn:hover {
+  color: var(--ink);
+}
+.ai-actions .ai-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+/* A finger needs more than 32 px; the icon stays 16 px. */
+@media (pointer: coarse) {
+  .ai-actions .ai-icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* копирование: галочка на месте иконки и подсказка над кнопкой */
+.ai-copy {
+  position: relative;
+  display: inline-grid;
+}
+.ai-ico-swap {
+  display: grid;
+  place-items: center;
+}
+.ai-ico-swap > svg {
+  grid-area: 1 / 1;
+  transition:
+    opacity 160ms ease-out,
+    transform 200ms var(--ai-ease);
+}
+.ai-ico-swap > svg + svg {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.ai-copy.is-done .ai-ico-swap > svg:first-child {
+  opacity: 0;
+  transform: scale(0.6);
+}
+.ai-copy.is-done .ai-ico-swap > svg + svg {
+  opacity: 1;
+  transform: none;
+  color: var(--ex);
+}
+.ai-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms ease-out,
+    transform 200ms var(--ai-ease);
+}
+.ai-copy.is-done .ai-tip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ai-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ai-error-row {
+  display: flex;
+  gap: 8px;
+  color: var(--red-deep);
+}
+.ai-error-row svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 3px;
+}
+.ai-error-detail {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--faint);
+}
+
+.ai-btn .ai-spin {
+  border-color: color-mix(in srgb, var(--paper) 35%, transparent);
+  border-top-color: var(--paper);
+}
+
+/* ---------- низ панели: поле ввода или плашка вместо него ---------- */
+.ai-question-count {
+  margin: 4px 8px;
+  text-align: right;
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  color: var(--muted);
+}
+.ai-question-count-over {
+  color: var(--red);
+}
+.ai-draft-quote {
+  padding: 8px 8px 0;
+}
+.ai-draft-quote .ai-quote,
+.ai-plate-quote .ai-quote {
+  position: relative;
+  background: var(--wash);
+  border-color: transparent;
+  padding-right: 36px;
+}
+.ai-plate-quote .ai-quote {
+  background: var(--card);
+}
+.ai-draft-quote .ai-quote-txt,
+.ai-plate-quote .ai-quote-txt {
+  -webkit-line-clamp: 2;
+}
+.ai-quote .ai-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+}
+.ai-quote .ai-x svg {
+  width: 14px;
+  height: 14px;
+}
+.ai-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 8px 8px 14px;
+}
+.ai-row textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 168px;
+  padding: 6px 0;
+  margin: 0;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink);
+}
+@media (max-width: 720px) {
+  .ai-row textarea {
+    font-size: 17px;
+  }
+}
+/* The touch send button is 40px: a one-line field is as tall, so text and ghost text sit centred on it. */
+@media (hover: none) {
+  .ai-row textarea {
+    min-height: 40px;
+    padding: 9px 0;
+  }
+}
+.ai-row textarea::placeholder {
+  color: var(--faint);
+}
+.ai-send {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition:
+    opacity 150ms ease-out,
+    transform 120ms ease-out;
+}
+.ai-send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.ai-send:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.ai-send svg {
+  width: 18px;
+  height: 18px;
+  animation: ai-pop 200ms var(--ai-ease) both;
+}
+.ai-send.is-stop svg {
+  width: 12px;
+  height: 12px;
+}
+@media (hover: none) {
+  .ai-send {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.ai-plate {
+  padding: 14px 16px 16px;
+  border-radius: 12px;
+  background: var(--wash);
+}
+.ai-plate b {
+  display: block;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.ai-plate p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 19px;
+  text-wrap: pretty;
+}
+.ai-plate time {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.ai-plate-row {
+  display: flex;
+  gap: 10px;
+}
+.ai-plate-row > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--muted);
+}
+.ai-plate-actions {
+  margin-top: 12px;
+  display: flex;
+}
+.ai-plate-actions .ai-btn {
+  flex: 1;
+}
+.ai-plate-quote {
+  margin: -6px -8px 12px;
+}
+
+.ai-caption {
+  margin: 8px 4px 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--faint);
+  display: flex;
+  gap: 6px;
+  text-wrap: pretty;
+}
+.ai-caption svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 1px;
+}
+.ai-caption a,
+.ai-caption button {
+  color: var(--def);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.ai-caption a:hover,
+.ai-caption button:hover {
+  text-decoration: underline;
+}
+.ai-caption time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* ---------- проверка «не бот»: всплывающее окно поверх страницы ---------- */
+.ai-modal {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: background-color 220ms ease-out;
+}
+.ai-modal.is-on {
+  background: rgb(0 0 0 / 0.32);
+  opacity: 1;
+  pointer-events: auto;
+}
+.ai-modal-card {
+  position: relative;
+  width: min(372px, 100%);
+  padding: 22px 24px 24px;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--ai-shadow-lg);
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition:
+    opacity 200ms ease-out,
+    transform 260ms var(--ai-ease);
+}
+.ai-modal.is-on .ai-modal-card {
+  opacity: 1;
+  transform: none;
+}
+.ai-modal-card h2 {
+  margin: 0 32px 16px 0;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.ai-modal-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+/* мобильный возврат к чату после перехода по ссылке из ответа */
+.ai-back {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px 0 14px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: var(--ai-shadow);
+  cursor: pointer;
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 200ms ease-out,
+    transform 260ms var(--ai-ease),
+    visibility 0s linear 260ms;
+}
+.ai-back.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity 200ms ease-out,
+    transform 260ms var(--ai-ease);
+}
+.ai-back svg {
+  width: 18px;
+  height: 18px;
+}
+/* The back bar (44 px tall, centred on a phone) owns the bottom edge: «К чату» stands right above it. */
+body:has(aside[aria-label="Возврат"]) .ai-back {
+  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 44px + 8px);
+}
+
+/* подсветка блока при переходе из ответа */
+.ai-flash-block {
+  animation: ai-flash 1.6s ease-out;
+}
+@keyframes ai-flash {
+  0%,
+  30% {
+    box-shadow: 0 0 0 3px var(--flash);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+/* предпросмотр ссылки на блок при наведении (как RefPreviewCard на сайте) */
+/* Keep the 8px gap between a citation and its hover card inside the hover target. */
+[data-preview-side]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 9px;
+}
+[data-preview-side="bottom"]::before {
+  bottom: 100%;
+}
+[data-preview-side="top"]::before {
+  top: 100%;
+}
+.ai-ref-card {
+  position: fixed;
+  z-index: 70;
+  width: min(430px, calc(100vw - 24px));
+  cursor: pointer;
+  border-radius: 10px;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+:root[data-theme="dark"] .ai-ref-card {
+  box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+}
+.ai-ref-card.is-on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.ai-ref-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  padding: 12px 16px 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+.ai-ref-head b {
+  font-weight: 600;
+}
+.ai-ref-head span {
+  color: var(--muted);
+}
+.ai-ref-body {
+  position: relative;
+  max-height: 156px;
+  overflow: hidden;
+  padding: 6px 16px 12px;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--ink);
+}
+.ai-ref-body.is-clipped::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--card));
+}
+.ai-ref-body p {
+  margin: 0 0 8px;
+}
+.ai-ref-body p:last-child {
+  margin-bottom: 0;
+}
+.ai-ref-body ol,
+.ai-ref-body ul {
+  margin: 0 0 8px;
+  padding-left: 1.3em;
+}
+.ai-ref-body .math-display {
+  margin: 6px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.ai-ref-body .math-display .katex-display {
+  margin: 0;
+}
+.ai-ref-body .katex {
+  font-size: 1.05em;
+}
+.ai-ref-body a.ref {
+  color: var(--def);
+  text-decoration: none;
+}
+.ai-ref-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--rule);
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.ai-ref-foot .ai-ref-go {
+  font-weight: 600;
+  color: var(--def);
+}
+
+.ai-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+:where(.ai-back, .ai-modal) :focus-visible,
+.ai-back:focus-visible {
+  outline: 2px solid var(--def);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-back,
+  .ai-modal,
+  .ai-modal-card,
+  .ai-ref-card,
+  .ai-steps-body,
+  .ai-steps-toggle svg,
+  .ai-tip,
+  .ai-ico-swap > svg {
+    transition: none !important;
+  }
+  .ai-enter,
+  .ai-fade,
+  .ai-step-enter,
+  .ai-step-ic > *,
+  .ai-step-res,
+  .ai-send svg,
+  .ai-status-icon::before,
+  .ai-tok,
+  .ai-tok .ref {
+    animation: none !important;
+  }
+  .ai-steps.is-run .ai-steps-sum {
+    animation: none;
+    background: none;
+    color: var(--ink);
+  }
+  .ai-spin {
+    animation-duration: 2.4s;
+  }
+  .ai-flash-block {
+    animation: none;
+    box-shadow: 0 0 0 3px var(--flash);
+  }
+}
+
+/* шапка сайта при открытой панели: место под панель забирают название сайта, поиск и подпись кнопки */
+@media (min-width: 721px) and (max-width: 1539px) {
+  html.ai-open .ai-head-btn {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  html.ai-open .ai-head-btn span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+@media (min-width: 721px) and (max-width: 1360px) {
+  html.ai-open header label:has(input[type="search"]) {
+    width: 12rem;
+  }
+  html.ai-open header label:has(input[type="search"]) kbd {
+    display: none;
+  }
+}
+/* Названия курсов остаются в шапке, пока им хватает места рядом с панелью чата. */
+@container (min-width: 50rem) {
+  html.ai-open [data-course-nav] {
+    display: flex;
+  }
+}
+@container (max-width: 36rem) {
+  html.ai-open header > div {
+    gap: 0.5rem;
+    padding-inline: 1rem;
+  }
+  html.ai-open header label:has(input[type="search"]) {
+    width: clamp(4rem, calc(100cqw - 19rem), 12rem);
+  }
+}
+
+.ai-resize {
+  display: none;
+}
+@media (min-width: 721px) {
+  .ai-resize {
+    display: block;
+    position: absolute;
+    inset: 0 auto 0 -5px;
+    z-index: 1;
+    width: 10px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .ai-resize::after {
+    content: "";
+    position: absolute;
+    inset: 0 4px;
+    border-radius: 2px;
+  }
+  .ai-resize:hover::after,
+  .ai-resize:focus-visible::after,
+  .ai-resizing .ai-resize::after {
+    background: var(--def);
+  }
+  html.ai-resizing #root,
+  html.ai-resizing [data-toc-pill],
+  html.ai-resizing aside[aria-label="Возврат"] {
+    transition: none;
+    user-select: none;
+  }
+}
+
+.ai-code [data-syntax="kwd"],
+.ai-code [data-syntax="bool"] {
+  color: var(--prob);
+}
+.ai-code [data-syntax="str"],
+.ai-code [data-syntax="insert"] {
+  color: var(--ex);
+}
+.ai-code [data-syntax="type"],
+.ai-code [data-syntax="class"],
+.ai-code [data-syntax="func"],
+.ai-code [data-syntax="section"] {
+  color: var(--def);
+}
+.ai-code [data-syntax="num"],
+.ai-code [data-syntax="esc"],
+.ai-code [data-syntax="var"] {
+  color: var(--thm);
+}
+.ai-code [data-syntax="cmnt"] {
+  color: var(--muted);
+  font-style: italic;
+}
+.ai-code [data-syntax="deleted"],
+.ai-code [data-syntax="err"] {
+  color: var(--red);
+}

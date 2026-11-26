@@ -28,8 +28,11 @@ export type OfflineManifest = {
   readonly version: string;
 };
 
-export const CACHE_NAME = "hse-notes";
-export const STAGE_PREFIX = "hse-notes-stage-";
+/** CacheStorage is shared across all workers on an origin, including the Pages previews. */
+export const cacheNames = (scopePath: string) => {
+  const main = `hse-notes:${encodeURIComponent(scopePath)}`;
+  return { main, stagePrefix: `${main}:stage:` };
+};
 export const HASH_HEADER = "x-content-hash";
 export const MANIFEST_PATH = "offline-manifest.json";
 /**

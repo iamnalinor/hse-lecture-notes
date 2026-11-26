@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "@testing-library/jest-dom"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../src/env.d.ts"],
+  "exclude": ["e2e"]
+}

@@ -211,6 +211,35 @@ phone — one card per row, every value next to (short, `data-inline`) or under 
   }
 }
 
+/* Label and value table of the program page: below 30rem a row is the label (semibold) over its value. */
+@media (width < 30rem) {
+  .prose-notes .table-pairs table,
+  .prose-notes .table-pairs tbody,
+  .prose-notes .table-pairs tr,
+  .prose-notes .table-pairs td {
+    display: block;
+    width: 100%;
+  }
+
+  .prose-notes .table-pairs colgroup {
+    display: none;
+  }
+
+  .prose-notes .table-pairs tr {
+    border-bottom: 1px solid var(--rule);
+    padding: 8px 0;
+  }
+
+  .prose-notes .table-pairs td {
+    border: 0;
+    padding: 1px 12px;
+  }
+
+  .prose-notes .table-pairs td:first-child {
+    font-weight: 600;
+  }
+}
+
 .prose-notes img {
   height: auto;
   max-width: 100%;
@@ -356,4 +385,25 @@ only push them off the centre.
 /* the first part follows the lecture header directly: its rule replaces the header's, no double gap */
 .prose-notes > section:first-child > h2 {
   margin-top: 1.75rem;
+}
+
+/* Code in the notes: Pandoc marks tokens (`kw`, `dt`, `st`…); colors match the chat (`chat.css`). */
+pre.sourceCode :is(.kw, .cf, .pp, .im, .bu, .ex) {
+  color: var(--prob);
+}
+pre.sourceCode :is(.dt, .fu, .at) {
+  color: var(--def);
+}
+pre.sourceCode :is(.st, .ch, .vs, .ss) {
+  color: var(--ex);
+}
+pre.sourceCode :is(.dv, .bn, .fl, .cn, .sc) {
+  color: var(--thm);
+}
+pre.sourceCode :is(.co, .do, .an, .cv, .in) {
+  color: var(--muted);
+  font-style: italic;
+}
+pre.sourceCode :is(.al, .er) {
+  color: var(--red);
 }

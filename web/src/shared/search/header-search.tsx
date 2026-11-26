@@ -7,8 +7,8 @@ import { canAutoDownload, type ConnectionInfo, isDesktopDevice } from "#web/doma
 import { hitPath, prepareIndex, search, type SearchHit } from "#web/domain/search.ts";
 import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
-import { PhoneFold, Popover, SearchField, SearchPanel } from "./search-parts.tsx";
-import { resultId } from "./search-results.tsx";
+import { resultId } from "./result-id.ts";
+import { NOT_FOUND, PhoneFold, Popover, SearchField, SearchPanel } from "./search-parts.tsx";
 
 /** Hits drawn at once: each one may hold formulas, and KaTeX is the slow part of a keystroke. */
 const FIRST_HITS = 12;
@@ -26,8 +26,21 @@ const isShortcut = (event: KeyboardEvent): boolean => {
   return isSlash && !event.altKey && !isTyping(event.target);
 };
 
-/** Below `md` the field folds behind the magnifier (Tailwind's `md` is 48rem). */
-const PHONE_QUERY = "(width < 48rem)";
+/**
+A letter or digit typed with no field in focus starts a search: focus moves to the field during
+keydown, so the browser puts the character there. Space keeps scrolling the page.
+*/
+const isTypeToSearch = (event: KeyboardEvent): boolean =>
+  event.key.length === 1 &&
+  event.key.trim() !== "" &&
+  !event.metaKey &&
+  !event.ctrlKey &&
+  !event.altKey &&
+  !event.isComposing &&
+  !isTyping(event.target);
+
+/** Fold only when the logo, full chat and theme buttons leave too little room for a field. */
+const PHONE_QUERY = "(width < 21rem)";
 
 /** The index (a few megabytes) is fetched only once the field is touched. */
 const useHits = (
@@ -38,19 +51,19 @@ const useHits = (
   const index = useQuery({ ...searchIndexQuery, enabled: isWanted, select: prepareIndex });
   const labels = useQuery({ ...labelIndexQuery, enabled: isWanted });
   if (index.isError || labels.isError) {
-    return { hits: [], status: "Не удалось загрузить поиск. Проверьте подключение." };
+    return { hits: [], status: "Не удалось загрузить поиск. Проверь подключение." };
   }
   if (index.data === undefined || labels.data === undefined) {
     return { hits: [], status: "Загружаем конспекты…" };
   }
   const hits = search(index.data, labels.data, query);
-  return { hits, status: hits.length === 0 ? "Ничего не нашлось." : "" };
+  return { hits, status: hits.length === 0 ? NOT_FOUND : "" };
 };
 
 const step = (active: number, delta: number, count: number): number =>
   count === 0 ? 0 : (active + delta + count) % count;
 
-/** ⌘K, Ctrl+K and «/» focus the field; a press outside folds the panel. */
+/** ⌘K, Ctrl+K, «/» and plain typing focus the field; a press outside folds the panel. */
 const useGlobalKeys = (
   boxRef: React.RefObject<HTMLDivElement | null>,
   fieldRef: React.RefObject<HTMLInputElement | null>,
@@ -58,12 +71,14 @@ const useGlobalKeys = (
 ): void => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (!isShortcut(event)) {
+      if (isShortcut(event)) {
+        event.preventDefault();
+        fieldRef.current?.focus();
         return;
       }
-
-      event.preventDefault();
-      fieldRef.current?.focus();
+      if (isTypeToSearch(event) && !event.defaultPrevented) {
+        fieldRef.current?.focus();
+      }
     };
     const onPointerDown = (event: PointerEvent): void => {
       if (event.target instanceof Node && boxRef.current?.contains(event.target) !== true) {
@@ -82,17 +97,20 @@ const useGlobalKeys = (
 /** Fetched quietly a few seconds after load on Wi-Fi, so the first query answers at once. */
 const PREFETCH_DELAY_MS = 3000;
 
-const usePrefetchWhenFree = (want: () => void): void => {
+const usePrefetchWhenFree = (setState: React.Dispatch<React.SetStateAction<State>>): void => {
   useEffect(() => {
     const { connection } = navigator as Navigator & { readonly connection?: ConnectionInfo };
     if (!canAutoDownload(connection, { isDesktop: isDesktopDevice() })) {
       return;
     }
+    const want = (): void => {
+      setState((old) => (old.isWanted ? old : { ...old, isWanted: true }));
+    };
     const timer = setTimeout(want, PREFETCH_DELAY_MS);
     return () => {
       clearTimeout(timer);
     };
-  }, [want]);
+  }, [setState]);
 };
 
 type State = {
@@ -247,10 +265,7 @@ export const HeaderSearch = () => {
     state.isOpen,
   );
   useGlobalKeys(boxRef, fieldRef, close);
-  const want = useCallback((): void => {
-    setState((old) => (old.isWanted ? old : { ...old, isWanted: true }));
-  }, [setState]);
-  usePrefetchWhenFree(want);
+  usePrefetchWhenFree(setState);
 
   useEffect(() => {
     if (state.isOpen) {
@@ -262,7 +277,7 @@ export const HeaderSearch = () => {
   const hasPanel = state.isOpen && state.query.trim() !== "";
   return (
     <div
-      className="md:min-w-0 md:flex-none"
+      className="min-w-0 flex-1 md:flex-none lg:relative"
       {...boxHandlers(close, () => {
         dismiss(isPhone);
       })}
@@ -308,6 +323,7 @@ export const HeaderSearch = () => {
               setState((old) => ({ ...old, limit: hits.length }));
             }}
             onPick={fold}
+            query={state.query}
             status={status}
           />
         </Popover>

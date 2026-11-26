@@ -9,14 +9,15 @@ import { type CourseId, findCourse } from "./courses.ts";
 export const SITE_NAME = "Конспекты ПИ ФКН";
 /** The same text is in `index.html`: the shell of the home page. */
 export const SITE_DESCRIPTION =
-  "Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика, алгоритмы и алгоритмические языки. Теория, подготовка к контрольным и коллоквиумам, PDF.";
+  "Конспекты лекций ПИ ФКН ВШЭ 2026/27 по алгебре, матанализу, дискретной математике и АиЯ: теория, подготовка к КР и коллоквиумам, PDF.";
+/** Bing and Yandex cut a snippet past this length; longer descriptions are trimmed at a word. */
+export const DESCRIPTION_MAX = 160;
 /**
 The address search engines keep: always the production domain, also in PR previews (they must not
 compete with the site) and on a `<owner>.github.io/<repo>` deploy.
 */
 export const SITE_URL = "https://hse.nalinor.dev/";
 export const REPO_URL = "https://github.com/iamnalinor/hse-lecture-notes";
-const RAW_URL = "https://raw.githubusercontent.com/iamnalinor/hse-lecture-notes/main/";
 const LLMS_URL = `${SITE_URL}llms.txt`;
 /** `index.html` hides this class once its inline script has run: see `fallbackBody`. */
 export const FALLBACK_CLASS = "static-fallback";
@@ -45,11 +46,33 @@ export type SitePage = Crumb & {
   readonly crumbs: readonly Crumb[];
   readonly description: string;
   readonly image: OgImageId;
-  /** `pdf/algebra-theory.pdf`. */
+  /** `pdf/algebra_theory.pdf`. */
   readonly pdf: string | undefined;
   /** Path of the Markdown source in the repository: `notes/algebra/01_sep03_matrices.md`. */
   readonly source: string | undefined;
+  /** ISO date of the first commit of the source (git), if known. */
+  readonly created?: string | undefined;
+  /** ISO date of the last commit of the source; for a course page, of its newest page. */
+  readonly modified?: string | undefined;
 };
+
+/** A description that fits a search snippet: cut at the last word before the limit, with an ellipsis. */
+export const snippet = (text: string): string => {
+  if (text.length <= DESCRIPTION_MAX) {
+    return text;
+  }
+  const cut = text.slice(0, DESCRIPTION_MAX - 1);
+  const space = cut.lastIndexOf(" ");
+  const words = space > 0 ? cut.slice(0, space) : cut;
+  return `${words.trimEnd().replace(/[,.:;—-]$/u, "")}…`;
+};
+
+/**
+The Markdown of a page on the site itself: the page address with `.md` (`/algebra/theory.md`), the
+home page as `/index.md`. Agents get it with one request, without GitHub or scripts.
+*/
+export const markdownUrl = (route: string): string =>
+  route === "" ? `${SITE_URL}index.md` : `${SITE_URL}${route}.md`;
 
 export const escapeHtml = (text: string): string =>
   text
@@ -69,27 +92,42 @@ export const routeOf = (pathname: string): string =>
     .filter((part) => part !== "")
     .join("/");
 
-export const sourceUrl = (source: string): string => `${RAW_URL}${source}`;
-
 const jsonLd = (data: object): string => {
   // A `</script>` inside a title must not close the script tag: `<` goes as its JSON escape.
   const json = JSON.stringify(data).replaceAll("<", String.raw`\u003c`);
   return `<script type="application/ld+json">${json}</script>`;
 };
 
-const structuredData = (page: SitePage): object => {
+/** `datePublished`/`dateModified` from git, only when known: a build date would be a lie. */
+const dates = (page: SitePage): object => ({
+  ...(page.created !== undefined && { datePublished: page.created }),
+  ...(page.modified !== undefined && { dateModified: page.modified }),
+});
+
+const structuredData = (page: SitePage): object[] => {
   if (page.route === "") {
-    return {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      description: page.description,
-      inLanguage: "ru",
-      name: SITE_NAME,
-      url: SITE_URL,
-    };
+    return [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        description: page.description,
+        inLanguage: "ru",
+        name: SITE_NAME,
+        url: SITE_URL,
+      },
+    ];
   }
   const trail = [{ name: SITE_NAME, route: "" }, ...page.crumbs, page];
-  return {
+  const webPage = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    description: page.description,
+    inLanguage: "ru",
+    name: page.name,
+    url: pageUrl(page.route),
+    ...dates(page),
+  };
+  const crumbs = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: trail.map((crumb, at) => ({
@@ -99,6 +137,7 @@ const structuredData = (page: SitePage): object => {
       position: at + 1,
     })),
   };
+  return [crumbs, webPage];
 };
 
 const imageTags = (id: OgImageId): string[] => [
@@ -115,19 +154,21 @@ the crumbs.
 */
 export const headTags = (page: SitePage): string => {
   const url = escapeHtml(pageUrl(page.route));
-  const source =
-    page.source === undefined
+  const source = [
+    `<link rel="alternate" type="text/markdown" href="${escapeHtml(markdownUrl(page.route))}" />`,
+  ];
+  const modified =
+    page.modified === undefined
       ? []
-      : [
-          `<link rel="alternate" type="text/markdown" href="${escapeHtml(sourceUrl(page.source))}" />`,
-        ];
+      : [`<meta property="article:modified_time" content="${escapeHtml(page.modified)}" />`];
   return [
     `<link rel="canonical" href="${url}" />`,
     `<meta property="og:url" content="${url}" />`,
     ...imageTags(page.image),
     ...source,
     `<link rel="alternate" type="text/plain" href="${LLMS_URL}" title="llms.txt" />`,
-    jsonLd(structuredData(page)),
+    ...modified,
+    ...structuredData(page).map((data) => jsonLd(data)),
   ].join("\n    ");
 };
 
@@ -163,6 +204,8 @@ export const fallbackArticle = (fragment: string, route: string): string => {
 type FallbackContent = {
   /** The page text from `fallbackArticle`: search engines, previews and LLMs read it in one request. */
   readonly article?: string | undefined;
+  /** A not-found page has no Markdown of its own: skip the page-specific link. */
+  readonly isNotFound?: boolean;
   /** A course page lists the Markdown of its lectures and documents. */
   readonly children?: readonly SitePage[];
 };
@@ -175,18 +218,19 @@ converters drop `<noscript>` together with its links. React replaces it on mount
 */
 export const fallbackBody = (
   page: SitePage,
-  { article, children = [] }: FallbackContent = {},
+  { article, children = [], isNotFound = false }: FallbackContent = {},
 ): string => {
   const link = (href: string, text: string): string => `<a href="${escapeHtml(href)}">${text}</a>`;
-  // A course page lists the Markdown of its lectures and documents: one step to any of them.
-  const sources = children
-    .filter((child) => child.source !== undefined)
-    .map((child) => `<li>${link(sourceUrl(child.source ?? ""), escapeHtml(child.name))}</li>`);
+  // A course page lists its lectures and documents: the page and its Markdown, one step to any of them.
+  const sources = children.map(
+    (child) =>
+      `<li>${link(pageUrl(child.route), escapeHtml(child.name))} (${link(markdownUrl(child.route), "Markdown")})</li>`,
+  );
   const links = [
-    ...(page.source === undefined
+    ...(isNotFound
       ? []
       : [
-          `Текст страницы в Markdown: ${link(sourceUrl(page.source), escapeHtml(sourceUrl(page.source)))}`,
+          `Текст страницы в Markdown: ${link(markdownUrl(page.route), escapeHtml(markdownUrl(page.route)))}`,
         ]),
     ...(page.pdf === undefined ? [] : [link(SITE_URL + page.pdf, "PDF")]),
     `Все страницы со ссылками на Markdown: ${link(LLMS_URL, LLMS_URL)}`,
@@ -198,9 +242,7 @@ export const fallbackBody = (
     `<h1>${escapeHtml(page.name)}</h1>`,
     `<p>${escapeHtml(page.description)}</p>`,
     `<ul>${items}</ul>`,
-    ...(sources.length === 0
-      ? []
-      : ["<p>Markdown страниц раздела:</p>", `<ul>${sources.join("")}</ul>`]),
+    ...(sources.length === 0 ? [] : ["<p>Страницы раздела:</p>", `<ul>${sources.join("")}</ul>`]),
     ...(article === undefined ? [] : [`<article>\n${article}\n</article>`]),
     "</div>",
   ].join("");
@@ -210,7 +252,11 @@ export const sitemapXml = (pages: readonly SitePage[]): string =>
   [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...pages.map((page) => `  <url><loc>${escapeHtml(pageUrl(page.route))}</loc></url>`),
+    ...pages.map((page) => {
+      const lastmod =
+        page.modified === undefined ? "" : `<lastmod>${escapeHtml(page.modified)}</lastmod>`;
+      return `  <url><loc>${escapeHtml(pageUrl(page.route))}</loc>${lastmod}</url>`;
+    }),
     "</urlset>",
     "",
   ].join("\n");
@@ -225,9 +271,7 @@ export type LlmsSection = {
 
 /** The link goes to the Markdown: the source an LLM reads best (the page copy has the text too). */
 const llmsLine = (page: SitePage): string =>
-  page.source === undefined
-    ? `- [${page.name}](${pageUrl(page.route)}): ${page.description}`
-    : `- [${page.name}](${sourceUrl(page.source)}): ${page.description}. Страница: ${pageUrl(page.route)}`;
+  `- [${page.name}](${markdownUrl(page.route)}): ${page.description}. Страница: ${pageUrl(page.route)}`;
 
 /** https://llmstxt.org: a map of the site with links to the Markdown each page is built from. */
 export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): string =>
@@ -236,7 +280,8 @@ export const llmsTxt = (summary: string, sections: readonly LlmsSection[]): stri
     "",
     `> ${summary}`,
     "",
-    "Сайт — одностраничное приложение; HTML каждой страницы содержит и её текст (формулы — LaTeX), но точнее всего Markdown-исходники:",
+    "Сайт — одностраничное приложение; HTML каждой страницы содержит и её текст (формулы — LaTeX), но точнее всего Markdown:",
+    "добавь `.md` к адресу любой страницы без последнего слеша (`/algebra/theory/` → `/algebra/theory.md`). Исходники:",
     `весь репозиторий — ${REPO_URL}, конспекты лекций — \`notes/<курс>/<week_id>.md\`, теория курса — \`theory/<курс>.md\`,`,
     "план учебной дисциплины — `program/<курс>.md`, подготовка к контрольным и коллоквиумам — `prep/<курс>/<id>.md`.",
     "Формулы — LaTeX, блоки (определения, теоремы, задачи) — fenced divs Pandoc с метками вида `{#thm:lec04:laplace}`.",

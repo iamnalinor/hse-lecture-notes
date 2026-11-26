@@ -20,8 +20,10 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pypandoc
 import yaml
@@ -39,6 +41,10 @@ QUESTION_KEYS = {"id", "kind", "topic", "text", "refs", "answer"}
 NOT_AN_ANSWER = {"section"}
 MARK_RE = re.compile(r"<!--BANK (\S+)-->")
 END_MARK = "<!--BANK-END-->"
+MIN_ONE_OF_OPTIONS = 2
+SIMILAR_TICKETS_FACTOR = 3  # вопросов вида меньше, чем 3 × count, — билеты будут похожи
+
+Bank = dict[str, Any]  # содержимое <prep>-bank.yaml
 
 
 class BankError(Exception):
@@ -51,15 +57,26 @@ def bank_path(prep_md: Path) -> Path:
 
 
 def _double_quoted_backslashes(text: str) -> list[str]:
-    """Строки в "…" с обратной косой чертой: `"\\varepsilon"` даёт вертикальную табуляцию, `"\\neq"` — перевод строки."""
-    bad = []
-    for node in _scalars(yaml.compose(text)):
-        if node.style == '"' and "\\" in text[node.start_mark.index : node.end_mark.index]:
-            bad.append(f"строка {node.start_mark.line + 1}")
-    return bad
+    """Строки в "…" с обратной косой чертой: `"\\varepsilon"` дает вертикальную табуляцию, `"\\neq"` — перевод строки."""
+    return [
+        f"строка {_start_mark(node).line + 1}"
+        for node in _scalars(yaml.compose(text))
+        if node.style == '"' and "\\" in text[_start_mark(node).index : _end_mark(node).index]
+    ]
 
 
-def _scalars(node) -> list:
+def _start_mark(node: yaml.Node) -> yaml.Mark:
+    # у узла, который вернул compose, позиция всегда есть; тип в PyYAML — Optional
+    assert node.start_mark is not None
+    return node.start_mark
+
+
+def _end_mark(node: yaml.Node) -> yaml.Mark:
+    assert node.end_mark is not None
+    return node.end_mark
+
+
+def _scalars(node: yaml.Node | None) -> list[yaml.ScalarNode]:
     if node is None:
         return []
     if isinstance(node, yaml.ScalarNode):
@@ -75,7 +92,7 @@ def _truncated_by_comment(text: str) -> list[str]:
     """`text: a # b` — YAML читает «a», а « # b» молча считает комментарием."""
     bad = []
 
-    def walk(node) -> None:
+    def walk(node: yaml.Node) -> None:
         if isinstance(node, yaml.SequenceNode):
             for x in node.value:
                 walk(x)
@@ -87,16 +104,17 @@ def _truncated_by_comment(text: str) -> list[str]:
                     and isinstance(v, yaml.ScalarNode)
                     and v.style is None
                 ):
-                    rest = text[v.end_mark.index :].split("\n", 1)[0]
+                    end = _end_mark(v)
+                    rest = text[end.index :].split("\n", 1)[0]
                     if rest.lstrip().startswith("#"):
-                        bad.append(f"строка {v.end_mark.line + 1}")
+                        bad.append(f"строка {end.line + 1}")
                 walk(v)
 
     walk(yaml.compose(text))
     return bad
 
 
-def load(path: Path) -> dict:
+def load(path: Path) -> Bank:
     text = path.read_text(encoding="utf-8")
     try:
         bad = _double_quoted_backslashes(text)
@@ -128,13 +146,13 @@ def load(path: Path) -> dict:
 class Labels:
     """Что знает проверка: метки конспектов курса (`id → {type, week_id, …}`) и свои метки страницы."""
 
-    notes: dict[str, dict]
+    notes: dict[str, dict[str, Any]]
     own: dict[str, str]  # id → type (section, remark, problem…)
 
 
-def ticket_parts(ticket: list) -> tuple[list[tuple[str, object]], list[str]]:
-    """Все пункты билета с местом для сообщений; `one_of` — варианты пункта, из них сайт берёт один."""
-    parts: list[tuple[str, object]] = []
+def ticket_parts(ticket: list[Any]) -> tuple[list[tuple[str, Any]], list[str]]:
+    """Все пункты билета с местом для сообщений; `one_of` — варианты пункта, из них сайт берет один."""
+    parts: list[tuple[str, Any]] = []
     errors: list[str] = []
     for i, entry in enumerate(ticket, 1):
         where = f"ticket[{i}]"
@@ -142,7 +160,7 @@ def ticket_parts(ticket: list) -> tuple[list[tuple[str, object]], list[str]]:
             options = entry["one_of"]
             if set(entry) != {"one_of"}:
                 errors.append(f"{where}: у пункта с one_of других ключей нет")
-            if not isinstance(options, list) or len(options) < 2:
+            if not isinstance(options, list) or len(options) < MIN_ONE_OF_OPTIONS:
                 errors.append(
                     f"{where}: one_of — список из двух и больше вариантов (каждый — список пунктов)"
                 )
@@ -157,12 +175,103 @@ def ticket_parts(ticket: list) -> tuple[list[tuple[str, object]], list[str]]:
     return parts, errors
 
 
-def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list[str]]:
-    """(ошибки, предупреждения) по структуре банка; тексты проверяются отдельно (по AST)."""
+def _check_ticket_part(where: str, entry: Any, kinds: dict[str, int], errors: list[str]) -> None:
+    """Один пункт билета; объявленный вид попадает в `kinds` (вид → count)."""
+    if not isinstance(entry, dict):
+        errors.append(f"{where}: нужен словарь kind, title, count, points")
+        return
+    errors.extend(f"{where}: неизвестный ключ {k!r}" for k in sorted(set(entry) - TICKET_KEYS))
+    kind = entry.get("kind")
+    if not isinstance(kind, str) or not SLUG_RE.match(kind):
+        errors.append(f"{where}: kind — латинский slug (proof, definition…), а не {kind!r}")
+        return
+    if kind in kinds:
+        errors.append(f"{where}: вид {kind} уже есть в билете — увеличь count")
+    count = entry.get("count")
+    if type(count) is not int or count < 1:
+        errors.append(f"{where}: count — целое число ≥ 1, а не {count!r}")
+        count = 0
+    kinds[kind] = count
+    if not isinstance(entry.get("title"), str) or not entry["title"].strip():
+        errors.append(f"{where}: нет title — так пункт называется в билете")
+    if "points" in entry and not isinstance(entry["points"], str):
+        errors.append(f"{where}: points — строка («2 балла»), а не {entry['points']!r}")
+    if "proofs" in entry and not isinstance(entry["proofs"], bool):
+        errors.append(f"{where}: proofs — true или false, а не {entry['proofs']!r}")
+
+
+def _check_question_answer(where: str, q: Bank, labels: Labels, errors: list[str]) -> None:
+    answer = q.get("answer")
+    if answer is not None and (not isinstance(answer, str) or not answer.strip()):
+        errors.append(f"{where}: answer — непустая строка")
+    refs = q.get("refs", [])
+    if not isinstance(refs, list) or not all(isinstance(r, str) for r in refs):
+        errors.append(f"{where}: refs — список меток")
+        refs = []
+    if not refs and answer is None:
+        errors.append(f"{where}: нет ответа — дай refs (метки блоков) или answer")
+    if len(set(refs)) != len(refs):
+        errors.append(f"{where}: метка в refs повторяется")
+    for ref in refs:
+        kind_of = labels.own.get(ref) or (labels.notes.get(ref) or {}).get("type")
+        if kind_of is None:
+            errors.append(f"{where}: метки {ref} нет ни в конспектах курса, ни на странице")
+        elif kind_of in NOT_AN_ANSWER:
+            errors.append(f"{where}: {ref} — раздел; в refs — блоки (определение, теорема, замечание…)")
+
+
+def _check_question(
+    i: int, q: Any, exam: str, labels: Labels, kinds: dict[str, int], seen: set[str], errors: list[str]
+) -> Bank | None:
+    """Один вопрос; возвращает его, если вид объявлен в билете (для подсчета вопросов вида)."""
+    if not isinstance(q, dict):
+        errors.append(f"questions[{i}]: нужен словарь")
+        return None
+    qid = q.get("id")
+    where = f"вопрос {qid}" if isinstance(qid, str) else f"questions[{i}]"
+    errors.extend(f"{where}: неизвестный ключ {k!r}" for k in sorted(set(q) - QUESTION_KEYS))
+    if not isinstance(qid, str) or not SLUG_RE.match(qid):
+        errors.append(f"{where}: id — латинский slug, а не {qid!r}")
+    elif qid in seen:
+        errors.append(f"{where}: id повторяется")
+    else:
+        seen.add(qid)
+    kind = q.get("kind")
+    declared = kind in kinds
+    if not declared:
+        errors.append(f"{where}: вид {kind!r} не объявлен в ticket ({', '.join(kinds)})")
+    topic = q.get("topic")
+    if not isinstance(topic, str) or labels.own.get(f"sec:{exam}:{topic}") != "section":
+        errors.append(f"{where}: topic={topic!r} — нет раздела {{#sec:{exam}:{topic}}} на странице")
+    if not isinstance(q.get("text"), str) or not q["text"].strip():
+        errors.append(f"{where}: нет text")
+    _check_question_answer(where, q, labels, errors)
+    return q if declared else None
+
+
+def _check_coverage(kinds: dict[str, int], per_kind: dict[str, list[Bank]]) -> tuple[list[str], list[str]]:
+    """Хватает ли вопросов каждого вида на билет и на разнообразие билетов."""
     errors: list[str] = []
     warnings: list[str] = []
-    for k in sorted(set(bank) - TOP_KEYS):
-        errors.append(f"неизвестный ключ {k!r} (есть ticket и questions)")
+    for kind, count in kinds.items():
+        got = per_kind[kind]
+        if len(got) < count:
+            errors.append(f"вопросов вида {kind} {len(got)}, а в билете их {count}")
+            continue
+        topics = {q.get("topic") for q in got}
+        if len(topics) < count:
+            warnings.append(
+                f"у вопросов вида {kind} всего {len(topics)} тем при {count} в билете: темы будут повторяться"
+            )
+        if len(got) < SIMILAR_TICKETS_FACTOR * count:
+            warnings.append(f"вопросов вида {kind} {len(got)} при {count} в билете: билеты будут похожи")
+    return errors, warnings
+
+
+def check_schema(bank: Bank, exam: str, labels: Labels) -> tuple[list[str], list[str]]:
+    """(ошибки, предупреждения) по структуре банка; тексты проверяются отдельно (по AST)."""
+    errors: list[str] = []
+    errors.extend(f"неизвестный ключ {k!r} (есть ticket и questions)" for k in sorted(set(bank) - TOP_KEYS))
     if "about" in bank and (not isinstance(bank["about"], str) or not bank["about"].strip()):
         errors.append("about — непустая строка: подпись генератора на сайте")
     ticket = bank.get("ticket")
@@ -178,123 +287,51 @@ def check_schema(bank: dict, exam: str, labels: Labels) -> tuple[list[str], list
     parts, part_errors = ticket_parts(ticket)
     errors += part_errors
     for where, entry in parts:
-        if not isinstance(entry, dict):
-            errors.append(f"{where}: нужен словарь kind, title, count, points")
-            continue
-        for k in sorted(set(entry) - TICKET_KEYS):
-            errors.append(f"{where}: неизвестный ключ {k!r}")
-        kind = entry.get("kind")
-        if not isinstance(kind, str) or not SLUG_RE.match(kind):
-            errors.append(f"{where}: kind — латинский slug (proof, definition…), а не {kind!r}")
-            continue
-        if kind in kinds:
-            errors.append(f"{where}: вид {kind} уже есть в билете — увеличь count")
-        count = entry.get("count")
-        if type(count) is not int or count < 1:
-            errors.append(f"{where}: count — целое число ≥ 1, а не {count!r}")
-            count = 0
-        kinds[kind] = count
-        if not isinstance(entry.get("title"), str) or not entry["title"].strip():
-            errors.append(f"{where}: нет title — так пункт называется в билете")
-        if "points" in entry and not isinstance(entry["points"], str):
-            errors.append(f"{where}: points — строка («2 балла»), а не {entry['points']!r}")
-        if "proofs" in entry and not isinstance(entry["proofs"], bool):
-            errors.append(f"{where}: proofs — true или false, а не {entry['proofs']!r}")
+        _check_ticket_part(where, entry, kinds, errors)
 
     seen: set[str] = set()
-    per_kind: dict[str, list[dict]] = {k: [] for k in kinds}
+    per_kind: dict[str, list[Bank]] = {k: [] for k in kinds}
     for i, q in enumerate(questions, 1):
-        if not isinstance(q, dict):
-            errors.append(f"questions[{i}]: нужен словарь")
-            continue
-        qid = q.get("id")
-        where = f"вопрос {qid}" if isinstance(qid, str) else f"questions[{i}]"
-        for k in sorted(set(q) - QUESTION_KEYS):
-            errors.append(f"{where}: неизвестный ключ {k!r}")
-        if not isinstance(qid, str) or not SLUG_RE.match(qid):
-            errors.append(f"{where}: id — латинский slug, а не {qid!r}")
-        elif qid in seen:
-            errors.append(f"{where}: id повторяется")
-        else:
-            seen.add(qid)
-        kind = q.get("kind")
-        if kind not in kinds:
-            errors.append(f"{where}: вид {kind!r} не объявлен в ticket ({', '.join(kinds)})")
-        else:
-            per_kind[kind].append(q)
-        topic = q.get("topic")
-        if not isinstance(topic, str) or labels.own.get(f"sec:{exam}:{topic}") != "section":
-            errors.append(f"{where}: topic={topic!r} — нет раздела {{#sec:{exam}:{topic}}} на странице")
-        if not isinstance(q.get("text"), str) or not q["text"].strip():
-            errors.append(f"{where}: нет text")
-        answer = q.get("answer")
-        if answer is not None and (not isinstance(answer, str) or not answer.strip()):
-            errors.append(f"{where}: answer — непустая строка")
-        refs = q.get("refs", [])
-        if not isinstance(refs, list) or not all(isinstance(r, str) for r in refs):
-            errors.append(f"{where}: refs — список меток")
-            refs = []
-        if not refs and answer is None:
-            errors.append(f"{where}: нет ответа — дай refs (метки блоков) или answer")
-        if len(set(refs)) != len(refs):
-            errors.append(f"{where}: метка в refs повторяется")
-        for ref in refs:
-            kind_of = labels.own.get(ref) or (labels.notes.get(ref) or {}).get("type")
-            if kind_of is None:
-                errors.append(f"{where}: метки {ref} нет ни в конспектах курса, ни на странице")
-            elif kind_of in NOT_AN_ANSWER:
-                errors.append(f"{where}: {ref} — раздел; в refs — блоки (определение, теорема, замечание…)")
-
-    for kind, count in kinds.items():
-        got = per_kind.get(kind, [])
-        if len(got) < count:
-            errors.append(f"вопросов вида {kind} {len(got)}, а в билете их {count}")
-            continue
-        topics = {q.get("topic") for q in got}
-        if len(topics) < count:
-            warnings.append(
-                f"у вопросов вида {kind} всего {len(topics)} тем при {count} в билете: темы будут повторяться"
-            )
-        if len(got) < 3 * count:
-            warnings.append(f"вопросов вида {kind} {len(got)} при {count} в билете: билеты будут похожи")
-    return errors, warnings
+        checked = _check_question(i, q, exam, labels, kinds, seen, errors)
+        if checked is not None:
+            per_kind[checked["kind"]].append(checked)
+    coverage_errors, warnings = _check_coverage(kinds, per_kind)
+    return errors + coverage_errors, warnings
 
 
-def snippets_markdown(bank: dict) -> str:
+def snippets_markdown(bank: Bank) -> str:
     """Тексты вопросов и ответов: каждый — div `#<id>--text` или `#<id>--answer`."""
-    parts = []
-    for q in bank.get("questions") or []:
-        if not isinstance(q, dict) or not isinstance(q.get("id"), str):
-            continue
-        for field in ("text", "answer"):
-            if isinstance(q.get(field), str):
-                parts.append(f"::: {{#{q['id']}--{field}}}\n{q[field].strip()}\n:::\n")
+    parts = [
+        f"::: {{#{q['id']}--{field}}}\n{q[field].strip()}\n:::\n"
+        for q in bank.get("questions") or []
+        if isinstance(q, dict) and isinstance(q.get("id"), str)
+        for field in ("text", "answer")
+        if isinstance(q.get(field), str)
+    ]
     return "\n".join(parts)
 
 
-def snippet_ast(markdown: str, fmt: str) -> dict:
+def snippet_ast(markdown: str, fmt: str) -> dict[str, Any]:
     return json.loads(pypandoc.convert_text(markdown, "json", format=fmt, extra_args=["--quiet"]))
 
 
-def check_snippets(ast: dict) -> list[str]:
+def check_snippets(ast: dict[str, Any]) -> list[str]:
     """Каждый текст — ровно один div `#<id>--<поле>`; лишнее `:::` внутри текста ломает разбор."""
-    errors = []
-    for b in ast["blocks"]:
-        ident = b["c"][0][0] if b["t"] == "Div" else ""
-        if "--" not in ident:
-            errors.append(
-                "текст вопроса не разобрался в отдельный блок: лишняя строка ::: в text или answer?"
-            )
-    return errors
+    return [
+        "текст вопроса не разобрался в отдельный блок: лишняя строка ::: в text или answer?"
+        for b in ast["blocks"]
+        if "--" not in (b["c"][0][0] if b["t"] == "Div" else "")
+    ]
 
 
-def snippets_marked(bank: dict) -> str:
+def snippets_marked(bank: Bank) -> str:
     """Тексты между `<!--BANK <id>:<поле>-->` и `<!--BANK-END-->`, для рендера в конце страницы."""
-    parts = []
-    for q in bank["questions"]:
-        for field in ("text", "answer"):
-            if isinstance(q.get(field), str):
-                parts.append(f"<!--BANK {q['id']}:{field}-->\n\n{q[field].strip()}\n\n{END_MARK}\n")
+    parts = [
+        f"<!--BANK {q['id']}:{field}-->\n\n{q[field].strip()}\n\n{END_MARK}\n"
+        for q in bank["questions"]
+        for field in ("text", "answer")
+        if isinstance(q.get(field), str)
+    ]
     return "\n".join(parts)
 
 
@@ -309,11 +346,11 @@ def split_rendered(page_html: str) -> dict[str, str]:
     return out
 
 
-def missing_proofs(bank: dict, exam: str, has_proof) -> list[str]:
+def missing_proofs(bank: Bank, exam: str, has_proof: Callable[[str], bool]) -> list[str]:
     """Вопросы видов с `proofs: true` без доказательства в ответе.
 
     Доказательство есть, если есть свой `answer`, ход доказательства `rem:<exam>:proof-…`, задача (с
-    решением) или блок конспекта, за которым идёт `::: proof` (`has_proof(метка)`; сайт покажет его).
+    решением) или блок конспекта, за которым идет `::: proof` (`has_proof(метка)`; сайт покажет его).
     """
     kinds = {t["kind"] for _, t in ticket_parts(bank["ticket"])[0] if t.get("proofs")}
     errors = []
@@ -330,7 +367,7 @@ def missing_proofs(bank: dict, exam: str, has_proof) -> list[str]:
     return errors
 
 
-def _part(t: dict) -> dict:
+def _part(t: Bank) -> Bank:
     return {
         "kind": t["kind"],
         "title": t["title"],
@@ -340,7 +377,13 @@ def _part(t: dict) -> dict:
     }
 
 
-def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rendered: dict[str, str]) -> dict:
+def export(
+    bank: Bank,
+    exam: str,
+    notes: dict[str, dict[str, Any]],
+    own: list[dict[str, Any]],
+    rendered: dict[str, str],
+) -> Bank:
     """bank.json: `own` — метки страницы из её meta.json, `rendered` — из `split_rendered`."""
     own_ids = {e["id"] for e in own}
     topics = {
@@ -348,21 +391,19 @@ def export(bank: dict, exam: str, notes: dict[str, dict], own: list[dict], rende
         for e in own
         if e["type"] == "section" and e["id"].startswith(f"sec:{exam}:")
     }
-    questions = []
-    for q in bank["questions"]:
-        questions.append(
-            {
-                "id": q["id"],
-                "kind": q["kind"],
-                "topic": q["topic"],
-                "text": rendered.get(f"{q['id']}:text", ""),
-                "answer": rendered.get(f"{q['id']}:answer", ""),
-                "refs": [
-                    {"id": r, "doc": exam if r in own_ids else notes[r]["week_id"]}
-                    for r in q.get("refs") or []
-                ],
-            }
-        )
+    questions = [
+        {
+            "id": q["id"],
+            "kind": q["kind"],
+            "topic": q["topic"],
+            "text": rendered.get(f"{q['id']}:text", ""),
+            "answer": rendered.get(f"{q['id']}:answer", ""),
+            "refs": [
+                {"id": r, "doc": exam if r in own_ids else notes[r]["week_id"]} for r in q.get("refs") or []
+            ],
+        }
+        for q in bank["questions"]
+    ]
     used = {q["topic"] for q in questions}
     return {
         "about": " ".join(str(bank.get("about") or "").split()),

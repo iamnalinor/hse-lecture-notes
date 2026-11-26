@@ -1,0 +1,315 @@
+import { findCourse } from "../courses.ts";
+import { plural } from "../text.ts";
+
+declare const CHAT_DEFAULT_QUESTION_LIMIT: number;
+
+export const resolveQuestionLimit = (
+  limit?: number,
+  fallback = CHAT_DEFAULT_QUESTION_LIMIT,
+): number =>
+  typeof limit === "number" && Number.isSafeInteger(limit) && limit > 0 ? limit : fallback;
+
+export type ChatTier = "default" | "extended" | "guest" | "student";
+
+export type ChatBlockCode =
+  | "auth_required"
+  | "concurrent_run"
+  | "global_budget_exceeded"
+  | "guest_budget_exceeded"
+  | "oauth_unavailable"
+  | "rate_limited"
+  | "service_unavailable"
+  | "tier_quota_exceeded";
+
+export type ChatBlock = {
+  readonly code: ChatBlockCode;
+  readonly nextAvailableAt?: null | number;
+  readonly retryAfterSec?: null | number;
+};
+
+export type ChatDegraded = {
+  readonly active: boolean;
+  readonly restoresAt?: null | number;
+};
+
+export type ChatUser = {
+  readonly id: number;
+  readonly name: string;
+};
+
+export type ChatQuote = {
+  readonly messageId?: string;
+  readonly blockId?: string;
+  readonly label: string;
+  readonly sectionId?: string;
+  readonly tex: string;
+};
+
+export type ChatStep = {
+  readonly count?: number;
+  readonly kind: "note" | "read" | "sample" | "search";
+  readonly more?: number;
+  readonly note?: string;
+  readonly q?: string;
+  readonly res?: readonly string[];
+  readonly links?: readonly string[];
+  readonly state: "done" | "error" | "running";
+  readonly target?: string;
+};
+
+export type ChatMessageStatus = "done" | "error" | "incomplete" | "running" | "stopped";
+
+export type ChatMessage = {
+  readonly suggestion?: null | string;
+  readonly page: ChatDocContext;
+  readonly contentTex: string;
+  readonly createdAt: number;
+  readonly errorMessage: null | string;
+  readonly id: string;
+  readonly quote: ChatQuote | null;
+  readonly renderKey?: string;
+  readonly pendingRequestId?: null | string;
+  readonly role: "assistant" | "user";
+  readonly runId: null | string;
+  readonly seq: number;
+  readonly status: ChatMessageStatus;
+  readonly steps: readonly ChatStep[];
+};
+
+export type ChatThreadSummary = {
+  readonly contextLimited?: boolean;
+  readonly id: string;
+  readonly generatedTitle?: null | string;
+  readonly title: string;
+  readonly updatedAt: number;
+};
+
+/**
+`title` is the server's fallback (the first question) for threads without a topic. While a run is
+live, the question must not appear: the topic arrives within a second and would replace it.
+*/
+export const threadDisplayTitle = (
+  thread: ChatThreadSummary | undefined,
+  isLive = false,
+): string => {
+  const generated = thread?.generatedTitle;
+  if (generated !== undefined && generated !== null && generated !== "") {
+    return generated;
+  }
+  return isLive ? "Чат" : (thread?.title ?? "Чат");
+};
+
+export type ChatThread = {
+  readonly beforeSeq?: null | number;
+  readonly contextLimited?: boolean;
+  readonly createdAt: number;
+  readonly id: string;
+  readonly messages: readonly ChatMessage[];
+  readonly generatedTitle?: null | string;
+  readonly title: string;
+  readonly updatedAt: number;
+};
+
+export type ChatDocContext = {
+  readonly course: string;
+  readonly docId: string;
+};
+
+export type ChatPlateCopy = {
+  readonly body: string;
+  readonly showLogin: boolean;
+  readonly title: string;
+};
+
+/** Extracts `{ course, docId }` on document routes (`/<course>/<docId>`), else `null`. */
+export const parseDocContext = (pathname: string): ChatDocContext => {
+  const [slug, docId = "", ...rest] = pathname.split("/").filter(Boolean);
+  const course = findCourse(slug);
+  return course === undefined || rest.length > 0
+    ? { course: "", docId: "" }
+    : { course: course.id, docId };
+};
+
+/** Formats remaining time until `targetMs` in Russian, e.g. «12 часов 37 минут». */
+export const formatRemainingDuration = (targetMs: number, nowMs: number): string => {
+  const diffMin = Math.max(1, Math.ceil((targetMs - nowMs) / 60_000));
+  const hours = Math.floor(diffMin / 60);
+  const mins = diffMin % 60;
+  const hWord = plural(hours, ["час", "часа", "часов"]);
+  const mWord = plural(mins, ["минуту", "минуты", "минут"]);
+  if (hours > 0 && mins > 0) {
+    return `${hours} ${hWord} ${mins} ${mWord}`;
+  }
+  if (hours > 0) {
+    return `${hours} ${hWord}`;
+  }
+  return `${mins} ${mWord}`;
+};
+
+/** Formats degraded quality banner text matching the approved prototype copy. */
+export const formatDegradedCaption = (degraded: ChatDegraded, nowMs: number): null | string => {
+  if (
+    !degraded.active ||
+    (typeof degraded.restoresAt === "number" && degraded.restoresAt <= nowMs)
+  ) {
+    return null;
+  }
+  if (degraded.restoresAt !== undefined && degraded.restoresAt !== null) {
+    const dur = formatRemainingDuration(degraded.restoresAt, nowMs);
+    return `Повышенное число запросов. Качество ответов снижено — вернется через ${dur}`;
+  }
+  return "Повышенное число запросов. Качество ответов временно снижено";
+};
+
+/** Backoff schedule for compact `GET /v1/runs/:runId/status` polling after a stream disconnects. */
+export const nextRunPollDelayMs = (attempt: number): number => {
+  if (attempt <= 1) {
+    return 2000;
+  }
+  if (attempt <= 4) {
+    return 4000;
+  }
+  return 6000;
+};
+
+const TEX_COMMANDS: Readonly<Record<string, string>> = {
+  alpha: "α",
+  beta: "β",
+  cdot: "·",
+  delta: "δ",
+  epsilon: "ε",
+  exists: "∃",
+  forall: "∀",
+  gamma: "γ",
+  ge: "≥",
+  geq: "≥",
+  in: "∈",
+  infty: "∞",
+  lambda: "λ",
+  le: "≤",
+  Leftrightarrow: "⇔",
+  leq: "≤",
+  ne: "≠",
+  neq: "≠",
+  notin: "∉",
+  phi: "φ",
+  pi: "π",
+  pm: "±",
+  Rightarrow: "⇒",
+  sigma: "σ",
+  subset: "⊆",
+  subseteq: "⊆",
+  times: "×",
+  to: "→",
+  varepsilon: "ε",
+  varphi: "φ",
+};
+
+const BLACKBOARD_LETTERS: Readonly<Record<string, string>> = {
+  C: "ℂ",
+  N: "ℕ",
+  Q: "ℚ",
+  R: "ℝ",
+  Z: "ℤ",
+};
+
+/** Converts LaTeX/Markdown assistant text into clean readable plain text for clipboard copy. */
+export const toPlainCopyText = (source: string): string =>
+  source
+    .replaceAll(/\[([^\]]{1,200})\]\(#[^)]{1,120}\)/g, "$1")
+    .replaceAll(/\*\*([^*]{1,400})\*\*/g, "$1")
+    .replaceAll(/\\(?:text|mathrm|mathbf|operatorname)\{([^{}]{1,200})\}/g, "$1")
+    .replaceAll(/\\frac\{([^{}]{1,120})\}\{([^{}]{1,120})\}/g, "($1)/($2)")
+    .replaceAll(
+      /\\mathbb\{([CNQRZ])\}/g,
+      (_m, letter: string) => BLACKBOARD_LETTERS[letter] ?? letter,
+    )
+    .replaceAll(/\\([a-z]+)/gi, (match, cmd: string) => TEX_COMMANDS[cmd] ?? match)
+    .replaceAll("$", "")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .trim();
+
+const waitCopy = (block: ChatBlock, nowMs: number): string =>
+  block.nextAvailableAt === undefined || block.nextAvailableAt === null
+    ? "Попробуй снова позже."
+    : `Новые сообщения появятся через ${formatRemainingDuration(block.nextAvailableAt, nowMs)}.`;
+
+const quotaPlate = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateCopy => {
+  const wait = waitCopy(block, nowMs);
+  return {
+    body:
+      tier === "default"
+        ? `${wait} У студентов 1 курса ПИ лимиты выше — войди с аккаунта из чата потока.`
+        : wait,
+    showLogin: tier === "default",
+    title: "Дневной лимит сообщений исчерпан",
+  };
+};
+
+const guestLoginBody = (block: ChatBlock, nowMs: number): string =>
+  typeof block.nextAvailableAt === "number"
+    ? `Лимит гостевых ответов исчерпан. ${waitCopy(block, nowMs)}`
+    : "Войди через Telegram, чтобы отправить вопрос.";
+
+/** Returns user-facing plate text for every limit / service block code. */
+export const blockPlateCopy = (block: ChatBlock, tier: ChatTier, nowMs: number): ChatPlateCopy => {
+  switch (block.code) {
+    case "auth_required": {
+      return {
+        body: guestLoginBody(block, nowMs),
+        showLogin: true,
+        title: "Войди, чтобы продолжить",
+      };
+    }
+    case "guest_budget_exceeded": {
+      return {
+        body: "Суточный бюджет для гостей исчерпан. Войди через Telegram, чтобы продолжить общение.",
+        showLogin: true,
+        title: "Гостевой доступ временно ограничен",
+      };
+    }
+    case "tier_quota_exceeded": {
+      return quotaPlate(block, tier, nowMs);
+    }
+    case "global_budget_exceeded": {
+      return {
+        body: "Недельный бюджет сервиса временно исчерпан. Доступ восстановится автоматически.",
+        showLogin: false,
+        title: "Чат временно на паузе",
+      };
+    }
+    case "rate_limited": {
+      const sec = block.retryAfterSec ?? 15;
+      return {
+        body: `Слишком много запросов подряд. Подожди ${sec} сек. и отправь снова.`,
+        showLogin: false,
+        title: "Не так быстро",
+      };
+    }
+    case "concurrent_run": {
+      return {
+        body: "Дождись завершения текущего ответа, прежде чем отправлять новый вопрос.",
+        showLogin: false,
+        title: "Ответ еще готовится",
+      };
+    }
+    case "oauth_unavailable":
+    case "service_unavailable": {
+      return {
+        body: "ИИ-сервис сейчас недоступен. Черновик сохранен — попробуй чуть позже.",
+        showLogin: false,
+        title: "Сервис временно недоступен",
+      };
+    }
+  }
+};
+
+export const parseChatSuggestion = (value: unknown): null | string =>
+  typeof value === "string" &&
+  value.trim() !== "" &&
+  (value.match(/./gsu)?.length ?? 0) <= 80 &&
+  !/[\p{Cc}\p{Cf}]/u.test(value)
+    ? value
+    : null;

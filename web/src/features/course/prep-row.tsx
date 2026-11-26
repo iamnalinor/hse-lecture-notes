@@ -48,7 +48,7 @@ export const PrepRow = ({ course, preps, today }: Props) =>
           <Link className={style(prep, today)} key={prep.id} to={paths.prep(course, prep.id)}>
             {prepName(prep.id, prep.quizNumber)}
             {isDated(prep) && isUpcoming(prep, today) && (
-              <span className="font-normal"> · {prepWhen(prep)}</span>
+              <span className="font-normal"> ·&nbsp;{prepWhen(prep)}</span>
             )}
           </Link>
         ))}

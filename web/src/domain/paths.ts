@@ -11,6 +11,10 @@ export const paths = {
   theory: (course: string, hash?: string): string => withHash(`/${course}/theory`, hash),
 } as const;
 
+/** File name of a document's PDF: `_` everywhere (`discrete_kr1_cheatsheet_1side.pdf`). */
+export const pdfFile = (course: string, docId: string): string =>
+  `${course}_${docId.replaceAll("-", "_")}.pdf`;
+
 /** Lecture, theory, program and prep pages read a document (TOC + text); the rest are lists. */
 export const isDocumentPath = (pathname: string): boolean => {
   const parts = pathname.split("/").filter((part) => part !== "");

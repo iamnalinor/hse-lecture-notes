@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика, алгоритмы и алгоритмические языки. Теория, подготовка к контрольным и коллоквиумам, PDF." />
+    <meta name="description" content="Конспекты лекций ПИ ФКН ВШЭ 2026/27 по алгебре, матанализу, дискретной математике и АиЯ: теория, подготовка к КР и коллоквиумам, PDF." />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#141415" media="(prefers-color-scheme: dark)" />
@@ -11,11 +11,21 @@
     <meta property="og:locale" content="ru_RU" />
     <meta property="og:site_name" content="Конспекты ПИ ФКН" />
     <meta property="og:title" content="Конспекты ПИ ФКН" />
-    <meta property="og:description" content="Конспекты лекций 1 курса ПИ ФКН ВШЭ 2026/27: алгебра, математический анализ, дискретная математика, алгоритмы и алгоритмические языки. Теория, подготовка к контрольным и коллоквиумам, PDF." />
+    <meta property="og:description" content="Конспекты лекций ПИ ФКН ВШЭ 2026/27 по алгебре, матанализу, дискретной математике и АиЯ: теория, подготовка к КР и коллоквиумам, PDF." />
     <title>Конспекты ПИ ФКН</title>
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/src/styles/fonts/hse-sans-700.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/src/styles/fonts/hse-sans-400.woff2" />
     <link href="%BASE_URL%favicon.svg" rel="icon" type="image/svg+xml" />
+    <link href="%BASE_URL%favicon-120.png" rel="icon" sizes="120x120" type="image/png" />
+    <link href="%BASE_URL%favicon.ico" rel="icon" sizes="16x16 32x32 48x48" />
+    <link href="%BASE_URL%apple-touch-icon.png" rel="apple-touch-icon" />
     <script>
       (function () {
+        // The worker can serve the cached home shell at a deep link.
+        var base = "%BASE_URL%";
+        if (location.pathname === base || location.pathname + "/" === base) {
+          document.documentElement.dataset.home = "";
+        }
         var saved;
         try {
           saved = localStorage.getItem("theme");
@@ -27,11 +37,21 @@
           meta.removeAttribute("media");
           meta.content = dark ? "#141415" : "#fafaf8";
         });
+        // Overlay scrollbars (macOS, phones) take no width: keep them native, they hide by themselves.
+        // Only classic ones (Windows, Linux, macOS "always show") get the thin custom bar (app.css).
+        var probe = document.createElement("div");
+        probe.style.cssText = "position:absolute;top:-99px;width:50px;height:50px;overflow:scroll";
+        document.documentElement.appendChild(probe);
+        if (probe.offsetWidth - probe.clientWidth > 0) {
+          document.documentElement.dataset.scrollbars = "classic";
+        }
+        probe.remove();
       })();
     </script>
     <!-- The page copies put a text fallback for clients without scripts into #root (src/domain/seo.ts):
          the script above has set data-theme, so this browser runs scripts and React will draw the page. -->
     <style>
+      html:not([data-home]) [data-home-start],
       html[data-theme] .static-fallback {
         display: none;
       }

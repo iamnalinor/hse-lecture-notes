@@ -7,6 +7,7 @@ import { applyUpdate, useHasUpdate } from "#web/shared/offline/sw-registration.t
 import { useUpdateOnNavigation } from "#web/shared/offline/update-on-navigation.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 
+import { LazyChat } from "./lazy-chat.tsx";
 import { isNotFound } from "./not-found.ts";
 
 const describe = (error: unknown): string => {
@@ -17,7 +18,7 @@ const describe = (error: unknown): string => {
     return error.statusText;
   }
   if (!navigator.onLine) {
-    return "Нет интернета, а эта страница ещё не сохранена офлайн. Открытые раньше конспекты доступны и так, а чтобы сохранить все, нажмите «Скачать все» внизу страницы, когда интернет появится.";
+    return "Нет интернета, а эта страница еще не сохранена офлайн. Открытые раньше конспекты доступны и так, а чтобы сохранить все, нажми «Скачать все» внизу страницы, когда интернет появится.";
   }
   return error instanceof Error ? error.message : "Что-то пошло не так.";
 };
@@ -57,6 +58,7 @@ export const RouteError = () => {
         </Link>
       </main>
       <SiteFooter />
+      <LazyChat general />
     </div>
   );
 };

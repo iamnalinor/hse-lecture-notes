@@ -2,7 +2,7 @@
 
 В файле — контактные часы по модулям, кредиты и модули аттестации каждой дисциплины из «Рабочего
 учебного плана» (формат — шапка самого yaml). Здесь проверка структуры и сверка с шапкой плана:
-сумма часов показанных дисциплин и исключённых (физкультура, экзамены без кредитов) должна давать
+сумма часов показанных дисциплин и исключенных (физкультура, экзамены без кредитов) должна давать
 строку «Вся образовательная программа». Диаграмму рисует сайт (`web/src/features/home/study-plan.tsx`).
 """
 
@@ -17,7 +17,14 @@ import yaml
 FILE = Path("program") / "curriculum-2026-y1.yaml"
 MODULES = 4
 DISCIPLINE_KEYS = {
-    "id", "name", "short", "category", "credits", "hours", "attestations", "variants",
+    "id",
+    "name",
+    "short",
+    "category",
+    "credits",
+    "hours",
+    "attestations",
+    "variants",
 }
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -50,9 +57,11 @@ def _check_discipline(d: object, categories: set[str]) -> list[str]:
         return ["дисциплина — не словарь"]
     where = f"дисциплина {d.get('id')!r}"
     errors = [f"{where}: лишний ключ {k!r}" for k in sorted(set(d) - DISCIPLINE_KEYS)]
-    for key in ("id", "name", "short"):
-        if not isinstance(d.get(key), str) or not d[key]:
-            errors.append(f"{where}: нужна непустая строка {key}")
+    errors += [
+        f"{where}: нужна непустая строка {key}"
+        for key in ("id", "name", "short")
+        if not isinstance(d.get(key), str) or not d[key]
+    ]
     if d.get("category") not in categories:
         errors.append(f"{where}: неизвестная категория {d.get('category')!r}")
     if not isinstance(d.get("credits"), int) or d["credits"] <= 0:
@@ -83,7 +92,9 @@ def check_spans(data: dict) -> list[str]:
             and all(_is_date(s.get(k)) for k in ("from", "study_to", "to"))
         )
         if not ok:
-            errors.append(f"module_spans: {s!r} — нужны module 1–{MODULES} и даты from, study_to, to (ГГГГ-ММ-ДД)")
+            errors.append(
+                f"module_spans: {s!r} — нужны module 1–{MODULES} и даты from, study_to, to (ГГГГ-ММ-ДД)"
+            )
         elif not s["from"] <= s["study_to"] <= s["to"]:
             errors.append(f"module_spans: модуль {s['module']} — нужно from ≤ study_to ≤ to")
     if errors:
@@ -92,7 +103,9 @@ def check_spans(data: dict) -> list[str]:
     if not isinstance(breaks, list):
         return ["breaks — список {from, to}"]
     for b in breaks:
-        if not (isinstance(b, dict) and _is_date(b.get("from")) and _is_date(b.get("to")) and b["from"] <= b["to"]):
+        if not (
+            isinstance(b, dict) and _is_date(b.get("from")) and _is_date(b.get("to")) and b["from"] <= b["to"]
+        ):
             errors.append(f"breaks: {b!r} — нужны даты from ≤ to (ГГГГ-ММ-ДД)")
         elif not any(s["from"] <= b["from"] and b["to"] <= s["study_to"] for s in spans):
             errors.append(f"breaks: {b!r} — вне учебных дней модулей (from…study_to одного модуля)")
@@ -100,7 +113,7 @@ def check_spans(data: dict) -> list[str]:
 
 
 def module_weeks(data: dict) -> dict[int, float]:
-    """Учебные недели модуля: дни from…study_to включительно без каникул, делённые на 7, с точностью 0,1."""
+    """Учебные недели модуля: дни from…study_to включительно без каникул, деленные на 7, с точностью 0,1."""
     break_days: set[dt.date] = set()
     for b in data.get("breaks", []):
         first, last = dt.date.fromisoformat(b["from"]), dt.date.fromisoformat(b["to"])
@@ -128,7 +141,9 @@ def _check_totals(data: dict) -> list[str]:
 
 def validate(data: dict) -> list[str]:
     cats = data.get("categories")
-    if not isinstance(cats, list) or not all(isinstance(c, dict) and {"id", "label", "name"} <= set(c) for c in cats):
+    if not isinstance(cats, list) or not all(
+        isinstance(c, dict) and {"id", "label", "name"} <= set(c) for c in cats
+    ):
         return ["categories — список {id, label, name}"]
     discs = data.get("disciplines")
     if not isinstance(discs, list) or not discs:
@@ -140,7 +155,9 @@ def validate(data: dict) -> list[str]:
     if not isinstance(excluded, list):
         errors.append("excluded — список")
     else:
-        errors += [e for x in excluded for e in _hours(x.get("hours") if isinstance(x, dict) else None, "excluded")]
+        errors += [
+            e for x in excluded for e in _hours(x.get("hours") if isinstance(x, dict) else None, "excluded")
+        ]
     errors += _hours(data.get("plan_totals"), "plan_totals") + check_spans(data)
     return errors or _check_totals(data)
 

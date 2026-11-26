@@ -100,7 +100,7 @@ $A \times B$ не обязано равняться $B \times A$. Для $A = \{
 :::
 
 ::: {.example #ex:lec14:finite-product}
-$\{1, 2, 3\} \times \{1, 2\} = \{(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2)\}$ — шесть пар; удобно представлять их точками сетки: первая компонента — по горизонтали, вторая — по вертикали (рис. [-@fig:lec14:examples], слева). Каждый из трёх столбцов сетки содержит две точки, поэтому у произведения конечных множеств из $m$ и $n$ элементов ровно $mn$ элементов — отсюда и название «произведение». Строго это докажем в лекции о подсчёте. Произведение $\{1, 2\} \times \{1, 2, 3\}$ — тоже шесть пар, но другое множество: $(1, 3)$ лежит в нём и не лежит в первом, так как $3 \notin \{1, 2\}$ (замечание [-@rem:lec14:product-coord]).
+$\{1, 2, 3\} \times \{1, 2\} = \{(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2)\}$ — шесть пар; удобно представлять их точками сетки: первая компонента — по горизонтали, вторая — по вертикали (рис. [-@fig:lec14:examples], слева). Каждый из трех столбцов сетки содержит две точки, поэтому у произведения конечных множеств из $m$ и $n$ элементов ровно $mn$ элементов — отсюда и название «произведение». Строго это докажем в лекции о подсчете. Произведение $\{1, 2\} \times \{1, 2, 3\}$ — тоже шесть пар, но другое множество: $(1, 3)$ лежит в нём и не лежит в первом, так как $3 \notin \{1, 2\}$ (замечание [-@rem:lec14:product-coord]).
 :::
 
 Произведение и не ассоциативно: элементы $A \times (B \times C)$ — пары $(a, (b, c))$, а элементы $(A \times B) \times C$ — пары $((a, b), c)$. Пример: при $A = B = C = \{\varnothing\}$ первое множество — $\{(\varnothing, (\varnothing, \varnothing))\}$, второе — $\{((\varnothing, \varnothing), \varnothing)\}$, а пары $(\varnothing, (\varnothing, \varnothing))$ и $((\varnothing, \varnothing), \varnothing)$ различны по лемме [-@lem:lec14:pair]: их первые компоненты $\varnothing$ и $(\varnothing, \varnothing) = \{\{\varnothing\}\}$ не равны. Совпадают обе расстановки скобок, например, когда один из множителей пуст: тогда обе части равны $\varnothing$. Тем не менее скобки в произведениях опускают, договорившись расставлять их слева направо:
@@ -114,7 +114,7 @@ $$A_1 \times A_2 \times A_3 \times \ldots \times A_n := (\dots((A_1 \times A_2) 
 На рис. [-@fig:lec14:product] отрезки $A$ и $C$ не пересекаются, поэтому $A \cap C = \varnothing$ и $(A \times B) \cap (C \times D) = \varnothing$ — «прямоугольник» с пустой стороной. Если бы отрезки $A$ и $C$ (и $B$ и $D$) перекрывались, пересечение прямоугольников было бы прямоугольником $(A \cap C) \times (B \cap D)$.
 :::
 
-```{.tikz #fig:lec14:product caption="Произведения отрезков на плоскости: $A \times B$ и $C \times D$ закрашены; $(A \cup C) \times (B \cup D)$ содержит ещё два пунктирных квадрата, поэтому оно больше $(A \times B) \cup (C \times D)$"}
+```{.tikz #fig:lec14:product caption="Произведения отрезков на плоскости: $A \times B$ и $C \times D$ закрашены; $(A \cup C) \times (B \cup D)$ содержит еще два пунктирных квадрата, поэтому оно больше $(A \times B) \cup (C \times D)$"}
 \begin{tikzpicture}[x=0.85cm, y=0.8cm]
   \draw[-{Stealth}] (-0.3,0) -- (5.2,0) node[right] {$x$};
   \draw[-{Stealth}] (0,-0.3) -- (0,4.2) node[above] {$y$};
@@ -196,7 +196,7 @@ $$A \times C = (A \cap B) \times (C \cap C) = (A \times C) \cap (B \times C) \su
 ```
 
 ::: {.remark #rem:lec14:power0 tag="корнер-кейс"}
-Равенство $A^{n+1} = A^n \times A$ при $n = 0$, вообще говоря, не выполняется: $A^0 \times A$ состоит из пар $(\varnothing, a)$, а не из элементов $A$. При $A = \varnothing$ обе части пусты, но уже для $A = \{\varnothing\}$ получаем $A^0 \times A = \{(\varnothing, \varnothing)\} = \{\{\{\varnothing\}\}\} \ne \{\varnothing\} = A^1$. Поэтому $A^1$ задаётся отдельно. При этом $\varnothing^0 = \{\varnothing\}$ — одноэлементное множество, а $\varnothing^n = \varnothing$ при $n \ge 1$ (пример [-@ex:lec14:product-empty]): как $0^0 = 1$ и $0^n = 0$.
+Равенство $A^{n+1} = A^n \times A$ при $n = 0$, вообще говоря, не выполняется: $A^0 \times A$ состоит из пар $(\varnothing, a)$, а не из элементов $A$. При $A = \varnothing$ обе части пусты, но уже для $A = \{\varnothing\}$ получаем $A^0 \times A = \{(\varnothing, \varnothing)\} = \{\{\{\varnothing\}\}\} \ne \{\varnothing\} = A^1$. Поэтому $A^1$ задается отдельно. При этом $\varnothing^0 = \{\varnothing\}$ — одноэлементное множество, а $\varnothing^n = \varnothing$ при $n \ge 1$ (пример [-@ex:lec14:product-empty]): как $0^0 = 1$ и $0^n = 0$.
 :::
 
 ::: {.definition #def:lec14:tuple title="кортеж"}
@@ -238,7 +238,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec14:product-union}
-Докажите, что $(A \cup B) \times C = (A \times C) \cup (B \times C)$.
+Докажи, что $(A \cup B) \times C = (A \times C) \cup (B \times C)$.
 :::
 
 ::: solution
@@ -246,7 +246,7 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 
 «$\supseteq$»: пусть $z \in A \times C$ (случай $z \in B \times C$ симметричен). Тогда $z = (x, c)$ с $x \in A \subseteq A \cup B$ и $c \in C$, значит, $z \in (A \cup B) \times C$.
 
-*Ключ:* в отличие от замечания [-@rem:lec14:product-union], «$\cup$» стоит только в одном множителе: на рис. [-@fig:lec14:product] (где роль $C$ задачи играет отрезок $B$, а роль $B$ задачи — отрезок $C$) это квадраты $A \times B$ и $C \times B$: они стоят в одном ряду и вместе дают полосу $(A \cup C) \times B$, «перекрёстных» квадратов нет.
+*Ключ:* в отличие от замечания [-@rem:lec14:product-union], «$\cup$» стоит только в одном множителе: на рис. [-@fig:lec14:product] (где роль $C$ задачи играет отрезок $B$, а роль $B$ задачи — отрезок $C$) это квадраты $A \times B$ и $C \times B$: они стоят в одном ряду и вместе дают полосу $(A \cup C) \times B$, «перекрестных» квадратов нет.
 :::
 
 ::: {.problem #prob:lec14:loop-pair}
@@ -254,23 +254,23 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: solution
-По лемме [-@lem:lec14:pair] равенство пар означает $x = \{y\}$ и $\{x\} = y$. *Ключ:* подставить одно в другое и получить «петлю» по $\in$. Тогда $x = \{y\} = \{\{x\}\}$, поэтому $\{x\} \in x$, а $x \in \{x\}$. Получаем бесконечную цепочку $x \ni \{x\} \ni x \ni \{x\} \ni \dots$, запрещённую аксиомой [-@ax:lec12:foundation].
+По лемме [-@lem:lec14:pair] равенство пар означает $x = \{y\}$ и $\{x\} = y$. *Ключ:* подставить одно в другое и получить «петлю» по $\in$. Тогда $x = \{y\} = \{\{x\}\}$, поэтому $\{x\} \in x$, а $x \in \{x\}$. Получаем бесконечную цепочку $x \ni \{x\} \ni x \ni \{x\} \ni \dots$, запрещенную аксиомой [-@ax:lec12:foundation].
 
 *Ответ:* Нет.
 :::
 
 ::: {.problem #prob:lec14:commute}
-Докажите, что $A \times B = B \times A$ тогда и только тогда, когда $A = B$, или $A = \varnothing$, или $B = \varnothing$.
+Докажи, что $A \times B = B \times A$ тогда и только тогда, когда $A = B$, или $A = \varnothing$, или $B = \varnothing$.
 :::
 
 ::: solution
 «$\Leftarrow$»: при $A = B$ обе части совпадают по принципу замены; если один из множителей пуст, обе части равны $\varnothing$ (пример [-@ex:lec14:product-empty]).
 
-«$\Rightarrow$»: пусть $A \times B = B \times A$, $A \ne \varnothing$ и $B \ne \varnothing$; докажем $A \subseteq B$. Возьмём $a \in A$. *Ключ:* непустота $B$ нужна, чтобы составить пару: возьмём $b \in B$; тогда $(a, b) \in A \times B = B \times A$, и по замечанию [-@rem:lec14:product-coord] $a \in B$. Включение $B \subseteq A$ — так же, с парой $(b, a)$, $a \in A$. Без условия непустоты вывод неверен: $\{1\} \times \varnothing = \varnothing = \varnothing \times \{1\}$, хотя $\{1\} \ne \varnothing$.
+«$\Rightarrow$»: пусть $A \times B = B \times A$, $A \ne \varnothing$ и $B \ne \varnothing$; докажем $A \subseteq B$. Возьмем $a \in A$. *Ключ:* непустота $B$ нужна, чтобы составить пару: возьмем $b \in B$; тогда $(a, b) \in A \times B = B \times A$, и по замечанию [-@rem:lec14:product-coord] $a \in B$. Включение $B \subseteq A$ — так же, с парой $(b, a)$, $a \in A$. Без условия непустоты вывод неверен: $\{1\} \times \varnothing = \varnothing = \varnothing \times \{1\}$, хотя $\{1\} \ne \varnothing$.
 :::
 
 ::: {.problem #prob:lec14:minus}
-Докажите, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найдите $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и опишите его как фигуру на плоскости.
+Докажи, что $A \times (B \setminus C) = (A \times B) \setminus (A \times C)$. Найди $([0, 2] \times [0, 1]) \setminus ([0, 2] \times [\frac12, 3])$ и опиши его как фигуру на плоскости.
 :::
 
 ::: solution
@@ -284,13 +284,13 @@ $$x \in A_1 \times \ldots \times A_n \iff \exists a_1 \in A_1 \dots \exists a_n 
 :::
 
 ::: {.problem #prob:lec14:union-union}
-Докажите, что $\bigcup\bigcup (A \times B) \subseteq A \cup B$ для любых $A$, $B$. Когда включение обращается в равенство?
+Докажи, что $\bigcup\bigcup (A \times B) \subseteq A \cup B$ для любых $A$, $B$. Когда включение обращается в равенство?
 :::
 
 ::: solution
 *Ключ:* спускаться по уровням вложенности, как в замечании [-@rem:lec13:union-level]. Элементы $A \times B$ — пары $(a, b) = \{\{a\}, \{a, b\}\}$ с $a \in A$, $b \in B$, поэтому элементы $\bigcup (A \times B)$ — множества $\{a\}$ и $\{a, b\}$ для таких $a$, $b$, а элементы $\bigcup\bigcup (A \times B)$ — элементы этих множеств, то есть $a$ или $b$. Значит, каждый элемент $\bigcup\bigcup(A \times B)$ лежит в $A$ или в $B$.
 
-Если $A \ne \varnothing$ и $B \ne \varnothing$, верно и обратное: для $a \in A$ возьмём любое $b \in B$; тогда $a \in \{a\} \in (a, b) \in A \times B$, и $a \in \bigcup\bigcup (A \times B)$; так же для $b \in B$ с любым $a \in A$. Если оба пусты, обе части равны $\varnothing$. Если пусто ровно одно из них, то $A \times B = \varnothing$ и $\bigcup\bigcup \varnothing = \varnothing$, а $A \cup B \ne \varnothing$: например, $\bigcup\bigcup(\{1\} \times \varnothing) = \varnothing \ne \{1\}$.
+Если $A \ne \varnothing$ и $B \ne \varnothing$, верно и обратное: для $a \in A$ возьмем любое $b \in B$; тогда $a \in \{a\} \in (a, b) \in A \times B$, и $a \in \bigcup\bigcup (A \times B)$; так же для $b \in B$ с любым $a \in A$. Если оба пусты, обе части равны $\varnothing$. Если пусто ровно одно из них, то $A \times B = \varnothing$ и $\bigcup\bigcup \varnothing = \varnothing$, а $A \cup B \ne \varnothing$: например, $\bigcup\bigcup(\{1\} \times \varnothing) = \varnothing \ne \{1\}$.
 
 *Ответ:* Равенство выполнено тогда и только тогда, когда $A$ и $B$ либо оба пусты, либо оба непусты.
 :::

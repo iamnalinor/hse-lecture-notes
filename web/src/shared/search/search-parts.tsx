@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import type { SearchHit } from "#web/domain/search.ts";
 
+import { isChatConfigured } from "#web/api/chat/http.ts";
+import { SparklesIcon } from "#web/shared/chat/icons.tsx";
+import { askInNewChat } from "#web/shared/chat/launch.ts";
 import { CloseIcon, SearchIcon } from "#web/shared/ui/icons.tsx";
 
-import { resultId, SearchResults } from "./search-results.tsx";
+import { resultId } from "./result-id.ts";
+
+/** The status of a query with no hits. */
+export const NOT_FOUND = "Ничего не нашлось";
+
+const SearchResults = lazy(async () => {
+  const results = await import("./search-results.tsx");
+  return { default: results.SearchResults };
+});
 
 const isMac = (): boolean => /Mac|iPhone|iPad/u.test(navigator.userAgent);
 
@@ -31,15 +42,18 @@ export const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="flex h-11 items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-80">
-    <SearchIcon size={16} />
+  <label className="relative flex h-11 w-full items-center rounded-lg border border-rule bg-card text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-96">
+    {/* The icon is padding, not a flex item: the input takes all the rest of the field, so a query is not clipped at the start. */}
+    <span className="pointer-events-none absolute left-2.5 flex">
+      <SearchIcon size={16} />
+    </span>
     <input
       aria-activedescendant={hasPanel ? resultId(active) : undefined}
       aria-autocomplete="list"
       aria-controls={hasPanel ? "search-results" : undefined}
       aria-expanded={hasPanel}
       aria-label="Поиск по конспектам"
-      className="size-full min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-faint lg:text-subhead [&::-webkit-search-cancel-button]:hidden"
+      className={`size-full min-w-0 flex-1 ${query === "" ? "pr-2" : "pr-8"} bg-transparent pl-8 text-body text-ink outline-none placeholder:text-faint lg:text-subhead [&::-webkit-search-cancel-button]:hidden`}
       enterKeyHint="search"
       onChange={(event) => {
         onQuery(event.target.value);
@@ -47,7 +61,7 @@ export const SearchField = ({
       onFocus={onFocus}
       onKeyDown={onKeyDown}
       onPointerDown={onFocus}
-      placeholder="Поиск: «4.3», «миноры»"
+      placeholder="Поиск"
       ref={fieldRef}
       role="combobox"
       tabIndex={isTabbable ? undefined : -1}
@@ -55,13 +69,13 @@ export const SearchField = ({
       value={query}
     />
     {query === "" ? (
-      <kbd className="hidden rounded-sm border border-rule px-1.5 py-px text-caption whitespace-nowrap lg:inline">
+      <kbd className="mr-3 hidden rounded-sm border border-rule px-1.5 py-px text-caption whitespace-nowrap lg:inline">
         {isMac() ? "⌘K" : "Ctrl K"}
       </kbd>
     ) : (
       <button
         aria-label="Очистить"
-        className="-my-px -mr-3 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink lg:size-10"
+        className="absolute right-0 flex h-11 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink lg:h-10"
         onClick={onClear}
         type="button"
       >
@@ -78,6 +92,7 @@ type PanelProps = {
   readonly onHover: (index: number) => void;
   readonly onMore: () => void;
   readonly onPick: () => void;
+  readonly query: string;
   readonly status: string;
 };
 
@@ -100,7 +115,7 @@ export const Popover = ({ children, isOpen }: PopoverProps) => {
   return kept === undefined ? null : (
     <div
       aria-hidden={!isOpen}
-      className="absolute inset-x-0 top-full z-50 border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:right-8 lg:left-auto lg:mt-1 lg:w-xl lg:rounded-xl lg:border"
+      className="absolute inset-x-0 top-full z-50 border-b border-rule bg-card shadow-[0_12px_24px_-16px_rgba(0,0,0,0.35)] lg:mt-1 lg:rounded-xl lg:border"
       data-popover=""
       data-state={isOpen ? "open" : "closed"}
       inert={!isOpen}
@@ -117,19 +132,37 @@ export const SearchPanel = ({
   onHover,
   onMore,
   onPick,
+  query,
   status,
 }: PanelProps) => (
   <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto rounded-[inherit]">
     <p className="px-5 text-subhead text-muted not-empty:py-5" role="status">
       {status}
     </p>
+    {status === NOT_FOUND && isChatConfigured() && (
+      <div className="px-5 pb-5">
+        <button
+          className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-rule bg-card px-3.5 text-subhead font-semibold whitespace-nowrap text-ink hover:bg-wash [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:text-(--ai-accent)"
+          onClick={() => {
+            onPick();
+            askInNewChat(query.trim());
+          }}
+          type="button"
+        >
+          <SparklesIcon />
+          Спросить в чате
+        </button>
+      </div>
+    )}
     {hits.length > 0 && (
-      <SearchResults
-        active={active}
-        hits={hits.slice(0, limit)}
-        onHover={onHover}
-        onPick={onPick}
-      />
+      <Suspense fallback={null}>
+        <SearchResults
+          active={active}
+          hits={hits.slice(0, limit)}
+          onHover={onHover}
+          onPick={onPick}
+        />
+      </Suspense>
     )}
     {hits.length > limit && (
       <button
@@ -137,7 +170,7 @@ export const SearchPanel = ({
         onClick={onMore}
         type="button"
       >
-        Показать ещё {hits.length - limit}
+        Показать еще {hits.length - limit}
       </button>
     )}
   </div>
@@ -160,7 +193,7 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
   <>
     <button
       aria-label="Поиск"
-      className={`size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-ink md:hidden ${isOpen ? "hidden" : "flex"}`}
+      className={`size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-muted hover:text-ink min-[21rem]:hidden ${isOpen ? "hidden" : "flex"}`}
       onClick={onOpen}
       ref={magnifierRef}
       type="button"
@@ -170,14 +203,14 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
     <div
       className={
         isOpen
-          ? "max-md:absolute max-md:inset-0 max-md:z-50 max-md:flex max-md:items-center max-md:gap-1 max-md:bg-paper max-md:pr-2 max-md:pl-4 max-md:opacity-100 max-md:transition-opacity max-md:duration-150"
-          : "max-md:sr-only max-md:opacity-0"
+          ? "max-[21rem]:absolute max-[21rem]:inset-0 max-[21rem]:z-50 max-[21rem]:flex max-[21rem]:items-center max-[21rem]:gap-1 max-[21rem]:bg-paper max-[21rem]:pr-2 max-[21rem]:pl-4 max-[21rem]:opacity-100 max-[21rem]:transition-opacity max-[21rem]:duration-150"
+          : "max-[21rem]:sr-only max-[21rem]:opacity-0"
       }
     >
       {children}
       {isOpen && (
         <button
-          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink md:hidden"
+          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink min-[21rem]:hidden"
           onClick={onCancel}
           type="button"
         >

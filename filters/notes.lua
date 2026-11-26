@@ -4,7 +4,7 @@ notes.lua — фильтр pandoc для конспектов, теории и �
 Что делает:
   * нумерует блоки (definition, axiom, theorem, lemma, proposition, corollary,
     example, remark, problem), рисунки (```tikz) и формулы ($$…$$ {#eq:…})
-    одним сквозным счётчиком «лекция.N»;
+    одним сквозным счетчиком «лекция.N»;
   * превращает блоки в окружения notes.sty (LaTeX) или в размеченные div (HTML);
   * разрешает ссылки @label / [-@label] внутри лекции и между лекциями курса
     через общий индекс;
@@ -12,7 +12,7 @@ notes.lua — фильтр pandoc для конспектов, теории и �
   * в режиме render (html) пишет sidecar JSON: оглавление, метки,
     рисунки TikZ, которые надо скомпилировать в SVG.
 
-Метаданные, которые передаёт scripts/build.py через -M:
+Метаданные, которые передает scripts/build.py через -M:
   notes_mode   index | render
   notes_out    путь JSON-выгрузки (index) или sidecar (render, html)
   notes_index  путь build/index.json (render)
@@ -125,7 +125,7 @@ local function inlines_to(fmt, inlines)
   return blocks_to(fmt, { pandoc.Plain(inlines) })
 end
 
--- блоки в обёртке из сырых строк формата fmt: окружение LaTeX или html-тег
+-- блоки в обертке из сырых строк формата fmt: окружение LaTeX или html-тег
 local function wrap_raw(fmt, open, blocks, close)
   local content = pandoc.Blocks { pandoc.RawBlock(fmt, open) }
   content:extend(blocks)
@@ -165,7 +165,7 @@ local S = {
   figures = {},
 }
 
--- Блоки, рисунки и формулы идут через один счётчик в порядке появления:
+-- Блоки, рисунки и формулы идут через один счетчик в порядке появления:
 -- Определение 4.1, (4.2), Рис. 4.3, Теорема 4.4. Номер однозначно указывает на место в лекции.
 local function new_counters()
   return { n = 0 }
@@ -472,7 +472,7 @@ local function render_answers(div)
   return wrap_raw('html', '<details class="nb-answers"><summary>Ответы</summary>', div.content, '</details>')
 end
 
--- теория курса: блок со ссылкой ref=… берёт номер и заголовок из индекса
+-- теория курса: блок со ссылкой ref=… берет номер и заголовок из индекса
 local function render_theory_block(div)
   local ref = div.attributes['ref']
   local entry = lookup(ref)
@@ -486,7 +486,7 @@ local function render_theory_block(div)
   local note = pandoc.Inlines {}
   local status = div.attributes['status']
   -- теория курса — справочник: лекцию видно по разделу «N. Тема», ссылки в конспект нет;
-  -- подготовка к КР ведёт из блока в лекцию
+  -- подготовка к КР ведет из блока в лекцию
   if S.kind ~= 'theory' then
     local href = ref_href(entry, false)
     local where = pandoc.Inlines { pandoc.Str('Лекция\u{00A0}' .. int_str(entry.lecture)) }
@@ -506,7 +506,7 @@ local function render_theory_block(div)
   local extra = { ref = ref }
   if #note > 0 then extra.note = pandoc.Inlines { pandoc.Emph(note) } end
   -- префикс reg- остался с тех пор, как теория курса звалась реестром: на эти якоря ведут
-  -- сохранённые ссылки (и редирект со старого /<course>/registry), не переименовывать
+  -- сохраненные ссылки (и редирект со старого /<course>/registry), не переименовывать
   -- один и тот же блок может повторяться (подготовка к КР: в теме и в теоретической части) —
   -- якорь первой копии reg-<ref>, следующих reg-<ref>-2, -3…, чтобы id в HTML не совпадали
   S.reg_seen = S.reg_seen or {}
@@ -574,7 +574,7 @@ local function render(doc)
       local hash = pandoc.sha1(cb.text)
       table.insert(tikz_jobs, { hash = hash, code = cb.text, id = id, number = number })
       local cap_html = inlines_to('html', caption)
-      -- alt без TeX: экранный диктор прочёл бы «c_{ij}» вслух. Если в подписи есть формулы,
+      -- alt без TeX: экранный диктор прочел бы «c_{ij}» вслух. Если в подписи есть формулы,
       -- alt — номер рисунка, а саму подпись (с формулами KaTeX/MathML) читают из figcaption.
       local has_math = false
       caption:walk { Math = function() has_math = true end }
@@ -622,7 +622,7 @@ local function render(doc)
     end,
     Table = function(tbl)
       if not FORMAT_LATEX then return nil end
-      -- pandoc округляет доли ширины вверх, и сумма > 1 даёт overfull box
+      -- pandoc округляет доли ширины вверх, и сумма > 1 дает overfull box
       local total = 0
       for _, cs in ipairs(tbl.colspecs) do
         if type(cs[2]) == 'number' then total = total + cs[2] end
@@ -691,7 +691,7 @@ local function set_template_meta(doc, config)
         when = first .. '–' .. tonumber(d2) .. '.' .. m2 .. '.' .. y2
       end
     end
-    -- без date (событие ещё не объявлено) — без дня в колонтитуле
+    -- без date (событие еще не объявлено) — без дня в колонтитуле
     local line = string.format('%s · %s · %s', config.program or '', course_name, prep_goal(S.week_id or '', meta_str(meta, 'quiz_number')))
     if when ~= '' then line = line .. ' · ' .. when end
     meta['header_line'] = pandoc.MetaString(line)
@@ -712,7 +712,7 @@ local function set_template_meta(doc, config)
 end
 
 -- Программа курса: формула оценки и таблица весов под ней — одно целое; в PDF формула
--- не остаётся внизу страницы без своей таблицы (\needspace из notes.sty).
+-- не остается внизу страницы без своей таблицы (\needspace из notes.sty).
 local function is_formula(b)
   return b ~= nil and b.t == 'Para' and #b.content == 1 and b.content[1].t == 'Math'
     and b.content[1].mathtype == 'DisplayMath'

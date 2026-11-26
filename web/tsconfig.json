@@ -1,8 +1,11 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "paths": { "#web/*": ["./src/*"] },
-    "types": ["vite/client", "bun", "@testing-library/jest-dom"]
+    "paths": {
+      "#web/*": ["./src/*"]
+    },
+    "types": ["node"]
   },
-  "include": ["src", "scripts", "*.ts", "*.config.*", ".dependency-cruiser.mjs"]
+  "include": ["*.ts", "*.config.*", ".dependency-cruiser.mjs"],
+  "exclude": ["src", "scripts", "tests", "sw"]
 }

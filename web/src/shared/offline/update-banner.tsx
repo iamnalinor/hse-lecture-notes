@@ -12,7 +12,7 @@ export const UpdateBanner = () => {
         <div className="border-b border-rule bg-wash text-footnote text-ink" role="status">
           <div className="mx-auto flex max-w-[1360px] items-center gap-4 px-4 py-2.5 sm:px-8">
             <span className="min-w-0 flex-1 leading-snug">
-              Мы кое-что поменяли. Перезагрузите, чтобы увидеть изменения
+              Мы кое-что поменяли. Перезагрузи, чтобы увидеть изменения
             </span>
             <button
               className="shrink-0 cursor-pointer rounded-md bg-brand px-3.5 py-1.5 font-semibold text-white hover:opacity-90"

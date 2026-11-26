@@ -1,0 +1,79 @@
+name: Backend API
+
+# Tests, migrates D1, and deploys the Cloudflare Worker (`hse-lecture-notes-api`) on main;
+# also the router of hse-preview.nalinor.dev (`backend/preview/`).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  verify:
+    name: Typecheck & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Install dependencies
+        working-directory: backend
+        run: bun install --frozen-lockfile
+      - name: Typecheck & test
+        working-directory: backend
+        run: bun run typecheck && bun test
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Verify HTTP streaming, Durable Objects and D1 together
+        working-directory: backend
+        run: node integration/chat-workerd.mjs
+
+  deploy:
+    name: Migrate D1 & deploy Worker
+    needs: verify
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    # One writer to D1 at a time: the search index sync in chat-index.yml holds the same lock.
+    concurrency:
+      group: cloudflare-d1
+      queue: max
+      cancel-in-progress: false
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Install dependencies
+        working-directory: backend
+        run: bun install --frozen-lockfile
+      - name: Initialize D1 schema and model routes
+        working-directory: backend
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bun run scripts/admin.ts init-db --remote
+      - name: Deploy Cloudflare Worker
+        working-directory: backend
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bunx wrangler deploy
+      - name: Deploy the preview router (hse-preview.nalinor.dev)
+        working-directory: backend
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bunx wrangler deploy -c preview/wrangler.jsonc

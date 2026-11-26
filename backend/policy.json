@@ -1,0 +1,49 @@
+{
+  "rateLimitPerMinute": 4,
+  "maxQuestionChars": 2000,
+  "maxQuoteChars": 4000,
+  "maxBodyBytes": 32768,
+  "maxHistoryMessages": 15,
+  "maxHistoryChars": 50000,
+  "maxToolRounds": 8,
+  "maxToolCalls": 16,
+  "maxToolOutputChars": 12000,
+  "maxTotalToolOutputChars": 60000,
+  "maxResponseChars": 24000,
+  "maxRunDurationMs": 90000,
+  "staleRunTimeoutMs": 105000,
+  "allowanceTtlMs": 1800000,
+  "sessionTtlMs": 2592000000,
+  "archiveAfterDays": 30,
+  "threadsPageSize": 20,
+  "requireLoginWithoutFingerprint": false,
+  "budgets": {
+    "weeklyGlobalUsdMicros": 15000000,
+    "weeklyWarnRatio": 0.8,
+    "dailyGuestUsdMicros": 1000000,
+    "reserveHighMicros": 40000,
+    "reserveLowMicros": 5000
+  },
+  "buckets": {
+    "high": {
+      "model": "gpt-6.1-terra",
+      "effort": "medium",
+      "pricingVersion": 1,
+      "limits": {
+        "student": 6,
+        "extended": 12
+      }
+    },
+    "low": {
+      "model": "gpt-6-luna",
+      "effort": "low",
+      "pricingVersion": 1,
+      "limits": {
+        "guest": 4,
+        "default": 8,
+        "student": 18,
+        "extended": 36
+      }
+    }
+  }
+}

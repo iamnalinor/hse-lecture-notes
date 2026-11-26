@@ -31,14 +31,14 @@ type DownloadButtonProps = {
 
 const DownloadButton = ({ missingBytes, onClick }: DownloadButtonProps) => (
   <button
-    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2 py-1 text-footnote font-semibold text-ink hover:bg-wash"
+    className="inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-rule px-2.5 py-1 text-subhead font-semibold whitespace-nowrap text-ink hover:bg-wash"
     onClick={onClick}
     type="button"
   >
     <DownloadIcon size={14} />
     Скачать все
     {missingBytes !== undefined && missingBytes > 0 && (
-      <span className="font-normal text-muted">· {formatSize(missingBytes)}</span>
+      <span className="font-normal text-muted">·&nbsp;{formatSize(missingBytes)}</span>
     )}
   </button>
 );
@@ -62,10 +62,14 @@ export const OfflineStatus = () => {
   const canRetry =
     canDownload && !isEverything && (progress === undefined || download.kind === "failed");
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span>
-        Офлайн: {count.saved} из {count.total}{" "}
-        {plural(count.total, ["конспекта", "конспектов", "конспектов"])}
+    // One line on every width: on phones the word «конспектов» goes to screen readers only.
+    <span className="flex min-h-11 w-full flex-nowrap items-center justify-between gap-x-3 sm:inline-flex sm:w-auto sm:justify-start">
+      <span className="min-w-0 whitespace-nowrap">
+        Офлайн: {count.saved} из {count.total}
+        <span className="max-sm:sr-only">
+          {" "}
+          {plural(count.total, ["конспекта", "конспектов", "конспектов"])}
+        </span>
       </span>
       {progress !== undefined && (
         // In the button's place while saving, so the footer keeps its lines.

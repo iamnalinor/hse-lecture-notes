@@ -7,7 +7,7 @@ import { macrosQuery } from "#web/api/queries.ts";
 import { registerServiceWorker } from "#web/shared/offline/sw-registration.ts";
 
 import { createQueryClient } from "./app/query-client.ts";
-import { createAppRouter, preloadPages } from "./app/router.tsx";
+import { createAppRouter } from "./app/router.tsx";
 import "./styles/app.css";
 
 const root = document.querySelector("#root");
@@ -16,7 +16,6 @@ if (root === null) {
 }
 
 const queryClient = createQueryClient();
-const PRELOAD_DELAY_MS = 1500;
 
 /** Every formula needs the macros: start fetching before the first page asks. */
 const warmUp = async (): Promise<void> => {
@@ -35,8 +34,6 @@ createRoot(root).render(
     </QueryClientProvider>
   </StrictMode>,
 );
-
-setTimeout(() => void preloadPages(), PRELOAD_DELAY_MS);
 
 const register = async (): Promise<void> => {
   try {

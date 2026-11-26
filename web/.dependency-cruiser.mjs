@@ -70,7 +70,7 @@ const config = {
           "[.]config[.](ts|js)$",
           "^scripts/",
           "^sw/", // the service worker is its own bundle (scripts/build-sw.ts)
-          "^src/test/setup[.]ts$", // loaded by vitest.config.ts
+          "^tests/support/setup[.]ts$", // loaded by vitest.config.ts
         ],
       },
       to: {},
@@ -79,14 +79,14 @@ const config = {
       name: "not-to-test",
       comment: "Production code must not depend on tests or test fixtures.",
       severity: "error",
-      from: { pathNot: ["[.]test[.]tsx?$", "^src/test/"] },
-      to: { path: "[.]test[.]tsx?$|^src/test/" },
+      from: { pathNot: ["[.]test[.]tsx?$", "^tests/"] },
+      to: { path: "[.]test[.]tsx?$|^tests/" },
     },
     {
       name: "not-to-dev-dep",
       comment: "Production code must not import devDependencies.",
       severity: "error",
-      from: { path: "^src/", pathNot: ["[.]test[.]tsx?$", "^src/test/"] },
+      from: { path: "^src/", pathNot: ["[.]test[.]tsx?$", "^tests/"] },
       to: {
         dependencyTypes: ["npm-dev"],
         dependencyTypesNot: ["type-only"],

@@ -194,9 +194,11 @@ const watchControllerChange = (): void => {
   });
 };
 
-const unregisterAll = async (): Promise<void> => {
+const unregisterDevWorker = async (): Promise<void> => {
+  const scope = new URL(import.meta.env.BASE_URL, globalThis.location.origin).href;
   const registrations = await navigator.serviceWorker.getRegistrations();
-  await Promise.all(registrations.map(async (registration) => await registration.unregister()));
+  const own = registrations.find((registration) => registration.scope === scope);
+  await own?.unregister();
 };
 
 /** Listeners first, so that no event is missed while the worker answers about freshness. */
@@ -234,7 +236,7 @@ export const registerServiceWorker = async (): Promise<void> => {
     return;
   }
   if (!isOfflineSupported()) {
-    await unregisterAll();
+    await unregisterDevWorker();
     return;
   }
   const base = import.meta.env.BASE_URL;

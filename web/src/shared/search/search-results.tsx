@@ -11,6 +11,8 @@ import { hitPath, type SearchHit, type SnippetPart } from "#web/domain/search.ts
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 import { TexText } from "#web/shared/reader/tex-text.tsx";
 
+import { resultId } from "./result-id.ts";
+
 type Props = {
   readonly active: number;
   readonly hits: readonly SearchHit[];
@@ -38,16 +40,14 @@ const Snippet = ({ parts }: { readonly parts: readonly SnippetPart[] }) =>
 const placeOf = (hit: SearchHit, catalog: Catalog | undefined): string => {
   const course = findCourse(hit.course)?.short ?? hit.course;
   if (isCourseDoc(hit.doc)) {
-    return `${course} · ${COURSE_DOCS[hit.doc]}`;
+    return `${course} ·\u{A0}${COURSE_DOCS[hit.doc]}`;
   }
   if (isPrepId(hit.doc)) {
     const prep = catalog?.preps[hit.course]?.find((entry) => entry.id === hit.doc);
-    return `${course} · ${prepTopicName(prepGoal(hit.doc, prep?.quizNumber), prep?.topic)}`;
+    return `${course} ·\u{A0}${prepTopicName(prepGoal(hit.doc, prep?.quizNumber), prep?.topic)}`;
   }
-  return `${course} · Лекция ${String(hit.lecture)}`;
+  return `${course} ·\u{A0}Лекция ${String(hit.lecture)}`;
 };
-
-export const resultId = (index: number): string => `search-hit-${String(index)}`;
 
 export const SearchResults = ({ active, hits, onHover, onPick }: Props) => {
   // already loaded by the page behind the search; without it a quiz is named without its number

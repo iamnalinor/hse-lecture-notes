@@ -1,0 +1,288 @@
+import { describe, expect, it } from "vitest";
+
+import type { PrepEntry } from "#web/domain/schemas.ts";
+
+import {
+  cheatsheetDocs,
+  chronologicalPreps,
+  isDated,
+  isHighlighted,
+  isPrepId,
+  isUpcoming,
+  pastPreps,
+  PREP_IDS,
+  prepDescription,
+  prepGoal,
+  prepName,
+  prepTopicName,
+  prepWhen,
+  undatedPreps,
+  upcomingPreps,
+} from "#web/domain/preps.ts";
+
+describe("test preparation pages", () => {
+  it.each([
+    ["kr1", true],
+    ["kr12", true],
+    ["colloq1", true],
+    ["colloq", false],
+    ["exam1", true],
+    ["exam2", true],
+    ["exam", false],
+    ["quiz-o-symbols", true],
+    ["quiz-limits", true],
+    ["quiz", false],
+    ["quiz-", false],
+    ["quiz1", false],
+    ["theory", false],
+    ["01_sep04_logic", false],
+  ])("isPrepId(%s) → %s", (doc, expected) => {
+    expect(isPrepId(doc)).toBe(expected);
+  });
+
+  it("names a test", () => {
+    expect(prepName("kr2")).toBe("КР-2");
+    expect(prepGoal("kr2")).toBe("Подготовка к КР-2");
+    expect(prepDescription("kr2")).toBe("темы, методы и задачи к контрольной");
+  });
+
+  it("names a colloquium without «КР»", () => {
+    expect(prepName("colloq1")).toBe("Коллоквиум 1");
+    expect(prepGoal("colloq1")).toBe("Подготовка к коллоквиуму 1");
+    expect(prepGoal("quiz-o-symbols", 4)).toBe("Подготовка к квизу 4");
+    expect(prepDescription("colloq1")).toContain("коллоквиум");
+  });
+
+  it("names a quiz by its number, the topic goes in brackets", () => {
+    expect(prepName("quiz-o-symbols", 4)).toBe("Квиз 4");
+    expect(prepTopicName("Квиз 4", "О-символика")).toBe("Квиз 4 (О-символика)");
+    expect(prepTopicName("КР-1")).toBe("КР-1");
+    expect(prepName("quiz-o-symbols")).toBe("Квиз");
+    expect(prepGoal("quiz-o-symbols")).toBe("Подготовка к квизу");
+    expect(prepDescription("quiz-o-symbols")).toBe("типы задач и разобранные примеры к квизу");
+    // the quiz number names only a quiz: a test keeps its own
+    expect(prepName("kr2", 4)).toBe("КР-2");
+  });
+
+  it("names an exam and formats its session window", () => {
+    expect(prepName("exam1")).toBe("Экзамен 1");
+    expect(prepGoal("exam1")).toBe("Подготовка к экзамену 1");
+    expect(prepDescription("exam1")).toContain("экзамену");
+    expect(
+      prepWhen({
+        activeUntil: "2026-12-30",
+        cheatsheets: [],
+        date: "2026-12-21",
+        highlightFrom: "2026-12-07",
+        id: "exam1",
+        title: "",
+      }),
+    ).toBe("21.12–30.12");
+  });
+
+  it("routes every prep id the build accepts", () => {
+    expect(PREP_IDS).toContain("quiz-o-symbols");
+    expect(PREP_IDS).toContain("quiz-limits");
+    expect(PREP_IDS).toContain("exam1");
+    expect(PREP_IDS).toContain("colloq1");
+    expect(PREP_IDS.every((id) => isPrepId(id))).toBe(true);
+  });
+
+  it("shows a test inside a colloquium's window first once the window has opened", () => {
+    const colloq = {
+      activeUntil: "2026-12-30",
+      highlightFrom: "2026-09-01",
+      cheatsheets: [],
+      date: "2026-11-02",
+      id: "colloq1",
+      title: "",
+    };
+    const kr2 = {
+      activeUntil: "2026-12-10",
+      highlightFrom: "2026-09-01",
+      cheatsheets: [],
+      date: "2026-12-10",
+      id: "kr2",
+      title: "",
+    };
+    const preps = [colloq, kr2];
+    // before the window: the colloquium comes first
+    expect(upcomingPreps(preps, "2026-10-30").map((prep) => prep.id)).toStrictEqual([
+      "colloq1",
+      "kr2",
+    ]);
+    // inside the window: the test, then the rest of the window
+    expect(upcomingPreps(preps, "2026-11-20").map((prep) => prep.id)).toStrictEqual([
+      "kr2",
+      "colloq1",
+    ]);
+    expect(upcomingPreps(preps, "2026-12-11").map((prep) => prep.id)).toStrictEqual(["colloq1"]);
+  });
+
+  it("dates a colloquium by its window and a test by its day", () => {
+    expect(
+      prepWhen({
+        activeUntil: "2026-12-30",
+        highlightFrom: "2026-09-01",
+        cheatsheets: [],
+        date: "2026-11-02",
+        id: "colloq1",
+        title: "",
+      }),
+    ).toBe("02.11–30.12");
+    expect(
+      prepWhen({
+        activeUntil: "2026-10-23",
+        highlightFrom: "2026-09-01",
+        cheatsheets: [],
+        date: "2026-10-22",
+        id: "kr1",
+        title: "",
+      }),
+    ).toBe("22.10");
+    // a quiz announced for a week, without the day: the whole week
+    expect(
+      prepWhen({
+        activeUntil: "2026-11-27",
+        highlightFrom: "2026-11-20",
+        cheatsheets: [],
+        date: "2026-11-23",
+        id: "quiz-o-symbols",
+        title: "",
+      }),
+    ).toBe("23.11–27.11");
+  });
+
+  it("keeps a colloquium upcoming through its whole window", () => {
+    const colloq = {
+      activeUntil: "2026-12-30",
+      highlightFrom: "2026-09-01",
+      cheatsheets: [],
+      date: "2026-11-02",
+      id: "colloq1",
+      title: "",
+    };
+    expect(isUpcoming(colloq, "2026-11-20")).toBe(true);
+    expect(isUpcoming(colloq, "2026-12-30")).toBe(true);
+    expect(isUpcoming(colloq, "2026-12-31")).toBe(false);
+  });
+
+  it("keeps a test through its last active day", () => {
+    const preps = [
+      // the second half of the stream writes the next day
+      {
+        activeUntil: "2026-10-23",
+        highlightFrom: "2026-09-01",
+        cheatsheets: [],
+        date: "2026-10-22",
+        id: "kr1",
+        title: "",
+      },
+      {
+        activeUntil: "2026-12-10",
+        highlightFrom: "2026-09-01",
+        cheatsheets: [],
+        date: "2026-12-10",
+        id: "kr2",
+        title: "",
+      },
+    ];
+    expect(upcomingPreps(preps, "2026-10-22").map((prep) => prep.id)).toStrictEqual(["kr1", "kr2"]);
+    expect(upcomingPreps(preps, "2026-10-23").map((prep) => prep.id)).toStrictEqual(["kr1", "kr2"]);
+    expect(upcomingPreps(preps, "2026-10-24").map((prep) => prep.id)).toStrictEqual(["kr2"]);
+  });
+
+  it("hides a one-day test the day after it", () => {
+    const prep = {
+      activeUntil: "2026-10-24",
+      highlightFrom: "2026-09-01",
+      cheatsheets: [],
+      date: "2026-10-24",
+      id: "kr1",
+      title: "",
+    };
+    expect(isUpcoming(prep, "2026-10-24")).toBe(true);
+    expect(isUpcoming(prep, "2026-10-25")).toBe(false);
+  });
+
+  it("names the cheatsheet PDFs after the prep page and the print variant", () => {
+    const prep = {
+      activeUntil: "2026-10-24",
+      highlightFrom: "2026-09-01",
+      cheatsheets: ["1side", "2side"],
+      date: "2026-10-24",
+      id: "kr1",
+      title: "",
+    };
+    expect(cheatsheetDocs(prep)).toStrictEqual([
+      { docId: "kr1-cheatsheet-1side", label: "Шпаргалка, 1 сторона" },
+      { docId: "kr1-cheatsheet-2side", label: "Шпаргалка, 2 стороны" },
+    ]);
+  });
+
+  it("has no cheatsheet links when the build found none", () => {
+    expect(
+      cheatsheetDocs({
+        activeUntil: "2026-10-24",
+        highlightFrom: "2026-09-01",
+        cheatsheets: [],
+        date: "2026-10-24",
+        id: "kr1",
+        title: "",
+      }),
+    ).toStrictEqual([]);
+  });
+
+  it("draws a prep in the accent colour only from its highlight day through its last day", () => {
+    const colloq = {
+      activeUntil: "2026-12-30",
+      cheatsheets: [],
+      date: "2026-11-02",
+      highlightFrom: "2026-12-07",
+      id: "colloq1",
+      title: "",
+    };
+    // upcoming but neutral: the window has opened, the session is still far
+    expect(isUpcoming(colloq, "2026-10-26")).toBe(true);
+    expect(isHighlighted(colloq, "2026-10-26")).toBe(false);
+    expect(isHighlighted(colloq, "2026-12-06")).toBe(false);
+    expect(isHighlighted(colloq, "2026-12-07")).toBe(true);
+    expect(isHighlighted(colloq, "2026-12-30")).toBe(true);
+    expect(isHighlighted(colloq, "2026-12-31")).toBe(false);
+  });
+
+  it("keeps a prep without a date apart: never upcoming, highlighted or past", () => {
+    const undated = { cheatsheets: [], id: "kr2", title: "" };
+    const kr1 = {
+      activeUntil: "2026-10-23",
+      highlightFrom: "2026-10-09",
+      cheatsheets: [],
+      date: "2026-10-23",
+      id: "kr1",
+      title: "",
+    };
+    const preps = [undated, kr1];
+    expect(isUpcoming(undated, "2026-11-20")).toBe(false);
+    expect(isHighlighted(undated, "2026-11-20")).toBe(false);
+    expect(upcomingPreps(preps, "2026-10-01").map((prep) => prep.id)).toStrictEqual(["kr1"]);
+    expect(pastPreps(preps, "2026-11-20").map((prep) => prep.id)).toStrictEqual(["kr1"]);
+    expect(undatedPreps(preps).map((prep) => prep.id)).toStrictEqual(["kr2"]);
+    expect(isDated(undated)).toBe(false);
+  });
+});
+
+const at = (id: string, date?: string): PrepEntry =>
+  date === undefined
+    ? { cheatsheets: [], id, title: id }
+    : { activeUntil: date, cheatsheets: [], date, highlightFrom: date, id, title: id };
+
+describe("chronologicalPreps", () => {
+  it("orders by day, the undated after the dated", () => {
+    const ids = chronologicalPreps([
+      at("kr3"),
+      at("kr2", "2026-12-10"),
+      at("kr1", "2026-10-24"),
+    ]).map((prep) => prep.id);
+    expect(ids).toStrictEqual(["kr1", "kr2", "kr3"]);
+  });
+});
