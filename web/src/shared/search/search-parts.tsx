@@ -142,7 +142,7 @@ export const SearchPanel = ({
     {status === NOT_FOUND && isChatConfigured() && (
       <div className="px-5 pb-5">
         <button
-          className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-rule bg-card px-3.5 text-subhead font-semibold text-ink hover:bg-wash"
+          className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-rule bg-card px-3.5 text-subhead font-semibold whitespace-nowrap text-ink hover:bg-wash [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:text-(--ai-accent)"
           onClick={() => {
             onPick();
             askInNewChat(query.trim());
