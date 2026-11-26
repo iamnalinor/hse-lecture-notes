@@ -1,22 +1,12 @@
-import { Component, lazy, type ReactNode, Suspense, useState } from "react";
+import { Component, type ReactNode, useEffect, useState } from "react";
 import { useLocation } from "react-router";
 
 import { isChatConfigured } from "#web/api/chat/http.ts";
 import { isDocumentPath } from "#web/domain/paths.ts";
 import { useIsChatOpen } from "#web/shared/chat/open-state.ts";
+import { loadChatRuntime, useChatRuntimeLoad } from "#web/shared/chat/runtime-loader.ts";
 
-const Loading = () =>
-  useIsChatOpen() ? (
-    <div className="fixed right-4 bottom-4 z-40 rounded-md bg-card p-3 text-ink" role="status">
-      Открываю чат…
-    </div>
-  ) : null;
-const Runtime = lazy(async () => {
-  const { ChatRuntime } = await import("#web/shared/chat/runtime.tsx");
-  return { default: ChatRuntime };
-});
-
-/** The chat is optional: a failed chunk download must not take the notes page down with it. */
+/** The chat is optional: a crash inside it must not take the notes page down with it. */
 class ChatBoundary extends Component<{ readonly children: ReactNode }, { failed: boolean }> {
   static getDerivedStateFromError(): { failed: boolean } {
     return { failed: true };
@@ -27,6 +17,10 @@ class ChatBoundary extends Component<{ readonly children: ReactNode }, { failed:
   }
 }
 
+/**
+The download shows nothing itself: the toggle button shows that it is under way and what went
+wrong (`toggle-button.tsx`), and the panel appears once `Runtime` is there.
+*/
 export const LazyChat = ({ general = false }: { readonly general?: boolean }) => {
   const isOpen = useIsChatOpen();
   const { pathname } = useLocation();
@@ -36,11 +30,26 @@ export const LazyChat = ({ general = false }: { readonly general?: boolean }) =>
   if (shouldMount && !wasMounted) {
     setWasMounted(true);
   }
-  return isChatConfigured() && (shouldMount || wasMounted) ? (
+  const isMounted = isChatConfigured() && (shouldMount || wasMounted);
+  const load = useChatRuntimeLoad();
+  useEffect(() => {
+    if (isMounted) {
+      loadChatRuntime();
+    }
+  }, [isMounted]);
+  const isFailed = load.status === "failed";
+  useEffect(() => {
+    if (!isMounted || !isFailed) {
+      return;
+    }
+    globalThis.addEventListener("online", loadChatRuntime);
+    return () => {
+      globalThis.removeEventListener("online", loadChatRuntime);
+    };
+  }, [isMounted, isFailed]);
+  return isMounted && load.status === "ready" ? (
     <ChatBoundary>
-      <Suspense fallback={<Loading />}>
-        <Runtime general={general} />
-      </Suspense>
+      <load.Runtime general={general} />
     </ChatBoundary>
   ) : null;
 };
