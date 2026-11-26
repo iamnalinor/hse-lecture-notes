@@ -14,8 +14,11 @@ export const TopBar = () => (
         className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
         to={paths.home()}
       >
-        {/* Phones: 36 px, lighter than the 44 px search field beside it; 28 px from 640 px. */}
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white sm:size-7">
+        {/* As tall as the search field and buttons beside it: 44 px on phones, 40 px from 640 px (tests/e2e/layout.spec.ts). */}
+        <span
+          className="flex size-11 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white sm:size-10"
+          data-logo-mark=""
+        >
           {/* Σ built from HSE Sans 600 metrics (bars of E/Z, diagonal of Z, tip of >), softened corners and gently curved diagonals;
               the font has no Σ. The same path as public/favicon.svg. */}
           <svg aria-hidden="true" className="size-full" viewBox="0 0 32 32">

@@ -12,7 +12,7 @@ type Props = {
 export const HomeHero = ({ courses, lectures, statements }: Props) => (
   <HomeIntroduction
     counters={
-      <dl className="flex flex-wrap gap-x-8 gap-y-5 border-t border-rule pt-6 max-sm:hidden">
+      <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-5 border-t border-rule pt-6 max-sm:hidden">
         {(
           [
             [lectures, plural(lectures, ["конспект", "конспекта", "конспектов"])],
