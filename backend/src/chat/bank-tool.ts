@@ -201,7 +201,7 @@ export function sampleFromBank(bank: Bank, a: SampleArgs, random: () => number =
 const COURSE_DATIVE: Readonly<Record<string, string>> = {
   algebra: "алгебре",
   calculus: "матанализу",
-  discrete: "дискретке",
+  discrete: "дискре",
 };
 const PREP_GENITIVE: Readonly<Record<string, string>> = {
   kr: "КР",
