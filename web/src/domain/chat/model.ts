@@ -84,8 +84,20 @@ export type ChatThreadSummary = {
   readonly updatedAt: number;
 };
 
-export const threadDisplayTitle = (thread: ChatThreadSummary | undefined): string =>
-  thread?.generatedTitle ?? thread?.title ?? "Чат";
+/**
+`title` is the server's fallback (the first question) for threads without a topic. While a run is
+live, the question must not appear: the topic arrives within a second and would replace it.
+*/
+export const threadDisplayTitle = (
+  thread: ChatThreadSummary | undefined,
+  isLive = false,
+): string => {
+  const generated = thread?.generatedTitle;
+  if (generated !== undefined && generated !== null && generated !== "") {
+    return generated;
+  }
+  return isLive ? "Чат" : (thread?.title ?? "Чат");
+};
 
 export type ChatThread = {
   readonly beforeSeq?: null | number;

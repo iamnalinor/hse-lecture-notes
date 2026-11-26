@@ -5,6 +5,7 @@ import { createServer, type ServerResponse } from "node:http";
 
 /** Playwright's route.fulfill buffers bodies. Write actual HTTP chunks so the UI can act between them. */
 export const mockMessageStream = async (page: Page, shouldHoldMeta: boolean) => {
+  let isTitleHeld = false;
   const received = Promise.withResolvers<boolean>();
   const sent: Record<string, unknown>[] = [];
   let response: ServerResponse | undefined;
@@ -13,6 +14,9 @@ export const mockMessageStream = async (page: Page, shouldHoldMeta: boolean) => 
       throw new Error("No message request received");
     }
     response.write(`${JSON.stringify(frame)}\n`);
+  };
+  const sendTitle = (): void => {
+    send({ type: "title", threadId: "t", title: "Новая тема" });
   };
   const sendMeta = (): void => {
     send({
@@ -25,7 +29,9 @@ export const mockMessageStream = async (page: Page, shouldHoldMeta: boolean) => 
       generatedTitle: null,
       degraded: { active: false },
     });
-    send({ type: "title", threadId: "t", title: "Новая тема" });
+    if (!isTitleHeld) {
+      sendTitle();
+    }
   };
   const server = createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -60,5 +66,15 @@ export const mockMessageStream = async (page: Page, shouldHoldMeta: boolean) => 
     }
     await route.continue({ url });
   });
-  return { sent, send, sendMeta, received: received.promise, end: () => response?.end() };
+  return {
+    sent,
+    send,
+    sendMeta,
+    sendTitle,
+    holdTitle: () => {
+      isTitleHeld = true;
+    },
+    received: received.promise,
+    end: () => response?.end(),
+  };
 };

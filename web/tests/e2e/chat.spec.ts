@@ -63,6 +63,26 @@ test("topic arrives before the answer and one submitted question stays in histor
   expect(mock.sent).toHaveLength(1);
 });
 
+test("the header says «Чат» until the topic arrives and never shows the question", async ({
+  page,
+}) => {
+  const mock = await mockChat(page, true);
+  mock.holdTitle();
+  const input = await openChat(page);
+  await input.fill("Объясни правило");
+  await input.press("Enter");
+  await mock.received;
+  await expect(page.locator(".ai-user")).toHaveText(/Объясни правило/u);
+  await expect(page.locator(".ai-title")).toHaveText("Чат");
+  await page.getByRole("button", { name: "История чатов" }).click();
+  await expect(page.getByRole("group", { name: "История чатов" })).toHaveText("Чат");
+  await page.keyboard.press("Escape");
+  mock.sendTitle();
+  await expect(page.locator(".ai-title")).toHaveText("Новая тема");
+  mock.complete();
+  await expect(page.locator(".ai-title")).toHaveText("Новая тема");
+});
+
 test("an early stop waits for meta while the answer stream remains readable", async ({ page }) => {
   const mock = await mockChat(page, true, true);
   const stopped = Promise.withResolvers<Record<string, string>>();
