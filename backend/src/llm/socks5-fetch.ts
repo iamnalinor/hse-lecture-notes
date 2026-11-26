@@ -64,7 +64,11 @@ class BufferedReader {
     return out;
   }
 
-  async readUntil(delimiter: Uint8Array, maxBytes = 65_536, stage: "headers" | "body" = "headers"): Promise<Uint8Array> {
+  async readUntil(
+    delimiter: Uint8Array,
+    maxBytes = 65_536,
+    stage: "headers" | "body" = "headers",
+  ): Promise<Uint8Array> {
     while (true) {
       const idx = indexOfBytes(this.buf, delimiter);
       if (idx !== -1) {
@@ -112,8 +116,16 @@ export class ResponseEofError extends Error {
 }
 
 export class ProxyConnectError extends Error {
-  constructor(readonly reply: number | null, cause?: unknown) {
-    super(reply === null ? "Proxy connection failed before request" : `SOCKS5 CONNECT failed (rep=${reply})`, { cause });
+  constructor(
+    readonly reply: number | null,
+    cause?: unknown,
+  ) {
+    super(
+      reply === null
+        ? "Proxy connection failed before request"
+        : `SOCKS5 CONNECT failed (rep=${reply})`,
+      { cause },
+    );
   }
 }
 
@@ -351,11 +363,7 @@ export async function fetchViaProxy(
   const proxyPass = decodeURIComponent(proxyUrl.password);
 
   const targetUrl =
-    typeof input === "string"
-      ? new URL(input)
-      : input instanceof URL
-        ? input
-        : new URL(input.url);
+    typeof input === "string" ? new URL(input) : input instanceof URL ? input : new URL(input.url);
   const isHttps = targetUrl.protocol === "https:";
   const targetHost = targetUrl.hostname;
   const targetPort = targetUrl.port ? Number(targetUrl.port) : isHttps ? 443 : 80;
@@ -424,13 +432,9 @@ export async function fetchViaProxy(
         const chunk = await rawBr.readNextChunk();
         return chunk ?? undefined;
       });
-      const tls = await subtlsStartTls(
-        targetHost,
-        rootCertsDb,
-        rq.read.bind(rq),
-        networkWrite,
-        { useSNI: true },
-      );
+      const tls = await subtlsStartTls(targetHost, rootCertsDb, rq.read.bind(rq), networkWrite, {
+        useSNI: true,
+      });
       writeAppData = async (data: Uint8Array) => {
         const CHUNK_SIZE = 8192;
         for (let offset = 0; offset < data.length; offset += CHUNK_SIZE) {

@@ -28,16 +28,39 @@ are named with their own detail; anything unknown stays a generic 500 with only 
 export function classifyError(err: unknown): PublicError {
   const message = text(err);
   if (/exceeded D1'?s? .*limit|daily row (read|write) limit/iu.test(message)) {
-    return { status: 503, code: "storage_quota_exceeded", message: PUBLIC_ERROR_MESSAGES.storage_quota_exceeded!, detail: short(message) };
+    return {
+      status: 503,
+      code: "storage_quota_exceeded",
+      message: PUBLIC_ERROR_MESSAGES.storage_quota_exceeded!,
+      detail: short(message),
+    };
   }
   if (/\bD1_[A-Z_]+|D1 DB/u.test(message)) {
-    return { status: 503, code: "storage_unavailable", message: PUBLIC_ERROR_MESSAGES.storage_unavailable!, detail: short(message) };
+    return {
+      status: 503,
+      code: "storage_unavailable",
+      message: PUBLIC_ERROR_MESSAGES.storage_unavailable!,
+      detail: short(message),
+    };
   }
-  if (/VECTOR_|vectorize|InferenceUpstreamError|AiError/iu.test(message) || (err instanceof Error && /Ai|Vector/u.test(err.name))) {
-    return { status: 503, code: "search_unavailable", message: PUBLIC_ERROR_MESSAGES.search_unavailable!, detail: short(message) };
+  if (
+    /VECTOR_|vectorize|InferenceUpstreamError|AiError/iu.test(message) ||
+    (err instanceof Error && /Ai|Vector/u.test(err.name))
+  ) {
+    return {
+      status: 503,
+      code: "search_unavailable",
+      message: PUBLIC_ERROR_MESSAGES.search_unavailable!,
+      detail: short(message),
+    };
   }
   if (err instanceof LlmUpstreamError) {
-    return { status: 502, code: "upstream_error", message: PUBLIC_ERROR_MESSAGES.upstream_error!, detail: `HTTP ${err.status} ${err.code}`.trim() };
+    return {
+      status: 502,
+      code: "upstream_error",
+      message: PUBLIC_ERROR_MESSAGES.upstream_error!,
+      detail: `HTTP ${err.status} ${err.code}`.trim(),
+    };
   }
   return {
     status: 500,

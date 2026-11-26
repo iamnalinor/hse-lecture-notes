@@ -160,7 +160,10 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     for (let n = 1; n <= policy.maxToolRounds && !abort.signal.aborted && canContinue; n++) {
       const topicStage = needsTopic;
       const forced =
-        !topicStage && (n === policy.maxToolRounds || toolCalls >= policy.maxToolCalls || runner.isOutputBudgetExhausted);
+        !topicStage &&
+        (n === policy.maxToolRounds ||
+          toolCalls >= policy.maxToolCalls ||
+          runner.isOutputBudgetExhausted);
       let roundText = "";
       const appendText = (delta: string) => {
         if (topicStage || !delta) return;
@@ -301,7 +304,10 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
               output(call.callId, {
                 ok: true,
                 ...(call.name === "suggest_reply" && !answer
-                  ? { instruction: "Предложение сохранено. Теперь ответь пользователю; повторять служебный вызов не нужно." }
+                  ? {
+                      instruction:
+                        "Предложение сохранено. Теперь ответь пользователю; повторять служебный вызов не нужно.",
+                    }
                   : {}),
               });
             } catch {
@@ -333,14 +339,21 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
                   };
           const index = steps.push(step) - 1;
           sendFrame({ type: "step", steps: [...steps] });
-          const value = await waitForTool(abort.signal, () => runner.execute(call.name, call.arguments));
+          const value = await waitForTool(abort.signal, () =>
+            runner.execute(call.name, call.arguments),
+          );
           if (value.step.kind === "note") steps.splice(index, 1);
           else steps[index] = value.step;
           sendFrame({ type: "step", steps: [...steps] });
-          appendToolOutput(call.callId, value.output || JSON.stringify({
-            error: "tool_output_limit",
-            instruction: "Доступный объем материалов исчерпан. Ответь по уже найденному, не вызывай инструменты и не упоминай служебные лимиты. Если данных не хватает, прямо обозначь, что проверить не удалось.",
-          }));
+          appendToolOutput(
+            call.callId,
+            value.output ||
+              JSON.stringify({
+                error: "tool_output_limit",
+                instruction:
+                  "Доступный объем материалов исчерпан. Ответь по уже найденному, не вызывай инструменты и не упоминай служебные лимиты. Если данных не хватает, прямо обозначь, что проверить не удалось.",
+              }),
+          );
         }
         if (answer && !abort.signal.aborted) {
           finalStatus = "done";
@@ -391,12 +404,13 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
           : error instanceof ResponseEofError
             ? "upstream_eof"
             : classifyError(error).code;
-    if (!abort.signal.aborted) logEvent("error", "agent_run_exception", {
-      runId,
-      code: errorCode,
-      upstreamStatus: error instanceof LlmUpstreamError ? error.status : undefined,
-      detail: classifyError(error).detail,
-    });
+    if (!abort.signal.aborted)
+      logEvent("error", "agent_run_exception", {
+        runId,
+        code: errorCode,
+        upstreamStatus: error instanceof LlmUpstreamError ? error.status : undefined,
+        detail: classifyError(error).detail,
+      });
     finalStatus = text.trim() ? "incomplete" : "error";
   } finally {
     clearTimeout(timer);
@@ -447,7 +461,11 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
     toolCalls,
   });
   if (!won) {
-    sendFrame({ type: "error", code: "run_expired", message: "Ответ уже завершен. Обнови историю беседы." });
+    sendFrame({
+      type: "error",
+      code: "run_expired",
+      message: "Ответ уже завершен. Обнови историю беседы.",
+    });
     return;
   }
   sendFrame({

@@ -4,14 +4,20 @@ import type { ServicePolicy } from "../src/types";
 
 export function validatePolicyPatch(value: unknown, template: unknown, path: string): void {
   if (template && typeof template === "object") {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Expected an object at ${path}`);
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      throw new Error(`Expected an object at ${path}`);
     for (const [key, item] of Object.entries(value)) {
       if (!Object.hasOwn(template, key)) throw new Error(`Unknown policy field ${path}.${key}`);
       validatePolicyPatch(item, (template as Record<string, unknown>)[key], `${path}.${key}`);
     }
-  } else if (typeof value !== typeof template || (typeof value === "string" && !value.trim()) ||
-      (typeof value === "number" && (!Number.isFinite(value) || value < 0 ||
-        (path === "policy.budgets.weeklyWarnRatio" ? value > 1 : !Number.isSafeInteger(value))))) {
+  } else if (
+    typeof value !== typeof template ||
+    (typeof value === "string" && !value.trim()) ||
+    (typeof value === "number" &&
+      (!Number.isFinite(value) ||
+        value < 0 ||
+        (path === "policy.budgets.weeklyWarnRatio" ? value > 1 : !Number.isSafeInteger(value))))
+  ) {
     throw new Error(`Invalid policy value at ${path}`);
   }
 }

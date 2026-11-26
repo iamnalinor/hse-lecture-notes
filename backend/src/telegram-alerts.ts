@@ -22,13 +22,27 @@ export async function sendOwnerAlert(
 
   const sentPath = `$.${key}`;
   const leasePath = `$.${key}Lease`;
-  const claim = await db.run(db.prepare(`
+  const claim = await db.run(
+    db
+      .prepare(`
     INSERT INTO service_config (key, value_json, updated_at) VALUES ('alerts_state', json_object(?, ?), ?)
     ON CONFLICT(key) DO UPDATE SET value_json = json_set(value_json, ?, ?), updated_at = excluded.updated_at
     WHERE COALESCE(json_extract(value_json, ?), 0) <= ?
       AND (COALESCE(json_extract(value_json, ?), 0) = 0 OR json_extract(value_json, ?) <= ?)
-  `).bind(key + "Lease", nowMs + DELIVERY_LEASE_MS, nowMs, leasePath, nowMs + DELIVERY_LEASE_MS,
-    leasePath, nowMs, sentPath, sentPath, nowMs - ALERT_COOLDOWN_MS));
+  `)
+      .bind(
+        key + "Lease",
+        nowMs + DELIVERY_LEASE_MS,
+        nowMs,
+        leasePath,
+        nowMs + DELIVERY_LEASE_MS,
+        leasePath,
+        nowMs,
+        sentPath,
+        sentPath,
+        nowMs - ALERT_COOLDOWN_MS,
+      ),
+  );
   if (claim.meta.changes !== 1) return false;
   let delivered = false;
   try {
@@ -45,14 +59,17 @@ export async function sendOwnerAlert(
         }),
       },
     );
-    delivered = resp.ok && (await resp.json() as { ok?: boolean }).ok === true;
+    delivered = resp.ok && ((await resp.json()) as { ok?: boolean }).ok === true;
   } catch {
     return false;
   }
   if (delivered) {
-    await db.run(db.prepare(`UPDATE service_config SET value_json = json_set(json_remove(value_json, ?), ?, ?), updated_at = ?
+    await db.run(
+      db
+        .prepare(`UPDATE service_config SET value_json = json_set(json_remove(value_json, ?), ?, ?), updated_at = ?
       WHERE key = 'alerts_state' AND json_extract(value_json, ?) = ?`)
-      .bind(leasePath, sentPath, nowMs, nowMs, leasePath, nowMs + DELIVERY_LEASE_MS));
+        .bind(leasePath, sentPath, nowMs, nowMs, leasePath, nowMs + DELIVERY_LEASE_MS),
+    );
   }
   return delivered;
 }

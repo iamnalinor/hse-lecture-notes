@@ -10,7 +10,8 @@ export function bytesToBase64Url(bytes: Uint8Array): string {
 }
 
 export function base64UrlToBytes(input: string): Uint8Array {
-  const padded = input.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (input.length % 4)) % 4);
+  const padded =
+    input.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (input.length % 4)) % 4);
   const binary = atob(padded);
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
@@ -69,7 +70,10 @@ export async function hmacVerifyBase64Url(
 // Signed permanent browserToken: "<browserId>.<hmacSig>"
 // =============================================================================
 
-export async function mintBrowserToken(secret: string, browserId = randomToken(18)): Promise<{
+export async function mintBrowserToken(
+  secret: string,
+  browserId = randomToken(18),
+): Promise<{
   browserId: string;
   browserToken: string;
 }> {
@@ -99,10 +103,7 @@ export async function verifyBrowserToken(
 // HS256 JWT sign & verify
 // =============================================================================
 
-export async function signHs256Jwt<T extends object>(
-  secret: string,
-  payload: T,
-): Promise<string> {
+export async function signHs256Jwt<T extends object>(secret: string, payload: T): Promise<string> {
   const headerB64 = bytesToBase64Url(encoder.encode(JSON.stringify({ alg: "HS256", typ: "JWT" })));
   const payloadB64 = bytesToBase64Url(encoder.encode(JSON.stringify(payload)));
   const signingInput = `${headerB64}.${payloadB64}`;
@@ -180,7 +181,9 @@ export interface JwksDocument {
   keys: JwkKey[];
 }
 
-export function decodeJwtUnverified<T = Record<string, unknown>>(token: string): {
+export function decodeJwtUnverified<T = Record<string, unknown>>(
+  token: string,
+): {
   header: { alg?: string; kid?: string; typ?: string };
   payload: T;
   signingInput: string;

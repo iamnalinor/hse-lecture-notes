@@ -92,8 +92,13 @@ export function encodeEnvelope(envelope: AgentReplayEnvelope): string | null {
 function decodeSnapshot(raw: string | null): TurnContextSnapshot | null {
   try {
     const s = JSON.parse(raw ?? "null") as TurnContextSnapshot | null;
-    if (s?.version !== 1 || !Array.isArray(s.contextItems) ||
-        s.userItem?.type !== "message" || s.userItem.role !== "user") return null;
+    if (
+      s?.version !== 1 ||
+      !Array.isArray(s.contextItems) ||
+      s.userItem?.type !== "message" ||
+      s.userItem.role !== "user"
+    )
+      return null;
     // The original snapshot format included a conversation-derived title in
     // the first line of developer context. Remove it on replay and retry.
     const first = s.contextItems[0];

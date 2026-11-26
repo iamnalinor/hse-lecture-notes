@@ -1,9 +1,4 @@
-import {
-  decodeJwtUnverified,
-  decryptJsonAesGcm,
-  encryptJsonAesGcm,
-  randomToken,
-} from "../crypto";
+import { decodeJwtUnverified, decryptJsonAesGcm, encryptJsonAesGcm, randomToken } from "../crypto";
 import type { TrackedD1 } from "../db";
 import { sendOwnerAlert } from "../telegram-alerts";
 import type { Env, FetchLike } from "../types";
@@ -45,7 +40,11 @@ export function extractChatGptAccountId(accessToken: string): string | null {
   const authClaim = parsed.payload["https://api.openai.com/auth"] as
     | Record<string, unknown>
     | undefined;
-  if (authClaim && typeof authClaim.chatgpt_account_id === "string" && authClaim.chatgpt_account_id) {
+  if (
+    authClaim &&
+    typeof authClaim.chatgpt_account_id === "string" &&
+    authClaim.chatgpt_account_id
+  ) {
     return authClaim.chatgpt_account_id;
   }
   if (typeof parsed.payload.chatgpt_account_id === "string" && parsed.payload.chatgpt_account_id) {
@@ -81,7 +80,10 @@ export async function getValidCodexCredentials(
     throw new CodexAuthError("oauth_needs_reauth", "codex_credentials table is not seeded");
   }
   if (row.status === "needs_reauth") {
-    throw new CodexAuthError("oauth_needs_reauth", "Codex OAuth credentials require re-authentication");
+    throw new CodexAuthError(
+      "oauth_needs_reauth",
+      "Codex OAuth credentials require re-authentication",
+    );
   }
 
   const creds = await decryptJsonAesGcm<CodexCredentialsPayload>(
@@ -145,7 +147,10 @@ async function refreshWithLease(
       );
       if (!latest) break;
       if (latest.status === "needs_reauth") {
-        throw new CodexAuthError("oauth_needs_reauth", "Codex OAuth credentials require re-authentication");
+        throw new CodexAuthError(
+          "oauth_needs_reauth",
+          "Codex OAuth credentials require re-authentication",
+        );
       }
       if (latest.version > initialRow.version) {
         return decryptJsonAesGcm<CodexCredentialsPayload>(
@@ -162,7 +167,10 @@ async function refreshWithLease(
         return refreshWithLease(env, db, latest, latestCreds, now, fetchImpl);
       }
     }
-    throw new CodexAuthError("oauth_unavailable", "Timed out waiting for Codex OAuth refresh lease");
+    throw new CodexAuthError(
+      "oauth_unavailable",
+      "Timed out waiting for Codex OAuth refresh lease",
+    );
   }
 
   // We own the lease: perform OAuth token exchange
@@ -183,7 +191,10 @@ async function refreshWithLease(
 
     if (resp.status >= 300 && resp.status < 400) {
       await resp.body?.cancel().catch(() => {});
-      throw new CodexAuthError("oauth_unavailable", `Codex OAuth unexpected redirect (${resp.status})`);
+      throw new CodexAuthError(
+        "oauth_unavailable",
+        `Codex OAuth unexpected redirect (${resp.status})`,
+      );
     }
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
@@ -203,7 +214,8 @@ async function refreshWithLease(
             )
             .bind(now(), leaseOwner, initialRow.version, now()),
         );
-        if (!marked.meta.changes) throw new CodexAuthError("oauth_unavailable", "Refresh lease expired");
+        if (!marked.meta.changes)
+          throw new CodexAuthError("oauth_unavailable", "Refresh lease expired");
         await sendOwnerAlert(
           env,
           db,
@@ -218,7 +230,10 @@ async function refreshWithLease(
         );
       }
 
-      throw new CodexAuthError("oauth_unavailable", `Codex OAuth transient failure (${resp.status})`);
+      throw new CodexAuthError(
+        "oauth_unavailable",
+        `Codex OAuth transient failure (${resp.status})`,
+      );
     }
 
     const tokenJson = (await resp.json()) as {
@@ -261,7 +276,9 @@ async function refreshWithLease(
     );
 
     if (!saved.meta.changes) {
-      const latest = await db.first<CodexCredentialsRow>(db.prepare("SELECT * FROM codex_credentials WHERE id = 1"));
+      const latest = await db.first<CodexCredentialsRow>(
+        db.prepare("SELECT * FROM codex_credentials WHERE id = 1"),
+      );
       if (latest && latest.version > initialRow.version && latest.status === "ok") {
         return decryptJsonAesGcm(env.CODEX_CREDENTIALS_ENCRYPTION_KEY, latest.encrypted_payload);
       }

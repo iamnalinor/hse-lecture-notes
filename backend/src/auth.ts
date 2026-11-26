@@ -13,12 +13,7 @@ import type { TrackedD1 } from "./db";
 import { MAX_CHAT_BODY_BYTES } from "./request-json";
 import { loadAccountTier } from "./account-tiers";
 import { evaluateQuotasAndBudgets, loadPolicy } from "./quotas";
-import type {
-  AllowanceJwtPayload,
-  Env,
-  SessionJwtPayload,
-  Tier,
-} from "./types";
+import type { AllowanceJwtPayload, Env, SessionJwtPayload, Tier } from "./types";
 
 const MIGRATION_IDEMPOTENCY_WINDOW_MS = 10 * 60_000;
 
@@ -55,9 +50,16 @@ export async function verifyActiveSession(
     sessionToken,
     nowMs,
   );
-  if (!payload || payload.typ !== "session_v2" || payload.browserId !== expectedBrowserId ||
-      !Number.isSafeInteger(payload.exp) || !Number.isSafeInteger(payload.tgId) || payload.tgId <= 0 ||
-      typeof payload.tgName !== "string" || !payload.tgName.trim()) {
+  if (
+    !payload ||
+    payload.typ !== "session_v2" ||
+    payload.browserId !== expectedBrowserId ||
+    !Number.isSafeInteger(payload.exp) ||
+    !Number.isSafeInteger(payload.tgId) ||
+    payload.tgId <= 0 ||
+    typeof payload.tgName !== "string" ||
+    !payload.tgName.trim()
+  ) {
     return null;
   }
   return {
@@ -68,7 +70,8 @@ export async function verifyActiveSession(
 }
 
 export function policyQuestionLimit(configured: number): number {
-  if (!Number.isSafeInteger(configured) || configured < 1) throw new Error("Invalid policy.maxQuestionChars");
+  if (!Number.isSafeInteger(configured) || configured < 1)
+    throw new Error("Invalid policy.maxQuestionChars");
   return Math.min(configured, MAX_CHAT_BODY_BYTES);
 }
 
@@ -88,16 +91,27 @@ export async function verifyAllowanceToken(
     return null;
   }
   const limit = payload.maxQuestionChars;
-  if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_CHAT_BODY_BYTES)) {
+  if (
+    limit !== undefined &&
+    (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_CHAT_BODY_BYTES)
+  ) {
     return null;
   }
   if (payload.typ === "allowance") {
     // Pre-migration authenticated allowances had a revocable sid. Only guest tokens carry over.
-    return payload.tier === "guest" && !("sid" in payload) && !("tgId" in payload) && !("tgName" in payload)
-      ? payload : null;
+    return payload.tier === "guest" &&
+      !("sid" in payload) &&
+      !("tgId" in payload) &&
+      !("tgName" in payload)
+      ? payload
+      : null;
   }
-  if (payload.typ !== "account_allowance_v2" || typeof payload.tgId !== "number" ||
-      !Number.isSafeInteger(payload.tgId) || payload.tgId <= 0) {
+  if (
+    payload.typ !== "account_allowance_v2" ||
+    typeof payload.tgId !== "number" ||
+    !Number.isSafeInteger(payload.tgId) ||
+    payload.tgId <= 0
+  ) {
     return null;
   }
   return { ...payload, tier: await loadAccountTier(db, payload.tgId) };
@@ -157,7 +171,10 @@ export async function verifyTurnstileToken(
   }
 
   if (data.action !== "chat_allowance") {
-    return { ok: false, reason: data.action ? `unexpected_action:${data.action}` : "missing_action" };
+    return {
+      ok: false,
+      reason: data.action ? `unexpected_action:${data.action}` : "missing_action",
+    };
   }
 
   return { ok: true };
@@ -172,7 +189,7 @@ async function loadTelegramJwks(
   if (cached && nowMs - cached.fetchedAt < JWKS_CACHE_TTL_MS) return cached.doc;
   const doc = fetchImpl(jwksUrl).then(async (resp) => {
     if (!resp.ok) throw new Error(`Failed to fetch Telegram JWKS (${resp.status})`);
-    return await resp.json() as JwksDocument;
+    return (await resp.json()) as JwksDocument;
   });
   jwksCache.set(jwksUrl, { doc, fetchedAt: nowMs });
   try {
@@ -205,9 +222,18 @@ export async function verifyTelegramIdToken(
   const claims = parsed?.payload;
   if (!expectedAud || parsed?.header?.alg !== "RS256" || !claims) return null;
   if (claims.iss !== env.TELEGRAM_ISSUER) return null;
-  if (typeof claims.exp !== "number" || !Number.isFinite(claims.exp * 1000) || claims.exp * 1000 <= nowMs) return null;
+  if (
+    typeof claims.exp !== "number" ||
+    !Number.isFinite(claims.exp * 1000) ||
+    claims.exp * 1000 <= nowMs
+  )
+    return null;
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-  if (!audiences.some(aud => (typeof aud === "number" || typeof aud === "string") && String(aud) === expectedAud)) {
+  if (
+    !audiences.some(
+      (aud) => (typeof aud === "number" || typeof aud === "string") && String(aud) === expectedAud,
+    )
+  ) {
     return null;
   }
 
@@ -225,8 +251,8 @@ export async function verifyTelegramIdToken(
   if (idToken !== `${parsed.signingInput}.${bytesToBase64Url(parsed.signature)}`) return null;
 
   // Reject malformed claims locally. Only a verified signature can authorize login.
-  const jwks = jwksOverride ?? await loadTelegramJwks(env.TELEGRAM_JWKS_URL, fetchImpl, nowMs);
-  if (!await verifyRs256JwtWithJwks<TelegramIdClaims>(idToken, jwks)) return null;
+  const jwks = jwksOverride ?? (await loadTelegramJwks(env.TELEGRAM_JWKS_URL, fetchImpl, nowMs));
+  if (!(await verifyRs256JwtWithJwks<TelegramIdClaims>(idToken, jwks))) return null;
 
   const telegramName =
     (typeof claims.name === "string" && claims.name.trim()) ||
@@ -253,11 +279,17 @@ export async function handleTelegramLogin(
     request.headers.get("X-Browser-Token"),
   );
   if (btCheck.status === "missing") {
-    return { status: 401, body: { code: "browser_token_required", message: "Browser token required" } };
+    return {
+      status: 401,
+      body: { code: "browser_token_required", message: "Browser token required" },
+    };
   }
 
   if (!body.telegramIdToken || typeof body.telegramIdToken !== "string") {
-    return { status: 400, body: { code: "missing_telegram_token", message: "telegramIdToken required" } };
+    return {
+      status: 400,
+      body: { code: "missing_telegram_token", message: "telegramIdToken required" },
+    };
   }
 
   const verified = await verifyTelegramIdToken(
@@ -268,7 +300,10 @@ export async function handleTelegramLogin(
     options.jwksOverride,
   );
   if (!verified) {
-    return { status: 401, body: { code: "invalid_telegram_token", message: "Invalid Telegram ID token" } };
+    return {
+      status: 401,
+      body: { code: "invalid_telegram_token", message: "Invalid Telegram ID token" },
+    };
   }
 
   const policy = await loadPolicy(db);
@@ -289,7 +324,10 @@ export async function handleTelegramLogin(
   const tgOwnerKey = `tg:${verified.telegramId}`;
   const brOwnerKey = `br:${btCheck.browserId}`;
   if (verified.expiresAt <= Date.now()) {
-    return { status: 401, body: { code: "invalid_telegram_token", message: "Expired Telegram ID token" } };
+    return {
+      status: 401,
+      body: { code: "invalid_telegram_token", message: "Expired Telegram ID token" },
+    };
   }
   await db.batch([
     db
@@ -347,22 +385,23 @@ export async function handleAllowance(
   } = {},
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const nowMs = options.nowMs ?? Date.now();
-  const visitorIp = (request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For") ?? "")
-    .split(",")[0]!.trim();
+  const visitorIp = (
+    request.headers.get("CF-Connecting-IP") ??
+    request.headers.get("X-Forwarded-For") ??
+    ""
+  )
+    .split(",")[0]!
+    .trim();
   const ipAddress = normalizeIpAddress(visitorIp);
   const fingerprint =
     typeof body.fingerprint === "string" ? body.fingerprint.trim().slice(0, 128) : "";
 
   const storageToken = body.browserToken ?? request.headers.get("X-Browser-Token");
-  const btCheck = await resolveBrowserToken(
-    env.BROWSER_TOKEN_SECRET,
-    storageToken,
-  );
+  const btCheck = await resolveBrowserToken(env.BROWSER_TOKEN_SECRET, storageToken);
 
   // Turnstile verification is always required to issue a fresh 30-min allowanceToken (and to mint a new browserToken)
   const verifier =
-    options.turnstileVerifier ??
-    ((tok: string, ip: string) => verifyTurnstileToken(env, tok, ip));
+    options.turnstileVerifier ?? ((tok: string, ip: string) => verifyTurnstileToken(env, tok, ip));
 
   const tsResult = await verifier(body.turnstileToken ?? "", visitorIp);
   if (!tsResult.ok) {
@@ -376,9 +415,8 @@ export async function handleAllowance(
     };
   }
 
-  const { browserId, browserToken } = btCheck.status === "missing"
-    ? await mintBrowserToken(env.BROWSER_TOKEN_SECRET)
-    : btCheck;
+  const { browserId, browserToken } =
+    btCheck.status === "missing" ? await mintBrowserToken(env.BROWSER_TOKEN_SECRET) : btCheck;
 
   // Resolve optional authenticated session
   const session = await verifyActiveSession(env, body.sessionToken, browserId, nowMs);
@@ -406,7 +444,10 @@ export async function handleAllowance(
   let evalRes = await evaluateQuotasAndBudgets(db, policy, axes, nowMs, checks);
   // A continued thread may qualify for the low route. Admission selects its final route.
   if (evalRes.bucket === "high" && evalRes.block?.code === "global_budget_exceeded") {
-    const low = await evaluateQuotasAndBudgets(db, policy, axes, nowMs, { ...checks, forceLow: true });
+    const low = await evaluateQuotasAndBudgets(db, policy, axes, nowMs, {
+      ...checks,
+      forceLow: true,
+    });
     if (low.allowed) evalRes = { ...evalRes, allowed: true, block: null };
   }
 

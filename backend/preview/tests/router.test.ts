@@ -16,12 +16,16 @@ test("a PR path is proxied to its alias without the prefix, query kept", () => {
   expect(routed).not.toBeInstanceOf(Response);
   if (routed instanceof Response) return;
   expect(routed.prefix).toBe("/pr-45");
-  expect(routed.upstream.href).toBe("https://pr-45-hse-lecture-notes.nalinor.workers.dev/calculus/kr2/?q=1");
+  expect(routed.upstream.href).toBe(
+    "https://pr-45-hse-lecture-notes.nalinor.workers.dev/calculus/kr2/?q=1",
+  );
 });
 
 test("a PR without the trailing slash is redirected to it", () => {
   const routed = at("/pr-45?x=1");
-  expect(routed instanceof Response && routed.headers.get("Location")).toBe("https://hse-preview.nalinor.dev/pr-45/?x=1");
+  expect(routed instanceof Response && routed.headers.get("Location")).toBe(
+    "https://hse-preview.nalinor.dev/pr-45/?x=1",
+  );
 });
 
 test("anything else is a 404", () => {

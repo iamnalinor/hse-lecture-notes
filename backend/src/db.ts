@@ -52,17 +52,13 @@ export class TrackedD1 {
     return this.raw.prepare(query);
   }
 
-  async first<T = Record<string, unknown>>(
-    stmt: D1PreparedStatement,
-  ): Promise<T | null> {
+  async first<T = Record<string, unknown>>(stmt: D1PreparedStatement): Promise<T | null> {
     const res = await stmt.all<T>();
     this.telemetry.recordMeta(res.meta, true);
     return res.results[0] ?? null;
   }
 
-  async all<T = Record<string, unknown>>(
-    stmt: D1PreparedStatement,
-  ): Promise<D1Result<T>> {
+  async all<T = Record<string, unknown>>(stmt: D1PreparedStatement): Promise<D1Result<T>> {
     const res = await stmt.all<T>();
     this.telemetry.recordMeta(res.meta, true);
     return res;
@@ -74,9 +70,7 @@ export class TrackedD1 {
     return res;
   }
 
-  async batch<T = Record<string, unknown>>(
-    stmts: D1PreparedStatement[],
-  ): Promise<D1Result<T>[]> {
+  async batch<T = Record<string, unknown>>(stmts: D1PreparedStatement[]): Promise<D1Result<T>[]> {
     if (stmts.length === 0) return [];
     const results = await this.raw.batch<T>(stmts);
     results.forEach((res, idx) => {

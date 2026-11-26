@@ -25,7 +25,11 @@ import {
 import { ProxyConnectError, ResponseEofError } from "../src/llm/socks5-fetch";
 import { TrackedD1 } from "../src/db";
 import { postMessage } from "../src/chat/send-route";
-import { resolveModelRoute, computeRoundCostMicros, estimateUncertainRoundCostMicros } from "../src/pricing";
+import {
+  resolveModelRoute,
+  computeRoundCostMicros,
+  estimateUncertainRoundCostMicros,
+} from "../src/pricing";
 import {
   admitRunAtomic,
   checkpointRound,
@@ -36,7 +40,13 @@ import {
   sweepExpiredRuns,
 } from "../src/quotas";
 import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
-import { AgentToolRunner, buildSystemPrompt, normalizeQuoteText, validateAssistantQuote, validateQuoteAgainstCourse } from "../src/chat/tools";
+import {
+  AgentToolRunner,
+  buildSystemPrompt,
+  normalizeQuoteText,
+  validateAssistantQuote,
+  validateQuoteAgainstCourse,
+} from "../src/chat/tools";
 import { type Env, type LlmProvider, type ChatStreamFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
 
@@ -70,15 +80,38 @@ test("only a newly admitted HTTP question allocates a ChatRunner", async () => {
     idFromName: (runId: string) => runId,
     get: (runId: string) => {
       allocations.push(runId);
-      return { startMessage: async () => { throw new Error("RPC disconnected"); } };
+      return {
+        startMessage: async () => {
+          throw new Error("RPC disconnected");
+        },
+      };
     },
   } as unknown as Env["CHAT_RUNNER"];
-  const issue = await handleAllowance(env, db, new Request("https://site.test"), { turnstileToken: "fixture" },
-    { turnstileVerifier: async () => ({ ok: true }) });
-  const frame = { type: "send", text: "Вопрос", course: "", docId: "", clientRequestId: "once",
-    allowanceToken: issue.body.allowanceToken, browserToken: issue.body.browserToken };
-  const send = (changes: Record<string, unknown>) => postMessage(env, db,
-    new Request("https://site.test/v1/messages", { method: "POST", body: JSON.stringify({ ...frame, ...changes }) }));
+  const issue = await handleAllowance(
+    env,
+    db,
+    new Request("https://site.test"),
+    { turnstileToken: "fixture" },
+    { turnstileVerifier: async () => ({ ok: true }) },
+  );
+  const frame = {
+    type: "send",
+    text: "Вопрос",
+    course: "",
+    docId: "",
+    clientRequestId: "once",
+    allowanceToken: issue.body.allowanceToken,
+    browserToken: issue.body.browserToken,
+  };
+  const send = (changes: Record<string, unknown>) =>
+    postMessage(
+      env,
+      db,
+      new Request("https://site.test/v1/messages", {
+        method: "POST",
+        body: JSON.stringify({ ...frame, ...changes }),
+      }),
+    );
   expect((await send({ browserToken: "missing" })).status).toBe(401);
   expect((await send({ allowanceToken: "missing" })).status).toBe(401);
   expect((await send({ text: 123 })).status).toBe(400);
@@ -91,9 +124,13 @@ test("only a newly admitted HTTP question allocates a ChatRunner", async () => {
   const first = JSON.parse((await accepted.text()).trim().split("\n")[0]!);
   expect(first).toMatchObject({ type: "meta", replayed: true, runId: allocations[0] });
   const duplicate = await send({});
-  const replay = (await duplicate.text()).trim().split("\n").map(line => JSON.parse(line));
-  expect(replay.map(f => [f.type, f.runId, f.replayed])).toEqual([
-    ["meta", allocations[0], true], ["done", allocations[0], true],
+  const replay = (await duplicate.text())
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  expect(replay.map((f) => [f.type, f.runId, f.replayed])).toEqual([
+    ["meta", allocations[0], true],
+    ["done", allocations[0], true],
   ]);
   expect((await send({ text: "Новый текст со старым идентификатором" })).status).toBe(409);
   expect((await send({ clientRequestId: "second" })).status).toBe(429);
@@ -106,16 +143,38 @@ test("a pre-limit allowance uses the current question limit for new sends", asyn
   const env = makeTestEnv(shim.asD1());
   const { browserId, browserToken } = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
   const allowanceToken = await signHs256Jwt(env.ALLOWANCE_JWT_SECRET, {
-    typ: "allowance", tier: "guest", browserId, ip: "", fp: "", exp: Math.floor(Date.now() / 1000) + 60,
+    typ: "allowance",
+    tier: "guest",
+    browserId,
+    ip: "",
+    fp: "",
+    exp: Math.floor(Date.now() / 1000) + 60,
   });
-  const send = () => postMessage(env, db, new Request("https://site.test/v1/messages", {
-    method: "POST", body: JSON.stringify({ type: "send", browserToken, allowanceToken,
-      course: "", docId: "", text: "Вопрос", clientRequestId: "legacy-limit" }),
-  }));
-  const setLimit = shim.sqlite.query("UPDATE service_config SET value_json = json_set(value_json, '$.maxQuestionChars', ?) WHERE key = 'policy'");
+  const send = () =>
+    postMessage(
+      env,
+      db,
+      new Request("https://site.test/v1/messages", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "send",
+          browserToken,
+          allowanceToken,
+          course: "",
+          docId: "",
+          text: "Вопрос",
+          clientRequestId: "legacy-limit",
+        }),
+      }),
+    );
+  const setLimit = shim.sqlite.query(
+    "UPDATE service_config SET value_json = json_set(value_json, '$.maxQuestionChars', ?) WHERE key = 'policy'",
+  );
   setLimit.run(5);
   expect(await (await send()).json()).toEqual({
-    type: "error", code: "question_too_long", message: "Сократи вопрос до 5 символов.",
+    type: "error",
+    code: "question_too_long",
+    message: "Сократи вопрос до 5 символов.",
   });
   setLimit.run(6);
   expect((await send()).status).toBe(200);
@@ -192,7 +251,10 @@ describe("1. Pricing & Crypto", () => {
   });
 
   test("AES-GCM encrypt/decrypt and IPv6 /64 normalization", async () => {
-    const encrypted = await encryptJsonAesGcm("secret-key", { accessToken: "abc", refreshToken: "rt" });
+    const encrypted = await encryptJsonAesGcm("secret-key", {
+      accessToken: "abc",
+      refreshToken: "rt",
+    });
     const decrypted = await decryptJsonAesGcm<{ accessToken: string; refreshToken: string }>(
       "secret-key",
       encrypted,
@@ -235,92 +297,137 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(res.usage).toBeNull();
   });
 
-  test.each(["high", "low"] as const)("sends the configured reasoning effort for %s without max_output_tokens", async (bucket) => {
-    const shim = new SqliteD1Shim();
-    const db = new TrackedD1(shim.asD1());
-    const env = makeTestEnv(shim.asD1());
-    let sentBody: Record<string, unknown> | null = null;
-    let sentHeaders: Record<string, string> = {};
+  test.each(["high", "low"] as const)(
+    "sends the configured reasoning effort for %s without max_output_tokens",
+    async (bucket) => {
+      const shim = new SqliteD1Shim();
+      const db = new TrackedD1(shim.asD1());
+      const env = makeTestEnv(shim.asD1());
+      let sentBody: Record<string, unknown> | null = null;
+      let sentHeaders: Record<string, string> = {};
 
-    const provider = new CodexResponsesProvider(env, db, {
-      getCredentialsImpl: async () => ({
-        accessToken: "tok_123",
-        refreshToken: "rt_123",
-        accountId: "acc_999",
-        expiresAt: Date.now() + 3600_000,
-      }),
-      fetchImpl: async (_url, init) => {
-        sentBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
-        sentHeaders = (init?.headers ?? {}) as Record<string, string>;
-        return new Response(
-          makeSseStream([
-            'data: {"type":"response.output_text.delta","delta":"OK"}\n',
-            'data: {"type":"response.completed","response":{"status":"completed","output":[],"usage":{"input_tokens":10,"output_tokens":5}}}\n',
-          ]),
-          { status: 200, headers: { "Content-Type": "text/event-stream" } },
-        );
-      },
-    });
+      const provider = new CodexResponsesProvider(env, db, {
+        getCredentialsImpl: async () => ({
+          accessToken: "tok_123",
+          refreshToken: "rt_123",
+          accountId: "acc_999",
+          expiresAt: Date.now() + 3600_000,
+        }),
+        fetchImpl: async (_url, init) => {
+          sentBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+          sentHeaders = (init?.headers ?? {}) as Record<string, string>;
+          return new Response(
+            makeSseStream([
+              'data: {"type":"response.output_text.delta","delta":"OK"}\n',
+              'data: {"type":"response.completed","response":{"status":"completed","output":[],"usage":{"input_tokens":10,"output_tokens":5}}}\n',
+            ]),
+            { status: 200, headers: { "Content-Type": "text/event-stream" } },
+          );
+        },
+      });
 
-    const { model, effort } = resolveModelRoute((await loadPolicy(db)).buckets[bucket]);
-    const out = await provider.runRound({
-      model, effort,
-      instructions: "sys",
-      input: [],
-      tools: [],
-      maxResponseChars: 24000,
-      signal: new AbortController().signal,
-      onDelta: () => {},
-    });
+      const { model, effort } = resolveModelRoute((await loadPolicy(db)).buckets[bucket]);
+      const out = await provider.runRound({
+        model,
+        effort,
+        instructions: "sys",
+        input: [],
+        tools: [],
+        maxResponseChars: 24000,
+        signal: new AbortController().signal,
+        onDelta: () => {},
+      });
 
-    expect(out.completed).toBe(true);
-    expect(sentBody).not.toBeNull();
-    expect("max_output_tokens" in sentBody!).toBe(false);
-    expect(sentBody!.model).toBe(bucket === "high" ? "gpt-6.1-terra" : "gpt-6-luna");
-    expect(sentBody!.reasoning).toEqual({ effort: bucket === "high" ? "medium" : "low" });
-    expect(sentHeaders["ChatGPT-Account-Id"]).toBe("acc_999");
-    expect(sentHeaders.originator).toBe("codex_cli_rs");
-  });
+      expect(out.completed).toBe(true);
+      expect(sentBody).not.toBeNull();
+      expect("max_output_tokens" in sentBody!).toBe(false);
+      expect(sentBody!.model).toBe(bucket === "high" ? "gpt-6.1-terra" : "gpt-6-luna");
+      expect(sentBody!.reasoning).toEqual({ effort: bucket === "high" ? "medium" : "low" });
+      expect(sentHeaders["ChatGPT-Account-Id"]).toBe("acc_999");
+      expect(sentHeaders.originator).toBe("codex_cli_rs");
+    },
+  );
 
-  test.each([[5, true, 2], [5, false, 2], [2, false, 2], ["eof", false, 2], ["eof", true, 2]] as const)("bounds proxy retries (reply=%s, recovers=%s)", async (reply, recovers, expectedAttempts) => {
-    const shim = new SqliteD1Shim();
-    const db = new TrackedD1(shim.asD1());
-    let attempts = 0;
-    const error = reply === "eof" ? new ResponseEofError("headers") : new ProxyConnectError(reply);
-    const provider = new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
-      getCredentialsImpl: async () => ({ accessToken: "token", refreshToken: "", accountId: "", expiresAt: 0 }),
-      fetchImpl: async () => {
-        attempts++;
-        if (attempts === 1 || !recovers) throw error;
-        return new Response(makeSseStream(['data: {"type":"response.completed","response":{"status":"completed","output":[]}}\n']));
-      },
-    });
-    const result = provider.runRound({
-      ...resolveModelRoute((await loadPolicy(db)).buckets.low),
-      instructions: "", tools: [], input: [], maxResponseChars: 50,
-      signal: new AbortController().signal, onDelta: () => {},
-    });
-    if (recovers) expect((await result).completed).toBe(true);
-    else await expect(result).rejects.toBe(error);
-    expect(attempts).toBe(expectedAttempts);
-  });
+  test.each([
+    [5, true, 2],
+    [5, false, 2],
+    [2, false, 2],
+    ["eof", false, 2],
+    ["eof", true, 2],
+  ] as const)(
+    "bounds proxy retries (reply=%s, recovers=%s)",
+    async (reply, recovers, expectedAttempts) => {
+      const shim = new SqliteD1Shim();
+      const db = new TrackedD1(shim.asD1());
+      let attempts = 0;
+      const error =
+        reply === "eof" ? new ResponseEofError("headers") : new ProxyConnectError(reply);
+      const provider = new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
+        getCredentialsImpl: async () => ({
+          accessToken: "token",
+          refreshToken: "",
+          accountId: "",
+          expiresAt: 0,
+        }),
+        fetchImpl: async () => {
+          attempts++;
+          if (attempts === 1 || !recovers) throw error;
+          return new Response(
+            makeSseStream([
+              'data: {"type":"response.completed","response":{"status":"completed","output":[]}}\n',
+            ]),
+          );
+        },
+      });
+      const result = provider.runRound({
+        ...resolveModelRoute((await loadPolicy(db)).buckets.low),
+        instructions: "",
+        tools: [],
+        input: [],
+        maxResponseChars: 50,
+        signal: new AbortController().signal,
+        onDelta: () => {},
+      });
+      if (recovers) expect((await result).completed).toBe(true);
+      else await expect(result).rejects.toBe(error);
+      expect(attempts).toBe(expectedAttempts);
+    },
+  );
 
-  test.each([["", 2], ["response.created", 1], ["response.in_progress", 1], ["response.output_item.added", 1]] as const)(
-    "only retries an interrupted stream without a response event (%s)", async (event, expectedAttempts) => {
+  test.each([
+    ["", 2],
+    ["response.created", 1],
+    ["response.in_progress", 1],
+    ["response.output_item.added", 1],
+  ] as const)(
+    "only retries an interrupted stream without a response event (%s)",
+    async (event, expectedAttempts) => {
       const shim = new SqliteD1Shim();
       const db = new TrackedD1(shim.asD1());
       const keys: Array<string | null> = [];
       const provider = new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
-        getCredentialsImpl: async () => ({ accessToken: "token", refreshToken: "", accountId: "", expiresAt: 0 }),
+        getCredentialsImpl: async () => ({
+          accessToken: "token",
+          refreshToken: "",
+          accountId: "",
+          expiresAt: 0,
+        }),
         fetchImpl: async (_url, init) => {
           keys.push(new Headers(init?.headers).get("Idempotency-Key"));
           const line = event ? `data: ${JSON.stringify({ type: event })}\n` : ": keepalive\n";
-          return new Response(makeSseStream([keys.length === 1 ? line : 'data: {"type":"response.completed"}\n']));
+          return new Response(
+            makeSseStream([keys.length === 1 ? line : 'data: {"type":"response.completed"}\n']),
+          );
         },
       });
       const result = await provider.runRound({
-        ...resolveModelRoute((await loadPolicy(db)).buckets.low), instructions: "", input: [], tools: [],
-        maxResponseChars: 50, signal: new AbortController().signal, onDelta: () => {},
+        ...resolveModelRoute((await loadPolicy(db)).buckets.low),
+        instructions: "",
+        input: [],
+        tools: [],
+        maxResponseChars: 50,
+        signal: new AbortController().signal,
+        onDelta: () => {},
       });
       expect(keys).toHaveLength(expectedAttempts);
       expect(keys[0]).toBeTruthy();
@@ -332,22 +439,38 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
   test("model requests reject redirects at the configured endpoint", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
-    const modes: (RequestInit["redirect"])[] = [];
+    const modes: RequestInit["redirect"][] = [];
     const fetchImpl = async (_input: RequestInfo | URL, init?: RequestInit) => {
       modes.push(init?.redirect);
-      return new Response(null, { status: 307, headers: { location: "https://redirect.invalid/" } });
+      return new Response(null, {
+        status: 307,
+        headers: { location: "https://redirect.invalid/" },
+      });
     };
     const providers = [
       new OpenAIResponsesProvider({ OPENAI_API_KEY: "fixture" }, { fetchImpl }),
-      new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, { fetchImpl,
-        getCredentialsImpl: async () => ({ accessToken: "fixture", refreshToken: "", expiresAt: 0, accountId: "" }),
+      new CodexResponsesProvider(makeTestEnv(shim.asD1()), db, {
+        fetchImpl,
+        getCredentialsImpl: async () => ({
+          accessToken: "fixture",
+          refreshToken: "",
+          expiresAt: 0,
+          accountId: "",
+        }),
       }),
     ];
     for (const provider of providers) {
-      await expect(provider.runRound({
-        ...resolveModelRoute((await loadPolicy(db)).buckets.low), instructions: "", input: [], tools: [],
-        maxResponseChars: 50, signal: new AbortController().signal, onDelta: () => {},
-      })).rejects.toThrow("HTTP 307");
+      await expect(
+        provider.runRound({
+          ...resolveModelRoute((await loadPolicy(db)).buckets.low),
+          instructions: "",
+          input: [],
+          tools: [],
+          maxResponseChars: 50,
+          signal: new AbortController().signal,
+          onDelta: () => {},
+        }),
+      ).rejects.toThrow("HTTP 307");
     }
     expect(modes).toEqual(["manual", "manual"]);
   });
@@ -372,16 +495,22 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     );
 
     let redirectMode: RequestInit["redirect"];
-    await expect(getValidCodexCredentials(env, db, {
-      now: () => 1_000_000,
-      fetchImpl: async (_input, init) => {
-        redirectMode = init?.redirect;
-        return new Response("invalid_grant", { status: 307, headers: { location: "https://redirect.invalid/" } });
-      },
-    })).rejects.toMatchObject({ code: "oauth_unavailable" });
+    await expect(
+      getValidCodexCredentials(env, db, {
+        now: () => 1_000_000,
+        fetchImpl: async (_input, init) => {
+          redirectMode = init?.redirect;
+          return new Response("invalid_grant", {
+            status: 307,
+            headers: { location: "https://redirect.invalid/" },
+          });
+        },
+      }),
+    ).rejects.toMatchObject({ code: "oauth_unavailable" });
     expect(redirectMode).toBe("manual");
-    expect(await db.first(db.prepare("SELECT version, status, lease_owner FROM codex_credentials")))
-      .toEqual({ version: 1, status: "ok", lease_owner: null });
+    expect(
+      await db.first(db.prepare("SELECT version, status, lease_owner FROM codex_credentials")),
+    ).toEqual({ version: 1, status: "ok", lease_owner: null });
 
     const refreshed = await getValidCodexCredentials(env, db, {
       now: () => 1_000_000,
@@ -400,16 +529,19 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
     expect(rowAfter).toEqual({ version: 2, status: "ok" });
 
     let clock = 1_000_000;
-    await expect(getValidCodexCredentials(env, db, {
-      forceRefresh: true,
-      now: () => clock,
-      fetchImpl: async () => {
-        clock += 30_000;
-        return Response.json({ error: "invalid_grant" }, { status: 400 });
-      },
-    })).rejects.toMatchObject({ code: "oauth_unavailable" });
-    expect(await db.first(db.prepare("SELECT version, status, lease_owner FROM codex_credentials")))
-      .toEqual({ version: 2, status: "ok", lease_owner: null });
+    await expect(
+      getValidCodexCredentials(env, db, {
+        forceRefresh: true,
+        now: () => clock,
+        fetchImpl: async () => {
+          clock += 30_000;
+          return Response.json({ error: "invalid_grant" }, { status: 400 });
+        },
+      }),
+    ).rejects.toMatchObject({ code: "oauth_unavailable" });
+    expect(
+      await db.first(db.prepare("SELECT version, status, lease_owner FROM codex_credentials")),
+    ).toEqual({ version: 2, status: "ok", lease_owner: null });
 
     const late = await getValidCodexCredentials(env, db, {
       forceRefresh: true,
@@ -417,13 +549,17 @@ describe("2. Codex SSE parser & OAuth lease refresh", () => {
       fetchImpl: async () => {
         clock += 30_000;
         // A second owner tried the old token before the first response arrived.
-        await db.run(db.prepare("UPDATE codex_credentials SET status = 'needs_reauth', lease_owner = NULL"));
+        await db.run(
+          db.prepare("UPDATE codex_credentials SET status = 'needs_reauth', lease_owner = NULL"),
+        );
         return Response.json({ access_token: "rotated", refresh_token: "rotated_rt" });
       },
     });
     expect(late.refreshToken).toBe("rotated_rt");
-    expect(await db.first(db.prepare("SELECT version, status FROM codex_credentials")))
-      .toEqual({ version: 3, status: "ok" });
+    expect(await db.first(db.prepare("SELECT version, status FROM codex_credentials"))).toEqual({
+      version: 3,
+      status: "ok",
+    });
 
     // Force refresh returning invalid_grant -> marks needs_reauth & sends owner alert
     let alerted = false;
@@ -453,11 +589,16 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
   test("accepts only a valid signed browser token supplied by the client", async () => {
     const secret = "browser_secret_12345678901234567890";
     const token = await mintBrowserToken(secret);
-    expect(await resolveBrowserToken(secret, token.browserToken)).toEqual({ status: "ok", ...token });
+    expect(await resolveBrowserToken(secret, token.browserToken)).toEqual({
+      status: "ok",
+      ...token,
+    });
     expect(await resolveBrowserToken(secret, null)).toEqual({ status: "missing" });
     expect(await resolveBrowserToken(secret, undefined)).toEqual({ status: "missing" });
     expect(await resolveBrowserToken(secret, "invalid")).toEqual({ status: "missing" });
-    expect(await resolveBrowserToken(secret, `${token.browserToken}tampered`)).toEqual({ status: "missing" });
+    expect(await resolveBrowserToken(secret, `${token.browserToken}tampered`)).toEqual({
+      status: "missing",
+    });
   });
 
   test("ignores legacy cookies and never returns browser-token cookies", async () => {
@@ -467,21 +608,31 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
     const browser = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
     const legacy = await mintBrowserToken(env.BROWSER_TOKEN_SECRET);
     const cookie = `browser_token=${encodeURIComponent(legacy.browserToken)}`;
-    const missing = await handleTelegramLogin(env, db, new Request("https://api.test/v1/auth/telegram", {
-      headers: { Cookie: cookie },
-    }), {});
+    const missing = await handleTelegramLogin(
+      env,
+      db,
+      new Request("https://api.test/v1/auth/telegram", {
+        headers: { Cookie: cookie },
+      }),
+      {},
+    );
     expect(missing.status).toBe(401);
 
     const request = new Request("https://api.test/v1/allowance", {
       headers: { Cookie: cookie, "X-Browser-Token": browser.browserToken },
     });
-    const allowance = await handleAllowance(env, db, request, { turnstileToken: "ok" }, {
-      turnstileVerifier: async () => ({ ok: true }),
-    });
+    const allowance = await handleAllowance(
+      env,
+      db,
+      request,
+      { turnstileToken: "ok" },
+      {
+        turnstileVerifier: async () => ({ ok: true }),
+      },
+    );
     expect(allowance.status).toBe(200);
     expect(allowance.body.browserToken).toBe(browser.browserToken);
     expect(allowance).not.toHaveProperty("setCookie");
-
   });
 
   test("Telegram login migrates guest threads and running requests, and binds account allowances to the login browser", async () => {
@@ -493,7 +644,9 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
     // Seed internal student roster
     await db.run(
       db
-        .prepare("INSERT INTO telegram_account_tiers (telegram_id, tier, note, added_at) VALUES (777123, 'student', 'student', ?)")
+        .prepare(
+          "INSERT INTO telegram_account_tiers (telegram_id, tier, note, added_at) VALUES (777123, 'student', 'student', ?)",
+        )
         .bind(now),
     );
 
@@ -519,7 +672,13 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
     const policy = await loadPolicy(db);
     const guestAdmit = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "guest", telegramId: null, browserId, ipAddress: "10.0.0.1", fingerprint: "fp_1" },
+      axes: {
+        tier: "guest",
+        telegramId: null,
+        browserId,
+        ipAddress: "10.0.0.1",
+        fingerprint: "fp_1",
+      },
       clientRequestId: "req-1",
       payloadHash: "hash-1",
       threadId: null,
@@ -549,13 +708,25 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
     // A verified token can expire while key lookup or D1 access is pending.
     const earlier = now - 120_000;
     const expired = await generateRs256TestKeyAndJwt({
-      iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: (earlier + 10_000) / 1000, id: 777123,
+      iss: env.TELEGRAM_ISSUER,
+      aud: env.TELEGRAM_CLIENT_ID,
+      exp: (earlier + 10_000) / 1000,
+      id: 777123,
     });
-    const late = await handleTelegramLogin(env, db, loginReq, { telegramIdToken: expired.jwt }, {
-      nowMs: earlier, jwksOverride: expired.jwks,
-    });
+    const late = await handleTelegramLogin(
+      env,
+      db,
+      loginReq,
+      { telegramIdToken: expired.jwt },
+      {
+        nowMs: earlier,
+        jwksOverride: expired.jwks,
+      },
+    );
     expect(late.status).toBe(401);
-    expect(shim.sqlite.query("SELECT telegram_id FROM chat_threads WHERE id=?").get(guestAdmit.threadId)).toEqual({ telegram_id: null });
+    expect(
+      shim.sqlite.query("SELECT telegram_id FROM chat_threads WHERE id=?").get(guestAdmit.threadId),
+    ).toEqual({ telegram_id: null });
     const loginRes = await handleTelegramLogin(
       env,
       db,
@@ -595,7 +766,13 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
     // Retrying the original guest `clientRequestId: "req-1"` AFTER login MUST stay idempotent!
     const retryAfterLogin = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "student", telegramId: 777123, browserId, ipAddress: "10.0.0.1", fingerprint: "fp_1" },
+      axes: {
+        tier: "student",
+        telegramId: 777123,
+        browserId,
+        ipAddress: "10.0.0.1",
+        fingerprint: "fp_1",
+      },
       clientRequestId: "req-1",
       payloadHash: "hash-1",
       threadId: null,
@@ -610,31 +787,68 @@ describe("3. Explicit browserToken, Telegram OIDC, Session & Guest Migration", (
       expect(retryAfterLogin.runId).toBe(guestAdmit.runId);
     }
 
-    const issueAllowance = (token: string) => handleAllowance(env, db, allowReq, {
-      turnstileToken: "ok_ts", sessionToken, browserToken: token, fingerprint: "fp_1",
-    }, { nowMs: now + 6000, turnstileVerifier: async () => ({ ok: true }) });
+    const issueAllowance = (token: string) =>
+      handleAllowance(
+        env,
+        db,
+        allowReq,
+        {
+          turnstileToken: "ok_ts",
+          sessionToken,
+          browserToken: token,
+          fingerprint: "fp_1",
+        },
+        { nowMs: now + 6000, turnstileVerifier: async () => ({ ok: true }) },
+      );
     const loggedInAllowance = await issueAllowance(browserToken);
     const token = String(loggedInAllowance.body.allowanceToken);
-    expect(await verifyAllowanceToken(env, db, token, browserId, now + 7000)).toMatchObject({ tgId: 777123, tier: "student" });
-    expect(await verifyAllowanceToken(env, db, token, secondBrowser.browserId, now + 7000)).toBeNull();
-    expect((await issueAllowance(secondBrowser.browserToken)).body).toMatchObject({ tier: "guest", user: null });
+    expect(await verifyAllowanceToken(env, db, token, browserId, now + 7000)).toMatchObject({
+      tgId: 777123,
+      tier: "student",
+    });
+    expect(
+      await verifyAllowanceToken(env, db, token, secondBrowser.browserId, now + 7000),
+    ).toBeNull();
+    expect((await issueAllowance(secondBrowser.browserToken)).body).toMatchObject({
+      tier: "guest",
+      user: null,
+    });
 
     const historyUrl = new URL(`https://api.test/v1/thread?threadId=${guestAdmit.threadId}`);
     const history = (browser: string, session: string | null) =>
-      handleGetThread(env, db, new Request(historyUrl, { headers: { "X-Browser-Token": browser } }), historyUrl, session);
-    expect((await history(browserToken, sessionToken)).body.thread).toMatchObject({ id: guestAdmit.threadId });
+      handleGetThread(
+        env,
+        db,
+        new Request(historyUrl, { headers: { "X-Browser-Token": browser } }),
+        historyUrl,
+        session,
+      );
+    expect((await history(browserToken, sessionToken)).body.thread).toMatchObject({
+      id: guestAdmit.threadId,
+    });
     expect((await history(browserToken, null)).body.thread).toBeNull();
     expect((await history(secondBrowser.browserToken, sessionToken)).body.thread).toBeNull();
 
     const switched = await generateRs256TestKeyAndJwt({
-      iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: (now + 60_000) / 1000, id: 777124,
+      iss: env.TELEGRAM_ISSUER,
+      aud: env.TELEGRAM_CLIENT_ID,
+      exp: (now + 60_000) / 1000,
+      id: 777124,
     });
-    const nextLogin = await handleTelegramLogin(env, db, loginReq, { telegramIdToken: switched.jwt }, {
-      nowMs: now + 8000, jwksOverride: switched.jwks,
-    });
+    const nextLogin = await handleTelegramLogin(
+      env,
+      db,
+      loginReq,
+      { telegramIdToken: switched.jwt },
+      {
+        nowMs: now + 8000,
+        jwksOverride: switched.jwks,
+      },
+    );
     expect(nextLogin.body.user).toMatchObject({ id: 777124 });
-    expect((await history(browserToken, String(nextLogin.body.sessionToken))).body.thread).toBeNull();
-
+    expect(
+      (await history(browserToken, String(nextLogin.body.sessionToken))).body.thread,
+    ).toBeNull();
   });
 });
 
@@ -649,7 +863,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     // Guest A (uBlock -> fp="") starts a running request
     const a = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "guest", telegramId: null, browserId: "br_A", ipAddress: "1.1.1.1", fingerprint: "" },
+      axes: {
+        tier: "guest",
+        telegramId: null,
+        browserId: "br_A",
+        ipAddress: "1.1.1.1",
+        fingerprint: "",
+      },
       clientRequestId: "r-a",
       payloadHash: "h-a",
       threadId: null,
@@ -664,7 +884,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     // Guest B (different IP + browser, also uBlock -> fp="") MUST still be admitted!
     const b = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "guest", telegramId: null, browserId: "br_B", ipAddress: "2.2.2.2", fingerprint: "" },
+      axes: {
+        tier: "guest",
+        telegramId: null,
+        browserId: "br_B",
+        ipAddress: "2.2.2.2",
+        fingerprint: "",
+      },
       clientRequestId: "r-b",
       payloadHash: "h-b",
       threadId: null,
@@ -686,7 +912,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
 
     const adm = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "guest", telegramId: null, browserId: "br_1", ipAddress: "1.1.1.1", fingerprint: "fp_1" },
+      axes: {
+        tier: "guest",
+        telegramId: null,
+        browserId: "br_1",
+        ipAddress: "1.1.1.1",
+        fingerprint: "fp_1",
+      },
       clientRequestId: "r-cas",
       payloadHash: "h-cas",
       threadId: null,
@@ -742,7 +974,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
 
     const adm = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "guest", telegramId: null, browserId: "br_exp", ipAddress: "3.3.3.3", fingerprint: "fp_exp" },
+      axes: {
+        tier: "guest",
+        telegramId: null,
+        browserId: "br_exp",
+        ipAddress: "3.3.3.3",
+        fingerprint: "fp_exp",
+      },
       clientRequestId: "r-exp",
       payloadHash: "h-exp",
       threadId: null,
@@ -785,7 +1023,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
     const evalDegraded = await evaluateQuotasAndBudgets(
       db,
       policy,
-      { tier: "student", telegramId: 42, browserId: "br_42", ipAddress: "1.1.1.1", fingerprint: "" },
+      {
+        tier: "student",
+        telegramId: 42,
+        browserId: "br_42",
+        ipAddress: "1.1.1.1",
+        fingerprint: "",
+      },
       now,
     );
     expect(evalDegraded.allowed).toBe(true);
@@ -812,7 +1056,13 @@ describe("4. Quotas, empty fingerprint, O(1) budgets, single-finalization CAS & 
 
     const adm = await admitRunAtomic(db, policy, {
       env,
-      axes: { tier: "guest", telegramId: null, browserId: "br_cp", ipAddress: "4.4.4.4", fingerprint: "fp_cp" },
+      axes: {
+        tier: "guest",
+        telegramId: null,
+        browserId: "br_cp",
+        ipAddress: "4.4.4.4",
+        fingerprint: "fp_cp",
+      },
       clientRequestId: "r-cp",
       payloadHash: "h-cp",
       threadId: null,
@@ -861,16 +1111,29 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
   test("finds a calculus quiz by its page title even when its blocks miss a compound query", async () => {
     const shim = new SqliteD1Shim();
     const db = new TrackedD1(shim.asD1());
-    await db.run(db.prepare(`INSERT INTO course_documents
+    await db.run(
+      db.prepare(`INSERT INTO course_documents
       (id, course, doc_kind, doc_id, order_index, title, date, outline_json, body_tex, content_hash, updated_at)
       VALUES ('quiz', 'calculus', 'prep', 'quiz-o-symbols', 1, 'Подготовка к квизу 4: О-символика',
-      '2026-11-23', '[]', '', 'hash', 1)`));
+      '2026-11-23', '[]', '', 'hash', 1)`),
+    );
     const runner = new AgentToolRunner({
-      env: makeTestEnv(shim.asD1()), db, currentCourse: "", currentDocId: "", currentDocOrder: 0,
-      maxToolOutputChars: 12000, maxTotalToolOutputChars: 36000,
+      env: makeTestEnv(shim.asD1()),
+      db,
+      currentCourse: "",
+      currentDocId: "",
+      currentDocOrder: 0,
+      maxToolOutputChars: 12000,
+      maxTotalToolOutputChars: 36000,
     });
-    const result = await runner.execute("search_materials", JSON.stringify({ query: "матан сложные функции квиз", course: "матан" }));
-    expect(JSON.parse(result.output).documents[0]).toMatchObject({ url: "/calculus/quiz-o-symbols", date: "2026-11-23" });
+    const result = await runner.execute(
+      "search_materials",
+      JSON.stringify({ query: "матан сложные функции квиз", course: "матан" }),
+    );
+    expect(JSON.parse(result.output).documents[0]).toMatchObject({
+      url: "/calculus/quiz-o-symbols",
+      date: "2026-11-23",
+    });
     expect(result.step.links).toEqual(["/calculus/quiz-o-symbols"]);
     const catalog = await runner.execute("read_document", JSON.stringify({ course: "calculus" }));
     expect(JSON.parse(catalog.output).documents[0].doc_id).toBe("quiz-o-symbols");
@@ -887,12 +1150,26 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         return { matches: [] };
       },
     } as unknown as VectorizeIndex;
-    const tools = new AgentToolRunner({ env, db: new TrackedD1(shim.asD1()),
-      currentCourse: "discrete", currentDocId: "", currentDocOrder: 0,
-      maxToolOutputChars: 12000, maxTotalToolOutputChars: 36000 });
-    await tools.execute("search_materials", JSON.stringify({ query: "форма", doc_kind: "lecture", block_kind: "theorem" }));
-    expect(queries).toEqual([{ topK: 10, returnMetadata: "none",
-      filter: { course: "discrete", doc_kind: "lecture", block_kind: "theorem" } }]);
+    const tools = new AgentToolRunner({
+      env,
+      db: new TrackedD1(shim.asD1()),
+      currentCourse: "discrete",
+      currentDocId: "",
+      currentDocOrder: 0,
+      maxToolOutputChars: 12000,
+      maxTotalToolOutputChars: 36000,
+    });
+    await tools.execute(
+      "search_materials",
+      JSON.stringify({ query: "форма", doc_kind: "lecture", block_kind: "theorem" }),
+    );
+    expect(queries).toEqual([
+      {
+        topK: 10,
+        returnMetadata: "none",
+        filter: { course: "discrete", doc_kind: "lecture", block_kind: "theorem" },
+      },
+    ]);
   });
 
   test("BM25 ranks title match above proof match, caches repeated tool calls, and validates LaTeX quotes", async () => {
@@ -915,16 +1192,19 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
         .prepare(
           "INSERT INTO course_blocks (id, course, doc_kind, doc_id, doc_order, block_order, block_kind, anchor_id, section_id, title, statement_tex, proof_tex, lemmas, content_hash, vectorized, updated_at) VALUES (?, 'discrete', 'lecture', '07_oct16_primes', 7, 1, 'theorem', 'thm:lec07:fta', 'sec:fta', 'Основная теорема арифметики', 'Всякое натуральное $n \\ge 2$ разлагается в произведение простых чисел.', 'Доказательство по индукции.', ?, 'h1', 0, ?)",
         )
-        .bind("thm:lec07:fta", tokenizeAndStem("Основная теорема арифметики произведение простых чисел").join(" "), now),
+        .bind(
+          "thm:lec07:fta",
+          tokenizeAndStem("Основная теорема арифметики произведение простых чисел").join(" "),
+          now,
+        ),
       db
         .prepare(
           "INSERT INTO course_blocks (id, course, doc_kind, doc_id, doc_order, block_order, block_kind, anchor_id, section_id, title, statement_tex, proof_tex, lemmas, content_hash, vectorized, updated_at) VALUES (?, 'discrete', 'lecture', '08_oct23_gcd', 8, 1, 'remark', 'rem:lec08:other', 'sec:gcd', 'Замечание о НОД', 'Про НОД двух чисел.', 'Здесь просто упоминается арифметика.', ?, 'h2', 0, ?)",
         )
         .bind("rem:lec08:other", tokenizeAndStem("Замечание о НОД арифметика").join(" "), now),
-      db
-        .prepare(
-          "INSERT INTO course_blocks_fts (id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas) SELECT id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas FROM course_blocks",
-        ),
+      db.prepare(
+        "INSERT INTO course_blocks_fts (id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas) SELECT id, course, doc_kind, block_kind, title, statement_tex, proof_tex, lemmas FROM course_blocks",
+      ),
     ]);
 
     const calls = db.telemetry.dbCalls;
@@ -959,8 +1239,13 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     expect(db.telemetry.dbCalls).toBe(callsBefore);
 
     const limited = new AgentToolRunner({
-      env, db, currentCourse: "discrete", currentDocId: "", currentDocOrder: 0,
-      maxToolOutputChars: 40, maxTotalToolOutputChars: 45,
+      env,
+      db,
+      currentCourse: "discrete",
+      currentDocId: "",
+      currentDocOrder: 0,
+      maxToolOutputChars: 40,
+      maxTotalToolOutputChars: 45,
     });
     const first = await limited.execute("unknown", "{}");
     const cached = await limited.execute("unknown", "{}");
@@ -994,149 +1279,264 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     ).toBe(false);
   });
 
-  test.each([true, false])("executeAgentRun persists final completion state (completed=%s) and cost", async (completed) => {
-    const shim = new SqliteD1Shim();
-    const db = new TrackedD1(shim.asD1());
-    const env = makeTestEnv(shim.asD1());
-    const now = Date.parse("2026-11-24T21:15:00Z");
+  test.each([true, false])(
+    "executeAgentRun persists final completion state (completed=%s) and cost",
+    async (completed) => {
+      const shim = new SqliteD1Shim();
+      const db = new TrackedD1(shim.asD1());
+      const env = makeTestEnv(shim.asD1());
+      const now = Date.parse("2026-11-24T21:15:00Z");
 
-    await db.run(
-      db
-        .prepare(
-          "INSERT INTO course_blocks (id, course, doc_kind, doc_id, doc_order, block_order, block_kind, anchor_id, title, statement_tex, proof_tex, lemmas, content_hash, vectorized, updated_at) VALUES ('thm:1', 'discrete', 'lecture', '01', 1, 1, 'theorem', 'thm:1', 'Теорема 1', 'Формулировка теоремы 1.', 'Док-во 1.', 'теорем', 'h', 0, ?)",
-        )
-        .bind(now),
-    );
+      await db.run(
+        db
+          .prepare(
+            "INSERT INTO course_blocks (id, course, doc_kind, doc_id, doc_order, block_order, block_kind, anchor_id, title, statement_tex, proof_tex, lemmas, content_hash, vectorized, updated_at) VALUES ('thm:1', 'discrete', 'lecture', '01', 1, 1, 'theorem', 'thm:1', 'Теорема 1', 'Формулировка теоремы 1.', 'Док-во 1.', 'теорем', 'h', 0, ?)",
+          )
+          .bind(now),
+      );
 
-    await db.run(db.prepare("UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.model', 'gpt-6.1-terra', '$.buckets.low.effort', 'high') WHERE key = 'policy'"));
-    const policy = await loadPolicy(db);
-    const adm = await admitRunAtomic(db, policy, {
-      env,
-      axes: { tier: "guest", telegramId: null, browserId: "br_loop", ipAddress: "5.5.5.5", fingerprint: "fp_loop" },
-      clientRequestId: "r-loop",
-      payloadHash: "h-loop",
-      threadId: null,
-      course: "discrete",
-      docId: "01",
-      questionText: "Объясни теорему 1",
-      quote: null,
-      nowMs: now,
-    });
-    if (adm.kind !== "admitted") throw new Error("expected admitted");
+      await db.run(
+        db.prepare(
+          "UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.model', 'gpt-6.1-terra', '$.buckets.low.effort', 'high') WHERE key = 'policy'",
+        ),
+      );
+      const policy = await loadPolicy(db);
+      const adm = await admitRunAtomic(db, policy, {
+        env,
+        axes: {
+          tier: "guest",
+          telegramId: null,
+          browserId: "br_loop",
+          ipAddress: "5.5.5.5",
+          fingerprint: "fp_loop",
+        },
+        clientRequestId: "r-loop",
+        payloadHash: "h-loop",
+        threadId: null,
+        course: "discrete",
+        docId: "01",
+        questionText: "Объясни теорему 1",
+        quote: null,
+        nowMs: now,
+      });
+      if (adm.kind !== "admitted") throw new Error("expected admitted");
 
-    expect(await db.first(db.prepare("SELECT model, reasoning_effort FROM usage_runs WHERE id = ?").bind(adm.runId)))
-      .toEqual({ model: "gpt-6.1-terra", reasoning_effort: "high" });
-    await db.run(db.prepare("UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.effort', 'low') WHERE key = 'policy'"));
+      expect(
+        await db.first(
+          db.prepare("SELECT model, reasoning_effort FROM usage_runs WHERE id = ?").bind(adm.runId),
+        ),
+      ).toEqual({ model: "gpt-6.1-terra", reasoning_effort: "high" });
+      await db.run(
+        db.prepare(
+          "UPDATE service_config SET value_json = json_set(value_json, '$.buckets.low.effort', 'low') WHERE key = 'policy'",
+        ),
+      );
 
-    await db.run(db.prepare(
-      `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at)
+      await db.run(
+        db
+          .prepare(
+            `INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at)
        VALUES ('earlier', ?, 0, 'user', 'done', 'Предыдущий вопрос', '', '', ?, ?)`,
-    ).bind(adm.threadId, now - 3600000, now - 3600000));
+          )
+          .bind(adm.threadId, now - 3600000, now - 3600000),
+      );
 
-    let roundCalls = 0;
-    const fakeProvider: LlmProvider = {
-      async runRound(req) {
-        expect(req.input.some(item => item.type === "message" && item.role === "developer" && item.content.some(c => c.text.includes('/discrete/01')))).toBe(true);
-        expect(req.input.some(item => item.type === "message" && item.role === "user" && item.content.some(c => c.text.includes('Объясни теорему 1')))).toBe(true);
-        expect(req.model).toBe("gpt-6.1-terra");
-        expect(req.effort).toBe("high");
-        roundCalls += 1;
-        if (roundCalls === 1) return {
-          completed:true,status:"completed",text:"",truncated:false,
-          outputItems:[{type:"function_call",call_id:"topic",name:"set_topic",arguments:'{"title":"Разбор первой теоремы"}'}],
-          functionCalls:[{callId:"topic",name:"set_topic",arguments:'{"title":"Разбор первой теоремы"}'}],
-          usage:{inputTokens:100,cachedTokens:0,cacheWriteTokens:0,outputTokens:10},
-        };
-        if (roundCalls === 2) {
+      let roundCalls = 0;
+      const fakeProvider: LlmProvider = {
+        async runRound(req) {
+          expect(
+            req.input.some(
+              (item) =>
+                item.type === "message" &&
+                item.role === "developer" &&
+                item.content.some((c) => c.text.includes("/discrete/01")),
+            ),
+          ).toBe(true);
+          expect(
+            req.input.some(
+              (item) =>
+                item.type === "message" &&
+                item.role === "user" &&
+                item.content.some((c) => c.text.includes("Объясни теорему 1")),
+            ),
+          ).toBe(true);
+          expect(req.model).toBe("gpt-6.1-terra");
+          expect(req.effort).toBe("high");
+          roundCalls += 1;
+          if (roundCalls === 1)
+            return {
+              completed: true,
+              status: "completed",
+              text: "",
+              truncated: false,
+              outputItems: [
+                {
+                  type: "function_call",
+                  call_id: "topic",
+                  name: "set_topic",
+                  arguments: '{"title":"Разбор первой теоремы"}',
+                },
+              ],
+              functionCalls: [
+                {
+                  callId: "topic",
+                  name: "set_topic",
+                  arguments: '{"title":"Разбор первой теоремы"}',
+                },
+              ],
+              usage: { inputTokens: 100, cachedTokens: 0, cacheWriteTokens: 0, outputTokens: 10 },
+            };
+          if (roundCalls === 2) {
+            return {
+              completed: true,
+              status: "completed",
+              text: "",
+              truncated: false,
+              outputItems: [
+                {
+                  type: "function_call",
+                  call_id: "c_1",
+                  name: "read_block",
+                  arguments: '{"id":"thm:1"}',
+                },
+              ],
+              functionCalls: [{ callId: "c_1", name: "read_block", arguments: '{"id":"thm:1"}' }],
+              usage: { inputTokens: 1000, cachedTokens: 0, cacheWriteTokens: 0, outputTokens: 100 },
+            };
+          }
+          // Round 2 must receive matching function_call_output for c_1!
+          const hasToolOutput = req.input.some(
+            (item) => item.type === "function_call_output" && item.call_id === "c_1",
+          );
+          expect(hasToolOutput).toBe(true);
+          req.onDelta("По [Теореме 1](#thm:1) всё следует сразу.");
           return {
-            completed: true,
-            status: "completed",
-            text: "",
+            completed,
+            status: completed ? "completed" : "incomplete",
+            text: "По [Теореме 1](#thm:1) всё следует сразу.",
             truncated: false,
             outputItems: [
-              { type: "function_call", call_id: "c_1", name: "read_block", arguments: '{"id":"thm:1"}' },
+              {
+                type: "message",
+                role: "assistant",
+                content: [
+                  { type: "output_text", text: "По [Теореме 1](#thm:1) всё следует сразу." },
+                ],
+              },
             ],
-            functionCalls: [{ callId: "c_1", name: "read_block", arguments: '{"id":"thm:1"}' }],
-            usage: { inputTokens: 1000, cachedTokens: 0, cacheWriteTokens: 0, outputTokens: 100 },
+            functionCalls: [],
+            usage: { inputTokens: 1500, cachedTokens: 800, cacheWriteTokens: 0, outputTokens: 150 },
           };
-        }
-        // Round 2 must receive matching function_call_output for c_1!
-        const hasToolOutput = req.input.some(
-          (item) => item.type === "function_call_output" && item.call_id === "c_1",
-        );
-        expect(hasToolOutput).toBe(true);
-        req.onDelta("По [Теореме 1](#thm:1) всё следует сразу.");
-        return {
-          completed,
-          status: completed ? "completed" : "incomplete",
-          text: "По [Теореме 1](#thm:1) всё следует сразу.",
-          truncated: false,
-          outputItems: [
-            { type: "message", role: "assistant", content: [{type:"output_text", text:"По [Теореме 1](#thm:1) всё следует сразу."}] },
-          ],
-          functionCalls: [],
-          usage: { inputTokens: 1500, cachedTokens: 800, cacheWriteTokens: 0, outputTokens: 150 },
-        };
-      },
-    };
+        },
+      };
 
-    const frames: ChatStreamFrame[] = [];
-    await executeAgentRun({
-      env,
-      db,
-      provider: fakeProvider,
-      requestTitle: adm.requestTitle,
-      questionCreatedAt: adm.questionCreatedAt,
-      policy,
-      runId: adm.runId,
-      threadId: adm.threadId,
-      course: "discrete",
-      docId: "01",
-      tier: "guest",
-      bucket: adm.bucket,
-      route: adm.route,
-      initialReserveMicros: adm.reserveMicros,
-      degraded: adm.degraded,
-      questionText: "Объясни теорему 1",
-      quote: null,
-      signal: new AbortController().signal,
-      isStoppedByUser: () => false,
-      sendFrame: (f) => frames.push(f),
-    });
+      const frames: ChatStreamFrame[] = [];
+      await executeAgentRun({
+        env,
+        db,
+        provider: fakeProvider,
+        requestTitle: adm.requestTitle,
+        questionCreatedAt: adm.questionCreatedAt,
+        policy,
+        runId: adm.runId,
+        threadId: adm.threadId,
+        course: "discrete",
+        docId: "01",
+        tier: "guest",
+        bucket: adm.bucket,
+        route: adm.route,
+        initialReserveMicros: adm.reserveMicros,
+        degraded: adm.degraded,
+        questionText: "Объясни теорему 1",
+        quote: null,
+        signal: new AbortController().signal,
+        isStoppedByUser: () => false,
+        sendFrame: (f) => frames.push(f),
+      });
 
-    expect(frames.some(f => f.type === "title" && f.title === "Разбор первой теоремы")).toBe(true);
-    expect(await db.first(db.prepare("SELECT generated_title FROM chat_threads WHERE id = ?").bind(adm.threadId)))
-      .toEqual({ generated_title: "Разбор первой теоремы" });
-    const reply = { messageId: adm.assistantMessageId, tex: "По Теореме 1 всё", label: "Ответ ассистента" };
-    expect(await validateAssistantQuote(db, adm.threadId, reply, "br_loop")).toBe(true);
-    expect(await validateAssistantQuote(db, adm.threadId, reply, "other")).toBe(false);
-    expect(await validateAssistantQuote(db, "other", reply, "br_loop")).toBe(false);
-    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "выдуманная цитата" }, "br_loop")).toBe(false);
-    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, messageId: adm.userMessageId }, "br_loop")).toBe(false);
-    expect(roundCalls).toBe(3);
-    expect(frames.some((f) => f.type === "step")).toBe(true);
-    expect(frames.some((f) => f.type === "done" && f.status === (completed ? "done" : "incomplete"))).toBe(true);
+      expect(frames.some((f) => f.type === "title" && f.title === "Разбор первой теоремы")).toBe(
+        true,
+      );
+      expect(
+        await db.first(
+          db.prepare("SELECT generated_title FROM chat_threads WHERE id = ?").bind(adm.threadId),
+        ),
+      ).toEqual({ generated_title: "Разбор первой теоремы" });
+      const reply = {
+        messageId: adm.assistantMessageId,
+        tex: "По Теореме 1 всё",
+        label: "Ответ ассистента",
+      };
+      expect(await validateAssistantQuote(db, adm.threadId, reply, "br_loop")).toBe(true);
+      expect(await validateAssistantQuote(db, adm.threadId, reply, "other")).toBe(false);
+      expect(await validateAssistantQuote(db, "other", reply, "br_loop")).toBe(false);
+      expect(
+        await validateAssistantQuote(
+          db,
+          adm.threadId,
+          { ...reply, tex: "выдуманная цитата" },
+          "br_loop",
+        ),
+      ).toBe(false);
+      expect(
+        await validateAssistantQuote(
+          db,
+          adm.threadId,
+          { ...reply, messageId: adm.userMessageId },
+          "br_loop",
+        ),
+      ).toBe(false);
+      expect(roundCalls).toBe(3);
+      expect(frames.some((f) => f.type === "step")).toBe(true);
+      expect(
+        frames.some((f) => f.type === "done" && f.status === (completed ? "done" : "incomplete")),
+      ).toBe(true);
 
-    const msg = await db.first<{ status: string; content_tex: string }>(
-      db.prepare("SELECT status, content_tex FROM chat_messages WHERE id = ?").bind(adm.assistantMessageId),
-    );
-    expect(msg).toEqual({
-      status: completed ? "done" : "incomplete",
-      content_tex: "По [Теореме 1](#thm:1) всё следует сразу.",
-    });
+      const msg = await db.first<{ status: string; content_tex: string }>(
+        db
+          .prepare("SELECT status, content_tex FROM chat_messages WHERE id = ?")
+          .bind(adm.assistantMessageId),
+      );
+      expect(msg).toEqual({
+        status: completed ? "done" : "incomplete",
+        content_tex: "По [Теореме 1](#thm:1) всё следует сразу.",
+      });
 
-    await db.run(db.prepare("UPDATE chat_messages SET content_tex = ? WHERE id = ?")
-      .bind("_пример_ **кода**: `a * b * c`", adm.assistantMessageId));
-    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "пример кода: a * b * c" }, "br_loop")).toBe(true);
+      await db.run(
+        db
+          .prepare("UPDATE chat_messages SET content_tex = ? WHERE id = ?")
+          .bind("_пример_ **кода**: `a * b * c`", adm.assistantMessageId),
+      );
+      expect(
+        await validateAssistantQuote(
+          db,
+          adm.threadId,
+          { ...reply, tex: "пример кода: a * b * c" },
+          "br_loop",
+        ),
+      ).toBe(true);
 
-    await db.run(db.prepare("UPDATE chat_messages SET content_tex = ? WHERE id = ?")
-      .bind("Формула \\(x+1\\) и код `\\(y\\)`", adm.assistantMessageId));
-    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "Формула $x+1$" }, "br_loop")).toBe(true);
-    expect(await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "код $y$" }, "br_loop")).toBe(false);
-    const snap = await readBudgetSnapshot(db, Date.now());
-    expect(snap.globalReserved).toBe(0);
-    expect(snap.globalActual7d).toBeGreaterThan(0);
-  });
+      await db.run(
+        db
+          .prepare("UPDATE chat_messages SET content_tex = ? WHERE id = ?")
+          .bind("Формула \\(x+1\\) и код `\\(y\\)`", adm.assistantMessageId),
+      );
+      expect(
+        await validateAssistantQuote(
+          db,
+          adm.threadId,
+          { ...reply, tex: "Формула $x+1$" },
+          "br_loop",
+        ),
+      ).toBe(true);
+      expect(
+        await validateAssistantQuote(db, adm.threadId, { ...reply, tex: "код $y$" }, "br_loop"),
+      ).toBe(false);
+      const snap = await readBudgetSnapshot(db, Date.now());
+      expect(snap.globalReserved).toBe(0);
+      expect(snap.globalActual7d).toBeGreaterThan(0);
+    },
+  );
 
   test("DO archiver preserves thread if a new message arrives during snapshot", async () => {
     const shim = new SqliteD1Shim();
@@ -1171,11 +1571,12 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
     const storage: ArchiveStoragePort = {
       async putIfAbsent(key, body) {
         // Simulate a user sending a new message into thr_race right while archive is being uploaded!
-        if (objects.size === 0) shim.sqlite.exec(
-          `UPDATE chat_threads SET updated_at = ${now} WHERE id = 'thr_race';
+        if (objects.size === 0)
+          shim.sqlite.exec(
+            `UPDATE chat_threads SET updated_at = ${now} WHERE id = 'thr_race';
            INSERT INTO chat_messages (id, thread_id, seq, role, status, content_tex, course, doc_id, created_at, updated_at)
            VALUES ('m2_new', 'thr_race', 2, 'user', 'done', 'Fresh Q', 'discrete', '01', ${now}, ${now});`,
-        );
+          );
         if (objects.has(key)) return false;
         objects.set(key, body);
         return true;
@@ -1196,22 +1597,38 @@ describe("5. Stemmer, FTS5 BM25 weights, Tools, Quote Validation & Agent Loop", 
   });
 });
 
-
 test("Telegram checks audience and shares a ten-minute JWKS snapshot across failed signatures", async () => {
   const env = makeTestEnv(new SqliteD1Shim().asD1());
   const now = Date.now();
   const { jwt, jwks } = await generateRs256TestKeyAndJwt({
-    iss: env.TELEGRAM_ISSUER, aud: env.TELEGRAM_CLIENT_ID, exp: now / 1000 + 3600,
+    iss: env.TELEGRAM_ISSUER,
+    aud: env.TELEGRAM_CLIENT_ID,
+    exp: now / 1000 + 3600,
     id: 42,
   });
   let fetches = 0;
-  const fetchKeys = (async () => { fetches++; return Response.json(jwks); }) as unknown as typeof fetch;
-  expect(await verifyTelegramIdToken({ ...env, TELEGRAM_CLIENT_ID: "" }, jwt, now, fetchKeys)).toBeNull();
+  const fetchKeys = (async () => {
+    fetches++;
+    return Response.json(jwks);
+  }) as unknown as typeof fetch;
+  expect(
+    await verifyTelegramIdToken({ ...env, TELEGRAM_CLIENT_ID: "" }, jwt, now, fetchKeys),
+  ).toBeNull();
   expect(await verifyTelegramIdToken(env, "invalid", now, fetchKeys)).toBeNull();
   expect(fetches).toBe(0);
-  expect(await verifyTelegramIdToken({ ...env, TELEGRAM_CLIENT_ID: "foreign" }, jwt, now, fetchKeys, jwks)).toBeNull();
+  expect(
+    await verifyTelegramIdToken(
+      { ...env, TELEGRAM_CLIENT_ID: "foreign" },
+      jwt,
+      now,
+      fetchKeys,
+      jwks,
+    ),
+  ).toBeNull();
   const broken = jwt.slice(0, jwt.lastIndexOf(".") + 1) + "AQ";
-  await Promise.all([jwt, broken, broken].map(token => verifyTelegramIdToken(env, token, now, fetchKeys)));
+  await Promise.all(
+    [jwt, broken, broken].map((token) => verifyTelegramIdToken(env, token, now, fetchKeys)),
+  );
   expect(fetches).toBe(1);
   expect(await verifyTelegramIdToken(env, broken, now + 599_999, fetchKeys)).toBeNull();
   expect(fetches).toBe(1);
@@ -1220,10 +1637,14 @@ test("Telegram checks audience and shares a ten-minute JWKS snapshot across fail
 });
 
 test.each([
-  [undefined, false], ["", false], ["login", false], ["chat_allowance", true],
+  [undefined, false],
+  ["", false],
+  ["login", false],
+  ["chat_allowance", true],
 ] as const)("Turnstile requires the exact allowance action (%p)", async (action, accepted) => {
   const env = makeTestEnv(new SqliteD1Shim().asD1());
-  const verify = (async () => Response.json({ success: true, hostname: "localhost", action })) as unknown as typeof fetch;
+  const verify = (async () =>
+    Response.json({ success: true, hostname: "localhost", action })) as unknown as typeof fetch;
   const result = await verifyTurnstileToken(env, "local-challenge", "", verify);
   expect(result.ok).toBe(accepted);
 });
@@ -1233,22 +1654,39 @@ test("Turnstile gets the visitor IPv6 address while allowance retains the quota 
   const db = new TrackedD1(shim.asD1());
   const env = makeTestEnv(shim.asD1());
   const ip = "2001:db8:abcd:12::42";
-  const response = await handleAllowance(env, db, new Request("https://example.org", {
-    headers: { "CF-Connecting-IP": ip },
-  }), { turnstileToken: "t" }, { turnstileVerifier: async (_, remoteIp) => {
-    expect(remoteIp).toBe(ip);
-    return { ok: true };
-  } });
-  const browser = await resolveBrowserToken(env.BROWSER_TOKEN_SECRET, String(response.body.browserToken));
+  const response = await handleAllowance(
+    env,
+    db,
+    new Request("https://example.org", {
+      headers: { "CF-Connecting-IP": ip },
+    }),
+    { turnstileToken: "t" },
+    {
+      turnstileVerifier: async (_, remoteIp) => {
+        expect(remoteIp).toBe(ip);
+        return { ok: true };
+      },
+    },
+  );
+  const browser = await resolveBrowserToken(
+    env.BROWSER_TOKEN_SECRET,
+    String(response.body.browserToken),
+  );
   if (browser.status !== "ok") throw Error("Missing browser");
-  expect((await verifyAllowanceToken(env, db, String(response.body.allowanceToken), browser.browserId))?.ip)
-    .toBe("2001:0db8:abcd:0012::/64");
+  expect(
+    (await verifyAllowanceToken(env, db, String(response.body.allowanceToken), browser.browserId))
+      ?.ip,
+  ).toBe("2001:0db8:abcd:0012::/64");
 });
 
 test("optional archive keeps history when R2 is disabled", async () => {
   const shim = new SqliteD1Shim();
   const db = new TrackedD1(shim.asD1());
-  shim.sqlite.query("INSERT INTO chat_threads(id,title,browser_id,created_at,updated_at) VALUES ('old','old thread','b',1,1)").run();
+  shim.sqlite
+    .query(
+      "INSERT INTO chat_threads(id,title,browser_id,created_at,updated_at) VALUES ('old','old thread','b',1,1)",
+    )
+    .run();
   expect(await runArchiveBatch(db, null)).toMatchObject({ threadsDeleted: 0, runsDeleted: 0 });
   expect(shim.sqlite.query("SELECT id FROM chat_threads").get()).toEqual({ id: "old" });
 });

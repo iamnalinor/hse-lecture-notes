@@ -203,15 +203,28 @@ export interface LlmRoundRequest {
   onUnconfirmedRetry?: () => void;
 }
 
-export interface TurnSuggestion { suggestion: string | null }
+export interface TurnSuggestion {
+  suggestion: string | null;
+}
 export interface TurnContextSnapshot {
-  version: 1; contextItems: CodexInputItem[]; userItem: CodexInputItem; currentDocOrder: number;
+  version: 1;
+  contextItems: CodexInputItem[];
+  userItem: CodexInputItem;
+  currentDocOrder: number;
 }
 export interface ReplayProvenance {
-  provider: string; model: string; effort: string; promptVersion: string; toolsVersion: string; inputPrefixHash: string;
+  provider: string;
+  model: string;
+  effort: string;
+  promptVersion: string;
+  toolsVersion: string;
+  inputPrefixHash: string;
 }
 export interface AgentReplayEnvelope {
-  version: 1; complete: boolean; provenance: ReplayProvenance | null; items: CodexInputItem[];
+  version: 1;
+  complete: boolean;
+  provenance: ReplayProvenance | null;
+  items: CodexInputItem[];
 }
 export interface LlmRoundResult {
   observedOutputChars?: number;

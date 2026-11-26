@@ -43,14 +43,29 @@ function runD1Sql(sql: string, remote: boolean): void {
 
 function initializeDatabase(remote: boolean): void {
   runD1(["migrations", "apply", DB_NAME], remote);
-  runD1Sql(`INSERT INTO service_config (key, value_json, updated_at)
+  runD1Sql(
+    `INSERT INTO service_config (key, value_json, updated_at)
 VALUES ('policy', ${sqlString(JSON.stringify(initialPolicy satisfies ServicePolicy))}, ${Date.now()})
-ON CONFLICT(key) DO NOTHING`, remote);
+ON CONFLICT(key) DO NOTHING`,
+    remote,
+  );
 }
 
 function queryD1(sql: string, remote: boolean): Array<Record<string, string | null>> {
-  const result = spawnSync("bunx", ["wrangler", "d1", "execute", DB_NAME, remote ? "--remote" : "--local",
-    "--json", "--command", sql], { cwd: new URL("..", import.meta.url).pathname, encoding: "utf8" });
+  const result = spawnSync(
+    "bunx",
+    [
+      "wrangler",
+      "d1",
+      "execute",
+      DB_NAME,
+      remote ? "--remote" : "--local",
+      "--json",
+      "--command",
+      sql,
+    ],
+    { cwd: new URL("..", import.meta.url).pathname, encoding: "utf8" },
+  );
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(result.stderr || "Wrangler D1 query failed");
   return JSON.parse(result.stdout)[0].results;
@@ -133,18 +148,23 @@ ON CONFLICT(id) DO UPDATE SET
     const raw = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
     validatePolicyPatch(raw, initialPolicy, "policy");
     const patch = sqlString(JSON.stringify(raw));
-    const candidate = queryD1(`SELECT value_json AS previous,
+    const candidate = queryD1(
+      `SELECT value_json AS previous,
       json_patch(COALESCE(value_json, ${sqlString(JSON.stringify(initialPolicy))}), ${patch}) AS merged
-      FROM (SELECT (SELECT value_json FROM service_config WHERE key = 'policy') AS value_json)`, remote)[0];
+      FROM (SELECT (SELECT value_json FROM service_config WHERE key = 'policy') AS value_json)`,
+      remote,
+    )[0];
     if (!candidate?.merged) throw new Error("Unable to read current policy");
     validatePolicy(JSON.parse(candidate.merged));
     const value = sqlString(candidate.merged);
-    const sql = candidate.previous == null
-      ? `INSERT INTO service_config(key, value_json, updated_at) VALUES ('policy', ${value}, ${now})
+    const sql =
+      candidate.previous == null
+        ? `INSERT INTO service_config(key, value_json, updated_at) VALUES ('policy', ${value}, ${now})
           ON CONFLICT DO NOTHING RETURNING key`
-      : `UPDATE service_config SET value_json = ${value}, updated_at = ${now}
+        : `UPDATE service_config SET value_json = ${value}, updated_at = ${now}
           WHERE key = 'policy' AND value_json = ${sqlString(candidate.previous)} RETURNING key`;
-    if (!queryD1(sql, remote).length) throw new Error("Policy changed concurrently. Run set-policy again.");
+    if (!queryD1(sql, remote).length)
+      throw new Error("Policy changed concurrently. Run set-policy again.");
     console.log("Policy updated successfully.");
     return;
   }
@@ -162,7 +182,10 @@ ON CONFLICT(id) DO UPDATE SET
   }
 
   if (cmd === "set-tier") {
-    if (!args[1] || !args[2]) throw new Error("Usage: set-tier <telegram-id> <default|student|extended> [--note <note>] [--remote]");
+    if (!args[1] || !args[2])
+      throw new Error(
+        "Usage: set-tier <telegram-id> <default|student|extended> [--note <note>] [--remote]",
+      );
     runD1Sql(assignmentSql(args[1], args[2], now, getFlag(args, "--note")), remote);
     console.log("Account tier updated.");
     return;

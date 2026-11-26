@@ -15,10 +15,14 @@ export class SqliteD1Shim {
     this.sqlite.exec("PRAGMA foreign_keys = ON;");
     if (applyInitMigration) {
       const dir = resolve(import.meta.dir, "../migrations");
-      for (const name of readdirSync(dir).filter(name => name.endsWith(".sql")).sort()) {
+      for (const name of readdirSync(dir)
+        .filter((name) => name.endsWith(".sql"))
+        .sort()) {
         this.sqlite.exec(readFileSync(resolve(dir, name), "utf8"));
       }
-      this.sqlite.query("INSERT INTO service_config (key, value_json, updated_at) VALUES ('policy', ?, 0)").run(JSON.stringify(initialPolicy));
+      this.sqlite
+        .query("INSERT INTO service_config (key, value_json, updated_at) VALUES ('policy', ?, 0)")
+        .run(JSON.stringify(initialPolicy));
     }
   }
 

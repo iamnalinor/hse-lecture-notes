@@ -1,14 +1,11 @@
 import { getValidCodexCredentials, type CodexCredentialsPayload } from "./codex-auth";
 import type { TrackedD1 } from "../db";
 import { fetchViaProxy, ProxyConnectError, ResponseEofError } from "./socks5-fetch";
-import type {
-  Env,
-  FetchLike,
-  LlmProvider,
-  LlmRoundRequest,
-  LlmRoundResult,
-} from "../types";
-import { LlmUpstreamError as CodexUpstreamError, parseResponsesSseStream as parseCodexSseStream } from "./responses-stream";
+import type { Env, FetchLike, LlmProvider, LlmRoundRequest, LlmRoundResult } from "../types";
+import {
+  LlmUpstreamError as CodexUpstreamError,
+  parseResponsesSseStream as parseCodexSseStream,
+} from "./responses-stream";
 
 export { CodexUpstreamError, parseCodexSseStream };
 
@@ -89,7 +86,7 @@ export class CodexResponsesProvider implements LlmProvider {
           input: req.input,
           tools: req.tools,
           parallel_tool_calls: req.parallelToolCalls ?? true,
-          ...(req.toolChoice ? {tool_choice: req.toolChoice} : {}),
+          ...(req.toolChoice ? { tool_choice: req.toolChoice } : {}),
           include: ["reasoning.encrypted_content"],
           store: false,
           stream: true,
@@ -140,16 +137,24 @@ export class CodexResponsesProvider implements LlmProvider {
           req.maxResponseChars,
           req.onDelta,
           () => localAbort.abort("max_response_chars"),
-          "codex", { enforceProtocol: Boolean(req.toolChoice), hideText: req.hideText },
+          "codex",
+          { enforceProtocol: Boolean(req.toolChoice), hideText: req.hideText },
         );
       } catch (error) {
-        const proxyFailure = error instanceof ProxyConnectError &&
+        const proxyFailure =
+          error instanceof ProxyConnectError &&
           (error.reply === null || [1, 2, 3, 4, 5, 6].includes(error.reply));
         const unconfirmed = error instanceof ResponseEofError && error.stage !== "body";
-        if ((!proxyFailure && !unconfirmed) || retriedTransport || req.signal.aborted || attempt >= 2) throw error;
+        if (
+          (!proxyFailure && !unconfirmed) ||
+          retriedTransport ||
+          req.signal.aborted ||
+          attempt >= 2
+        )
+          throw error;
         retriedTransport = true;
         if (unconfirmed) req.onUnconfirmedRetry?.();
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+        await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 400));
       } finally {
         req.signal.removeEventListener("abort", onParentAbort);
       }
