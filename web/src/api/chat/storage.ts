@@ -81,6 +81,8 @@ export const readPageThread = (key: string): null | string =>
   safeGet(`hse_chat_thread:${key}`) ?? safeGet(`hse_chat_thread:${key}:/`);
 export const savePageThread = (key: string, id: null | string): void => {
   writeValue(`hse_chat_thread:${key}`, id);
+  // Any write, «no thread» included, supersedes the old key: otherwise a new chat would fall back to it.
+  writeValue(`hse_chat_thread:${key}:/`, null);
 };
 
 const parseJson = (raw: null | string): unknown => {

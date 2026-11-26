@@ -55,7 +55,7 @@ export const mockChat = async (page: Page, isEmptyThread = false, shouldHoldMeta
         allowanceExpiresAt: Date.now() + 3_600_000,
       }),
     );
-    localStorage.setItem("hse_chat_thread:1:/", "t");
+    localStorage.setItem("hse_chat_thread:1", "t");
   });
   await page.route("http://127.0.0.1:8787/**", async (route) => {
     const isThread = route.request().url().includes("/v1/thread");
