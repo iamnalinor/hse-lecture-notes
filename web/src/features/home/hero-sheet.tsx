@@ -20,7 +20,7 @@ export const HeroSheet = () => (
   >
     <div className="rotate-[-0.6deg] rounded-md border border-rule bg-card p-6 text-body/normal shadow-[0_30px_60px_-30px_rgba(0,0,0,0.18)]">
       <div className="mb-4 flex justify-between gap-3 text-caption text-muted">
-        <span>Дискретная математика · лекция 6</span>
+        <span>Дискретная математика ·&nbsp;лекция 6</span>
         <span className="shrink-0">§ 6.2</span>
       </div>
       <Block id={undefined} kind="theorem" name={NAME} number={undefined} tag={undefined}>
@@ -45,7 +45,7 @@ export const HeroSheet = () => (
         <HomeFormula name="minimum" />.
       </p>
       <div className="flex justify-between border-t border-rule px-4 py-2 text-caption text-muted">
-        <span>Лекция 5 · Индукция на натуральных</span>
+        <span>Лекция 5 ·&nbsp;Индукция на натуральных</span>
         <b className="text-def">Перейти →</b>
       </div>
     </div>

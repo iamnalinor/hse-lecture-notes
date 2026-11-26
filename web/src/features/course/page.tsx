@@ -44,7 +44,7 @@ export const Component = () => {
           </span>
           <span>
             <b className="font-semibold text-ink">{stats.definitions}</b>{" "}
-            {plural(stats.definitions, ["определение", "определения", "определений"])} ·{" "}
+            {plural(stats.definitions, ["определение", "определения", "определений"])} ·&nbsp;
             <b className="font-semibold text-ink">{stats.theorems}</b>{" "}
             {plural(stats.theorems, ["теорема", "теоремы", "теорем"])}
           </span>
@@ -53,7 +53,7 @@ export const Component = () => {
           {current !== undefined && (
             <Link className={BUTTON_PRIMARY} to={paths.lecture(info.id, current.weekId)}>
               Читать лекцию {current.lecture}{" "}
-              <span className="font-normal opacity-75">· {dayMonth(current.date)}</span>
+              <span className="font-normal opacity-75">·&nbsp;{dayMonth(current.date)}</span>
             </Link>
           )}
           <Link className={BUTTON_SECONDARY} to={paths.theory(info.id)}>

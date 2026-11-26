@@ -64,7 +64,7 @@ const allowance = z
 export const parseAllowanceResponse = (data: unknown) => {
   const parsed = allowance.safeParse(data);
   if (!parsed.success) {
-    throw new Error("Не удалось прочитать ответ о доступе к чату. Попробуй ещё раз.");
+    throw new Error("Не удалось прочитать ответ о доступе к чату. Попробуй еще раз.");
   }
   return parsed.data;
 };

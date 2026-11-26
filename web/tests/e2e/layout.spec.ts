@@ -64,3 +64,61 @@ for (const width of WIDTHS) {
     });
   });
 }
+
+test("the header search at 390 px shows the start of a long query", async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await mockSiteData(page);
+  await page.goto("/");
+  const field = page.getByRole("combobox", { name: "Поиск по конспектам" });
+  await field.fill("определитель");
+  const state = await field.evaluate((input) => ({
+    clientWidth: input.clientWidth,
+    scrollLeft: input.scrollLeft,
+    scrollWidth: input.scrollWidth,
+  }));
+  expect(state.scrollLeft).toBe(0);
+  expect(state.scrollWidth).toBeLessThanOrEqual(state.clientWidth);
+});
+
+for (const width of [320, 390, 768, 1280]) {
+  test(`${String(width)} px: the home slogan reserves its height, nothing moves when the other layers mount`, async ({
+    page,
+  }) => {
+    type SloganSnapshot = {
+      readonly layers: number;
+      readonly heading: number;
+      readonly below: number;
+    };
+    await page.setViewportSize({ height: 900, width });
+    await mockSiteData(page);
+    // Every change of the h1 is measured right where it happens (forced layout in the observer).
+    await page.addInitScript(() => {
+      const snapshots: SloganSnapshot[] = [];
+      Object.assign(globalThis, { sloganSnapshots: snapshots });
+      new MutationObserver(() => {
+        const heading = document.querySelector("h1");
+        const below = heading?.parentElement?.nextElementSibling;
+        if (heading === null || below === null || below === undefined) {
+          return;
+        }
+        const layers = heading.querySelectorAll(".slogan-layer").length;
+        if (snapshots.at(-1)?.layers !== layers) {
+          snapshots.push({
+            below: below.getBoundingClientRect().top,
+            heading: heading.getBoundingClientRect().height,
+            layers,
+          });
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await page.goto("/");
+    await expect(page.locator("h1 .slogan-layer")).toHaveCount(15);
+    const snapshots = await page.evaluate(
+      () => (globalThis as unknown as { sloganSnapshots: SloganSnapshot[] }).sloganSnapshots,
+    );
+    // the first render has the default slogan alone, then all of them
+    expect(snapshots.map((snapshot) => snapshot.layers)).toEqual([1, 15]);
+    expect(snapshots[1]?.heading).toBe(snapshots[0]?.heading);
+    expect(snapshots[1]?.below).toBe(snapshots[0]?.below);
+  });
+}

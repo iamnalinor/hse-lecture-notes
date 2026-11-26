@@ -445,6 +445,56 @@ new ones rise in 45ms apart (400ms). "fade": the layers cross-fade in 600ms. Red
   visibility: hidden;
 }
 
+/*
+The h1 reserves the height of the tallest slogan before the other layers mount: lines of the tallest slogan per
+viewport width, measured in Chromium at every width from 320 to 2560 px (the type scale changes at 640 px, the
+two-column hero at 1024 px). Where the count falls as the screen widens, the step comes 16 px later than measured,
+so a classic scrollbar cannot make the reserved height too small. Same type as `.slogan-layer` (`TYPE` in rotating-slogan.tsx).
+*/
+.slogan-h1 {
+  --slogan-lines: 4;
+  font-size: var(--text-large);
+  line-height: 1.05;
+  min-height: calc(var(--slogan-lines) * 1.05em);
+}
+
+@media (min-width: 409px) {
+  .slogan-h1 {
+    --slogan-lines: 3;
+  }
+}
+
+@media (min-width: 594px) {
+  .slogan-h1 {
+    --slogan-lines: 2;
+  }
+}
+
+@media (min-width: 640px) {
+  .slogan-h1 {
+    --slogan-lines: 3;
+    font-size: var(--text-display);
+  }
+}
+
+@media (min-width: 845px) {
+  .slogan-h1 {
+    --slogan-lines: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .slogan-h1 {
+    --slogan-lines: 4;
+  }
+}
+
+@media (min-width: 1169px) {
+  .slogan-h1 {
+    --slogan-lines: 3;
+  }
+}
+
 .slogan-layer[data-state="on"],
 .slogan-layer[data-state="off"] {
   visibility: visible;

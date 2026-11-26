@@ -40,13 +40,13 @@ const Snippet = ({ parts }: { readonly parts: readonly SnippetPart[] }) =>
 const placeOf = (hit: SearchHit, catalog: Catalog | undefined): string => {
   const course = findCourse(hit.course)?.short ?? hit.course;
   if (isCourseDoc(hit.doc)) {
-    return `${course} · ${COURSE_DOCS[hit.doc]}`;
+    return `${course} ·\u{A0}${COURSE_DOCS[hit.doc]}`;
   }
   if (isPrepId(hit.doc)) {
     const prep = catalog?.preps[hit.course]?.find((entry) => entry.id === hit.doc);
-    return `${course} · ${prepTopicName(prepGoal(hit.doc, prep?.quizNumber), prep?.topic)}`;
+    return `${course} ·\u{A0}${prepTopicName(prepGoal(hit.doc, prep?.quizNumber), prep?.topic)}`;
   }
-  return `${course} · Лекция ${String(hit.lecture)}`;
+  return `${course} ·\u{A0}Лекция ${String(hit.lecture)}`;
 };
 
 export const SearchResults = ({ active, hits, onHover, onPick }: Props) => {

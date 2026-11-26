@@ -8,7 +8,7 @@ import { hitPath, prepareIndex, search, type SearchHit } from "#web/domain/searc
 import { useIsMatching } from "#web/shared/ui/use-is-matching.ts";
 
 import { resultId } from "./result-id.ts";
-import { PhoneFold, Popover, SearchField, SearchPanel } from "./search-parts.tsx";
+import { NOT_FOUND, PhoneFold, Popover, SearchField, SearchPanel } from "./search-parts.tsx";
 
 /** Hits drawn at once: each one may hold formulas, and KaTeX is the slow part of a keystroke. */
 const FIRST_HITS = 12;
@@ -57,7 +57,7 @@ const useHits = (
     return { hits: [], status: "Загружаем конспекты…" };
   }
   const hits = search(index.data, labels.data, query);
-  return { hits, status: hits.length === 0 ? "Ничего не нашлось" : "" };
+  return { hits, status: hits.length === 0 ? NOT_FOUND : "" };
 };
 
 const step = (active: number, delta: number, count: number): number =>
@@ -97,17 +97,20 @@ const useGlobalKeys = (
 /** Fetched quietly a few seconds after load on Wi-Fi, so the first query answers at once. */
 const PREFETCH_DELAY_MS = 3000;
 
-const usePrefetchWhenFree = (want: () => void): void => {
+const usePrefetchWhenFree = (setState: React.Dispatch<React.SetStateAction<State>>): void => {
   useEffect(() => {
     const { connection } = navigator as Navigator & { readonly connection?: ConnectionInfo };
     if (!canAutoDownload(connection, { isDesktop: isDesktopDevice() })) {
       return;
     }
+    const want = (): void => {
+      setState((old) => (old.isWanted ? old : { ...old, isWanted: true }));
+    };
     const timer = setTimeout(want, PREFETCH_DELAY_MS);
     return () => {
       clearTimeout(timer);
     };
-  }, [want]);
+  }, [setState]);
 };
 
 type State = {
@@ -262,10 +265,7 @@ export const HeaderSearch = () => {
     state.isOpen,
   );
   useGlobalKeys(boxRef, fieldRef, close);
-  const want = useCallback((): void => {
-    setState((old) => (old.isWanted ? old : { ...old, isWanted: true }));
-  }, [setState]);
-  usePrefetchWhenFree(want);
+  usePrefetchWhenFree(setState);
 
   useEffect(() => {
     if (state.isOpen) {
@@ -323,6 +323,7 @@ export const HeaderSearch = () => {
               setState((old) => ({ ...old, limit: hits.length }));
             }}
             onPick={fold}
+            query={state.query}
             status={status}
           />
         </Popover>

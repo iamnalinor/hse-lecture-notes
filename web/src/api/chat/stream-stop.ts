@@ -57,7 +57,7 @@ export const createStopController = (
       headers,
     );
     state = isAccepted ? "accepted" : "failed";
-    onStopError(isAccepted ? null : "Не удалось остановить ответ. Нажми «Остановить» ещё раз.");
+    onStopError(isAccepted ? null : "Не удалось остановить ответ. Нажми «Остановить» еще раз.");
   };
   return {
     stop: () => {

@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import type { ChatQuote } from "#web/domain/chat/model.ts";
 
 import type { SendArgs, UnsentQuestion } from "../stream/types.ts";
+import type { useChatAuthState, useTelegramAuthActions } from "./use-state.ts";
+import type { useThreadState } from "./use-thread-state.ts";
 
 type Options = {
   readonly pending: null | UnsentQuestion;
@@ -43,3 +45,25 @@ export const useLoginResume = ({
     });
   }, [activeThreadId, clear, draft, pending, quote, ready, send]);
 };
+
+/** A login that interrupted a question resumes it once the panel shows a signed-in, idle thread. */
+export const canResumeLogin = (
+  {
+    auth,
+    isOpen,
+    tgAuth,
+  }: {
+    readonly auth: ReturnType<typeof useChatAuthState>;
+    readonly isOpen: boolean;
+    readonly tgAuth: ReturnType<typeof useTelegramAuthActions>;
+  },
+  thr: ReturnType<typeof useThreadState>,
+): boolean =>
+  isOpen &&
+  !tgAuth.checkingLogin &&
+  !tgAuth.verificationError &&
+  auth.user !== null &&
+  auth.block === null &&
+  !thr.isThreadLoading &&
+  !thr.isThreadFailed &&
+  !thr.isStreaming;

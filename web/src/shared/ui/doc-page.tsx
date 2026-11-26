@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 
+import { Link } from "react-router";
+
 import type { PdfDoc } from "#web/domain/preps.ts";
 
+import { BUTTON_SECONDARY } from "./button.ts";
 import { Crumbs } from "./crumbs.tsx";
 import { PdfLink } from "./pdf-link.tsx";
 
@@ -16,6 +19,8 @@ type Props = {
   readonly pageName: string;
   /** Document id of the PDF; omit when the page has none. */
   readonly pdfDoc?: string;
+  /** Link to a section of the page next to the PDF button: «К генератору билетов». */
+  readonly jump?: undefined | { readonly hash: string; readonly label: string };
 };
 
 const NO_DOWNLOADS: readonly PdfDoc[] = [];
@@ -28,6 +33,7 @@ export const DocPage = ({
   courseName,
   downloads = NO_DOWNLOADS,
   pageName,
+  jump,
   pdfDoc,
 }: Props) => (
   <div
@@ -45,6 +51,11 @@ export const DocPage = ({
         <div className="flex flex-wrap items-center gap-x-5.5 gap-y-2.5 border-b border-rule pb-6 text-footnote text-muted">
           {pdfDoc !== undefined && (
             <span className="ml-auto flex flex-wrap gap-2.5">
+              {jump !== undefined && (
+                <Link className={BUTTON_SECONDARY} to={{ hash: jump.hash }}>
+                  {jump.label}
+                </Link>
+              )}
               {downloads.map((doc) => (
                 <PdfLink
                   course={course}

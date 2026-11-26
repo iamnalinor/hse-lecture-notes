@@ -38,7 +38,7 @@ const DownloadButton = ({ missingBytes, onClick }: DownloadButtonProps) => (
     <DownloadIcon size={14} />
     Скачать все
     {missingBytes !== undefined && missingBytes > 0 && (
-      <span className="font-normal text-muted">· {formatSize(missingBytes)}</span>
+      <span className="font-normal text-muted">·&nbsp;{formatSize(missingBytes)}</span>
     )}
   </button>
 );

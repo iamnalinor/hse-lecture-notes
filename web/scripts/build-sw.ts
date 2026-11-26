@@ -28,6 +28,8 @@ const SKIPPED = new Set([
   "robots.txt",
   "sitemap.xml",
   "sw.js",
+  // changes with every build: in the manifest it would make every deploy an update of the shell
+  "version.json",
   MANIFEST_PATH,
 ]);
 // Per-page copies of the shell (`algebra/…/index.html`) for static hosting: navigations get the one shell.

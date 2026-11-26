@@ -8,6 +8,7 @@ import {
   intensity,
   MODULES,
 } from "#web/domain/curriculum.ts";
+import { plural } from "#web/domain/text.ts";
 
 import { barBorder, categoryColor, runBackground } from "./style.ts";
 
@@ -67,7 +68,7 @@ export const TotalRow = ({ scale }: { readonly scale: PlanScale }) => (
       <div
         className={`flex items-center justify-center p-1.5 text-footnote font-semibold tabular-nums ${MODULES[index] === scale.current ? "bg-wash" : ""}`}
         key={MODULES[index]}
-        title={`${String(total)} контактных часов в ${String(index + 1)} модуле`}
+        title={`${String(total)} ${plural(total, ["контактный час", "контактных часа", "контактных часов"])} в ${String(index + 1)} модуле`}
       >
         {total}
       </div>

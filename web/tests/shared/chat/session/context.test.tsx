@@ -17,6 +17,7 @@ import {
 import { readStoredAuth, saveDegraded } from "#web/api/chat/storage.ts";
 import { type ActiveChatStream, openChatMessageStream } from "#web/api/chat/stream.ts";
 import { cancelActiveTurnstile } from "#web/api/chat/widgets.ts";
+import { postChatLaunch } from "#web/shared/chat/launch-store.ts";
 import { ChatProvider, useChat } from "#web/shared/chat/session/context.tsx";
 import { makeAssistantMsg, makeUserMsg } from "#web/shared/chat/stream/helpers.ts";
 
@@ -1436,5 +1437,59 @@ describe("restoring the thread of a page", () => {
     });
     expect(chat.current.isThreadFailed).toBe(false);
     expect(chat.current.activeThreadId).toBe("algebra");
+  });
+});
+
+const lastThread = () => {
+  seedChatAuth({ browserToken: "browser" });
+  localStorage.setItem("hse_chat_thread:guest:/", "last");
+  vi.mocked(fetchChatThread).mockImplementation((id) => Promise.resolve(withHistory(id ?? "none")));
+};
+
+describe("a closed panel opens on a new thread", () => {
+  it("for a quote from a selection: not on the thread the page last had", async () => {
+    lastThread();
+    const chat = mount();
+    const quote = { blockId: "b", label: "Определение", tex: "Фрагмент" };
+    await act(async () => {
+      chat.current.openWithQuote(quote);
+      await Promise.resolve();
+    });
+    expect(chat.current.isOpen).toBe(true);
+    expect(fetchChatThread).toHaveBeenCalledExactlyOnceWith(null);
+    expect(chat.current.activeThreadId).toBeNull();
+    expect(chat.current.messages).toHaveLength(0);
+    expect(chat.current.quote).toEqual(quote);
+  });
+
+  it("for a launch from the search: the query is an unsent draft", async () => {
+    lastThread();
+    const chat = mount();
+    act(() => {
+      postChatLaunch("определитель");
+    });
+    await act(async () => {
+      chat.current.toggle();
+      await Promise.resolve();
+    });
+    expect(fetchChatThread).toHaveBeenCalledExactlyOnceWith(null);
+    expect(chat.current.activeThreadId).toBeNull();
+    expect(chat.current.draft).toBe("определитель");
+    expect(openChatMessageStream).not.toHaveBeenCalled();
+  });
+
+  it("but an open panel keeps its thread for a selection", async () => {
+    lastThread();
+    const chat = mount();
+    await act(async () => {
+      chat.current.toggle();
+      await Promise.resolve();
+    });
+    expect(chat.current.activeThreadId).toBe("last");
+    act(() => {
+      chat.current.openWithQuote({ label: "Лекция", tex: "Фрагмент" });
+    });
+    expect(chat.current.activeThreadId).toBe("last");
+    expect(chat.current.quote).toEqual({ label: "Лекция", tex: "Фрагмент" });
   });
 });

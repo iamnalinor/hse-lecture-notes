@@ -30,7 +30,7 @@ const showStopped = (contentTex: string, steps: readonly ChatStep[], canRetry = 
 
 it("explains a stop before the first word and retries that answer without inventing steps", () => {
   const retry = showStopped("", []);
-  expect(screen.getByRole("status")).toHaveTextContent("Вы остановили ответ");
+  expect(screen.getByRole("status")).toHaveTextContent("Ответ остановлен");
   expect(screen.queryByRole("list")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /скопировать/iu })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Повторить" }));

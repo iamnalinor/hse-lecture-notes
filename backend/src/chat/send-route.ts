@@ -104,7 +104,7 @@ export async function postMessage(env: Env, db: TrackedD1, request: Request): Pr
     return messageError(401, "browser_token_required", "Подтверди доступ к чату.");
   const allowance = await verifyAllowanceToken(env, db, frame.allowanceToken, btCheck.browserId);
   if (!allowance)
-    return messageError(401, "allowance_expired", "Пропуск в чат истёк. Попробуй ещё раз.");
+    return messageError(401, "allowance_expired", "Пропуск в чат истек. Попробуй еще раз.");
   const policy = await loadPolicy(db);
   const clientIp = normalizeIpAddress(
     request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For"),
@@ -248,7 +248,7 @@ export async function postMessage(env: Env, db: TrackedD1, request: Request): Pr
         : admit.block.code === "auth_required"
           ? 403
           : 429;
-    return messageError(status, admit.block.code, "Запрос отклонён по ограничениям чата.", {
+    return messageError(status, admit.block.code, "Запрос отклонен по ограничениям чата.", {
       block: admit.block,
       ...(admit.block.retryAfterSec ? { retryAfterSec: admit.block.retryAfterSec } : {}),
     });

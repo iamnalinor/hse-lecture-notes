@@ -105,7 +105,7 @@ export const TocList = ({ active, caption, minutes, onNavigate, progress, toc }:
           <div className="text-footnote text-muted">
             Прочитано {percent}%
             {percent < 100 &&
-              ` · ~${String(Math.max(1, Math.ceil(minutes * (1 - progress))))} мин осталось`}
+              ` ·\u{A0}~${String(Math.max(1, Math.ceil(minutes * (1 - progress))))} мин осталось`}
             <div className="mt-2 h-0.75 overflow-hidden rounded-xs bg-rule">
               <div className="h-full bg-def" style={{ width: `${String(percent)}%` }} />
             </div>
