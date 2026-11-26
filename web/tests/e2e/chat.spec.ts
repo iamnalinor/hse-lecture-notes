@@ -48,18 +48,16 @@ test.describe("touch composer", () => {
     await expect.poll(async () => (await boxOf(input)).y).toBeGreaterThan(844 - 336);
   });
 
-  test("ghost suggestion has no caret and a one-line field is as tall as the send button", async ({
+  test("a one-line field with the ghost suggestion is as tall as the send button", async ({
     page,
   }) => {
     await mockChat(page);
     const input = await openChat(page);
     await expect(input).toHaveAttribute("placeholder", suggestion);
-    await expect(input).toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
     await input.evaluate((el) => {
       el.setAttribute("placeholder", "а как его быстро считать");
     });
     await input.fill("а как");
-    await expect(input).not.toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
     const field = await input.boundingBox();
     const button = await page.locator(".ai-send").boundingBox();
     expect(field?.height).toBe(button?.height);

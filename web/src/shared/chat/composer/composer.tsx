@@ -198,7 +198,6 @@ const ComposerBox = ({
         <textarea
           aria-describedby={isNearingLimit ? "ai-question-count" : undefined}
           aria-invalid={isOverLimit || undefined}
-          data-suggested={suggestion === null ? undefined : ""}
           id="ai-input"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
