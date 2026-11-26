@@ -8,15 +8,28 @@ export type TableBlock = {
 };
 
 /**
-Row tokens: an escaped `\|`, `$…$` math and `` `code` `` (a `|` inside them is not a boundary, as in `$|x|$`),
+Row tokens: a pair of backslashes (so `\\|` is a backslash and a boundary), an escaped `\|`, `$…$` math and `` `code` `` (a `|` inside them is not a boundary, as in `$|x|$`),
 a bare `|`, anything else.
 */
-const TOKEN = /\\\||\$[^$]*\$|`[^`]*`|[|$`\\]|[^|$`\\]+/gu;
+const TOKEN = /\\\\|\\\||\$[^$]*\$|`[^`]*`|[|$`\\]|[^|$`\\]+/gu;
+
+const trailingBackslashes = (text: string): number => {
+  let count = 0;
+  while (text.charAt(text.length - 1 - count) === "\\") {
+    count += 1;
+  }
+  return count;
+};
 
 const stripOuterPipes = (line: string): string => {
   const trimmed = line.trim();
   const head = trimmed.startsWith("|") ? trimmed.slice(1) : trimmed;
-  return head.endsWith("|") && !head.endsWith("\\|") ? head.slice(0, -1) : head;
+  if (!head.endsWith("|")) {
+    return head;
+  }
+  const beforePipe = head.slice(0, -1);
+  const backslashes = trailingBackslashes(beforePipe);
+  return backslashes % 2 === 0 ? beforePipe : head;
 };
 
 /** Splits a row on `|`; the outer pipes of `| a | b |` are optional, as in GFM. */

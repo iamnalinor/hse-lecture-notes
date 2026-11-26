@@ -100,12 +100,15 @@ one of these. The notes body is 18px in `prose.css`. The default Tailwind sizes 
 stray `text-sm` does nothing instead of adding an eleventh size.
 */
 /* A control drawn at 40 px that still takes a 44 px tap (Д41): the pseudo-element widens the target by 2 px
-   on every side. The element needs `position: relative`. */
+   on every side. The element needs `position: relative`. `isolation` + `z-index: -1` keep the pseudo-element
+   under the control's own children, so a nested button (the search field's clear) still gets its taps. */
 @utility hit-44 {
+  isolation: isolate;
   &::after {
     content: "";
     position: absolute;
     inset: -2px;
+    z-index: -1;
   }
 }
 

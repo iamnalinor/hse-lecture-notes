@@ -182,3 +182,14 @@ it("pads short rows and drops extra cells, so every row has the header's width",
     },
   ]);
 });
+
+it("treats a pipe after an even run of backslashes as a cell boundary", () => {
+  expect(parseChatBlocks(["| a | b |", "|---|---|", String.raw`| x\\ | y\\|`].join("\n"))).toEqual([
+    {
+      kind: "table",
+      align: [null, null],
+      header: ["a", "b"],
+      rows: [[String.raw`x\\`, String.raw`y\\`]],
+    },
+  ]);
+});
