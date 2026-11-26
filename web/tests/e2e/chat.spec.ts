@@ -30,6 +30,27 @@ test("suggestion fits on mobile and Tab accepts it without sending", async ({ pa
   await expect(input).not.toHaveAttribute("placeholder", suggestion);
 });
 
+test.describe("touch composer", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  test("ghost suggestion has no caret and a one-line field is as tall as the send button", async ({
+    page,
+  }) => {
+    await mockChat(page);
+    const input = await openChat(page);
+    await expect(input).toHaveAttribute("placeholder", suggestion);
+    await expect(input).toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
+    await input.evaluate((el) => {
+      el.setAttribute("placeholder", "а как его быстро считать");
+    });
+    await input.fill("а как");
+    await expect(input).not.toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
+    const field = await input.boundingBox();
+    const button = await page.locator(".ai-send").boundingBox();
+    expect(field?.height).toBe(button?.height);
+    expect(field?.y).toBe(button?.y);
+  });
+});
+
 test("history closes outside and with Escape while chat stays open", async ({ page }) => {
   await mockChat(page);
   const input = await openChat(page);

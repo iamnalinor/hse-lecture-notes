@@ -59,6 +59,16 @@ const useComposerTextarea = ({ draft, placeholder, isOpen, quoteKey }: TextareaS
       el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
     };
     resize();
+    let isStale = false;
+    // The webfont changes line breaks without changing the width, so measure again once it is in.
+    const { fonts } = globalThis.document as Partial<Document>;
+    const remeasureAfterFonts = async (): Promise<void> => {
+      await fonts?.ready;
+      if (!isStale) {
+        resize();
+      }
+    };
+    void remeasureAfterFonts();
     let width = el.clientWidth;
     const observer =
       typeof ResizeObserver === "undefined"
@@ -74,6 +84,7 @@ const useComposerTextarea = ({ draft, placeholder, isOpen, quoteKey }: TextareaS
     observer?.observe(el);
     globalThis.addEventListener("resize", resize);
     return () => {
+      isStale = true;
       observer?.disconnect();
       globalThis.removeEventListener("resize", resize);
     };
@@ -187,6 +198,7 @@ const ComposerBox = ({
         <textarea
           aria-describedby={isNearingLimit ? "ai-question-count" : undefined}
           aria-invalid={isOverLimit || undefined}
+          data-suggested={suggestion === null ? undefined : ""}
           id="ai-input"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
