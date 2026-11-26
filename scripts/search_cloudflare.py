@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from collections.abc import Iterator, Sequence
-from typing import Any
+from typing import Any, Protocol
 
 from search_corpus import IndexedBlock, IndexedDocument, Reference, sha256_hex
 
@@ -52,8 +52,19 @@ _PENDING_KEY = "pending_vector_mutation"
 PendingMutation = dict[str, Any]  # {"action": "upsert"|"delete", "mutation_id", "ids" | "blocks"}
 
 
-class UnconfirmedMutation(RuntimeError):
+class UnconfirmedMutationError(RuntimeError):
     pass
+
+
+class IndexBackend(Protocol):
+    """What the sync needs from Cloudflare: `CloudflareClient`, or an in-memory fake in tests."""
+
+    def d1_query(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]: ...
+    def embed_texts(self, texts: list[str]) -> list[list[float]]: ...
+    def vector_ids(self) -> set[str]: ...
+    def wait_for_mutation(self, pending: PendingMutation) -> None: ...
+    def vectorize_upsert(self, vectors: list[dict[str, Any]]) -> str: ...
+    def vectorize_delete(self, ids: list[str]) -> str: ...
 
 
 def _marks(count: int) -> str:
@@ -159,7 +170,7 @@ class CloudflareClient:
         for part_ids in _batches(ids, VECTORIZE_GET_MAX_IDS):
             part = self._req("POST", f"{self.vector_path}/get_by_ids", {"ids": list(part_ids)})["result"]
             if not isinstance(part, list):
-                raise RuntimeError("Invalid Vectorize get_by_ids response")
+                raise RuntimeError("Invalid Vectorize get_by_ids response")  # noqa: TRY004 -- API failure, not a caller type error
             rows.extend(part)
         return rows
 
@@ -187,7 +198,7 @@ class CloudflareClient:
             # Back off: every poll is two API calls against the account-wide rate limit.
             time.sleep(delay)
             delay = min(delay * 1.5, 15.0)
-        raise UnconfirmedMutation(f"Vectorize mutation {mutation_id} still unconfirmed; rerun the sync")
+        raise UnconfirmedMutationError(f"Vectorize mutation {mutation_id} still unconfirmed; rerun the sync")
 
     def vectorize_upsert(self, vectors: list[dict[str, Any]]) -> str:
         boundary = uuid.uuid4().hex
@@ -207,7 +218,7 @@ class CloudflareClient:
         return response["result"]["mutationId"]
 
 
-def finish_vector_mutation(cf: CloudflareClient, pending: PendingMutation) -> None:
+def finish_vector_mutation(cf: IndexBackend, pending: PendingMutation) -> None:
     cf.wait_for_mutation(pending)
     if pending["action"] == "delete":
         ids = pending["ids"]
@@ -223,12 +234,12 @@ def finish_vector_mutation(cf: CloudflareClient, pending: PendingMutation) -> No
     cf.d1_query(f"DELETE FROM service_config WHERE key = '{_PENDING_KEY}'")
 
 
-def record_vector_mutation(cf: CloudflareClient, pending: PendingMutation) -> None:
+def record_vector_mutation(cf: IndexBackend, pending: PendingMutation) -> None:
     cf.d1_query(f"{_UPSERT_CONFIG}('{_PENDING_KEY}', ?, ?)", [json.dumps(pending), _now_ms()])
     finish_vector_mutation(cf, pending)
 
 
-def submit_vector_blocks(cf: CloudflareClient, chunk: Sequence[IndexedBlock]) -> None:
+def submit_vector_blocks(cf: IndexBackend, chunk: Sequence[IndexedBlock]) -> None:
     embeddings = cf.embed_texts([f"{b.title}\n{b.statement_tex[:1200]}" for b in chunk])
     vectors = [
         {
@@ -253,7 +264,7 @@ def submit_vector_blocks(cf: CloudflareClient, chunk: Sequence[IndexedBlock]) ->
     )
 
 
-def _ensure_fts_rowid_alignment(cf: CloudflareClient) -> None:
+def _ensure_fts_rowid_alignment(cf: IndexBackend) -> None:
     """Rebuild FTS once so its rowids equal course_blocks.rowid (deletes go by rowid)."""
     if cf.d1_query("SELECT 1 FROM service_config WHERE key = ?", [FTS_ROWID_MARKER]):
         return
@@ -262,7 +273,7 @@ def _ensure_fts_rowid_alignment(cf: CloudflareClient) -> None:
     cf.d1_query(f"{_UPSERT_CONFIG}(?, 'true', ?)", [FTS_ROWID_MARKER, _now_ms()])
 
 
-def _fts_delete_by_block_ids(cf: CloudflareClient, ids: Sequence[str]) -> None:
+def _fts_delete_by_block_ids(cf: IndexBackend, ids: Sequence[str]) -> None:
     # FTS rows share course_blocks.rowid: delete by rowid (an UNINDEXED id filter
     # scans the whole FTS table and burned the D1 free-tier read quota).
     cf.d1_query(
@@ -277,7 +288,7 @@ class IndexSync:
 
     def __init__(
         self,
-        cf: CloudflareClient,
+        cf: IndexBackend,
         docs: list[IndexedDocument],
         blocks: list[IndexedBlock],
         refs: list[Reference],
@@ -489,7 +500,7 @@ class IndexSync:
         pending: PendingMutation = json.loads(rows[0]["value_json"])
         try:
             finish_vector_mutation(self.cf, pending)
-        except UnconfirmedMutation:
+        except UnconfirmedMutationError:
             # A rejected/superseded write cannot be observed on any later retry.
             # Reassert a deletion for the affected IDs, journal its new mutation
             # before waiting, then rebuild eligible vectors from the current corpus.
@@ -545,7 +556,7 @@ class IndexSync:
 
 
 def sync_to_cloudflare(
-    cf: CloudflareClient,
+    cf: IndexBackend,
     docs: list[IndexedDocument],
     blocks: list[IndexedBlock],
     refs: list[Reference],

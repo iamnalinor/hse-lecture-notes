@@ -13,6 +13,7 @@ dependencies = [
 dev = [
     "pytest>=9.2.0",
     "ruff>=0.17.3",
+    "ty>=0.0.111",
 ]
 
 [tool.ruff]
@@ -22,8 +23,38 @@ target-version = "py313"
 src = [".", "scripts"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B"]
-ignore = ["E501"]
+select = [
+    "E", "F", "W", "I", "UP", "B",
+    "SIM", "RET", "PTH", "C4", "PIE", "PERF", "RUF", "PL", "N", "ARG", "ERA", "TRY", "FURB", "ISC",
+]
+ignore = [
+    "E501",  # длину строк держит ruff format
+    # Кириллица в строках, докстрингах и комментариях — норма проекта; правила RUF001-003 ловят «похожие» буквы
+    "RUF001", "RUF002", "RUF003",
+    # Сообщения об ошибках — длинные русские f-строки с контекстом (файл, метка); отдельные классы исключений на каждую не нужны
+    "TRY003",
+    # Сравнения с номером уровня заголовка, границей ASCII, числом пунктов читаются без имени
+    "PLR2004",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Подставные функции в тестах (urlopen, _req, …) обязаны повторять сигнатуру подменяемой,
+# даже если не читают часть аргументов
+"tests/*" = ["ARG001", "ARG002"]
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 18
+max-statements = 60
+max-returns = 8
+
+[tool.ty.src]
+include = ["scripts", "tests"]
+
+[tool.ty.environment]
+# scripts/ импортируются по имени (sys.path.insert); первым, чтобы папка build/ не затеняла scripts/build.py
+extra-paths = ["scripts"]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

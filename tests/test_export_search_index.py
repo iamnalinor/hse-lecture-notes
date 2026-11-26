@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import io
 import json
+import sqlite3
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+from email.message import Message
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -49,8 +53,6 @@ def test_python_ts_stemmer_parity() -> None:
         text=True,
         check=True,
     )
-    import json
-
     ts_stems = json.loads(proc.stdout)
     assert py_stems == ts_stems
 
@@ -155,56 +157,58 @@ def test_partial_sync_preserves_course_ids_proofs_references_and_vector_budget(t
     assert set(subset_refs) <= set(refs)
 
 
+class FakeBackend:
+    """In-memory D1 (SQLite with the real migrations) and Vectorize for sync tests."""
+
+    def __init__(self, fail_first_fts_insert: bool = False) -> None:
+        self.db = sqlite3.connect(":memory:")
+        self.db.row_factory = sqlite3.Row
+        for name in sorted((ROOT / "backend/migrations").glob("*.sql")):
+            self.db.executescript(name.read_text())
+        self.fail_fts = fail_first_fts_insert
+        self.vectors: set[str] = set()
+        self.sql: list[str] = []
+
+    def d1_query(self, sql: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
+        self.sql.append(" ".join(sql.split()))
+        if self.fail_fts and "INSERT INTO course_blocks_fts" in sql:
+            self.fail_fts = False
+            raise RuntimeError("FTS unavailable")
+        return [dict(r) for r in self.db.execute(sql, params or [])]
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        return [[0.1] for _ in texts]
+
+    def vector_ids(self) -> set[str]:
+        return set(self.vectors)
+
+    def wait_for_mutation(self, pending: dict[str, Any]) -> None:
+        assert pending["mutation_id"] == "change"
+
+    def vectorize_upsert(self, vectors: list[dict[str, Any]]) -> str:
+        assert all(
+            set(v["metadata"]) == {"course", "doc_kind", "block_kind", "content_hash"} for v in vectors
+        )
+        self.vectors.update(v["id"] for v in vectors)
+        return "change"
+
+    def vectorize_delete(self, ids: list[str]) -> str:
+        self.vectors.difference_update(ids)
+        return "change"
+
+
 def test_sync_recovers_fts_and_vector_deletions(tmp_path: Path) -> None:
-    import sqlite3
-
-    import pytest
-
-    class Client:
-        def __init__(self) -> None:
-            self.db = sqlite3.connect(":memory:")
-            self.db.row_factory = sqlite3.Row
-            self.db.executescript((ROOT / "backend/migrations/0001_init.sql").read_text())
-            self.fail_fts = True
-            self.vectors = set()
-
-        def d1_query(self, sql, params=None):
-            if self.fail_fts and "INSERT INTO course_blocks_fts" in sql:
-                self.fail_fts = False
-                raise RuntimeError("FTS unavailable")
-            return [dict(r) for r in self.db.execute(sql, params or [])]
-
-        def embed_texts(self, texts):
-            return [[0.1] for _ in texts]
-
-        def vector_ids(self):
-            return set(self.vectors)
-
-        def wait_for_mutation(self, pending):
-            assert pending["mutation_id"] == "change"
-
-        def vectorize_upsert(self, vectors):
-            assert all(
-                set(v["metadata"]) == {"course", "doc_kind", "block_kind", "content_hash"} for v in vectors
-            )
-            self.vectors.update(v["id"] for v in vectors)
-            return "change"
-
-        def vectorize_delete(self, ids):
-            self.vectors.difference_update(ids)
-            return "change"
-
     course = tmp_path / "notes/algebra"
     course.mkdir(parents=True)
     path = course / "lecture.md"
     path.write_text("::: {.lemma #lem:x}\nСвойство.\n:::\n")
     docs, blocks, refs = search_corpus.collect_corpus(tmp_path)
-    cf = Client()
+    cf = FakeBackend(fail_first_fts_insert=True)
     with pytest.raises(RuntimeError, match="FTS unavailable"):
         search_cloudflare.sync_to_cloudflare(cf, docs, blocks, refs)
     confirm = cf.wait_for_mutation
 
-    def timeout(mutation_id):
+    def timeout(pending: dict[str, Any]) -> None:
         raise RuntimeError("not confirmed")
 
     cf.wait_for_mutation = timeout
@@ -234,7 +238,7 @@ def test_sync_recovers_fts_and_vector_deletions(tmp_path: Path) -> None:
 
     def lost_marker(pending):
         if pending["mutation_id"] == "lost":
-            raise search_cloudflare.UnconfirmedMutation("never applied")
+            raise search_cloudflare.UnconfirmedMutationError("never applied")
         confirm(pending)
 
     cf.wait_for_mutation = lost_marker
@@ -287,16 +291,12 @@ def test_vectorize_confirmation_checks_actual_hashes_and_deletions(monkeypatch):
 
 
 def test_ambiguous_post_failure_is_not_replayed(monkeypatch):
-    import io
-
-    import pytest
-
     client = search_cloudflare.CloudflareClient("account", "token", "db", "index")
     writes = []
 
     def ambiguous_response(req, timeout):
         writes.append(req.data)
-        raise urllib.error.HTTPError(req.full_url, 503, "ambiguous", {}, io.BytesIO(b""))
+        raise urllib.error.HTTPError(req.full_url, 503, "ambiguous", Message(), io.BytesIO(b""))
 
     monkeypatch.setattr(urllib.request, "urlopen", ambiguous_response)
     with pytest.raises(RuntimeError, match="HTTP 503"):
@@ -306,25 +306,11 @@ def test_ambiguous_post_failure_is_not_replayed(monkeypatch):
 
 def test_fts_rows_share_block_rowid_and_deletes_never_scan_fts(tmp_path: Path) -> None:
     """FTS deletes by UNINDEXED id full-scan the table (6.8M D1 reads per sync, 2026-11-25)."""
-    import sqlite3
-
-    class Client:
-        def __init__(self) -> None:
-            self.db = sqlite3.connect(":memory:")
-            self.db.row_factory = sqlite3.Row
-            for name in sorted((ROOT / "backend/migrations").glob("*.sql")):
-                self.db.executescript(name.read_text())
-            self.sql: list[str] = []
-
-        def d1_query(self, sql, params=None):
-            self.sql.append(" ".join(sql.split()))
-            return [dict(r) for r in self.db.execute(sql, params or [])]
-
     course = tmp_path / "notes/algebra"
     course.mkdir(parents=True)
     path = course / "lecture.md"
     path.write_text("::: {.lemma #lem:x}\nА.\n:::\n\n::: {.lemma #lem:y}\nБ.\n:::\n")
-    cf = Client()
+    cf = FakeBackend()
     search_cloudflare.sync_to_cloudflare(cf, *search_corpus.collect_corpus(tmp_path), skip_vectorize=True)
     path.write_text("::: {.lemma #lem:x}\nА изменено.\n:::\n")
     search_cloudflare.sync_to_cloudflare(cf, *search_corpus.collect_corpus(tmp_path), skip_vectorize=True)
@@ -339,23 +325,11 @@ def test_fts_rows_share_block_rowid_and_deletes_never_scan_fts(tmp_path: Path) -
 
 
 def test_misaligned_legacy_fts_is_rebuilt_before_rowid_deletes(tmp_path: Path) -> None:
-    import sqlite3
-
-    class Client:
-        def __init__(self) -> None:
-            self.db = sqlite3.connect(":memory:")
-            self.db.row_factory = sqlite3.Row
-            for name in sorted((ROOT / "backend/migrations").glob("*.sql")):
-                self.db.executescript(name.read_text())
-
-        def d1_query(self, sql, params=None):
-            return [dict(r) for r in self.db.execute(sql, params or [])]
-
     course = tmp_path / "notes/algebra"
     course.mkdir(parents=True)
     path = course / "lecture.md"
     path.write_text("::: {.lemma #lem:x}\nА.\n:::\n\n::: {.lemma #lem:y}\nБ.\n:::\n")
-    cf = Client()
+    cf = FakeBackend()
     search_cloudflare.sync_to_cloudflare(cf, *search_corpus.collect_corpus(tmp_path), skip_vectorize=True)
     # Simulate the legacy layout: FTS rowids unrelated to course_blocks rowids.
     cf.db.execute("DELETE FROM service_config WHERE key = ?", [search_cloudflare.FTS_ROWID_MARKER])
@@ -377,7 +351,7 @@ def test_vectorize_confirmation_reads_at_most_twenty_ids_per_request(monkeypatch
     blocks = [[f"b{i}", str(i)] for i in range(25)]
     sizes = []
 
-    def request(method, path, body=None):
+    def request(method, path, body: Any = None):
         if path.endswith("/info"):
             return {"result": {"processedUpToMutation": "unrelated"}}
         assert path.endswith("/get_by_ids")
@@ -412,8 +386,6 @@ def test_vectorize_confirmation_backs_off_to_spare_the_api_rate_limit(monkeypatc
 
 def test_rate_limited_post_is_retried_after_waiting(monkeypatch):
     """A 429 (error 971) means Cloudflare rejected the request unprocessed: safe to retry, even a POST."""
-    import io
-
     client = search_cloudflare.CloudflareClient("account", "token", "db", "index")
     calls, sleeps = [], []
 
@@ -421,7 +393,7 @@ def test_rate_limited_post_is_retried_after_waiting(monkeypatch):
         calls.append(req.data)
         if len(calls) < 3:
             raise urllib.error.HTTPError(
-                req.full_url, 429, "slow down", {}, io.BytesIO(b'{"errors":[{"code":971}]}')
+                req.full_url, 429, "slow down", Message(), io.BytesIO(b'{"errors":[{"code":971}]}')
             )
         return io.BytesIO(b'{"success": true, "result": [{"results": [{"n": 1}]}]}')
 

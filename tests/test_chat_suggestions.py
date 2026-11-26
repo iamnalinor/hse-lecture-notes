@@ -47,9 +47,14 @@ def test_collect_flat_keys(repo: Path) -> None:
     _write(
         repo / "chat-suggestions",
         "algebra.yaml",
-        "course:\n" + _fifteen("c") + "docs:\n  01_a:\n" + _six("l").replace("  -", "    -")
-        + "  kr1:\n" + _six("k").replace("  -", "    -")
-        + "  theory:\n" + _six("t").replace("  -", "    -"),
+        "course:\n"
+        + _fifteen("c")
+        + "docs:\n  01_a:\n"
+        + _six("l").replace("  -", "    -")
+        + "  kr1:\n"
+        + _six("k").replace("  -", "    -")
+        + "  theory:\n"
+        + _six("t").replace("  -", "    -"),
     )
     data = bcs.collect(repo)
     assert set(data) == {"@home", "algebra", "algebra/01_a", "algebra/kr1", "algebra/theory"}

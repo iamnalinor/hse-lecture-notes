@@ -89,7 +89,7 @@ def main(argv: list[str]) -> int:
         print("suggestions.json актуален")
         return 0
     OUTPUT_PATH.write_text(text, encoding="utf-8")
-    print(f"Записано страниц: {text.count('\n  \"')} → {OUTPUT_PATH.relative_to(ROOT)}")
+    print(f"Записано страниц: {text.count('\n  "')} → {OUTPUT_PATH.relative_to(ROOT)}")
     return 0
 
 
