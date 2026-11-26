@@ -40,13 +40,13 @@ import {
   sweepExpiredRuns,
 } from "../src/quotas";
 import { stemRussianWord, tokenizeAndStem } from "../src/stemmer";
+import { AgentToolRunner } from "../src/chat/tools";
+import { buildSystemPrompt } from "../src/chat/page-context";
 import {
-  AgentToolRunner,
-  buildSystemPrompt,
   normalizeQuoteText,
   validateAssistantQuote,
   validateQuoteAgainstCourse,
-} from "../src/chat/tools";
+} from "../src/chat/quote-validation";
 import { type Env, type LlmProvider, type ChatStreamFrame } from "../src/types";
 import { SqliteD1Shim } from "./d1-shim";
 

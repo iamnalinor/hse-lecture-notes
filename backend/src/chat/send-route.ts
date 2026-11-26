@@ -9,7 +9,7 @@ import { MAX_CHAT_BODY_BYTES, readBoundedText } from "../request-json";
 import type { ClientChatCommand, Env, ChatStreamFrame, ServicePolicy, Tier } from "../types";
 import { parseClientFrame } from "./client-frame";
 import { ContextSizeError } from "./history";
-import { validateAssistantQuote, validateQuoteAgainstCourse } from "./tools";
+import { validateAssistantQuote, validateQuoteAgainstCourse } from "./quote-validation";
 
 class MessageValidationError extends Error {
   constructor(readonly response: Response) {

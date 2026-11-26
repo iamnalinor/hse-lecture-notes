@@ -9,7 +9,7 @@ import {
   parseSampleArgs,
   runSampleProblems,
   sampleFromBank,
-} from "../src/chat/bank-tool";
+} from "../src/chat/tools/sample-problems";
 
 const bank: Bank = {
   about: "Тренировочные варианты",

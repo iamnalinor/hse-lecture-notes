@@ -85,6 +85,26 @@ export function readRetryTarget(
   );
 }
 
+/**
+ * The text of a finished assistant message (done, stopped or incomplete) in a thread owned by the
+ * given identity: a signed-in account by Telegram id, a guest by browser id.
+ */
+export function readOwnedFinishedAssistantText(
+  db: TrackedD1,
+  messageId: string,
+  threadId: string,
+  owner: { telegramId: number } | { browserId: string },
+): Promise<{ content_tex: string } | null> {
+  const byAccount = "telegramId" in owner;
+  return db.first<{ content_tex: string }>(
+    db
+      .prepare(`SELECT m.content_tex FROM chat_messages m JOIN chat_threads t ON t.id = m.thread_id
+      WHERE m.id = ? AND t.id = ? AND m.role = 'assistant' AND m.status IN ('done','stopped','incomplete')
+      AND ${byAccount ? "t.telegram_id = ?" : "t.telegram_id IS NULL AND t.browser_id = ?"}`)
+      .bind(messageId, threadId, byAccount ? owner.telegramId : owner.browserId),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Admission guards (parts of the run insert, see quotas/usage-repo.ts)
 // ---------------------------------------------------------------------------
