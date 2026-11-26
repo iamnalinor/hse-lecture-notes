@@ -9,6 +9,7 @@ import { dayMonth } from "#web/domain/dates.ts";
 import { latestLecture } from "#web/domain/lectures.ts";
 import { paths } from "#web/domain/paths.ts";
 import { labelStats } from "#web/domain/stats.ts";
+import { plural } from "#web/domain/text.ts";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "#web/shared/ui/button.ts";
 import { useDocumentTitle } from "#web/shared/ui/document-title.ts";
 import { useToday } from "#web/shared/ui/today.ts";
@@ -42,8 +43,10 @@ export const Component = () => {
             Лекции по <b className="font-semibold text-ink">{info.weekdayDative}</b>
           </span>
           <span>
-            <b className="font-semibold text-ink">{stats.definitions}</b> определений ·{" "}
-            <b className="font-semibold text-ink">{stats.theorems}</b> теорем
+            <b className="font-semibold text-ink">{stats.definitions}</b>{" "}
+            {plural(stats.definitions, ["определение", "определения", "определений"])} ·{" "}
+            <b className="font-semibold text-ink">{stats.theorems}</b>{" "}
+            {plural(stats.theorems, ["теорема", "теоремы", "теорем"])}
           </span>
         </div>
         <nav aria-label="Материалы курса" className="mt-6 flex flex-wrap gap-2">
