@@ -137,15 +137,15 @@ describe("course page", () => {
       "href",
       "/calculus/08_oct23_continuity",
     );
-    expect(navLinks("Материалы курса")).toStrictEqual(["Читать лекцию 8 · 23 окт", "Теория"]);
+    expect(navLinks("Материалы курса")).toStrictEqual(["Читать лекцию 8 ·\u{A0}23 окт", "Теория"]);
   });
 
   it("lists the preps in the order of their events, each styled by its state", () => {
     calculusOn("2026-10-26");
     expect(navLinks("Подготовка")).toStrictEqual([
       "КР-1",
-      "Коллоквиум 1 · 02.11–30.12",
-      "КР-2 · 10.12",
+      "Коллоквиум 1 ·\u{A0}02.11–30.12",
+      "КР-2 ·\u{A0}10.12",
       "КР-3",
     ]);
     expect(screen.getByRole("link", { name: "КР-1" })).toHaveClass("text-muted");
@@ -160,8 +160,8 @@ describe("course page", () => {
     calculusOn("2026-12-08");
     expect(navLinks("Подготовка")).toStrictEqual([
       "КР-1",
-      "Коллоквиум 1 · 02.11–30.12",
-      "КР-2 · 10.12",
+      "Коллоквиум 1 ·\u{A0}02.11–30.12",
+      "КР-2 ·\u{A0}10.12",
       "КР-3",
     ]);
     expect(screen.getByRole("link", { name: /КР-2/u })).toHaveClass("bg-org-fill");

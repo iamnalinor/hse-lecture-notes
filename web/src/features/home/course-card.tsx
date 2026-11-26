@@ -56,7 +56,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
         </h3>
         <span className="mt-auto flex items-center justify-between gap-3 text-footnote text-muted">
           <span>
-            {course.lecturer} · {lectures.length}{" "}
+            {course.lecturer} ·&nbsp;{lectures.length}{" "}
             {plural(lectures.length, ["лекция", "лекции", "лекций"])}
           </span>
           <span className="text-faint transition-colors group-hover:text-ink group-has-[[data-tile]:hover]:text-faint">
@@ -72,7 +72,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
             to={paths.lecture(course.id, last.weekId)}
           >
             <small className="mb-0.5 block text-caption text-muted">
-              Лекция {last.lecture} · {shortDate(last.date)}
+              Лекция {last.lecture} ·&nbsp;{shortDate(last.date)}
             </small>
             <span className="text-body/snug">{last.title}</span>
           </Link>
@@ -86,7 +86,7 @@ export const CourseCard = ({ course, lectures, preps, today }: Props) => {
             to={paths.prep(course.id, next.id)}
           >
             <small className={`mb-0.5 block text-caption ${isAccent ? "" : "text-muted"}`}>
-              {prepName(next.id, next.quizNumber)} · {prepWhen(next)}
+              {prepName(next.id, next.quizNumber)} ·&nbsp;{prepWhen(next)}
             </small>
             <span className="text-body/snug font-semibold">
               {prepGoal(next.id, next.quizNumber)} →

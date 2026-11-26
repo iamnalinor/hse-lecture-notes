@@ -98,6 +98,13 @@ describe("lecture page addresses", () => {
     expect(screen.queryByText(/Сверено с лекцией/)).toBeNull();
   });
 
+  it("glues every «·» of the header row to the item after it, so none ends a line", async () => {
+    open(`/algebra/${WEEK_ID}`);
+    await screen.findByText("Текст лекции");
+    const row = screen.getByRole("navigation", { name: "Лекции курса" }).querySelector("p");
+    expect(row?.textContent).toBe("Алгебра ·\u{A0}Лекция 3 ·\u{A0}16 сентября 2026");
+  });
+
   it("answers 404 for a lecture number the course does not have", async () => {
     open("/algebra/07_oct14_matrix_rank");
     expect(await screen.findByText("нет страницы")).toBeInTheDocument();

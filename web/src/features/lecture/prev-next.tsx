@@ -46,7 +46,7 @@ function Card({ dir, lecture }: { readonly dir: string; readonly lecture: Lectur
   return (
     <span className="min-w-0 flex-1">
       <span className="mb-1 block text-footnote text-muted">
-        {dir} · лекция {lecture.lecture} · {shortDate(lecture.date)}
+        {dir} ·&nbsp;лекция {lecture.lecture} ·&nbsp;{shortDate(lecture.date)}
       </span>
       <span className="line-clamp-2 text-subhead/snug font-semibold">{lecture.title}</span>
     </span>

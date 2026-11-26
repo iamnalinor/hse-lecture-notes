@@ -35,9 +35,9 @@ export const LectureHeader = ({ entry, info, meta, minutes, next, prev }: Props)
         >
           {info.short}
         </Link>
-        <span aria-hidden="true"> · </span>
+        <span aria-hidden="true"> ·&nbsp;</span>
         <span className="font-semibold text-ink">Лекция {meta.lecture}</span>
-        <span aria-hidden="true"> · </span>
+        <span aria-hidden="true"> ·&nbsp;</span>
         <span className="whitespace-nowrap">{meta.dateRu}</span>
       </p>
       <span className="flex shrink-0 overflow-hidden rounded-lg border border-rule bg-card">

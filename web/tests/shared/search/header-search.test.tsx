@@ -117,7 +117,7 @@ describe("HeaderSearch", () => {
     await userEvent.type(mount(), "миноры");
     const hits = await screen.findAllByRole("option");
     expect(hits.map((hit) => hit.textContent)).toStrictEqual([
-      expect.stringContaining("Алгебра · Теория"),
+      expect.stringContaining("Алгебра ·\u{A0}Теория"),
     ]);
     expect(screen.getByText("Минор", { selector: "mark" })).toBeInTheDocument();
   });
