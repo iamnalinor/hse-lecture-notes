@@ -1,4 +1,11 @@
-import { type CSSProperties, Fragment, useCallback, useEffect, useState } from "react";
+import {
+  type CSSProperties,
+  Fragment,
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { shuffledRound, type Slogan, SLOGANS, toChunks, toWords } from "#web/domain/slogans.ts";
 
@@ -83,17 +90,41 @@ const useIsDocumentVisible = () => {
   return visible;
 };
 
+const after = { isDone: false };
+
+/** Flips once, right after the first paint, and stays: the later visits to the page mount all layers at once. */
+const subscribeToFirstPaint = (onChange: () => void): (() => void) => {
+  const timer = setTimeout(() => {
+    after.isDone = true;
+    onChange();
+  });
+  return () => {
+    clearTimeout(timer);
+  };
+};
+
+/** False in the built HTML and in the first render: they hold the default slogan only. */
+const useIsAfterFirstPaint = (): boolean =>
+  useSyncExternalStore(
+    subscribeToFirstPaint,
+    () => after.isDone,
+    () => false,
+  );
+
 /**
-The h1 of the home page: a slogan that changes every HOLD_MS, in random order, the first one on load. All slogans
-are persistent layers in one grid cell, so the block always has the height of the longest one and the text below
-never jumps; CSS transitions on `data-state` do the animation (see `.slogan-*` in app.css). Only the current layer
-is exposed to assistive technology.
+The h1 of the home page: a slogan that changes every HOLD_MS, in random order, the first one on load. The built
+HTML and the first render hold the default slogan alone (what crawlers and clients without JS read); the other
+layers mount after that. All slogans are persistent layers in one grid cell; the h1 keeps the height of the
+tallest of them from the start (`--slogan-lines` per width in app.css, measured), so nothing below it moves when
+the rest mounts. CSS transitions on `data-state` do the animation (see `.slogan-*` in app.css). Only the current
+layer is exposed to assistive technology.
 */
 export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect }) => {
   const [state, setState] = useState<State>({ current: 0, gap: false, leaving: null, queue: [] });
   const [paused, setPaused] = useState(false);
   const isVisible = useIsDocumentVisible();
   const { current, leaving } = state;
+  const isAfterFirstPaint = useIsAfterFirstPaint();
 
   const advance = useCallback(() => {
     setState((s) => (s.leaving === null ? next(s, effect) : s));
@@ -135,17 +166,19 @@ export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect 
         setPaused(false);
       }}
     >
-      <h1 className="grid items-start">
-        {SLOGANS.map((slogan, index) => (
-          <span
-            aria-hidden={index === current ? undefined : true}
-            className={`slogan-layer ${TYPE}`}
-            data-state={layerState(index, state)}
-            key={slogan.map(([text]) => text).join("")}
-          >
-            <Words slogan={slogan} />
-          </span>
-        ))}
+      <h1 className="slogan-h1 grid items-start">
+        {SLOGANS.map((slogan, index) =>
+          !isAfterFirstPaint && index > 0 ? null : (
+            <span
+              aria-hidden={index === current ? undefined : true}
+              className={`slogan-layer ${TYPE}`}
+              data-state={layerState(index, state)}
+              key={slogan.map(([text]) => text).join("")}
+            >
+              <Words slogan={slogan} />
+            </span>
+          ),
+        )}
       </h1>
     </div>
   );

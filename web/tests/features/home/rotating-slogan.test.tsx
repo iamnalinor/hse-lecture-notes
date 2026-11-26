@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SLOGANS } from "#web/domain/slogans.ts";
+import { HomeStart } from "#web/features/home/introduction.tsx";
 import { RotatingSlogan } from "#web/features/home/rotating-slogan.tsx";
 
 const HOLD_MS = 10_000;
@@ -58,10 +60,34 @@ describe("RotatingSlogan", () => {
     expect(container.querySelectorAll("[aria-hidden=true]")).toHaveLength(layers.length - 1);
   });
 
-  it("keeps the first slogan as visible text in the prerendered HTML", () => {
+  it("holds the default slogan only in the prerendered HTML", () => {
     const html = renderToStaticMarkup(<RotatingSlogan />);
     expect(html).toContain('data-state="on"');
     expect(html).toContain("которые");
+    expect(html.match(/slogan-layer/gu)).toHaveLength(1);
+    const otherParts = SLOGANS[1] ?? [];
+    for (const [text] of otherParts) {
+      expect(html).not.toContain(text.trim());
+    }
+  });
+
+  it("has one h1 with one slogan in the HTML the build puts into the page (`HomeStart`)", () => {
+    const html = renderToStaticMarkup(<HomeStart />);
+    expect(html.match(/<h1/gu)).toHaveLength(1);
+    const heading = new DOMParser().parseFromString(html, "text/html").querySelector("h1");
+    const text = (heading?.textContent ?? "").replaceAll("\u{A0}", " ");
+    expect(text).toBe(SLOGANS[0]?.map(([part]) => part).join(""));
+  });
+
+  it("mounts the other layers only after the first paint", async () => {
+    vi.resetModules();
+    const { RotatingSlogan: Fresh } = await import("#web/features/home/rotating-slogan.tsx");
+    const { container } = render(<Fresh />);
+    expect(container.querySelectorAll(".slogan-layer")).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(FIRST);
+    elapse(0);
+    expect(container.querySelectorAll(".slogan-layer")).toHaveLength(SLOGANS.length);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(FIRST);
   });
 
   it("changes the heading after HOLD_MS: the old words leave, then the new ones come in", () => {
