@@ -64,3 +64,18 @@ for (const width of WIDTHS) {
     });
   });
 }
+
+test("the header search at 390 px shows the start of a long query", async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await mockSiteData(page);
+  await page.goto("/");
+  const field = page.getByRole("combobox", { name: "Поиск по конспектам" });
+  await field.fill("определитель");
+  const state = await field.evaluate((input) => ({
+    clientWidth: input.clientWidth,
+    scrollLeft: input.scrollLeft,
+    scrollWidth: input.scrollWidth,
+  }));
+  expect(state.scrollLeft).toBe(0);
+  expect(state.scrollWidth).toBeLessThanOrEqual(state.clientWidth);
+});

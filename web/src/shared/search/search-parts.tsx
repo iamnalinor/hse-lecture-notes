@@ -36,15 +36,18 @@ export const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="flex h-11 w-full items-center gap-2 rounded-lg border border-rule bg-card px-3 text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-96">
-    <SearchIcon size={16} />
+  <label className="relative flex h-11 w-full items-center rounded-lg border border-rule bg-card text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-96">
+    {/* The icon is padding, not a flex item: the input takes all the rest of the field, so a query is not clipped at the start. */}
+    <span className="pointer-events-none absolute left-2.5 flex">
+      <SearchIcon size={16} />
+    </span>
     <input
       aria-activedescendant={hasPanel ? resultId(active) : undefined}
       aria-autocomplete="list"
       aria-controls={hasPanel ? "search-results" : undefined}
       aria-expanded={hasPanel}
       aria-label="Поиск по конспектам"
-      className="size-full min-w-0 bg-transparent text-body text-ink outline-none placeholder:text-faint lg:text-subhead [&::-webkit-search-cancel-button]:hidden"
+      className={`size-full min-w-0 flex-1 ${query === "" ? "pr-2" : "pr-8"} bg-transparent pl-8 text-body text-ink outline-none placeholder:text-faint lg:text-subhead [&::-webkit-search-cancel-button]:hidden`}
       enterKeyHint="search"
       onChange={(event) => {
         onQuery(event.target.value);
@@ -60,13 +63,13 @@ export const SearchField = ({
       value={query}
     />
     {query === "" ? (
-      <kbd className="hidden rounded-sm border border-rule px-1.5 py-px text-caption whitespace-nowrap lg:inline">
+      <kbd className="mr-3 hidden rounded-sm border border-rule px-1.5 py-px text-caption whitespace-nowrap lg:inline">
         {isMac() ? "⌘K" : "Ctrl K"}
       </kbd>
     ) : (
       <button
         aria-label="Очистить"
-        className="-my-px -mr-3 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink lg:size-10"
+        className="absolute right-0 flex h-11 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink lg:h-10"
         onClick={onClear}
         type="button"
       >
