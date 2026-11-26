@@ -49,10 +49,12 @@ export const LectureHeader = ({ entry, info, meta, minutes, next, prev }: Props)
     <h1 className="my-4 text-headline font-bold tracking-tight text-balance sm:mt-5 sm:text-title1">
       {meta.title}
     </h1>
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-footnote text-muted">
-      <span>~{minutes} мин чтения</span>
-      <SyncedLine entry={entry} />
-      <span className="ml-auto">
+    <div className="flex items-center gap-4 text-footnote text-muted">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
+        <span>~{minutes} мин чтения</span>
+        <SyncedLine entry={entry} />
+      </div>
+      <span className="shrink-0">
         <PdfLink course={info.id} docId={entry.weekId} variant="button" />
       </span>
     </div>

@@ -297,7 +297,7 @@ html.ai-open .ai-panel {
 .ai-load-error-icon {
   display: grid;
   margin-bottom: 12px;
-  color: var(--muted);
+  color: var(--red);
 }
 .ai-load-error-icon svg {
   width: 28px;
