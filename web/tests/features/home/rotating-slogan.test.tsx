@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SLOGANS } from "#web/domain/slogans.ts";
 import { HomeStart } from "#web/features/home/introduction.tsx";
-import { RotatingSlogan } from "#web/features/home/rotating-slogan.tsx";
+import { forgetSloganForTests, RotatingSlogan } from "#web/features/home/rotating-slogan.tsx";
 
 const HOLD_MS = 10_000;
 const WORDS_GAP_MS = 220;
@@ -44,6 +44,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  forgetSloganForTests();
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -161,6 +162,16 @@ describe("RotatingSlogan", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(SECOND);
     expect(states(container).filter((state) => state === "on")).toHaveLength(1);
     expect(states(container)).not.toContain("off");
+  });
+
+  it("shows the last slogan again when the home page is visited again", () => {
+    const first = render(<RotatingSlogan />);
+    elapse(HOLD_MS + WORDS_GAP_MS);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(SECOND);
+    first.unmount();
+    const { container } = render(<RotatingSlogan />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(SECOND);
+    expect(states(container).filter((state) => state === "off")).toHaveLength(0);
   });
 
   it("never repeats a slogan twice in a row", () => {

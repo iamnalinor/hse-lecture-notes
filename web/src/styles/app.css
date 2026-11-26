@@ -99,6 +99,16 @@ One type scale for the whole site (the steps of Apple's text styles, adapted): e
 one of these. The notes body is 18px in `prose.css`. The default Tailwind sizes are switched off, so a
 stray `text-sm` does nothing instead of adding an eleventh size.
 */
+/* A control drawn at 40 px that still takes a 44 px tap (Д41): the pseudo-element widens the target by 2 px
+   on every side. The element needs `position: relative`. */
+@utility hit-44 {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+  }
+}
+
 @theme {
   --text-*: initial;
   --text-caption: 12px;

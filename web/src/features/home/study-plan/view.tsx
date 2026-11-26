@@ -80,7 +80,7 @@ export const StudyPlan = ({
         </div>
       </div>
       <StudyPlanTable groups={groups} totals={totals} />
-      <figcaption className="px-4 pb-3 text-center text-footnote text-muted">
+      <figcaption className="px-4 py-3 text-center text-footnote text-muted">
         Кредиты за год: {sums.shown} по дисциплинам выше ·&nbsp;{sums.withHidden} с учебной
         практикой и физкультурой ·&nbsp;{sums.withEnglish} с английским (факультатив)
       </figcaption>

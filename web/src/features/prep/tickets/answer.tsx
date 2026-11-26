@@ -55,7 +55,7 @@ const SourceLink = ({
 };
 
 /**
-«Показать ответ»: one answer, written out. The own answer comes first, then the content of each
+«Ответ»: one answer, written out. The own answer comes first, then the content of each
 referenced block without its card — a statement with its proof, a problem's answer and solution — so
 the parts read as one text; where the blocks live is only a row of links under it. A lecture proof is
 left out where the page gives its own outline of it (`refsWithProof`).

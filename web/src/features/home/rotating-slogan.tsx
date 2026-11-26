@@ -90,6 +90,18 @@ const useIsDocumentVisible = () => {
   return visible;
 };
 
+/**
+The slogan on screen when the home page was left. The first load of the site shows the default one; coming back
+to the home page within the session shows the one the reader saw last, not the default again.
+*/
+const INITIAL: State = { current: 0, gap: false, leaving: null, queue: [] };
+const memory: { state: State } = { state: INITIAL };
+
+/** Test hook: every test starts from a fresh load. */
+export const forgetSloganForTests = (): void => {
+  memory.state = INITIAL;
+};
+
 const after = { isDone: false };
 
 /** Flips once, right after the first paint, and stays: the later visits to the page mount all layers at once. */
@@ -120,11 +132,15 @@ the rest mounts. CSS transitions on `data-state` do the animation (see `.slogan-
 layer is exposed to assistive technology.
 */
 export const RotatingSlogan = ({ effect = "words" }: { readonly effect?: Effect }) => {
-  const [state, setState] = useState<State>({ current: 0, gap: false, leaving: null, queue: [] });
+  const [state, setState] = useState<State>(() => memory.state);
   const [paused, setPaused] = useState(false);
   const isVisible = useIsDocumentVisible();
   const { current, leaving } = state;
   const isAfterFirstPaint = useIsAfterFirstPaint();
+
+  useEffect(() => {
+    memory.state = settle(state);
+  }, [state]);
 
   const advance = useCallback(() => {
     setState((s) => (s.leaving === null ? next(s, effect) : s));

@@ -11,12 +11,12 @@ export const TopBar = () => (
   <header className="@container border-b border-rule bg-paper" data-site-header="">
     <div className="relative mx-auto flex min-h-13 max-w-[1360px] items-center gap-x-3 px-4 py-2 sm:min-h-15 sm:gap-x-4 sm:px-8 md:gap-x-7">
       <Link
-        className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
+        className="hit-44 relative flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
         to={paths.home()}
       >
-        {/* As tall as the search field and buttons beside it: 44 px on phones, 40 px from 640 px (tests/e2e/layout.spec.ts). */}
+        {/* As tall as the search field and buttons beside it, 40 px (tests/e2e/layout.spec.ts); the tap area is 44 px (`hit-44`). */}
         <span
-          className="flex size-11 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white sm:size-10"
+          className="flex size-10 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white"
           data-logo-mark=""
         >
           {/* Σ built from HSE Sans 600 metrics (bars of E/Z, diagonal of Z, tip of >), softened corners and gently curved diagonals;

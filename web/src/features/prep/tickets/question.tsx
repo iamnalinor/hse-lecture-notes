@@ -19,7 +19,7 @@ type Props = {
   readonly topicTitle: string | undefined;
 };
 
-/** A numbered ticket question: its text, «Показать ответ» (answer in place) and a link to its section. */
+/** A numbered ticket question: its text, «Ответ» (answer in place; the label does not change when it opens, like «Решение») and a link to its section. */
 export const TicketQuestion = ({ course, number, prepId, proofs, question, topicTitle }: Props) => (
   <li className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-1 border-t border-rule py-4 first:border-t-0">
     <span className="pt-px text-body font-bold text-muted tabular-nums">{number}.</span>
@@ -29,8 +29,8 @@ export const TicketQuestion = ({ course, number, prepId, proofs, question, topic
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-4">
         <Reveal
-          accessibleName={`Показать ответ на вопрос ${String(number)}`}
-          closedLabel="Показать ответ"
+          accessibleName={`Ответ на вопрос ${String(number)}`}
+          closedLabel="Ответ"
           lazy
           openLabel="Ответ"
         >
