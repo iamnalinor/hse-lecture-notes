@@ -118,7 +118,7 @@ it("detaches an active response for a new chat and ignores its late events", asy
 it("can select history during a restored background response without its poll replacing the selection", async () => {
   vi.useFakeTimers();
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "running");
+  localStorage.setItem("hse_chat_thread:guest", "running");
   const answer = { ...makeAssistantMsg({ course: "", docId: "" }), id: "a", runId: "r" };
   const status = Promise.withResolvers<Awaited<ReturnType<typeof fetchChatRunStatus>>>();
   vi.mocked(fetchChatRunStatus).mockReturnValueOnce(status.promise);
@@ -299,7 +299,7 @@ it("polls a restored running turn through a failed request to completion", async
     status: "done",
     expiresAt: 1000,
   });
-  localStorage.setItem("hse_chat_thread:guest:/", "t");
+  localStorage.setItem("hse_chat_thread:guest", "t");
   const chat = mount();
   await act(async () => {
     chat.current.toggle();
@@ -471,7 +471,7 @@ it("keeps the open conversation visible across navigation, including after strea
   expect(view.current.chat.messages[0]?.page).toEqual({ course: "", docId: "" });
   expect(view.current.chat.isOpen).toBe(true);
   expect(document.documentElement).toHaveClass("ai-open");
-  expect(localStorage.getItem("hse_chat_thread:guest:/")).toBe("t");
+  expect(localStorage.getItem("hse_chat_thread:guest")).toBe("t");
 });
 
 it("loads the next history page without replacing the open thread", async () => {
@@ -515,13 +515,12 @@ it("remembers the history selection per page across reloads and forgets it for a
   act(() => {
     second.current.newChat();
   });
-  expect(localStorage.getItem("hse_chat_thread:guest:/")).toBeNull();
+  expect(localStorage.getItem("hse_chat_thread:guest")).toBeNull();
 });
 
-it("preserves a loaded conversation while open and restores the new page after reopening", async () => {
+it("keeps the account's last conversation across pages, also after reopening on another page", async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "home-thread");
-  localStorage.setItem("hse_chat_thread:guest:/algebra", "algebra-thread");
+  localStorage.setItem("hse_chat_thread:guest", "home-thread");
   vi.mocked(fetchChatThread).mockImplementation((id) =>
     Promise.resolve(
       thread(id ?? "unused", [
@@ -557,12 +556,13 @@ it("preserves a loaded conversation while open and restores the new page after r
     result.current.chat.toggle();
     await Promise.resolve();
   });
-  expect(result.current.chat.activeThreadId).toBe("algebra-thread");
+  expect(result.current.chat.activeThreadId).toBe("home-thread");
+  expect(localStorage.getItem("hse_chat_thread:guest:/algebra")).toBeNull();
 });
 
 it("tracks loading while restoring or selecting a conversation and ends it with a failure", async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "saved");
+  localStorage.setItem("hse_chat_thread:guest", "saved");
   const restored = Promise.withResolvers<ThreadResponse>();
   const selected = Promise.withResolvers<ThreadResponse>();
   vi.mocked(fetchChatThread)
@@ -616,7 +616,7 @@ it("shows local browser verification only for a sent message that needs allowanc
 
 it("keeps loading a history selection while the panel is closed and shows it when reopened", async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "saved");
+  localStorage.setItem("hse_chat_thread:guest", "saved");
   const selected = Promise.withResolvers<ThreadResponse>();
   vi.mocked(fetchChatThread)
     .mockResolvedValueOnce(thread("saved"))
@@ -739,7 +739,7 @@ it("does not automatically send an edited pending draft after login", async () =
 });
 it("resumes the original migrated thread after its history is restored", async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "g");
+  localStorage.setItem("hse_chat_thread:guest", "g");
   vi.mocked(fetchChatThread).mockResolvedValue(thread("g"));
   const chat = mount();
   await act(async () => {
@@ -1010,7 +1010,7 @@ it("can finish a stream after the same account renews its session", async () => 
 
 it("keeps the pending retry, typed draft and quote with their original thread", async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "a");
+  localStorage.setItem("hse_chat_thread:guest", "a");
   vi.mocked(fetchChatThread).mockImplementation((id) => Promise.resolve(thread(id ?? "empty")));
   const chat = mount();
   await act(async () => {
@@ -1221,7 +1221,7 @@ it("keeps the issued limit until the next allowance and preserves a rejected dra
 
 it("regenerates a saved answer even when the original question exceeds today's input limit", async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "old");
+  localStorage.setItem("hse_chat_thread:guest", "old");
   const page = { course: "", docId: "" };
   const original = makeUserMsg("Вопрос из старого чата", null, page);
   const answer = {
@@ -1277,7 +1277,7 @@ const withHistory = (id: string, messages: readonly ChatMessage[] = []): ThreadR
 });
 const openAlgebra = async () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "algebra");
+  localStorage.setItem("hse_chat_thread:guest", "algebra");
   vi.mocked(fetchChatThread).mockResolvedValueOnce(
     withHistory("algebra", [makeUserMsg("Про группы", null, { course: "", docId: "" })]),
   );
@@ -1422,7 +1422,7 @@ describe("opening a thread from history", () => {
 describe("restoring the thread of a page", () => {
   it("shows a failed restore as a failed thread with a retry", async () => {
     seedChatAuth({ browserToken: "browser" });
-    localStorage.setItem("hse_chat_thread:guest:/", "algebra");
+    localStorage.setItem("hse_chat_thread:guest", "algebra");
     vi.mocked(fetchChatThread).mockRejectedValueOnce(new Error("offline"));
     const chat = mount();
     await act(async () => {
@@ -1442,7 +1442,7 @@ describe("restoring the thread of a page", () => {
 
 const lastThread = () => {
   seedChatAuth({ browserToken: "browser" });
-  localStorage.setItem("hse_chat_thread:guest:/", "last");
+  localStorage.setItem("hse_chat_thread:guest", "last");
   vi.mocked(fetchChatThread).mockImplementation((id) => Promise.resolve(withHistory(id ?? "none")));
 };
 
