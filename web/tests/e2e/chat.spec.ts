@@ -2,6 +2,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import { mockChat, suggestion } from "./support/chat.ts";
 import { mockSiteData } from "./support/site-data.ts";
+import { installFakeVisualViewport, setKeyboardHeight } from "./support/visual-viewport.ts";
 
 test.beforeEach(async ({ page }) => {
   await mockSiteData(page);
@@ -32,6 +33,21 @@ test("suggestion fits on mobile and Tab accepts it without sending", async ({ pa
 
 test.describe("touch composer", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  test("the composer rises with the on-screen keyboard and returns when it closes", async ({
+    page,
+  }) => {
+    await installFakeVisualViewport(page);
+    await mockChat(page);
+    const input = await openChat(page);
+    await input.focus();
+    await setKeyboardHeight(page, 336);
+    await expect
+      .poll(async () => (await boxOf(input)).y + (await boxOf(input)).height)
+      .toBeLessThan(844 - 336);
+    await setKeyboardHeight(page, 0);
+    await expect.poll(async () => (await boxOf(input)).y).toBeGreaterThan(844 - 336);
+  });
+
   test("ghost suggestion has no caret and a one-line field is as tall as the send button", async ({
     page,
   }) => {

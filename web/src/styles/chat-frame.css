@@ -30,6 +30,10 @@ html.ai-open .ai-panel {
 }
 @media (max-width: 720px) {
   .ai-panel {
+    /* The visible rectangle while the keyboard is open (`use-keyboard-inset.ts`); without it, the whole screen. */
+    top: var(--ai-vv-top, 0);
+    bottom: auto;
+    height: var(--ai-vv-height, 100%);
     width: 100%;
     border-left: 0;
     transform: translateY(16px);
