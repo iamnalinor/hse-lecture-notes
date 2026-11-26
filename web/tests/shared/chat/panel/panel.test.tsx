@@ -363,10 +363,8 @@ it("replaces stale messages with accessible skeletons until history is ready", (
   );
   try {
     const view = render(panel);
-    expect(screen.getByRole("status", { name: "Загрузка переписки" })).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
+    expect(screen.getByRole("status")).toHaveTextContent("Загружаю чат");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
     expect(screen.queryByText("Old answer")).toBeNull();
     state.isThreadLoading = false;
     view.rerender(
@@ -376,7 +374,7 @@ it("replaces stale messages with accessible skeletons until history is ready", (
         </QueryClientProvider>
       </MemoryRouter>,
     );
-    expect(screen.queryByRole("status", { name: "Загрузка переписки" })).toBeNull();
+    expect(screen.queryByText("Загружаю чат")).toBeNull();
     expect(screen.getByText("Old answer")).toBeVisible();
   } finally {
     state.isThreadLoading = false;

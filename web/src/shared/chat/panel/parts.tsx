@@ -106,6 +106,11 @@ export const ChatPanelHeader = ({
   const activeThread = chat.threads.find((t) => t.id === chat.activeThreadId);
   const title = threadDisplayTitle(activeThread);
   const headerRef = useHistoryDismiss(historyOpen, onToggleHistory);
+  // A thread that is loading or failed has no messages, but the reader must be able to leave it.
+  const canLeaveThread =
+    chat.messages.length > 0 ||
+    chat.isThreadFailed ||
+    (chat.isThreadLoading && activeThread !== undefined);
   return (
     <div className="ai-top" ref={headerRef}>
       <div className="ai-title">
@@ -116,7 +121,7 @@ export const ChatPanelHeader = ({
       <button
         aria-label="Новый чат"
         className="ai-icon-btn"
-        hidden={chat.messages.length === 0}
+        hidden={!canLeaveThread}
         onClick={() => {
           chat.newChat();
           if (historyOpen) {

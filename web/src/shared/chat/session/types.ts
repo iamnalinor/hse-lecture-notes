@@ -22,8 +22,6 @@ export type ChatContextValue = {
   readonly docContext: ChatDocContext;
   readonly draft: string;
   readonly draftError: null | string;
-  /** The thread the reader picked in history that could not be loaded; the previous one is still on screen. */
-  readonly failedThread: ChatThreadSummary | null;
   readonly readingSource: boolean;
   readonly returnFromSource: () => void;
   readonly closeForSource: () => void;
@@ -37,6 +35,8 @@ export type ChatContextValue = {
   readonly telegramLoadFailed: boolean;
   readonly isOpen: boolean;
   readonly isStreaming: boolean;
+  /** The thread on screen did not load: no messages, nothing to send into, only a retry or a way out. */
+  readonly isThreadFailed: boolean;
   readonly isThreadLoading: boolean;
   readonly login: () => Promise<void>;
   readonly messages: readonly ChatMessage[];
@@ -45,6 +45,7 @@ export type ChatContextValue = {
   readonly quote: ChatQuote | null;
   readonly rateLimitUntil: number;
   readonly retryMessage: (assistantMsgId: string) => Promise<void>;
+  readonly retryThread: () => void;
   readonly selectThread: (threadId: string) => void;
   readonly send: (overrideText?: string) => Promise<void>;
   readonly setDraft: (value: string) => void;

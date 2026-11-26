@@ -19,12 +19,13 @@ import type { ChatContextValue } from "./types.ts";
 import { setChatOpen, useIsChatOpen } from "../open-state.ts";
 import { TurnstileModal } from "../panel/turnstile-modal.tsx";
 import { useChatStream } from "../stream/use-stream.ts";
+import { useRootOpenClassSync } from "../use-root-open-class.ts";
 import { streamSetters } from "./stream-setters.ts";
 import { useComposerDrafts } from "./use-composer-drafts.ts";
 import { useLoginResume } from "./use-login-resume.ts";
 import { chatSendActions } from "./use-send-actions.ts";
 import { useSourceReturn } from "./use-source-return.ts";
-import { useChatAuthState, useRootOpenClassSync, useTelegramAuthActions } from "./use-state.ts";
+import { useChatAuthState, useTelegramAuthActions } from "./use-state.ts";
 import { useThreadState } from "./use-thread-state.ts";
 import { useTurnstile } from "./use-turnstile.ts";
 
@@ -53,6 +54,12 @@ type BuildCtxArgs = Pick<
   readonly turnstileOpen: boolean;
 };
 
+const isContextLimited = (thr: BuildCtxArgs["thr"]): boolean =>
+  thr.threads.find((thread) => thread.id === thr.activeThreadId)?.contextLimited === true;
+
+const isShownAndLoaded = (thr: BuildCtxArgs["thr"], threadId: string): boolean =>
+  thr.activeThreadId === threadId && !thr.isThreadLoading && !thr.isThreadFailed;
+
 const detachThread = (a: BuildCtxArgs, isNewChat: boolean): void => {
   a.detach();
   a.leaveThread(isNewChat);
@@ -60,8 +67,7 @@ const detachThread = (a: BuildCtxArgs, isNewChat: boolean): void => {
 
 const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   activeThreadId: a.thr.activeThreadId,
-  contextLimited:
-    a.thr.threads.find((thread) => thread.id === a.thr.activeThreadId)?.contextLimited === true,
+  contextLimited: isContextLimited(a.thr),
   block: a.auth.block,
   cancelTurnstile: cancelActiveTurnstile,
   canStop: a.thr.canStop,
@@ -84,7 +90,6 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     a.setIsOpen(true);
   },
   draftError: a.draftError,
-  failedThread: a.thr.failedThread,
   degraded: a.auth.degraded,
   maxQuestionChars: a.auth.maxQuestionChars,
   docContext: a.docContext,
@@ -96,6 +101,7 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   switchAccount: a.login,
   isOpen: a.isOpen,
   isStreaming: a.thr.isStreaming,
+  isThreadFailed: a.thr.isThreadFailed,
   isThreadLoading: a.thr.isThreadLoading,
   messages: a.unsent === null ? a.thr.messages : [...a.thr.messages, a.unsent],
   newChat: () => {
@@ -113,12 +119,13 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   quote: a.quote,
   rateLimitUntil: a.auth.rateLimitUntil,
   retryMessage: a.retryMessage,
+  retryThread: a.thr.retryThread,
   selectThread: (threadId: string) => {
-    if (a.thr.activeThreadId === threadId && !a.thr.isThreadLoading) {
+    if (isShownAndLoaded(a.thr, threadId)) {
       return;
     }
     detachThread(a, false);
-    void a.thr.openThread(threadId);
+    a.thr.openThread(threadId);
   },
   send: a.send,
   setDraft: a.setDraft,
@@ -161,6 +168,7 @@ const canResumeLogin = (
   auth.user !== null &&
   auth.block === null &&
   !thr.isThreadLoading &&
+  !thr.isThreadFailed &&
   !thr.isStreaming;
 
 const useChatSessionValue = ({

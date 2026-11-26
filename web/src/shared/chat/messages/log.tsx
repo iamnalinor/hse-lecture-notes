@@ -1,12 +1,10 @@
 import { useLayoutEffect, useRef } from "react";
 
-import { type ChatThreadSummary, threadDisplayTitle } from "#web/domain/chat/model.ts";
-
-import { AlertIcon } from "../icons.tsx";
 import { ChatEmptyView } from "../panel/parts.tsx";
 import { useChat } from "../session/context.tsx";
+import { ChatLoadError, threadLoadFailure } from "../shell/chat-load-error.tsx";
+import { ChatMessagesSkeleton } from "../shell/chat-skeleton.tsx";
 import { ChatMessageView } from "./message-view.tsx";
-import { ChatSkeleton } from "./skeleton.tsx";
 
 const EarlierMessagesButton = () => {
   const chat = useChat();
@@ -46,37 +44,6 @@ const EarlierMessagesButton = () => {
   );
 };
 
-const ThreadLoadError = ({ failed }: { readonly failed: ChatThreadSummary }) => {
-  const chat = useChat();
-  const open = chat.threads.find((thread) => thread.id === chat.activeThreadId);
-  return (
-    <div className="ai-plate ai-fade" role="alert">
-      <div className="ai-plate-row">
-        <AlertIcon />
-        <div>
-          <b>{`Не удалось открыть «${threadDisplayTitle(failed)}»`}</b>
-          <p>
-            {chat.activeThreadId === null
-              ? "Сейчас открыт новый чат, сообщение уйдет в него."
-              : `Сейчас открыта «${threadDisplayTitle(open)}», сообщение уйдет в нее.`}
-          </p>
-        </div>
-      </div>
-      <div className="ai-plate-actions">
-        <button
-          className="ai-btn ai-btn-2"
-          onClick={() => {
-            chat.selectThread(failed.id);
-          }}
-          type="button"
-        >
-          Повторить
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export const ChatLog = ({
   onJumpToBlock,
 }: {
@@ -84,17 +51,13 @@ export const ChatLog = ({
 }) => {
   const chat = useChat();
   if (chat.isThreadLoading) {
-    return <ChatSkeleton />;
+    return <ChatMessagesSkeleton />;
   }
-  const failure =
-    chat.failedThread === null ? null : <ThreadLoadError failed={chat.failedThread} />;
+  if (chat.isThreadFailed) {
+    return <ChatLoadError failure={threadLoadFailure()} onRetry={chat.retryThread} />;
+  }
   if (chat.messages.length === 0) {
-    return (
-      <>
-        {failure}
-        <ChatEmptyView />
-      </>
-    );
+    return <ChatEmptyView />;
   }
   const last = chat.messages.at(-1);
   const canRetry =
@@ -104,7 +67,6 @@ export const ChatLog = ({
       : chat.messages.at(-2)?.role === "user");
   return (
     <>
-      {failure}
       <EarlierMessagesButton />
       {chat.messages.map((message) => (
         <ChatMessageView

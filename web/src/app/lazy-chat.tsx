@@ -5,6 +5,7 @@ import { isChatConfigured } from "#web/api/chat/http.ts";
 import { isDocumentPath } from "#web/domain/paths.ts";
 import { useIsChatOpen } from "#web/shared/chat/open-state.ts";
 import { loadChatRuntime, useChatRuntimeLoad } from "#web/shared/chat/runtime-loader.ts";
+import { ChatShell } from "#web/shared/chat/shell/chat-shell.tsx";
 
 /** The chat is optional: a crash inside it must not take the notes page down with it. */
 class ChatBoundary extends Component<{ readonly children: ReactNode }, { failed: boolean }> {
@@ -17,39 +18,53 @@ class ChatBoundary extends Component<{ readonly children: ReactNode }, { failed:
   }
 }
 
-/**
-The download shows nothing itself: the toggle button shows that it is under way and what went
-wrong (`toggle-button.tsx`), and the panel appears once `Runtime` is there.
-*/
-export const LazyChat = ({ general = false }: { readonly general?: boolean }) => {
-  const isOpen = useIsChatOpen();
-  const { pathname } = useLocation();
-  const shouldMount = isOpen || (!general && isDocumentPath(pathname));
-  // Keep drafts, streams and the session alive after the first use or document visit.
-  const [wasMounted, setWasMounted] = useState(shouldMount);
-  if (shouldMount && !wasMounted) {
-    setWasMounted(true);
-  }
-  const isMounted = isChatConfigured() && (shouldMount || wasMounted);
-  const load = useChatRuntimeLoad();
+/** Starts the download once the chat is wanted, and again when the network returns after a failure. */
+const useRuntimeDownload = (isWanted: boolean, isFailed: boolean): void => {
   useEffect(() => {
-    if (isMounted) {
+    if (isWanted) {
       loadChatRuntime();
     }
-  }, [isMounted]);
-  const isFailed = load.status === "failed";
+  }, [isWanted]);
   useEffect(() => {
-    if (!isMounted || !isFailed) {
+    if (!isWanted || !isFailed) {
       return;
     }
     globalThis.addEventListener("online", loadChatRuntime);
     return () => {
       globalThis.removeEventListener("online", loadChatRuntime);
     };
-  }, [isMounted, isFailed]);
-  return isMounted && load.status === "ready" ? (
-    <ChatBoundary>
-      <load.Runtime general={general} />
-    </ChatBoundary>
-  ) : null;
+  }, [isWanted, isFailed]);
+};
+
+const useIsChatMounted = (isOpen: boolean, isGeneral: boolean): boolean => {
+  const { pathname } = useLocation();
+  const shouldMount = isOpen || (!isGeneral && isDocumentPath(pathname));
+  // Keep drafts, streams and the session alive after the first use or document visit.
+  const [wasMounted, setWasMounted] = useState(shouldMount);
+  if (shouldMount && !wasMounted) {
+    setWasMounted(true);
+  }
+  return isChatConfigured() && (shouldMount || wasMounted);
+};
+
+/**
+Until `Runtime` is there, an open chat is the shell (skeleton, or the failure with a retry); the
+real panel replaces it in the same frame.
+*/
+export const LazyChat = ({ general = false }: { readonly general?: boolean }) => {
+  const isOpen = useIsChatOpen();
+  const isMounted = useIsChatMounted(isOpen, general);
+  const load = useChatRuntimeLoad();
+  useRuntimeDownload(isMounted, load.status === "failed");
+  if (!isMounted) {
+    return null;
+  }
+  if (load.status === "ready") {
+    return (
+      <ChatBoundary>
+        <load.Runtime general={general} />
+      </ChatBoundary>
+    );
+  }
+  return isOpen ? <ChatShell failure={load.status === "failed" ? load.failure : null} /> : null;
 };

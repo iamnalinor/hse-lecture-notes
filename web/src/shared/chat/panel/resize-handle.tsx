@@ -1,7 +1,8 @@
 import { type JSX, useEffect, useRef } from "react";
 
+import { CHAT_WIDTH_STORAGE_KEY, restoreStoredChatWidth } from "../stored-width.ts";
+
 const root = (): HTMLElement => document.documentElement;
-const storageKey = "hse_chat_width";
 const applyWidth = (width: number): void => {
   const bounded = Math.round(Math.max(320, Math.min(720, window.innerWidth * 0.55, width)));
   root().style.setProperty("--chat-preferred-width", `${bounded}px`);
@@ -9,7 +10,10 @@ const applyWidth = (width: number): void => {
 
 const saveWidth = (): void => {
   try {
-    localStorage.setItem(storageKey, root().style.getPropertyValue("--chat-preferred-width"));
+    localStorage.setItem(
+      CHAT_WIDTH_STORAGE_KEY,
+      root().style.getPropertyValue("--chat-preferred-width"),
+    );
   } catch {
     // The current page still keeps the chosen width when storage is unavailable.
   }
@@ -18,14 +22,7 @@ const saveWidth = (): void => {
 export const ChatResizeHandle = (): JSX.Element => {
   const offsetRef = useRef(0);
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored !== null && /^\d{3}px$/.test(stored)) {
-        root().style.setProperty("--chat-preferred-width", stored);
-      }
-    } catch {
-      // Private browsing may block storage.
-    }
+    restoreStoredChatWidth();
     return () => {
       root().classList.remove("ai-resizing");
     };
