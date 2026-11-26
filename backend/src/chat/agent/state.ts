@@ -32,7 +32,6 @@ export interface AgentLoopParams {
   generatedTitle?: string | null;
   preparedContext?: PreparedTurnContext;
   contextLimited?: boolean;
-  excludeMessageIds?: readonly string[];
   course: string;
   docId: string;
   tier: Tier;

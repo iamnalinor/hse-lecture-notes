@@ -1,7 +1,7 @@
 import type { ToolArgs, ToolExecutionContext } from "./types";
 
 /** Normalizes the course names a model uses (matan, linalg, ...) to the site's course codes. */
-export function courseCode(value: string): string {
+function courseCode(value: string): string {
   const name = value.toLowerCase().trim();
   if (/^(?:матан(?:ализ)?[а-я]*|математическ[а-я]* анализ[а-я]*)$/u.test(name)) return "calculus";
   return name === "linalg" ? "algebra" : name;
