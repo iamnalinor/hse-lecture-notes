@@ -211,6 +211,35 @@ phone — one card per row, every value next to (short, `data-inline`) or under 
   }
 }
 
+/* Label and value table of the program page: below 30rem a row is the label (semibold) over its value. */
+@media (width < 30rem) {
+  .prose-notes .table-pairs table,
+  .prose-notes .table-pairs tbody,
+  .prose-notes .table-pairs tr,
+  .prose-notes .table-pairs td {
+    display: block;
+    width: 100%;
+  }
+
+  .prose-notes .table-pairs colgroup {
+    display: none;
+  }
+
+  .prose-notes .table-pairs tr {
+    border-bottom: 1px solid var(--rule);
+    padding: 8px 0;
+  }
+
+  .prose-notes .table-pairs td {
+    border: 0;
+    padding: 1px 12px;
+  }
+
+  .prose-notes .table-pairs td:first-child {
+    font-weight: 600;
+  }
+}
+
 .prose-notes img {
   height: auto;
   max-width: 100%;

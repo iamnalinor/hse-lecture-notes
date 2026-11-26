@@ -36,6 +36,11 @@ import type {
 } from "../types";
 
 const TURN_TOOLS = [...AGENT_TOOLS, ...buildMetadataTools()];
+const EARLY_SUGGESTION_ERROR = {
+  error: "suggest_with_answer",
+  instruction:
+    "Подсказка не сохранена: suggest_reply принимается только вместе с финальным текстом ответа. Закончи работу, затем в одном ответе напиши текст пользователю и вызови suggest_reply. Текст подсказки в ответ не пиши.",
+};
 const TOOL_NAMES = new Set(AGENT_TOOLS.map((t) => t.name));
 export interface AgentLoopParams {
   env: Env;
@@ -276,8 +281,6 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
       } else {
         const externalCalls = calls.filter((c) => TOOL_NAMES.has(c.name));
         const answer = Boolean(roundText.trim()) && externalCalls.length === 0;
-        // A proposal made before subsequent research may no longer fit the answer.
-        if (externalCalls.length) metadata = undefined;
         const usedMetadata = new Set<string>();
         for (const call of calls) {
           if (abort.signal.aborted) break;
@@ -293,23 +296,15 @@ export async function executeAgentRun(p: AgentLoopParams): Promise<void> {
                 if (await persistRunTopic(db, runId, title))
                   sendFrame({ type: "title", threadId, title });
               } else {
-                if (externalCalls.length) {
-                  output(call.callId, { error: "answer_not_available" });
+                // The suggestion belongs to the last response of the turn: it is accepted
+                // only together with the answer text, never from an earlier round.
+                if (!answer) {
+                  output(call.callId, EARLY_SUGGESTION_ERROR);
                   continue;
                 }
-                // Responses may emit a function call before the final text. Keep it
-                // pending; only a successfully completed answer can publish it.
                 metadata = { suggestion: parseSuggestionArguments(call.arguments) };
               }
-              output(call.callId, {
-                ok: true,
-                ...(call.name === "suggest_reply" && !answer
-                  ? {
-                      instruction:
-                        "Предложение сохранено. Теперь ответь пользователю; повторять служебный вызов не нужно.",
-                    }
-                  : {}),
-              });
+              output(call.callId, { ok: true });
             } catch {
               output(call.callId, { error: "metadata_invalid" });
             }

@@ -2,6 +2,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import { mockChat, suggestion } from "./support/chat.ts";
 import { mockSiteData } from "./support/site-data.ts";
+import { installFakeVisualViewport, setKeyboardHeight } from "./support/visual-viewport.ts";
 
 test.beforeEach(async ({ page }) => {
   await mockSiteData(page);
@@ -28,6 +29,60 @@ test("suggestion fits on mobile and Tab accepts it without sending", async ({ pa
   expect(mock.sent).toHaveLength(0);
   await input.fill("");
   await expect(input).not.toHaveAttribute("placeholder", suggestion);
+});
+
+test.describe("touch composer", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  test("the composer rises with the on-screen keyboard and returns when it closes", async ({
+    page,
+  }) => {
+    await installFakeVisualViewport(page);
+    await mockChat(page);
+    const input = await openChat(page);
+    await input.focus();
+    await setKeyboardHeight(page, 336);
+    await expect
+      .poll(async () => (await boxOf(input)).y + (await boxOf(input)).height)
+      .toBeLessThan(844 - 336);
+    await setKeyboardHeight(page, 0);
+    await expect.poll(async () => (await boxOf(input)).y).toBeGreaterThan(844 - 336);
+  });
+
+  test("ghost suggestion has no caret and a one-line field is as tall as the send button", async ({
+    page,
+  }) => {
+    await mockChat(page);
+    const input = await openChat(page);
+    await expect(input).toHaveAttribute("placeholder", suggestion);
+    await expect(input).toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
+    await input.evaluate((el) => {
+      el.setAttribute("placeholder", "а как его быстро считать");
+    });
+    await input.fill("а как");
+    await expect(input).not.toHaveCSS("caret-color", "rgba(0, 0, 0, 0)");
+    const field = await input.boundingBox();
+    const button = await page.locator(".ai-send").boundingBox();
+    expect(field?.height).toBe(button?.height);
+    expect(field?.y).toBe(button?.y);
+  });
+});
+
+test("with the chat open on desktop the header keeps the courses and history is a narrow dropdown", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await mockChat(page);
+  await openChat(page);
+  await expect(page.getByRole("navigation", { name: "Курсы" })).toBeVisible();
+  const row = page.locator("header > div").first();
+  expect(await row.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  const trigger = page.getByRole("button", { name: "История чатов" });
+  await trigger.click();
+  const menu = await boxOf(page.getByRole("group", { name: "История чатов" }));
+  const button = await boxOf(trigger);
+  expect(menu.width).toBeLessThanOrEqual(360);
+  expect(menu.x + menu.width).toBeGreaterThan(button.x);
+  expect(menu.y).toBeGreaterThan(button.y + button.height);
 });
 
 test("history closes outside and with Escape while chat stays open", async ({ page }) => {
@@ -61,6 +116,26 @@ test("topic arrives before the answer and one submitted question stays in histor
   await expect(input).toHaveValue("");
   await expect(input).toHaveAttribute("placeholder", suggestion);
   expect(mock.sent).toHaveLength(1);
+});
+
+test("the header says «Чат» until the topic arrives and never shows the question", async ({
+  page,
+}) => {
+  const mock = await mockChat(page, true);
+  mock.holdTitle();
+  const input = await openChat(page);
+  await input.fill("Объясни правило");
+  await input.press("Enter");
+  await mock.received;
+  await expect(page.locator(".ai-user")).toHaveText(/Объясни правило/u);
+  await expect(page.locator(".ai-title")).toHaveText("Чат");
+  await page.getByRole("button", { name: "История чатов" }).click();
+  await expect(page.getByRole("group", { name: "История чатов" })).toHaveText("Чат");
+  await page.keyboard.press("Escape");
+  mock.sendTitle();
+  await expect(page.locator(".ai-title")).toHaveText("Новая тема");
+  mock.complete();
+  await expect(page.locator(".ai-title")).toHaveText("Новая тема");
 });
 
 test("an early stop waits for meta while the answer stream remains readable", async ({ page }) => {

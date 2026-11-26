@@ -102,7 +102,10 @@ function parseOutput(rawItems: Raw[], strict: boolean) {
       }
       if (parts.length) {
         const messageText = parts.map((p) => p.text).join("");
-        if (messageText) text += (text ? "\n\n" : "") + messageText;
+        // A response carries exactly one answer: later message items (an echo of a
+        // service call, a self-correction) are dropped from the text and from replay.
+        if (messageText && text) continue;
+        text = messageText;
         outputItems.push({
           type: "message",
           role: "assistant",
@@ -201,7 +204,7 @@ export async function parseResponsesSseStream(
         violations.push("unidentified_text");
         return;
       }
-      if (source && source !== lastTextItem && streamedText) emit("\n\n");
+      if (streamedText && source !== lastTextItem) return;
       lastTextItem = source;
       emit(evt.delta);
     } else if (type === "response.output_item.done" && item) {

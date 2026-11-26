@@ -56,7 +56,9 @@ const HistoryMenu = ({
           }}
           type="button"
         >
-          <span>{thread.title}</span>
+          <span>
+            {threadDisplayTitle(thread, chat.isStreaming && thread.id === chat.activeThreadId)}
+          </span>
         </button>
       ))}
       {chat.isLoadingMore && (
@@ -104,7 +106,7 @@ export const ChatPanelHeader = ({
 }: PanelHeaderProps): JSX.Element => {
   const chat = useChat();
   const activeThread = chat.threads.find((t) => t.id === chat.activeThreadId);
-  const title = threadDisplayTitle(activeThread);
+  const title = threadDisplayTitle(activeThread, chat.isStreaming);
   const headerRef = useHistoryDismiss(historyOpen, onToggleHistory);
   // A thread that is loading or failed has no messages, but the reader must be able to leave it.
   const canLeaveThread =

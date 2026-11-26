@@ -253,13 +253,42 @@ test("exhausted material output forces the next answer and stays out of public s
   expect(stored.steps_json).not.toContain("Лимит инструментов");
 });
 
-test("suggestion before the answer in its own round survives until successful completion", async () => {
+const EARLY_ERROR = "suggest_with_answer";
+const lastOutputs = (r: Fixture, n: number) =>
+  r.requests[n]!.input.filter((i) => i.type === "function_call_output").map((i) => i.output);
+
+test("production sequence: an early suggestion is rejected, never echoed and never saved", async () => {
   const suggestion = "Помоги составить план подготовки";
   const r = await fixture([round("", [suggest(suggestion)]), round("Ответ")], 6, true);
+  expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ", suggestion: null });
+  expect(r.frames.at(-1)).toMatchObject({ type: "done", text: "Ответ", suggestion: null });
+  expect(JSON.stringify(r.frames)).not.toContain(suggestion);
+  const outputs = lastOutputs(r, 1).join();
+  expect(outputs).toContain(EARLY_ERROR);
+  expect(outputs).not.toContain('"ok":true');
+});
+
+test("an early suggestion re-called together with the answer is saved", async () => {
+  const suggestion = "Помоги составить план подготовки";
+  const r = await fixture(
+    [round("", [suggest("Ранняя подсказка")]), round("Ответ", [suggest(suggestion)])],
+    6,
+    true,
+  );
   expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ", suggestion });
   expect(r.frames.at(-1)).toMatchObject({ type: "done", suggestion });
-  expect(JSON.stringify(r.frames.slice(0, -1))).not.toContain(suggestion);
-  expect(JSON.stringify(r.requests[1]!.input)).not.toContain("answer_not_available");
+});
+
+test("a suggestion in a research round is dropped and the answer carries none", async () => {
+  const read = { callId: "read", name: "read_document", arguments: '{"course":"algebra"}' };
+  const r = await fixture([round("", [read, suggest()]), round("Ответ")], 6, true);
+  expect(r.message).toMatchObject({ status: "done", content_tex: "Ответ", suggestion: null });
+  expect(lastOutputs(r, 1).join()).toContain(EARLY_ERROR);
+});
+
+test("no suggestion in the final response means no suggestion and the loop ends", async () => {
+  const r = await fixture([round("", [suggest()]), round("Ответ"), round("лишний")], 6, true);
+  expect(r.message).toMatchObject({ status: "done", suggestion: null });
   expect(r.requests).toHaveLength(2);
 });
 
@@ -271,18 +300,7 @@ test("suggestion before text within the same response is accepted", async () => 
   expect(r.requests).toHaveLength(1);
 });
 
-test("pending suggestion is discarded if more material is requested", async () => {
-  const read = { callId: "read", name: "read_document", arguments: '{"course":"algebra"}' };
-  for (const rounds of [
-    [round("", [suggest()]), round("", [read]), round("Ответ")],
-    [round("", [read, suggest()]), round("Ответ")],
-  ]) {
-    const r = await fixture(rounds, 6, true);
-    expect(r.message).toMatchObject({ status: "done", suggestion: null });
-  }
-});
-
-test("pending suggestion is never published without a complete answer", async () => {
+test("an early suggestion never leaks into an incomplete turn", async () => {
   for (const result of [round("", []), round("Часть", [], false)]) {
     const r = await fixture([round("", [suggest()]), result], 6, true);
     expect(r.message).toMatchObject({ status: "incomplete", suggestion: null });

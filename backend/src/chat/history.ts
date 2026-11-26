@@ -265,8 +265,8 @@ export async function prepareTurnContext(
         p.provider === args.route.provider &&
         p.model === args.route.model &&
         p.effort === args.route.effort &&
-        p.promptVersion === "chat-v3" &&
-        p.toolsVersion === "tools-v3" &&
+        p.promptVersion === "chat-v4" &&
+        p.toolsVersion === "tools-v4" &&
         p.inputPrefixHash === (await sha256Hex(JSON.stringify([...prefix, ...userItems])));
       const outputs = compatible ? envelope!.items : [message("assistant", assistant.content_tex)];
       const items = [...userItems, ...outputs];
@@ -294,8 +294,8 @@ export async function prepareTurnContext(
   history.trimmed ||= picked.length !== pairs.length || hadOlder;
   const provenance: ReplayProvenance = {
     ...args.route,
-    promptVersion: "chat-v3",
-    toolsVersion: "tools-v3",
+    promptVersion: "chat-v4",
+    toolsVersion: "tools-v4",
     inputPrefixHash: await sha256Hex(JSON.stringify(history.items)),
   };
   return {

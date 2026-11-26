@@ -6,6 +6,7 @@ import {
   formatRemainingDuration,
   nextRunPollDelayMs,
   parseDocContext,
+  threadDisplayTitle,
   toPlainCopyText,
 } from "#web/domain/chat/model.ts";
 
@@ -50,5 +51,13 @@ describe("chat domain helpers", () => {
     const plate = blockPlateCopy({ code: "auth_required" }, "guest", Date.now());
     expect(plate.showLogin).toBe(true);
     expect(plate.title).toContain("Войди");
+  });
+
+  it("never shows the first question as a title during a live run", () => {
+    const thread = { id: "t", title: "Первый вопрос", generatedTitle: null, updatedAt: 1 };
+    expect(threadDisplayTitle(thread, true)).toBe("Чат");
+    expect(threadDisplayTitle(thread)).toBe("Первый вопрос");
+    expect(threadDisplayTitle({ ...thread, generatedTitle: "Индукция" }, true)).toBe("Индукция");
+    expect(threadDisplayTitle(undefined, true)).toBe("Чат");
   });
 });
