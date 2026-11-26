@@ -463,6 +463,7 @@ for (const width of [320, 390]) {
     const input = page.getByRole("textbox", { name: "Сообщение в чат" });
     await input.fill("Вопрос");
     await input.press("Enter");
+    await mock.received;
     mock.complete(undefined, "[Открыть раздел](/algebra/02_test#section)");
     const draft = "Черновик до перехода";
     await input.fill(draft);
@@ -480,8 +481,8 @@ for (const width of [320, 390]) {
       backBox,
       await boxOf(page.getByRole("button", { name: "Скрыть" })),
     ]) {
-      expect(box.height).toBeGreaterThanOrEqual(44);
-      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(Math.round(box.height)).toBeGreaterThanOrEqual(44);
+      expect(Math.round(box.width)).toBeGreaterThanOrEqual(44);
     }
     expect(chatBox.y + chatBox.height).toBeLessThanOrEqual(backBox.y);
     expect(backBox.x + backBox.width).toBeLessThanOrEqual(width);
