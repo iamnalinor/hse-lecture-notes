@@ -24,7 +24,8 @@ const Skeleton = ({ pathname }: { readonly pathname: string }) => {
 export const ShellFallback = () => (
   <div className="flex min-h-screen flex-col bg-paper text-ink">
     <TopBar />
-    <main className="flex-1">
+    {/* As tall as the screen, like `AppShell`'s: the footer stays below the fold instead of where the page will be. */}
+    <main className="min-h-dvh flex-1">
       <Skeleton pathname={useLocation().pathname} />
     </main>
     <SiteFooter />

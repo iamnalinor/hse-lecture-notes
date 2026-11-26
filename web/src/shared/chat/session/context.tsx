@@ -84,10 +84,6 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
     a.setIsOpen(false);
   },
   readingSource: a.source.readingSource,
-  returnFromSource: () => {
-    a.source.returnFromSource();
-    a.setIsOpen(true);
-  },
   draftError: a.draftError,
   degraded: a.auth.degraded,
   maxQuestionChars: a.auth.maxQuestionChars,
