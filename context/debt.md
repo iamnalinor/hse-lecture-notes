@@ -20,7 +20,7 @@
 ## Код (после PR 45)
 
 - **Backend, линтер.** Конфиги есть (`backend/biome.json`, `eslint.config.ts`, `knip.jsonc`, `bun run lint`), но ESLint дает около 2 250 нарушений, и в CI и lefthook линтер не подключен. Решение владельца 26.11.2026: правила размера (complexity, max-statements, max-params, max-lines) отключить временным списком файлов в `eslint.config.ts` с причиной «до рефакторинга», остальное чинить по-настоящему; потом подключить в `backend.yml` и `lefthook.yml`, как в web.
-- **Backend, структура** (идет 26.11.2026). `src/quotas.ts`, `src/chat/tools.ts`, `src/chat/agent-loop.ts`, `src/auth.ts` — разбить по ответственности, типы строк D1 и SQL держать в одном месте. Поведение не менять, эталон — `bun test` и `integration/chat-workerd.mjs`.
+- **Backend, структура.** 26.11.2026 разбиты `quotas.ts` → `quotas/`, `chat/tools.ts` → `chat/tools/` + `course-repo.ts`, `executeAgentRun` → `chat/agent/`, прокси, SSE-парсер, `postMessage`, архиватор. Осталось: SQL inline в `auth.ts` (≈ 470 строк), `chat/history.ts`, `chat/thread-route.ts`, `account-tiers.ts`, `telegram-alerts.ts`, `codex-auth.ts` — вынести в репозитории по таблицам. Эталон — `bun test` и `integration/chat-workerd.mjs`.
 - **Web, чат** (отложено владельцем 26.11.2026, без команды не делать). `src/styles/chat.css` и `src/shared/chat/` — мертвые правила и дубли; проверка — скриншоты до и после.
 - **Python** (отложено владельцем 26.11.2026, без команды не делать). Разбить `tests/test_pipeline.py` (≈ 1 300 строк); убрать глобальное состояние `build.py` (`SRC`, `SITE`, `set_dirs`) и вынести HTML и site-data в модули; аннотации типов в `build_chat_suggestions.py` и `render_pages.py`.
 
