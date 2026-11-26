@@ -221,7 +221,14 @@ test("mobile header keeps Chat text and collapses search first", async ({ page }
   await expect(page.getByPlaceholder("Поиск", { exact: true })).toBeVisible();
   await expect(page.getByTitle("Чат с ИИ")).toContainText("Чат");
   await page.setViewportSize({ width: 320, height: 844 });
-  await expect(page.getByPlaceholder("Поиск", { exact: true })).toBeHidden();
+  // folded, the field is `sr-only` (still focusable for the keyboard on a tap): a 1 px clip box
+  expect(
+    (await page.getByPlaceholder("Поиск", { exact: true }).evaluate((field) => {
+      const box = field.closest("label")?.parentElement?.getBoundingClientRect();
+      return box === undefined ? -1 : box.width;
+    })) <= 1,
+  ).toBe(true);
+  await expect(page.getByRole("button", { name: "Поиск", exact: true })).toBeVisible();
   await expect(page.getByTitle("Чат с ИИ")).toContainText("Чат");
   expect(
     await page.evaluate(
@@ -497,3 +504,19 @@ for (const width of [320, 390]) {
     await expect(page).toHaveURL(/01_test$/u);
   });
 }
+
+test("«Ничего не нашлось» offers the chat: a new thread with the query as an unsent draft", async ({
+  page,
+}) => {
+  const mock = await mockChat(page);
+  await page.goto("/");
+  await expect(page.locator("[data-page]")).toBeVisible();
+  await page.getByRole("combobox", { name: "Поиск по конспектам" }).fill("несуществующий термин");
+  await expect(page.getByRole("status").filter({ hasText: "Ничего не нашлось" })).toBeVisible();
+  await page.getByRole("button", { name: "Спросить в чате" }).click();
+  const input = page.getByRole("textbox", { name: "Сообщение в чат" });
+  await expect(input).toHaveValue("несуществующий термин");
+  // the page's last thread («Почему так?») is not the one that opened
+  await expect(page.locator(".ai-user")).toHaveCount(0);
+  expect(mock.sent).toHaveLength(0);
+});

@@ -2,9 +2,15 @@ import { lazy, Suspense, useState } from "react";
 
 import type { SearchHit } from "#web/domain/search.ts";
 
+import { isChatConfigured } from "#web/api/chat/http.ts";
+import { SparklesIcon } from "#web/shared/chat/icons.tsx";
+import { askInNewChat } from "#web/shared/chat/launch.ts";
 import { CloseIcon, SearchIcon } from "#web/shared/ui/icons.tsx";
 
 import { resultId } from "./result-id.ts";
+
+/** The status of a query with no hits. */
+export const NOT_FOUND = "Ничего не нашлось";
 
 const SearchResults = lazy(async () => {
   const results = await import("./search-results.tsx");
@@ -86,6 +92,7 @@ type PanelProps = {
   readonly onHover: (index: number) => void;
   readonly onMore: () => void;
   readonly onPick: () => void;
+  readonly query: string;
   readonly status: string;
 };
 
@@ -125,12 +132,28 @@ export const SearchPanel = ({
   onHover,
   onMore,
   onPick,
+  query,
   status,
 }: PanelProps) => (
   <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto rounded-[inherit]">
     <p className="px-5 text-subhead text-muted not-empty:py-5" role="status">
       {status}
     </p>
+    {status === NOT_FOUND && isChatConfigured() && (
+      <div className="px-5 pb-5">
+        <button
+          className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-rule bg-card px-3.5 text-subhead font-semibold text-ink hover:bg-wash"
+          onClick={() => {
+            onPick();
+            askInNewChat(query.trim());
+          }}
+          type="button"
+        >
+          <SparklesIcon />
+          Спросить в чате
+        </button>
+      </div>
+    )}
     {hits.length > 0 && (
       <Suspense fallback={null}>
         <SearchResults

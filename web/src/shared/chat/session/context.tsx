@@ -16,13 +16,21 @@ import { cancelActiveTurnstile, type TurnstileHooks } from "#web/api/chat/widget
 
 import type { ChatContextValue } from "./types.ts";
 
+import { useChatLaunch } from "../launch-store.ts";
 import { setChatOpen, useIsChatOpen } from "../open-state.ts";
 import { TurnstileModal } from "../panel/turnstile-modal.tsx";
 import { useChatStream } from "../stream/use-stream.ts";
 import { useRootOpenClassSync } from "../use-root-open-class.ts";
+import {
+  detachThread,
+  isContextLimited,
+  isShownAndLoaded,
+  startFreshThread,
+  startNewThread,
+} from "./new-thread.ts";
 import { streamSetters } from "./stream-setters.ts";
 import { useComposerDrafts } from "./use-composer-drafts.ts";
-import { useLoginResume } from "./use-login-resume.ts";
+import { canResumeLogin, useLoginResume } from "./use-login-resume.ts";
 import { chatSendActions } from "./use-send-actions.ts";
 import { useSourceReturn } from "./use-source-return.ts";
 import { useChatAuthState, useTelegramAuthActions } from "./use-state.ts";
@@ -38,6 +46,8 @@ type BuildCtxArgs = Pick<
   readonly unsent: ChatMessage | null;
   readonly leaveThread: (isNewChat: boolean) => void;
   readonly detach: () => void;
+  /** Quote into the new chat the closed panel opens on (the draft of the page's «no thread yet»). */
+  readonly setFreshQuote: (value: ChatQuote) => void;
   readonly auth: ReturnType<typeof useChatAuthState>;
   readonly docContext: ChatDocContext;
   readonly source: ReturnType<typeof useSourceReturn>;
@@ -52,17 +62,6 @@ type BuildCtxArgs = Pick<
   readonly tgAuth: ReturnType<typeof useTelegramAuthActions>;
   readonly thr: ReturnType<typeof useThreadState>;
   readonly turnstileOpen: boolean;
-};
-
-const isContextLimited = (thr: BuildCtxArgs["thr"]): boolean =>
-  thr.threads.find((thread) => thread.id === thr.activeThreadId)?.contextLimited === true;
-
-const isShownAndLoaded = (thr: BuildCtxArgs["thr"], threadId: string): boolean =>
-  thr.activeThreadId === threadId && !thr.isThreadLoading && !thr.isThreadFailed;
-
-const detachThread = (a: BuildCtxArgs, isNewChat: boolean): void => {
-  a.detach();
-  a.leaveThread(isNewChat);
 };
 
 const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
@@ -105,15 +104,15 @@ const buildContextValue = (a: BuildCtxArgs): ChatContextValue => ({
   isThreadLoading: a.thr.isThreadLoading,
   messages: a.unsent === null ? a.thr.messages : [...a.thr.messages, a.unsent],
   newChat: () => {
-    detachThread(a, true);
-    a.thr.invalidateLoad();
-    a.thr.setPollRunId(null);
-    a.thr.setIsStreaming(false);
-    a.thr.setActiveThreadId(null);
-    a.thr.setMessages([]);
+    startNewThread(a, { isCancellingLoad: true });
   },
   openWithQuote: (nextQuote: ChatQuote) => {
-    a.setQuote(nextQuote);
+    if (a.isOpen) {
+      a.setQuote(nextQuote);
+    } else {
+      startFreshThread(a);
+      a.setFreshQuote(nextQuote);
+    }
     a.setIsOpen(true);
   },
   quote: a.quote,
@@ -158,19 +157,6 @@ type SessionProps = {
   readonly setIsOpen: Dispatch<SetStateAction<boolean>>;
 };
 
-const canResumeLogin = (
-  { isOpen, auth, tgAuth }: Pick<SessionProps, "auth" | "isOpen" | "tgAuth">,
-  thr: ReturnType<typeof useThreadState>,
-) =>
-  isOpen &&
-  !tgAuth.checkingLogin &&
-  !tgAuth.verificationError &&
-  auth.user !== null &&
-  auth.block === null &&
-  !thr.isThreadLoading &&
-  !thr.isThreadFailed &&
-  !thr.isStreaming;
-
 const useChatSessionValue = ({
   auth,
   drafts,
@@ -209,6 +195,10 @@ const useChatSessionValue = ({
     block: auth.block,
     tgAuth,
   });
+  useChatLaunch((request) => {
+    startFreshThread({ detach: stream.detachActive, leaveThread: drafts.leaveThread, thr });
+    drafts.forThread(null).setDraft(request.text);
+  });
   useLoginResume({
     pending: drafts.migration?.resume ?? null,
     ready: canResumeLogin({ isOpen, auth, tgAuth }, thr),
@@ -223,6 +213,9 @@ const useChatSessionValue = ({
     source,
     unsent,
     leaveThread: drafts.leaveThread,
+    setFreshQuote: (value) => {
+      drafts.forThread(null).setQuote(value);
+    },
     draftError: composer.draftError,
     login: () => tgAuth.login(composer.onLogin),
     detach: stream.detachActive,
