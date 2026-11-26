@@ -220,8 +220,12 @@ const ComposerBox = ({
   );
 };
 
+/*
+The browser check after a Telegram login runs quietly: a question sent meanwhile joins the same check and
+shows «Проверяю браузер…» in its own status line, as every question does; a failed check is repeated on send.
+*/
 const VerificationStatus = () => {
-  const { checkingLogin, verificationError, isStreaming, loginError, draftError } = useChat();
+  const { loginError, draftError } = useChat();
   return (
     <>
       {typeof draftError === "string" && (
@@ -232,16 +236,6 @@ const VerificationStatus = () => {
       {loginError && (
         <p className="ai-caption" role="status">
           Не удалось войти через Telegram. Попробуй еще раз.
-        </p>
-      )}
-      {checkingLogin === true && (
-        <p className="ai-caption" role="status">
-          Проверяю браузер…
-        </p>
-      )}
-      {verificationError === true && !isStreaming && (
-        <p className="ai-caption" role="status">
-          Вход выполнен. При отправке вопроса повторим проверку браузера.
         </p>
       )}
     </>
@@ -255,7 +249,6 @@ const hasSendableDraft = (draft: string, quote: ChatQuote | null, maxChars: numb
 export const ChatComposer = (): JSX.Element => {
   const {
     block,
-    checkingLogin,
     degraded,
     draft,
     isStreaming,
@@ -272,7 +265,6 @@ export const ChatComposer = (): JSX.Element => {
   const rateRemainSec =
     rateLimitUntil > nowMs ? Math.max(0, Math.ceil((rateLimitUntil - nowMs) / 1000)) : 0;
   const canSend =
-    checkingLogin !== true &&
     !isThreadUnready &&
     !isStreaming &&
     mode === "composer" &&

@@ -78,12 +78,7 @@ export const chatSendActions = ({
         await retryAnswer(id, thr, stream);
         return;
       }
-      if (
-        block !== null ||
-        unsent.threadId !== thr.activeThreadId ||
-        tgAuth.checkingLogin ||
-        isBusy(thr)
-      ) {
+      if (block !== null || unsent.threadId !== thr.activeThreadId || isBusy(thr)) {
         return;
       }
       if (unsent.errorMessage !== null) {
@@ -100,9 +95,6 @@ export const chatSendActions = ({
       });
     },
     send: async (text?: string) => {
-      if (tgAuth.checkingLogin) {
-        return;
-      }
       tgAuth.clearVerificationError();
       await send(text);
     },

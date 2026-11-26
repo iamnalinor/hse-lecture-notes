@@ -3,6 +3,8 @@ import { createContext, type JSX, type ReactNode, use } from "react";
 import { splitTex } from "#web/domain/text.ts";
 import { TexMath } from "#web/shared/reader/tex-math.tsx";
 
+import type { TableBlock } from "./markdown-table.ts";
+
 import { ChatCodeBlock } from "./code-block.tsx";
 import {
   type BlockSegment,
@@ -122,6 +124,48 @@ export const InlineTeX = ({
   return <>{nodes}</>;
 };
 
+type TableProps = {
+  readonly block: TableBlock;
+  readonly isStreaming: boolean;
+  readonly onJumpToBlock: (blockId: string) => void;
+};
+
+/** A GFM table; cells hold inline Markdown and math like any paragraph. */
+const ChatTable = ({ block, isStreaming, onJumpToBlock }: TableProps): JSX.Element => {
+  const cell = (text: string) => (
+    <InlineTeX isAnimated={isStreaming} onJumpToBlock={onJumpToBlock} text={text} />
+  );
+  return (
+    <div className="ai-table">
+      <table>
+        <thead>
+          <tr>
+            {block.header.map((text, column) => (
+              // eslint-disable-next-line @eslint-react/no-array-index-key -- columns are positional
+              <th data-align={block.align[column] ?? undefined} key={column} scope="col">
+                {cell(text)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {block.rows.map((row, rowIndex) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- rows are positional and only grow
+            <tr key={rowIndex}>
+              {row.map((text, column) => (
+                // eslint-disable-next-line @eslint-react/no-array-index-key -- columns are positional
+                <td data-align={block.align[column] ?? undefined} key={column}>
+                  {cell(text)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const renderBlock = (
   block: BlockSegment,
   index: number,
@@ -136,6 +180,9 @@ const renderBlock = (
         <TexMath display tex={block.value} />
       </div>
     );
+  }
+  if (block.kind === "table") {
+    return <ChatTable block={block} key={index} {...opts} />;
   }
   if (block.kind === "list") {
     const Tag = block.ordered ? "ol" : "ul";

@@ -37,7 +37,7 @@ it("renders a persistent Managed widget with automatic verification and refresh"
     retry: "auto",
   });
   callbacks.callback("background-token");
-  callbacks["error-callback"]();
+  callbacks["error-callback"]("600010");
   expect(api.remove).not.toHaveBeenCalled();
   expect(api.reset).not.toHaveBeenCalled();
 });
@@ -123,15 +123,29 @@ it("lets Cloudflare refresh expired tokens automatically without a duplicate res
 
 it("recovers from a failed background check through the existing widget", async () => {
   const { api, callbacks, widget } = mountWidget();
-  callbacks["error-callback"]();
+  for (let i = 0; i < 3; i += 1) {
+    callbacks["error-callback"]("600010");
+  }
   const pending = widget.request(new AbortController().signal);
   expect(api.reset).toHaveBeenCalledOnce();
   const rejected = captureRejection(pending);
-  callbacks["error-callback"]();
-  expect((await rejected).message).toContain("verification error");
+  callbacks["error-callback"]("600010");
+  callbacks["error-callback"]("600010");
+  callbacks["error-callback"]("600010");
+  const error = await rejected;
+  expect(error.message).toContain("600010");
   callbacks.callback("auto-retry");
   await expect(widget.request(new AbortController().signal)).resolves.toBe("auto-retry");
   expect(api.render).toHaveBeenCalledOnce();
+});
+
+it("keeps a request waiting while Turnstile retries a transient error by itself", async () => {
+  const { callbacks, widget } = mountWidget();
+  const pending = widget.request(new AbortController().signal);
+  callbacks["error-callback"]("106010");
+  callbacks["error-callback"]("106010");
+  callbacks.callback("after-retry");
+  await expect(pending).resolves.toBe("after-retry");
 });
 
 it("closes interaction when the caller aborts while preserving background verification", async () => {

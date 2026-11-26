@@ -99,6 +99,19 @@ One type scale for the whole site (the steps of Apple's text styles, adapted): e
 one of these. The notes body is 18px in `prose.css`. The default Tailwind sizes are switched off, so a
 stray `text-sm` does nothing instead of adding an eleventh size.
 */
+/* A control drawn at 40 px that still takes a 44 px tap (Д41): the pseudo-element widens the target by 2 px
+   on every side. Its inset counts from inside the 1 px border, hence -3px. The element needs `position: relative`. `isolation` + `z-index: -1` keep the pseudo-element
+   under the control's own children, so a nested button (the search field's clear) still gets its taps. */
+@utility hit-44 {
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    z-index: -1;
+  }
+}
+
 @theme {
   --text-*: initial;
   --text-caption: 12px;
@@ -412,14 +425,15 @@ details[open]::details-content {
   }
 }
 
-/* A page appears with a short fade (the keyed wrapper in `app-shell.tsx`). */
+/* A page appears with a short fade (the keyed wrapper in `app-shell.tsx`); not the entry page, which is
+   already on screen when React mounts (`useIsEntryPage`). */
 @keyframes page-in {
   from {
     opacity: 0;
   }
 }
 
-[data-page] {
+[data-page=""] {
   animation: page-in 180ms ease-out;
 }
 

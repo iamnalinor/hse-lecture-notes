@@ -201,7 +201,7 @@ const useChatSessionValue = ({
   });
   useLoginResume({
     pending: drafts.migration?.resume ?? null,
-    ready: canResumeLogin({ isOpen, auth, tgAuth }, thr),
+    ready: canResumeLogin({ isOpen, auth }, thr),
     draft,
     quote,
     activeThreadId: thr.activeThreadId,
@@ -280,7 +280,7 @@ export const ChatProvider = ({
         drafts={drafts}
         isOpen={isOpen}
         key={owner}
-        pageKey={`${owner}:/${source.page}`}
+        pageKey={owner}
         setIsOpen={setIsOpen}
         source={source}
         tgAuth={tgAuth}

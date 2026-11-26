@@ -126,3 +126,14 @@ it("counts the trimmed question near the active limit and blocks excess text on 
   fireEvent.keyDown(input, { key: "Enter" });
   expect(state.send).not.toHaveBeenCalled();
 });
+it("lets a question go while the browser is checked after login, without captions under the box", () => {
+  Object.assign(state, { checkingLogin: true, draft: "Вопрос" });
+  const view = render(<ChatComposer />);
+  expect(screen.queryByText(/Проверяю браузер/u)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Отправить" }));
+  expect(state.send).toHaveBeenCalledOnce();
+  Object.assign(state, { checkingLogin: false, verificationError: true });
+  view.rerender(<ChatComposer />);
+  expect(screen.queryByText(/повторим проверку/u)).toBeNull();
+  Object.assign(state, { verificationError: false });
+});

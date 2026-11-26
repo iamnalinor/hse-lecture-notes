@@ -42,7 +42,7 @@ export const SearchField = ({
   onQuery,
   query,
 }: FieldProps) => (
-  <label className="relative flex h-11 w-full items-center rounded-lg border border-rule bg-card text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:h-10 lg:w-96">
+  <label className="hit-44 relative flex h-10 w-full items-center rounded-lg border border-rule bg-card text-faint transition-colors duration-150 focus-within:border-ink/40 focus-within:text-ink md:w-64 lg:w-96">
     {/* The icon is padding, not a flex item: the input takes all the rest of the field, so a query is not clipped at the start. */}
     <span className="pointer-events-none absolute left-2.5 flex">
       <SearchIcon size={16} />
@@ -75,7 +75,7 @@ export const SearchField = ({
     ) : (
       <button
         aria-label="Очистить"
-        className="absolute right-0 flex h-11 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink lg:h-10"
+        className="absolute -top-0.5 right-0 flex h-11 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted transition-colors duration-150 hover:text-ink"
         onClick={onClear}
         type="button"
       >
@@ -193,12 +193,12 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
   <>
     <button
       aria-label="Поиск"
-      className={`size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-muted hover:text-ink min-[21rem]:hidden ${isOpen ? "hidden" : "flex"}`}
+      className={`hit-44 relative size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-rule bg-card text-muted hover:text-ink min-[21rem]:hidden ${isOpen ? "hidden" : "flex"}`}
       onClick={onOpen}
       ref={magnifierRef}
       type="button"
     >
-      <SearchIcon size={20} />
+      <SearchIcon size={18} />
     </button>
     <div
       className={
@@ -210,7 +210,7 @@ export const PhoneFold = ({ children, isOpen, magnifierRef, onCancel, onOpen }: 
       {children}
       {isOpen && (
         <button
-          className="h-11 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink min-[21rem]:hidden"
+          className="hit-44 relative h-10 shrink-0 cursor-pointer rounded-lg px-3 text-subhead text-muted hover:text-ink min-[21rem]:hidden"
           onClick={onCancel}
           type="button"
         >

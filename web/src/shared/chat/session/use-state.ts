@@ -147,8 +147,9 @@ const useLoginCheck = (deps: LoginDeps) => {
   return {
     checkingLogin: status === "checking",
     verificationError: status === "error",
+    // Only a finished, failed check is cleared: a check still running keeps the login controls busy.
     clearVerificationError: () => {
-      setCheck(null);
+      setCheck((prev) => (prev?.status === "error" ? null : prev));
     },
     checkLogin,
   };

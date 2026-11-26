@@ -17,7 +17,7 @@ export type TurnstileApi = {
       readonly "before-interactive-callback": () => void;
       readonly "after-interactive-callback": () => void;
       readonly callback: (token: string) => void;
-      readonly "error-callback": () => void;
+      readonly "error-callback": (code?: string) => void;
       readonly execution: "render";
       readonly "expired-callback": () => void;
       readonly "timeout-callback": () => void;
@@ -28,6 +28,23 @@ export type TurnstileApi = {
     },
   ) => string;
 };
+
+/**
+Turnstile retries a failed check by itself (`retry: "auto"`, every 8 s), so one error-callback is not the end:
+a waiting question fails only after this many errors in a row.
+*/
+const ERRORS_BEFORE_GIVING_UP = 3;
+
+/** A browser check that kept failing; `code` is Turnstile's client-side error code, if it gave one. */
+export class TurnstileError extends Error {
+  readonly code: null | string;
+
+  constructor(code: null | string) {
+    super(code === null ? "Turnstile verification error" : `Turnstile verification error ${code}`);
+    this.name = "TurnstileError";
+    this.code = code;
+  }
+}
 
 type TokenWaiter = {
   readonly resolve: (token: string) => void;
@@ -43,6 +60,7 @@ export class ManagedTurnstile {
   private token: null | { readonly value: string; readonly expiresAt: number } = null;
   private state: "error" | "ready" | "running" = "running";
   private interactive = false;
+  private errorsInRow = 0;
   private readonly waiters = new Set<TokenWaiter>();
 
   constructor(
@@ -72,6 +90,7 @@ export class ManagedTurnstile {
         this.syncModal();
       },
       callback: (token) => {
+        this.errorsInRow = 0;
         this.state = "ready";
         this.token = { value: token, expiresAt: Date.now() + 290_000 };
         this.interactive = false;
@@ -84,11 +103,19 @@ export class ManagedTurnstile {
       "timeout-callback": () => {
         this.autoRefresh();
       },
-      "error-callback": () => {
+      "error-callback": (code) => {
         this.state = "error";
         this.token = null;
         this.interactive = false;
-        this.cancel(new Error("Turnstile verification error"));
+        this.errorsInRow += 1;
+        if (this.errorsInRow < ERRORS_BEFORE_GIVING_UP) {
+          // Turnstile retries on its own; the waiting question keeps waiting for that retry.
+          this.state = "running";
+          this.syncModal();
+          return;
+        }
+        this.errorsInRow = 0;
+        this.cancel(new TurnstileError(typeof code === "string" && code !== "" ? code : null));
       },
     });
   }

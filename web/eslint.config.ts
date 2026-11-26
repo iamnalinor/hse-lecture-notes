@@ -159,6 +159,11 @@ export default defineConfig([
       "unicorn/no-useless-undefined": ["error", { checkArrowFunctionBody: false }],
       // One-line JSDoc (`/** ... */`) is the idiomatic way to document a declaration.
       "unicorn/single-line-block-comment-style": "off",
+      // Iterator helpers (`map.keys().every()`, `matchAll().toArray()`) exist only from Safari 18.4 / iOS 18.4,
+      // and Vite does not polyfill them: they would throw on the older iPhones the site supports.
+      "unicorn/prefer-iterator-helpers": "off",
+      "unicorn/prefer-iterator-to-array": "off",
+      "unicorn/prefer-iterator-to-array-at-end": "off",
     },
   },
 

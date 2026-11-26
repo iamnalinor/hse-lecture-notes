@@ -9,7 +9,7 @@ import { type CourseId, findCourse } from "./courses.ts";
 export const SITE_NAME = "Конспекты ПИ ФКН";
 /** The same text is in `index.html`: the shell of the home page. */
 export const SITE_DESCRIPTION =
-  "Конспекты лекций ПИ ФКН ВШЭ 2026/27 по алгебре, матанализу, дискретной математике и АиЯ: теория, подготовка к КР и коллоквиумам, PDF.";
+  "Конспекты лекций ПИ ФКН ВШЭ 2026/27 по алгебре, матанализу, дискретной математике и АиАЯ: теория, подготовка к КР и коллоквиумам, PDF.";
 /** Bing and Yandex cut a snippet past this length; longer descriptions are trimmed at a word. */
 export const DESCRIPTION_MAX = 160;
 /**

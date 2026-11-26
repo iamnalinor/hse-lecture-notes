@@ -3,7 +3,7 @@ import { type ReactNode, useId, useState } from "react";
 import { ChevronIcon } from "#web/shared/ui/icons.tsx";
 
 type Props = {
-  /** Name for screen readers when the visible label is the same for many buttons («Показать ответ»). */
+  /** Name for screen readers when the visible label is the same for many buttons («Ответ»). */
   readonly accessibleName?: string;
   readonly children: ReactNode;
   readonly closedLabel: string;

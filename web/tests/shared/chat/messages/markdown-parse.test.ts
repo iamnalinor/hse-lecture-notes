@@ -133,3 +133,78 @@ it("keeps ordinary interval brackets in prose before a citation", () => {
     { kind: "span", span: { kind: "ref", label: "лекцию", target: "sec" } },
   ]);
 });
+
+it("parses a GFM table with alignment, math holding |, code and an escaped pipe in cells", () => {
+  expect(
+    parseChatBlocks(
+      [
+        "Сравним:",
+        "",
+        "| Норма | Формула | Код |",
+        "|:--|:-:|--:|",
+        "| модуль | $|x|$ | `a || b` |",
+        String.raw`| знак \| | $x$ | — |`,
+        "",
+        "Итог.",
+      ].join("\n"),
+    ),
+  ).toEqual([
+    { kind: "paragraph", value: "Сравним:" },
+    {
+      kind: "table",
+      align: ["left", "center", "right"],
+      header: ["Норма", "Формула", "Код"],
+      rows: [
+        ["модуль", "$|x|$", "`a || b`"],
+        ["знак |", "$x$", "—"],
+      ],
+    },
+    { kind: "paragraph", value: "Итог." },
+  ]);
+});
+
+it("keeps lines with pipes as text when no separator row follows", () => {
+  expect(parseChatBlocks("| a | b |\nпросто текст")).toEqual([
+    { kind: "paragraph", value: "| a | b | просто текст" },
+  ]);
+});
+
+it("pads short rows and drops extra cells, so every row has the header's width", () => {
+  expect(parseChatBlocks("a | b\n--- | ---\n1 |\n1 | 2 | 3")).toEqual([
+    {
+      kind: "table",
+      align: [null, null],
+      header: ["a", "b"],
+      rows: [
+        ["1", ""],
+        ["1", "2"],
+      ],
+    },
+  ]);
+});
+
+it("treats a pipe right after an even run of backslashes as a cell boundary", () => {
+  expect(
+    parseChatBlocks(["| a | b | c |", "|---|---|---|", String.raw`| x\\| y | z\\|`].join("\n")),
+  ).toEqual([
+    {
+      kind: "table",
+      align: [null, null, null],
+      header: ["a", "b", "c"],
+      rows: [[String.raw`x\\`, "y", String.raw`z\\`]],
+    },
+  ]);
+});
+
+it("keeps a heading with a pipe as a heading even when a separator row follows", () => {
+  expect(parseChatBlocks("### A | B\n|---|---|")).toEqual([
+    { kind: "heading", tag: "h3", value: "A | B" },
+    { kind: "paragraph", value: "|---|---|" },
+  ]);
+});
+
+it("keeps a NUL inside a cell as text, not as a boundary", () => {
+  expect(parseChatBlocks("| a | b |\n|---|---|\n| x\0y | z |")).toEqual([
+    { kind: "table", align: [null, null], header: ["a", "b"], rows: [["x\0y", "z"]] },
+  ]);
+});

@@ -15,7 +15,7 @@ export const ChatToggleButton = (): JSX.Element | null => {
     <button
       aria-controls="ai-panel"
       aria-expanded={isOpen}
-      className="ai-head-btn"
+      className="ai-head-btn hit-44 relative"
       onClick={() => {
         if (!isOpen) {
           // Also the retry after a failure that was not shown (the chat was not wanted then).

@@ -65,7 +65,7 @@ const StepLabel = ({ step }: { readonly step: ChatStep }): JSX.Element => {
       <span className="ai-step-label">
         {prefix}
         <span className="ai-step-query">
-          <TexText text={step.q === undefined || step.q === "" ? "" : `«${step.q}»`} />
+          <TexText text={step.q ?? ""} />
         </span>
       </span>
     );

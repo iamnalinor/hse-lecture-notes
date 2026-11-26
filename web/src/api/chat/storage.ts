@@ -73,9 +73,19 @@ const writeValue = (key: string, value: null | string): "memory" | "stored" => {
   }
 };
 
-export const readPageThread = (key: string): null | string => safeGet(`hse_chat_thread:${key}`);
+/**
+The account's last conversation: «Чат» opens it on every page (owner's decision, 26.11.2026). Before that
+the last thread was kept per page; the home page's one (`<owner>:/`) is taken over once.
+*/
+export const readPageThread = (key: string): null | string =>
+  safeGet(`hse_chat_thread:${key}`) ?? safeGet(`hse_chat_thread:${key}:/`);
 export const savePageThread = (key: string, id: null | string): void => {
-  writeValue(`hse_chat_thread:${key}`, id);
+  const saved = writeValue(`hse_chat_thread:${key}`, id);
+  // Any write, «no thread» included, supersedes the old key: otherwise a new chat would fall back to it.
+  // A thread id that could not be stored (full storage) leaves the old key as the only one that survives a reload.
+  if (id === null || saved === "stored") {
+    writeValue(`hse_chat_thread:${key}:/`, null);
+  }
 };
 
 const parseJson = (raw: null | string): unknown => {

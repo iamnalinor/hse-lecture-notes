@@ -11,19 +11,19 @@ export const TopBar = () => (
   <header className="@container border-b border-rule bg-paper" data-site-header="">
     <div className="relative mx-auto flex min-h-13 max-w-[1360px] items-center gap-x-3 px-4 py-2 sm:min-h-15 sm:gap-x-4 sm:px-8 md:gap-x-7">
       <Link
-        className="flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
+        className="hit-44 relative flex items-center gap-2.5 text-subhead font-bold tracking-[0.01em] text-ink no-underline"
         to={paths.home()}
       >
-        {/* As tall as the search field and buttons beside it: 44 px on phones, 40 px from 640 px (tests/e2e/layout.spec.ts). */}
+        {/* As tall as the search field and buttons beside it, 40 px (tests/e2e/layout.spec.ts); the tap area is 44 px (`hit-44`). */}
         <span
-          className="flex size-11 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white sm:size-10"
+          className="flex size-10 shrink-0 items-center justify-center rounded-[22%] bg-brand text-white"
           data-logo-mark=""
         >
-          {/* Σ built from HSE Sans 600 metrics (bars of E/Z, diagonal of Z, tip of >), softened corners and gently curved diagonals;
-              the font has no Σ. The same path as public/favicon.svg. */}
+          {/* ∞, the glyph of HSE Sans 700 itself (U+221E), 18 of 32 units wide, centred. The same path as
+              public/favicon.svg and the link previews (scripts/og-images.ts). */}
           <svg aria-hidden="true" className="size-full" viewBox="0 0 32 32">
             <path
-              d="M10.43 8.69Q10.43 8.2 10.92 8.2L21.08 8.2Q21.57 8.2 21.57 8.69L21.57 10.23Q21.57 10.72 21.08 10.72L14.26 10.72Q13.77 10.72 14.18 10.99Q16.68 13.39 19.83 14.83Q20.23 15.11 20.23 15.6L20.23 16.4Q20.23 16.89 19.83 17.17Q16.68 18.61 14.18 21.01Q13.77 21.28 14.26 21.28L21.08 21.28Q21.57 21.28 21.57 21.77L21.57 23.31Q21.57 23.8 21.08 23.8L10.92 23.8Q10.43 23.8 10.43 23.31L10.43 20.32Q10.43 19.83 10.83 19.56Q12.93 17.44 15.67 16.28Q16.07 16 15.67 15.72Q12.93 14.56 10.83 12.44Q10.43 12.17 10.43 11.68L10.43 8.69Z"
+              d="M20.16 21.14Q18.03 21.14 15.99 18.6Q13.97 21.14 11.84 21.14Q9.69 21.14 8.35 19.78Q7 18.42 7 15.99Q7 13.71 8.32 12.28Q9.64 10.86 11.84 10.86Q14.02 10.86 15.99 13.4Q17.96 10.86 20.16 10.86Q22.36 10.86 23.68 12.3Q25 13.73 25 15.99Q25 18.42 23.65 19.78Q22.31 21.14 20.16 21.14ZM20.16 13.86Q19.59 13.86 18.87 14.51Q18.16 15.16 17.72 16.01Q18.21 16.87 18.9 17.5Q19.59 18.14 20.16 18.14Q20.96 18.14 21.5 17.55Q22.05 16.97 22.05 15.99Q22.05 15 21.52 14.43Q20.99 13.86 20.16 13.86ZM11.84 18.14Q12.41 18.14 13.09 17.52Q13.76 16.89 14.25 15.99Q13.79 15.16 13.1 14.51Q12.41 13.86 11.84 13.86Q11.01 13.86 10.48 14.43Q9.95 15 9.95 15.99Q9.95 16.97 10.5 17.55Q11.04 18.14 11.84 18.14Z"
               fill="currentColor"
             />
           </svg>

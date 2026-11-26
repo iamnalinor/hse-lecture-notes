@@ -137,3 +137,17 @@ it("keeps persisted legacy credentials when migrating them in memory after a fai
     globalThis.dispatchEvent(new StorageEvent("storage", { key: null }));
   }
 });
+
+it("reads the account's last conversation, taking over the old per-page key of the home page", () => {
+  localStorage.setItem("hse_chat_thread:7:/", "old-home");
+  expect(readPageThread("7")).toBe("old-home");
+  savePageThread("7", "new");
+  expect(readPageThread("7")).toBe("new");
+});
+
+it("forgets the old home-page key once the account's thread is written, even as «no thread»", () => {
+  localStorage.setItem("hse_chat_thread:8:/", "old-home");
+  savePageThread("8", null);
+  expect(readPageThread("8")).toBeNull();
+  expect(localStorage.getItem("hse_chat_thread:8:/")).toBeNull();
+});
