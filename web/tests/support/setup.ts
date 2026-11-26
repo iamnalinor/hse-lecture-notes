@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 
 // jsdom has `<dialog>` but not its modal API: enough of it for the search dialog.
 HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
@@ -18,6 +18,20 @@ HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
 Element.prototype.scrollIntoView = function scrollIntoView() {
   // nothing to scroll
 };
+
+// jsdom has no `matchMedia`; the default is «no media query matches» (tests that need more stub it themselves).
+beforeEach(() => {
+  vi.stubGlobal(
+    "matchMedia",
+    (query: string) =>
+      ({
+        addEventListener: () => undefined,
+        matches: false,
+        media: query,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList,
+  );
+});
 
 afterEach(() => {
   cleanup();

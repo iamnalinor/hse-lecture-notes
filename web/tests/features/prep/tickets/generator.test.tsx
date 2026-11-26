@@ -121,6 +121,26 @@ describe("TicketGenerator", () => {
     expect(document.querySelector(".katex")).not.toBeNull();
   });
 
+  it("scrolls the new ticket into view and moves focus to its heading", async () => {
+    const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
+    view();
+    await newTicket();
+    const heading = screen.getByRole("heading", { name: "Билет 1" });
+    expect(heading).toHaveFocus();
+    expect(scroll).toHaveBeenLastCalledWith({ behavior: "smooth", block: "start" });
+    await newTicket();
+    expect(screen.getByRole("heading", { name: "Билет 2" })).toHaveFocus();
+  });
+
+  it("scrolls without animation under prefers-reduced-motion", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
+    view();
+    await newTicket();
+    expect(scroll).toHaveBeenLastCalledWith({ behavior: "instant", block: "start" });
+    vi.unstubAllGlobals();
+  });
+
   it("draws only from the chosen topics, and «Сбросить все» leaves nothing to draw", async () => {
     view();
     expect(await screen.findByText("Темы: все 2")).toBeInTheDocument();

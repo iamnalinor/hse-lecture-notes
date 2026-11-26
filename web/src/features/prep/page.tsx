@@ -46,6 +46,14 @@ export const Component = () => {
       courseName={info.name}
       docId={prep.id}
       downloads={cheatsheetDocs(prep)}
+      jump={
+        hasBank
+          ? {
+              hash: "ticket-generator",
+              label: prep.id.startsWith("kr") ? "К генератору вариантов" : "К генератору билетов",
+            }
+          : undefined
+      }
       pageName={prepGoal(prep.id, prep.quizNumber)}
       slots={slots}
       tocCaption={name}

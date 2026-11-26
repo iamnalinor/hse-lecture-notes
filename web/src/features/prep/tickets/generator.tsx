@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { TicketBank } from "#web/domain/schemas.ts";
 
@@ -37,17 +37,36 @@ const describe = (bank: TicketBank | undefined): string => {
   return bank.about === "" ? total : `${bank.about} ${total}`;
 };
 
+/** Brings a freshly drawn ticket into view and moves focus to its heading (instant under `prefers-reduced-motion`). */
+const useRevealOnDraw = (serial: number) => {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    const element = headingRef.current;
+    if (element === null) {
+      return;
+    }
+    const isReduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    element.focus({ preventScroll: true });
+    element.scrollIntoView({ behavior: isReduced ? "instant" : "smooth", block: "start" });
+  }, [serial]);
+  return headingRef;
+};
+
 const Ticket = ({
   bank,
   course,
   drawn,
   prepId,
 }: Props & { readonly bank: TicketBank; readonly drawn: Drawn }) => {
+  const headingRef = useRevealOnDraw(drawn.serial);
   /** Questions are numbered through the whole ticket: the first of a part follows the previous parts. */
   const first = (index: number): number =>
     drawn.parts.slice(0, index).flatMap((part) => part.questions).length + 1;
   return (
     <div className="mt-5">
+      <h3 className="m-0 mb-3 text-title3 font-bold outline-none" ref={headingRef} tabIndex={-1}>
+        {`${isTest(prepId) ? "Вариант" : "Билет"} ${String(drawn.serial)}`}
+      </h3>
       {drawn.parts.map((part, index) => (
         <section className="mt-4 first:mt-0" key={`${String(drawn.serial)}-${part.kind}`}>
           <h4 className="flex flex-wrap items-baseline gap-x-2.5 border-b border-rule pb-1.5 text-subhead font-semibold">

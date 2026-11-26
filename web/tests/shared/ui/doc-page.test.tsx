@@ -36,3 +36,24 @@ describe("DocPage downloads", () => {
     );
   });
 });
+
+describe("DocPage jump link", () => {
+  it("links to a section of the page next to the PDF button", () => {
+    renderWithApp(
+      <DocPage
+        course="calculus"
+        courseName="Матан"
+        jump={{ hash: "ticket-generator", label: "К генератору билетов" }}
+        pageName="Подготовка к коллоквиуму"
+        pdfDoc="colloq1"
+      >
+        <p>Текст</p>
+      </DocPage>,
+      "/calculus/colloq1",
+    );
+    expect(screen.getByRole("link", { name: "К генератору билетов" })).toHaveAttribute(
+      "href",
+      "/calculus/colloq1#ticket-generator",
+    );
+  });
+});
