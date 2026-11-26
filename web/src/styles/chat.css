@@ -461,6 +461,43 @@
   background: none;
   padding: 0;
 }
+/* Таблицы в ответе — как в конспектах (`.prose-notes table`), с прокруткой вбок на узком экране. */
+.ai-table {
+  margin: 8px 0 14px;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+}
+.ai-table table {
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 20px;
+}
+.ai-table th {
+  padding: 8px 12px;
+  border-bottom: 1.5px solid var(--ink);
+  background: var(--wash);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.ai-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.ai-table tr:last-child td {
+  border-bottom: 0;
+}
+.ai-table :is(th, td)[data-align="center"] {
+  text-align: center;
+}
+.ai-table :is(th, td)[data-align="right"] {
+  text-align: right;
+}
 .ai-answer .ai-math {
   margin: 4px 0 14px;
   overflow-x: auto;

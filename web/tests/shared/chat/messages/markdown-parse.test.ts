@@ -133,3 +133,52 @@ it("keeps ordinary interval brackets in prose before a citation", () => {
     { kind: "span", span: { kind: "ref", label: "лекцию", target: "sec" } },
   ]);
 });
+
+it("parses a GFM table with alignment, math holding |, code and an escaped pipe in cells", () => {
+  expect(
+    parseChatBlocks(
+      [
+        "Сравним:",
+        "",
+        "| Норма | Формула | Код |",
+        "|:--|:-:|--:|",
+        "| модуль | $|x|$ | `a || b` |",
+        String.raw`| знак \| | $x$ | — |`,
+        "",
+        "Итог.",
+      ].join("\n"),
+    ),
+  ).toEqual([
+    { kind: "paragraph", value: "Сравним:" },
+    {
+      kind: "table",
+      align: ["left", "center", "right"],
+      header: ["Норма", "Формула", "Код"],
+      rows: [
+        ["модуль", "$|x|$", "`a || b`"],
+        ["знак |", "$x$", "—"],
+      ],
+    },
+    { kind: "paragraph", value: "Итог." },
+  ]);
+});
+
+it("keeps lines with pipes as text when no separator row follows", () => {
+  expect(parseChatBlocks("| a | b |\nпросто текст")).toEqual([
+    { kind: "paragraph", value: "| a | b | просто текст" },
+  ]);
+});
+
+it("pads short rows and drops extra cells, so every row has the header's width", () => {
+  expect(parseChatBlocks("a | b\n--- | ---\n1 |\n1 | 2 | 3")).toEqual([
+    {
+      kind: "table",
+      align: [null, null],
+      header: ["a", "b"],
+      rows: [
+        ["1", ""],
+        ["1", "2"],
+      ],
+    },
+  ]);
+});

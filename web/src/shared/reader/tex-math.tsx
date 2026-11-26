@@ -1,6 +1,7 @@
 import { renderToString } from "katex";
 
 import { useMacros } from "#web/api/queries.ts";
+import { withGreekTitles } from "#web/domain/greek.ts";
 
 type Props = { readonly display: boolean; readonly tex: string };
 
@@ -19,13 +20,16 @@ const rendered = (tex: string, isDisplay: boolean, macros: Readonly<Record<strin
   if (hit !== undefined) {
     return hit;
   }
-  const html = renderToString(tex, {
-    displayMode: isDisplay,
-    // KaTeX mutates the macro table (\gdef), so every call gets its own copy.
-    macros: { ...macros },
-    strict: "ignore",
-    throwOnError: false,
-  });
+  // A Greek letter shows how it is read on hover («ξ» → «кси»).
+  const html = withGreekTitles(
+    renderToString(tex, {
+      displayMode: isDisplay,
+      // KaTeX mutates the macro table (\gdef), so every call gets its own copy.
+      macros: { ...macros },
+      strict: "ignore",
+      throwOnError: false,
+    }),
+  );
   if (byKey.size >= MAX_CACHED) {
     byKey.clear();
   }

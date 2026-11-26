@@ -83,3 +83,18 @@ it("shows a search query bare, without quotes (owner's decision)", () => {
   const label = document.querySelector(".ai-step-label");
   expect(label?.textContent).toBe("Поиск ряд Тейлора");
 });
+
+it("draws a Markdown table with math in its cells and column alignment", () => {
+  renderWithApp(
+    <ChatMarkdown
+      isStreaming={false}
+      onJumpToBlock={vi.fn()}
+      text={"| Ряд | Сумма |\n|---|--:|\n| $\\sum q^n$ | $\\frac{1}{1-q}$ |"}
+    />,
+  );
+  expect(screen.getAllByRole("columnheader").map((th) => th.textContent)).toEqual(["Ряд", "Сумма"]);
+  const cells = screen.getAllByRole("cell");
+  expect(cells).toHaveLength(2);
+  expect(cells[0]?.querySelector(".katex")).not.toBeNull();
+  expect(cells[1]).toHaveAttribute("data-align", "right");
+});

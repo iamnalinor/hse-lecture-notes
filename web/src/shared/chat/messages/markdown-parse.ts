@@ -1,5 +1,6 @@
 import { hashTarget } from "#web/shared/ui/dom.ts";
 
+import { readTable, type TableBlock } from "./markdown-table.ts";
 import { normalizeChatMath } from "./math.ts";
 
 export type InlineSpan =
@@ -14,6 +15,7 @@ export type ParsedPiece =
 const headingTags = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
 
 export type BlockSegment =
+  | TableBlock
   | { readonly kind: "code"; readonly lang: string; readonly value: string }
   | { readonly kind: "display-math"; readonly value: string }
   | { readonly kind: "heading"; readonly tag: (typeof headingTags)[number]; readonly value: string }
@@ -219,28 +221,37 @@ const appendTextBlocks = (lines: readonly string[], blocks: BlockSegment[]): voi
   flushTextBlock(buffer, blocks);
 };
 
-const appendParagraphs = (trimmed: string, blocks: BlockSegment[]): void => {
-  const lines: string[] = [];
-  const flush = (): void => {
-    appendTextBlocks(lines, blocks);
-    lines.length = 0;
-  };
-
-  for (const line of trimmed.split("\n")) {
-    const match = /^ {0,3}(#{1,6})(?=[ \t]|$)/u.exec(line);
-    const tag = headingTags[(match?.[1]?.length ?? 0) - 1];
-    if (match === null || tag === undefined) {
-      lines.push(line);
-    } else {
-      flush();
-      blocks.push({
+const headingOf = (line: string): BlockSegment | null => {
+  const match = /^ {0,3}(#{1,6})(?=[ \t]|$)/u.exec(line);
+  const tag = headingTags[(match?.[1]?.length ?? 0) - 1];
+  return match === null || tag === undefined
+    ? null
+    : {
         kind: "heading",
         tag,
         value: line.slice(match[0].length).trimEnd().replace(/\s#+$/u, "").trim(),
-      });
+      };
+};
+
+/** Headings and tables stand alone; the text lines between them become paragraphs and lists. */
+const appendParagraphs = (trimmed: string, blocks: BlockSegment[]): void => {
+  const all = trimmed.split("\n");
+  let pending: string[] = [];
+  let index = 0;
+  while (index < all.length) {
+    const table = readTable(all, index);
+    const line = all[index] ?? "";
+    const block = table?.block ?? headingOf(line);
+    if (block === null) {
+      pending.push(line);
+    } else {
+      appendTextBlocks(pending, blocks);
+      pending = [];
+      blocks.push(block);
     }
+    index = table?.next ?? index + 1;
   }
-  flush();
+  appendTextBlocks(pending, blocks);
 };
 
 const appendProseSegment = (source: string, blocks: BlockSegment[]): void => {
